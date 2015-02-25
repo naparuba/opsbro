@@ -1,0 +1,7 @@
+{
+    "check": {
+	"apply_on": "linux",
+        "script": "$nagiosplugins$/check_disk -l -w $linux.disks.warning$% -c $linux.disks.critical$%  -X tmpfs -X udev",
+        "interval": "60s"
+    }
+}

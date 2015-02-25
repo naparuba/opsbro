@@ -1,0 +1,8 @@
+{
+    "graphite": {
+	"enabled"    : true,
+	"port"       : 2003,
+	"udp"        : true,
+	"tcp"        : true
+    }
+}

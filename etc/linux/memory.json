@@ -1,0 +1,7 @@
+{
+    "check": {
+	"apply_on": "linux",
+        "script": "$nagiosplugins$/check_memory -w $linux.memory.warning$% -c $linux.memory.critical$%",
+        "interval": "60s"
+    }
+}

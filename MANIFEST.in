@@ -1,0 +1,9 @@
+recursive-include kunai *.*
+recursive-include etc *
+recursive-include bin *.* init.d/kunai
+recursive-include libexec *.*
+include test *.py *.txt
+global-exclude .git *.pyc *.pyo
+global-exclude *~
+include MANIFEST.in Changelog
+include LICENSE README.md

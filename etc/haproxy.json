@@ -1,0 +1,12 @@
+{
+    "service": {
+	"tags": ["master"],
+	"port": 80,
+	"apply_on": "haproxy",
+	"check": {
+	    "script": "/usr/lib/nagios/plugins/check_http -H www.google.fr",
+	    "interval": "10s",
+	    "handlers": ["default"]
+	}
+    }
+}

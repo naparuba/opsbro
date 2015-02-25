@@ -1,0 +1,11 @@
+{
+    "service": {
+        "tags": ["master"],
+	"apply_on": "mongodb",
+        "port": 27017,
+        "check": {
+            "script": "$nagiosplugins$/check_mongodb -D",
+            "interval": "10s"
+        }
+    }
+}

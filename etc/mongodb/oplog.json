@@ -1,0 +1,7 @@
+{
+    "check": {
+	"apply_on": "mongodb",
+        "script": "$nagiosplugins$/check_mongodb -D -A oplog",
+        "interval": "60s"
+    }
+}

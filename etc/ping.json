@@ -1,0 +1,9 @@
+{
+    "check": {
+        "apply_on": "*", 
+        "interval": "3600s", 
+        "name": "ping", 
+        "notes": "", 
+        "script": "ping -c1 www.google.com >/dev/null"
+    }
+}

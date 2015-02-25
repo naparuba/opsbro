@@ -1,0 +1,7 @@
+{
+    "check": {
+	"apply_on": "linux",
+        "script": "$nagiosplugins$/check_load -r -w $linux.load-average.warning$ -c $linux.load-average.critical$",
+        "interval": "60s"
+    }
+}

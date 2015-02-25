@@ -1,0 +1,12 @@
+{
+    "service": {
+        "tags": ["master"],
+        "port": 6379,
+	"apply_on": "redis",
+	
+	"check": {
+            "script": "$nagiosplugins$/check_tcp -H localhost -p $port$",
+            "interval": "10s"
+	}
+    }
+}

@@ -1,0 +1,1 @@
+Check {{check['name']}} switched to {{check['state']}} state
