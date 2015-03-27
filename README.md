@@ -45,7 +45,7 @@ You can also launch it in foreground:
 Terminology
 ===========
 
-The project terminology is alike Consul one, and is very differtent from Nagios/Shinken one:
+This project reuse Consul terminology (node, service, etc) which is very different to Nagios/Shinken standard:
   * node: a server where you install the agent (similar to nagios/shinken host)
   * check: something that look for a specific state (OK/WARNING/CRITICAL/UNKNOWN), like CPU, memory or disk space. It's not exported to other hosts  (similar to nagios/shinken services)
   * service: object that expose an important application state to the other nodes (like for example mysql state). It need a check to do the actual check. This data is shared with all others nodes. (no equivalent in nagios/shinken).
