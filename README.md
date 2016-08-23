@@ -110,4 +110,31 @@ Just launch:
   kunai agent stop
 
 
+How to detect server properties (os, apps, etc)?
+================================================
 
+ ==> detectors
+
+
+How to get server and local application metrics?
+================================================
+
+ ==> collectors & metrology
+
+
+How to setup checks on your agent?
+==================================
+
+ ==> nagios checks and evaluating checks
+
+
+How to us the key store?
+========================
+
+==> KV store
+
+
+How to keep your application configuration up-to-date?
+======================================================
+
+==> generators
