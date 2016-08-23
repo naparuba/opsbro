@@ -1,0 +1,8 @@
+{
+    "detector": {
+        "tags": ["centos"],
+        "apply_if": "grep('centos', '/etc/redhat-release')",
+        "interval": "10s"
+    }
+}
+

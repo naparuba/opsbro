@@ -1,7 +1,0 @@
-{
-    "check": {
-	"apply_on": "linux",
-        "script": "$nagiosplugins$/check_swap -w $linux.swap.warning$% -c $linux.swap.critical$% --no-swap=ok",
-        "interval": "60s"
-    }
-}

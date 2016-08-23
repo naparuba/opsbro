@@ -1,7 +1,0 @@
-{
-    "check": {
-	"apply_on": "debian",
-        "script": "$nagiosplugins$/check_apt",
-        "interval": "3600s"
-    }
-}

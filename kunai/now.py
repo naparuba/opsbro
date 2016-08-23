@@ -5,15 +5,16 @@
 import time
 from kunai.threadmgr import threader
 
+
 class QuickNow(object):
     def __init__(self):
         self.now = int(time.time())
-
-
+    
+    
     def do_thread(self):
         while True:
             self.now = int(time.time())
-            time.sleep(0.01) # update each 10ms
+            time.sleep(0.01)  # update each 10ms
     
     
     def launch(self):

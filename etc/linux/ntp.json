@@ -1,7 +1,0 @@
-{
-    "check": {
-	"apply_on": "linux",
-        "script": "$nagiosplugins$/check_ntp -H localhost",
-        "interval": "60s"
-    }
-}

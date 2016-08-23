@@ -7,21 +7,16 @@
 import optparse
 import sys
 import os
-import re
-import tempfile
 import json
 import imp
 import signal
-import socket
-from StringIO import StringIO
-
 
 sys.path.append('.')
 
 from kunai.log import cprint, logger
 from kunai import cli as cli_mod
 from kunai.version import VERSION
-
+from kunai.defaultpaths import DEFAULT_LOG_DIR, DEFAULT_CFG_FILE
 
 logger.setLevel('WARNING')
 
@@ -40,29 +35,27 @@ banner = r'''
 '''
 
 
-
 # Handle some signals
 def sig_handler(signalnum, handle):
     """ Handle some signals """
     sys.exit(0)
 
+
 signal.signal(signal.SIGTERM, sig_handler)
 signal.signal(signal.SIGINT, sig_handler)
 
-
 CONFIG = {}
+
 
 class Dummy():
     def __init__(self):
         pass
 
 
-if os.name != 'nt':
-    DEFAULT_CFG = '/etc/kunai/local.json'
-else:
-    DEFAULT_CFG = 'c:\\kunai\\etc\\local.json'
-
-
+# if os.name != 'nt':
+#    DEFAULT_CFG = '/etc/kunai/local.json'
+# else:
+#    DEFAULT_CFG = 'c:\\kunai\\etc\\local.json'
 
 
 # Commander is the main class for managing the CLI session and behavior
@@ -72,8 +65,7 @@ class CLICommander(object):
         
         self.config = config
 
-        name = config.get('name', '%s' % socket.gethostname())
-        log_dir = config.get('log', '/var/lib/kunai')
+        log_dir = config.get('log', DEFAULT_LOG_DIR)  # '/var/lib/kunai')
         log_level = config.get('log_level', 'INFO')
         # early set the logger part
         logger.load(log_dir, '(cli)')
@@ -91,7 +83,8 @@ class CLICommander(object):
         cli_mods_dir = os.path.dirname(os.path.abspath(cli_mod.__file__))
         
         logger.debug("Loading the cli directory %s" % cli_mods_dir)
-        cli_mods_dirs = [os.path.join(cli_mods_dir, d) for d in os.listdir(cli_mods_dir) if os.path.isdir(os.path.join(cli_mods_dir, d))]
+        cli_mods_dirs = [os.path.join(cli_mods_dir, d) for d in os.listdir(cli_mods_dir) if
+                         os.path.isdir(os.path.join(cli_mods_dir, d))]
 
         # Link the CONFIG objet into the common
         # cli mod
@@ -113,10 +106,10 @@ class CLICommander(object):
                     if len(m_keywords) >= 2:
                         k = m_keywords[1]
                         sub_cmd = m_keywords[0]
-                    e = {'f': f,
-                         'args': v.get('args', []),
+                    e = {'f'          : f,
+                         'args'       : v.get('args', []),
                          'description': v.get('description', ''),
-                         'came_from': sub_cmd}
+                         'came_from'  : sub_cmd}
                     if not sub_cmd in self.keywords:
                         self.keywords[sub_cmd] = {}
                     # Finally save it
@@ -124,32 +117,31 @@ class CLICommander(object):
 
         logger.debug('We load the keywords %s' % self.keywords)
     
-        
+
     # Execute a function based on the command line
     def one_loop(self, command_args):
         logger.debug("ARGS: %s" % command_args)
         sub_cmd = 'global'
-        keyword = ''
-        
+
         # cannot be void because if so won't be in this loop
         if len(command_args) == 1:
             keyword = command_args.pop(0)
         else:
             sub_cmd = command_args.pop(0)
             keyword = command_args.pop(0)
-            
+
         d = self.keywords.get(sub_cmd, None)
         if d is None:
             logger.error('Unknown sub command %s' % sub_cmd)
             return
-            
+
         mod = d.get(keyword, None)
         if mod is None:
             if sub_cmd == 'global':
                 if keyword in self.keywords:
                     # ok it's a known sub part, like collectors, just
                     # print it's own sub commands
-                    self.print_list(keyword)                    
+                    self.print_list(keyword)
                 else:
                     logger.error("UNKNOWN command %s" % keyword)
             else:
@@ -179,7 +171,7 @@ class CLICommander(object):
                 # download_only
                 dest = dest.replace('-', '_')
                 # add_option parameters, common ones
-                d = {'action':'store_true', 'dest':dest, 'help':(description)}
+                d = {'dest': dest, 'help': (description)}
                 # If bool setup it
                 if _type == 'bool':
                     d['action'] = 'store_true'
@@ -190,13 +182,12 @@ class CLICommander(object):
 
         cmd_opts, cmd_args = command_parser.parse_args(command_args)
         f = mod.get('f', None)
-        logger.debug("CALLING" + str(f) + "WITH" + str(cmd_args) + "and" + str(cmd_opts) + str(type(cmd_opts)) + str(dir(cmd_opts)))
+        logger.debug("CALLING " + str(f) + " WITH " + str(cmd_args) + " and " + str(cmd_opts))
         f(*cmd_args, **cmd_opts.__dict__)
 
     
     def print_list(self, keyword=''):
         print "Available commands:"
-        all_from = {}
         sub_cmds = self.keywords.keys()
         sub_cmds.remove('global')
         sub_cmds.sort()
@@ -224,8 +215,7 @@ class CLICommander(object):
                 cprint(': %s' % m['description'])
         return
 
-    
-    
+
 if __name__ == '__main__':
     parser = optparse.OptionParser(
         '',
@@ -237,8 +227,8 @@ if __name__ == '__main__':
                       dest="do_list", help=("List available commands"))
     parser.add_option('-D', action='store_true',
                       dest="do_debug", help=("Enable the debug mode"))
-    parser.add_option('-c', '--config', dest="jsonconfig", default=DEFAULT_CFG,
-                      help=("Path to your local.json file. Default: %s" % DEFAULT_CFG))
+    parser.add_option('-c', '--config', dest="jsonconfig", default=DEFAULT_CFG_FILE,
+                      help=("Path to your local.json file. Default: %s" % DEFAULT_CFG_FILE))
     parser.add_option('-v', action='store_true',
                       dest="do_verbose", help=("Be more verbose"))
     parser.add_option('-h', '--help', action='store_true',
@@ -270,7 +260,7 @@ if __name__ == '__main__':
         try:
             with open(opts.jsonconfig, 'r') as f:
                 CONFIG = json.load(f)
-            logger.debug("Loaded configuration file %s : %s" %(opts.jsonconfig, CONFIG))
+            logger.debug("Loaded configuration file %s : %s" % (opts.jsonconfig, CONFIG))
         except Exception, exp:
             logger.error('Cannot load configuration file %s: %s' % (opts.jsonconfig, exp))
             sys.exit(2)
@@ -279,9 +269,10 @@ if __name__ == '__main__':
 
     # Reset levels if cli setup it
     if opts.do_verbose:
-        logger.setLevel('INFO')    
+        logger.setLevel('INFO')
     if opts.do_debug:
         logger.setLevel('DEBUG')
+
 
     # We should look on the sys.argv if we find a valid keywords to
     # call in one loop or not.
@@ -309,6 +300,7 @@ if __name__ == '__main__':
         logger.debug('Command values %s' % command_values)
         sys.argv = internal_values
         return command_values
+
 
     # We will remove specific commands from the sys.argv list and keep
     # them for parsing them after

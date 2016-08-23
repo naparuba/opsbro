@@ -6,25 +6,20 @@
 #    Gabes Jean, naparuba@gmail.com
 
 
-import os
+
 import sys
 import base64
 import uuid
-#import socket
 import time
 import json
-#import urllib2
-#import urllib
-#import httplib
-#from urlparse import urlsplit
 import socket
+
 try:
     import requests as rq
 except ImportError:
     rq = None
 
 # try pygments for pretty printing if available
-from pprint import pprint
 try:
     import pygments
     import pygments.lexers
@@ -32,13 +27,12 @@ try:
 except ImportError:
     pygments = None
 
-
-from kunai.cluster import Cluster
 from kunai.log import cprint, logger
 from kunai.version import VERSION
 from kunai.launcher import Launcher
 from kunai.unixclient import get_json, get_local, request_errors
-from kunai.cli import get_kunai_json, get_kunai_local, print_info_title, print_2tab, CONFIG
+from kunai.cli import get_kunai_json, get_kunai_local, print_info_title, print_2tab, CONFIG, put_kunai_json
+from kunai.defaultpaths import DEFAULT_LOCK_PATH
 
 # If not requests we should exit because the
 # daemon cannot be in a good shape at all
@@ -47,8 +41,7 @@ if rq is None:
     sys.exit(2)
 
 
-
-############# ********************        MEMBERS management          ****************###########    
+############# ********************        MEMBERS management          ****************###########
 
 def do_members():
     try:
@@ -56,23 +49,38 @@ def do_members():
     except request_errors, exp:
         logger.error('Cannot join kunai agent: %s' % exp)
         sys.exit(1)
-    members = sorted(members, key=lambda e:e['name'])
-    max_name_size = max([ len(m['name']) for m in members ])
-    max_addr_size = max([ len(m['addr']) + len(str(m['port'])) + 1 for m in members ])    
+    members = sorted(members, key=lambda e: e['name'])
+    max_name_size = max([len(m['name']) for m in members])
+    max_addr_size = max([len(m['addr']) + len(str(m['port'])) + 1 for m in members])
+    zones = set()
     for m in members:
-        name = m['name']
-        tags = m['tags']
-        port = m['port']
-        addr = m['addr']
-        state = m['state']
-        cprint('%s  ' % name.ljust(max_name_size), end='')
-        c = {'alive':'green', 'dead':'red', 'suspect':'yellow', 'leave':'cyan'}.get(state, 'cyan')
-        cprint(state, color=c, end='')
-        s = ' %s:%s ' % (addr, port)
-        s = s.ljust(max_addr_size+2) # +2 for the spaces
-        cprint(s, end='')
-        cprint(' %s ' % ','.join(tags))        
-
+        zones.add(m['zone'])
+    zones = list(zones)
+    zones.sort()
+    for z in zones:
+        z_display = z
+        if not z:
+            z_display = '(no zone)'
+        z_display = z_display.ljust(15)
+        cprint('Zone: [', end='')
+        cprint(z_display, color='magenta', end='')
+        cprint(']')
+        for m in members:
+            zone = m['zone']
+            if zone != z:
+                continue
+            name = m['name']
+            tags = m['tags']
+            port = m['port']
+            addr = m['addr']
+            state = m['state']
+            cprint('\t%s  ' % name.ljust(max_name_size), end='')
+            c = {'alive': 'green', 'dead': 'red', 'suspect': 'yellow', 'leave': 'cyan'}.get(state, 'cyan')
+            cprint(state, color=c, end='')
+            s = ' %s:%s ' % (addr, port)
+            s = s.ljust(max_addr_size + 2)  # +2 for the spaces
+            cprint(s, end='')
+            cprint(' %s ' % ','.join(tags))
 
 
 def do_leave(name=''):
@@ -85,7 +93,7 @@ def do_leave(name=''):
             return
         name = r
     try:
-        (code, r) = get_kunai_local('/agent/leave/%s' % name)        
+        (code, r) = get_kunai_local('/agent/leave/%s' % name)
     except request_errors, exp:
         logger.error(exp)
         return
@@ -94,7 +102,7 @@ def do_leave(name=''):
         logger.error('Node %s is missing' % name)
         print r
         return
-    cprint('Node %s is set to leave state' % name,end='')
+    cprint('Node %s is set to leave state' % name, end='')
     cprint(': OK', color='green')
 
 
@@ -110,16 +118,16 @@ def do_state(name=''):
 
     try:
         d = json.loads(r)
-    except ValueError, exp:# bad json
+    except ValueError, exp:  # bad json
         logger.error('Bad return from the server %s' % exp)
         return
 
     print 'Services:'
     for (sname, service) in d['services'].iteritems():
         state = service['state_id']
-        cprint('\t%s ' % sname.ljust(20),end='')
-        c = {0:'green', 2:'red', 1:'yellow', 3:'cyan'}.get(state, 'cyan')
-        state = {0:'OK', 2:'CRITICAL', 1:'WARNING', 3:'UNKNOWN'}.get(state, 'UNKNOWN')
+        cprint('\t%s ' % sname.ljust(20), end='')
+        c = {0: 'green', 2: 'red', 1: 'yellow', 3: 'cyan'}.get(state, 'cyan')
+        state = {0: 'OK', 2: 'CRITICAL', 1: 'WARNING', 3: 'UNKNOWN'}.get(state, 'UNKNOWN')
         cprint('%s - ' % state.ljust(8), color=c, end='')
         output = service['check']['output']
         cprint(output.strip(), color='grey')
@@ -129,32 +137,33 @@ def do_state(name=''):
     cnames.sort()
     part = ''
     for cname in cnames:
-        check = d['checks'][cname]        
+        check = d['checks'][cname]
         state = check['state_id']
         # Show like aggregation like, so look at the first name before /
         cpart = cname.split('/', 1)[0]
         if cpart == part:
-            lname = cname.replace(part, ' '*len(part))
-            cprint('\t%s ' % lname.ljust(20),end='')
+            lname = cname.replace(part, ' ' * len(part))
+            cprint('\t%s ' % lname.ljust(20), end='')
         else:
-            cprint('\t%s ' % cname.ljust(20),end='')
+            cprint('\t%s ' % cname.ljust(20), end='')
         part = cpart
-        c = {0:'green', 2:'red', 1:'yellow', 3:'cyan'}.get(state, 'cyan')
-        state = {0:'OK', 2:'CRITICAL', 1:'WARNING', 3:'UNKNOWN'}.get(state, 'UNKNOWN')
+        c = {0: 'green', 2: 'red', 1: 'yellow', 3: 'cyan'}.get(state, 'cyan')
+        state = {0: 'OK', 2: 'CRITICAL', 1: 'WARNING', 3: 'UNKNOWN'}.get(state, 'UNKNOWN')
         cprint('%s - ' % state.ljust(8), color=c, end='')
         output = check['output']
         cprint(output.strip(), color='grey')
-        
 
 
 def do_version():
     cprint(VERSION)
-    
-    
-    
-    
+
+
 def do_info(show_logs):
-    d = get_kunai_json('/agent/info')
+    try:
+        d = get_kunai_json('/agent/info')
+    except request_errors, exp:
+        logger.error('Cannot join kunai agent: %s' % exp)
+        sys.exit(1)
     
     logs = d.get('logs')
     version = d.get('version')
@@ -162,17 +171,26 @@ def do_info(show_logs):
     name = d.get('name')
     port = d.get('port')
     addr = d.get('addr')
+    zone = d.get('zone')
+    zone_color = 'green'
+    if not zone:
+        zone = '(no zone)'
+        zone_color = 'red'
+    zone_value = {'value': zone, 'color': zone_color}
     nb_threads = d.get('threads')['nb_threads']
-    httpservers = d.get('httpservers', {'internal':None, 'external':None})
+    httpservers = d.get('httpservers', {'internal': None, 'external': None})
     socket_path = d.get('socket')
     _uuid = d.get('uuid')
     graphite = d.get('graphite')
     statsd = d.get('statsd')
     websocket = d.get('websocket')
     dns = d.get('dns')
+    tags = ','.join(d.get('tags'))
     _docker = d.get('docker')
+    collectors = d.get('collectors')
 
-    e = [('name', name), ('uuid',_uuid), ('version', version), ('pid', pid), ('port',port), ('addr',addr), ('socket',socket_path), ('threads', nb_threads)]
+    e = [('name', name), ('uuid', _uuid), ('tags', tags), ('version', version), ('pid', pid), ('port', port), ('addr', addr),
+        ('zone', zone_value), ('socket', socket_path), ('threads', nb_threads)]
 
     # Normal agent information
     print_info_title('Kunai Daemon')
@@ -181,24 +199,26 @@ def do_info(show_logs):
     # Normal agent information
     int_server = httpservers['external']
     if int_server:
-        e = (('threads', int_server['nb_threads']), ('idle_threads', int_server['idle_threads']), ('queue', int_server['queue']) )
+        e = (('threads', int_server['nb_threads']), ('idle_threads', int_server['idle_threads']),
+             ('queue', int_server['queue']))
         print_info_title('HTTP (LAN)')
         print_2tab(e)
 
     # Unix socket http daemon
     int_server = httpservers['internal']
     if int_server:
-        e = (('threads', int_server['nb_threads']), ('idle_threads', int_server['idle_threads']), ('queue', int_server['queue']) )
+        e = (('threads', int_server['nb_threads']), ('idle_threads', int_server['idle_threads']),
+             ('queue', int_server['queue']))
         print_info_title('HTTP (Unix Socket)')
         print_2tab(e)
-        
+
     # Now DNS part
     print_info_title('DNS')
     if dns is None:
         cprint('No dns configured')
     else:
         w = dns
-        e = [('enabled', w['enabled']), ('port', w['port']), ('domain',w['domain']) ]
+        e = [('enabled', w['enabled']), ('port', w['port']), ('domain', w['domain'])]
         print_2tab(e)
     
     # Now websocket part
@@ -208,9 +228,9 @@ def do_info(show_logs):
     else:
         w = websocket
         st = d.get('websocket_info', None)
-        e = [('enabled', w['enabled']), ('port', w['port']) ]
+        e = [('enabled', w['enabled']), ('port', w['port'])]
         if st:
-            e.append( ('Nb connexions', st.get('nb_connexions')) )
+            e.append(('Nb connexions', st.get('nb_connexions')))
         print_2tab(e)
 
     # Now graphite part
@@ -219,7 +239,7 @@ def do_info(show_logs):
         cprint('No graphite configured')
     else:
         g = graphite
-        e = [('enabled', g['enabled']), ('port', g['port']), ('udp', g['udp']), ('tcp', g['tcp']) ]
+        e = [('enabled', g['enabled']), ('port', g['port']), ('udp', g['udp']), ('tcp', g['tcp'])]
         print_2tab(e)
 
     # Now statsd part
@@ -231,39 +251,51 @@ def do_info(show_logs):
         e = [('enabled', s['enabled']), ('port', s['port']), ('interval', s['interval'])]
         print_2tab(e)
 
-
+    # Now collectors part
+    print_info_title('Collectors')
+    cnames = collectors.keys()
+    cnames.sort()
+    e = []
+    for cname in cnames:
+        v = collectors[cname]
+        color = 'green'
+        if not v['active']:
+            color = 'grey'
+        e.append((cname, {'value': v['active'], 'color': color}))
+    print_2tab(e, capitalize=False)
+    
     # Now statsd part
     print_info_title('Docker')
     _d = _docker
     if _d['connected']:
         e = [('enabled', _d['enabled']), ('connected', _d['connected']),
-             ('version',_d['version']), ('api', _d['api']),
-              ('containers', len(_d['containers'])),
+             ('version', _d['version']), ('api', _d['api']),
+             ('containers', len(_d['containers'])),
              ('images', len(_d['images'])),
-        ]
+             ]
     else:
         e = [
-            ('enabled', {'value':_d['enabled'], 'color':'grey'}),
-            ('connected', {'value':_d['connected'], 'color':'grey'}),
-            ]
-            
+            ('enabled', {'value': _d['enabled'], 'color': 'grey'}),
+            ('connected', {'value': _d['connected'], 'color': 'grey'}),
+        ]
+
     print_2tab(e)
     
     # Show errors logs if any
     print_info_title('Logs')
-    errors  = logs.get('ERROR')
+    errors = logs.get('ERROR')
     warnings = logs.get('WARNING')
- 
+
     # Put warning and errors in red/yellow if need only
     e = []
     if len(errors) > 0:
-        e.append( ('error', {'value':len(errors), 'color':'red'}) )
+        e.append(('error', {'value': len(errors), 'color': 'red'}))
     else:
-        e.append( ('error', len(errors)) )
+        e.append(('error', len(errors)))
     if len(warnings) > 0:
-        e.append( ('warning', {'value':len(warnings), 'color':'yellow'}) )
+        e.append(('warning', {'value': len(warnings), 'color': 'yellow'}))
     else:
-        e.append( ('warning', len(warnings)) )
+        e.append(('warning', len(warnings)))
 
     print_2tab(e)
 
@@ -272,26 +304,25 @@ def do_info(show_logs):
             print_info_title('Error logs')
             for s in errors:
                 cprint(s, color='red')
-    
+
         if len(warnings) > 0:
             print_info_title('Warning logs')
             for s in warnings:
                 cprint(s, color='yellow')
-        
+
     logger.debug('Raw information: %s' % d)
-    
-        
-        
+
+
 # Main daemon function. Currently in blocking mode only
-def do_start(daemon):
+def do_start(daemon, cfg_dir):
     cprint('Starting kunai daemon', color='green')
-    lock_path = CONFIG.get('lock', '/var/run/kunai.pid')
-    l = Launcher(lock_path=lock_path)
+    cprint('%s' % cfg_dir)
+    lock_path = CONFIG.get('lock', DEFAULT_LOCK_PATH)
+    l = Launcher(lock_path=lock_path, cfg_dir=cfg_dir)
     l.do_daemon_init_and_start(is_daemon=daemon)
     # Here only the last son reach this
     l.main()
-    
-    
+
 
 def do_stop():
     try:
@@ -300,9 +331,8 @@ def do_stop():
         logger.error(exp)
         return
     cprint(r, color='green')
-    
-    
-    
+
+
 def do_join(seed=''):
     if seed == '':
         logger.error('Missing target argument. For example 192.168.0.1:6768')
@@ -314,7 +344,7 @@ def do_join(seed=''):
         return
     try:
         b = json.loads(r)
-    except ValueError, exp:# bad json
+    except ValueError, exp:  # bad json
         logger.error('Bad return from the server %s' % exp)
         return
     cprint('Joining %s : ' % seed, end='')
@@ -322,7 +352,6 @@ def do_join(seed=''):
         cprint('OK', color='green')
     else:
         cprint('FAILED', color='red')
-
 
 
 def do_keygen():
@@ -347,7 +376,6 @@ def do_keygen():
     print ''
 
 
-
 def do_exec(tag='*', cmd='uname -a'):
     if cmd == '':
         logger.error('Missing command')
@@ -360,22 +388,22 @@ def do_exec(tag='*', cmd='uname -a'):
     print r
     cid = r
     print "Command group launch as cid", cid
-    time.sleep(5) # TODO: manage a real way to get the result..
+    time.sleep(5)  # TODO: manage a real way to get the result..
     try:
         (code, r) = get_kunai_local('/exec-get/%s' % cid)
     except request_errors, exp:
         logger.error(exp)
         return
     j = json.loads(r)
-    #print j
+
     res = j['res']
     for (uuid, e) in res.iteritems():
         node = e['node']
         nname = node['name']
-        color = {'alive':'green', 'dead':'red', 'suspect':'yellow', 'leave':'cyan'}.get(node['state'], 'cyan')
+        color = {'alive': 'green', 'dead': 'red', 'suspect': 'yellow', 'leave': 'cyan'}.get(node['state'], 'cyan')
         cprint(nname, color=color)
         cprint('Return code:', end='')
-        color = {0:'green', 1:'yellow', 2:'red'}.get(e['rc'], 'cyan')
+        color = {0: 'green', 1: 'yellow', 2: 'red'}.get(e['rc'], 'cyan')
         cprint(e['rc'], color=color)
         cprint('Output:', end='')
         cprint(e['output'].strip(), color=color)
@@ -383,86 +411,125 @@ def do_exec(tag='*', cmd='uname -a'):
             cprint('Error:', end='')
             cprint(e['err'].strip(), color='red')
         print ''
-            
 
 
-    
+def do_zone_change(name=''):
+    if not name:
+        print "Need a zone name"
+        return
+    print "Switching to zone", name
+    try:
+        r = put_kunai_json('/agent/zone', name)
+    except request_errors, exp:
+        logger.error(exp)
+        return
+    print_info_title('Result')
+    print r
 
-        
+def do_detect_nodes():
+    # Send UDP broadcast packets
+
+    MYPORT = 6768
+
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.bind(('', 0))
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
+    data = repr(time.time()) + '\n'
+    s.sendto(data, ('255.255.255.255', MYPORT))
+
+
 exports = {
-    do_members : {
-        'keywords': ['members'],
-        'args': [],
+    do_members: {
+        'keywords'   : ['members'],
+        'args'       : [],
         'description': 'List the cluster members'
-        },
+    },
 
-    do_start : {
-        'keywords': ['agent', 'start'],
-        'args': [
-            {'name' : '--daemon', 'type':'bool', 'default':False, 'description':'Start kunai into the background'},
+    do_start  : {
+        'keywords'   : ['agent', 'start'],
+        'args'       : [
+            {'name': '--daemon', 'type': 'bool', 'default': False, 'description': 'Start kunai into the background'},
+            {'name': '--cfg-dir', 'default': '/etc/kunai', 'description': 'Set a specifc configuration file'},
         ],
         'description': 'Start the kunai daemon'
-        },
+    },
 
-    do_stop : {
-        'keywords': ['agent', 'stop'],
-        'args': [],
+    do_stop   : {
+        'keywords'   : ['agent', 'stop'],
+        'args'       : [],
         'description': 'Stop the kunai daemon'
-        },
+    },
 
-    do_version : {
-        'keywords': ['version'],
-        'args': [],
+    do_version: {
+        'keywords'   : ['version'],
+        'args'       : [],
         'description': 'Print the daemon version'
-        },
+    },
 
-    do_info : {
-        'keywords': ['info'],
-        'args': [
-            {'name' : '--show-logs', 'default':False, 'description':'Dump last warning & error logs', 'type':'bool'},
-            ],
+    do_info   : {
+        'keywords'   : ['info'],
+        'args'       : [
+            {'name': '--show-logs', 'default': False, 'description': 'Dump last warning & error logs', 'type': 'bool'},
+        ],
         'description': 'Show info af a daemon'
-        },
+    },
 
     do_keygen : {
-        'keywords': ['keygen'],
-        'args': [],
+        'keywords'   : ['keygen'],
+        'args'       : [],
         'description': 'Generate a encryption key'
-        },
+    },
 
-    do_exec : {
-        'keywords': ['exec'],
-        'args': [
-            {'name' : 'tag', 'default':'', 'description':'Name of the node tag to execute command on'},
-            {'name' : 'cmd', 'default':'uname -a', 'description':'Command to run on the nodes'},
-            ],
+    do_exec   : {
+        'keywords'   : ['exec'],
+        'args'       : [
+            {'name': 'tag', 'default': '', 'description': 'Name of the node tag to execute command on'},
+            {'name': 'cmd', 'default': 'uname -a', 'description': 'Command to run on the nodes'},
+        ],
         'description': 'Execute a command (default to uname -a) on a group of node of the good tag (default to all)'
-        },
+    },
 
-    do_join : {
-        'keywords': ['join'],
+    do_join   : {
+        'keywords'   : ['join'],
         'description': 'Join another node cluster',
-        'args': [
-            {'name' : 'seed', 'default':'', 'description':'Other node to join. For example 192.168.0.1:6768'},
-            ],
-        },
+        'args'       : [
+            {'name': 'seed', 'default': '', 'description': 'Other node to join. For example 192.168.0.1:6768'},
+        ],
+    },
 
-    do_leave : {
-        'keywords': ['leave'],
+    do_leave  : {
+        'keywords'   : ['leave'],
         'description': 'Put in leave a cluster node',
-        'args': [
-            {'name' : 'name', 'default':'', 'description':'Name of the node to force leave. If void, leave our local node'},
-            ],
-        },
+        'args'       : [
+            {'name'       : 'name', 'default': '',
+             'description': 'Name of the node to force leave. If void, leave our local node'},
+        ],
+    },
 
-
-    do_state : {
-        'keywords': ['state'],
+    do_state  : {
+        'keywords'   : ['state'],
         'description': 'Print the state of a node',
-        'args': [
-            {'name' : 'name', 'default':'', 'description':'Name of the node to print state. If void, take our localhost one'},
-            ],
-        },
+        'args'       : [
+            {'name'       : 'name', 'default': '',
+             'description': 'Name of the node to print state. If void, take our localhost one'},
+        ],
+    },
     
-
-    }
+    do_zone_change: {
+        'keywords'   : ['zone', 'change'],
+        'args'       : [
+            {'name': 'name', 'default': '', 'description': 'Change to the zone'},
+        ],
+        'description': 'Change the zone of the node'
+    },
+    
+    do_detect_nodes: {
+        'keywords'   : ['agent', 'detect'],
+        'args'       : [],
+        'description': 'Try to detect (broadcast) others nodes in the network'
+    },
+    
+}

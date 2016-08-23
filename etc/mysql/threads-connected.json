@@ -1,7 +1,0 @@
-{
-    "check": {
-	"apply_on": "mysql",
-        "script": "$nagiosplugins$/check_mysql_health --user $mysql.user$ --password $mysql.password$ --mode threads-connected",
-        "interval": "60s"
-    }
-}

@@ -1,7 +1,0 @@
-{
-    "check": {
-	"apply_on": "linux",
-        "script": "$nagiosplugins$/check_libs",
-        "interval": "60s"
-    }
-}

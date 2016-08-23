@@ -11,14 +11,20 @@ Prereqs
 
 You will need:
 
-  * python >= 2.6 (but not 3)
+  * python >= 2.6 (but not 3 currently)
   * python-leveldb
   * python-requests
   * python-jinja2 
   * python-cherrypy3
-  * python-rsa
-  * python-pyasn1
 
+
+On linux:
+
+  * sysstat
+
+To monitor mongodb server:
+
+  * python-pymongo
 
 
 
@@ -42,15 +48,6 @@ You can also launch it in foreground:
    kunai agent start
 
 
-Terminology
-===========
-
-This project reuse Consul terminology (node, service, etc) which is very different to Nagios/Shinken standard:
-  * node: a server where you install the agent (similar to nagios/shinken host)
-  * check: something that look for a specific state (OK/WARNING/CRITICAL/UNKNOWN), like CPU, memory or disk space. It's not exported to other hosts  (similar to nagios/shinken services)
-  * service: object that expose an important application state to the other nodes (like for example mysql state). It need a check to do the actual check. This data is shared with all others nodes. (no equivalent in nagios/shinken).
- 
-
 How to get agent informations (pid, port, state, etc)
 =====================================================
 
@@ -60,7 +57,7 @@ Just launch:
    kunai info
 
 
-Is there an UI available?
+Is there an UI avialable?
 =========================
 
 Yes. There is a UI available in the /var/lib/kuani/ui/ directory. It's just flat files and so you can just export the directory with apache/nginx and play with it.
@@ -87,10 +84,18 @@ And you will see the new node on the UI if you enable it
 
 
 
+How to see collected data? (metrology)
+======================================
+
+The kunai agent is by default getting lot of metrology data from your OS and applications. It's done by "collctors" objets. You can easily list them and look at the colelcted data by launching:
+
+  kunai collectors show
+
+
 How to see docker performance informations?
 ===========================================
 
-If docker is launched on your server, Kunai will get data from it, images and performances.
+If docker is launched on your server, Kunai will get data from it, like colelctors, images and performances.
 
 To list all of this just launch:
 
@@ -104,16 +109,5 @@ Just launch:
   
   kunai agent stop
 
-
-Which checks packs/tags are available?
-======================================
-
-Kunai is bundle with some packs, just add them as tag and checks and services will be enable
-
-  * linux
-  * debian
-  * redis
-  * mongodb
-  * mysql
 
 

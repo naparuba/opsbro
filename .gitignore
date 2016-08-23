@@ -5,7 +5,10 @@ __pycache__/
 .#*
 *#*
 
+# emacs files
 *~
+# pycharm
+.idea/
 
 # C extensions
 *.so

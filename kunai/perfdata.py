@@ -3,13 +3,13 @@
 # -*- coding: utf-8 -*-
 
 
-#==> need to rewrite or at least have a common lib with shinken or nagios
+# ==> need to rewrite or at least have a common lib with shinken or nagios
 
 import re
 
-
 perfdata_split_pattern = re.compile('([^=]+=\S+)')
-metric_pattern = re.compile('^([^=]+)=([\d\.\-\+eE]+)([\w\/%]*);?([\d\.\-\+eE:~@]+)?;?([\d\.\-\+eE:~@]+)?;?([\d\.\-\+eE]+)?;?([\d\.\-\+eE]+)?;?\s*')
+metric_pattern = re.compile(
+    '^([^=]+)=([\d\.\-\+eE]+)([\w\/%]*);?([\d\.\-\+eE:~@]+)?;?([\d\.\-\+eE:~@]+)?;?([\d\.\-\+eE]+)?;?([\d\.\-\+eE]+)?;?\s*')
 
 
 def to_best_int_float(val):
@@ -49,13 +49,14 @@ class Metric:
             if self.uom == '%':
                 self.min = 0
                 self.max = 100
-
+    
+    
     def __str__(self):
         s = "%s=%s%s" % (self.name, self.value, self.uom)
         if self.warning:
-            s = s + ";%s" % (self.warning)
+            s += ";%s" % self.warning
         if self.critical:
-            s = s + ";%s" % (self.critical)
+            s += ";%s" % self.critical
         return s
 
 
@@ -69,16 +70,19 @@ class PerfDatas:
             m = Metric(e)
             if m.name is not None:
                 self.metrics[m.name] = m
-
+    
+    
     def __iter__(self):
         return self.metrics.itervalues()
-
+    
+    
     def __len__(self):
         return len(self.metrics)
-
+    
+    
     def __getitem__(self, key):
         return self.metrics[key]
-
+    
+    
     def __contains__(self, key):
         return key in self.metrics
-

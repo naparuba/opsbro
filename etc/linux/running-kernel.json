@@ -1,7 +1,0 @@
-{
-    "check": {
-	"apply_on": "linux",
-        "script": "$nagiosplugins$/check_running_kernel",
-        "interval": "60s"
-    }
-}

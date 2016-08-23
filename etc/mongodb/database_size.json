@@ -1,7 +1,0 @@
-{
-    "check": {
-	"apply_on": "mongodb",	
-        "script": "$nagiosplugins$/check_mongodb -D -A database_size",
-        "interval": "60s"
-    }
-}

@@ -1,7 +1,0 @@
-{
-    "check": {
-	"apply_on": "mongodb",	
-        "script": "$nagiosplugins$/check_mongodb -D -A queries_per_second",
-        "interval": "60s"
-    }
-}

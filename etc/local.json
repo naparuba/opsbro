@@ -13,46 +13,14 @@
     "lock"           : "/var/run/kunai.lock",
     
     "socket"         : "/var/lib/kunai/kunai.sock",
-    
+
     "log_level"      : "INFO",
     
     "encryption_key" : "",
-    "master_key_priv": "mfkey.priv",
-    "master_key_pub" : "mfkey.pub",
+    "master_key_priv": "",
+    "master_key_pub" : "",
     
     
-    "nagiosplugins": "/usr/lib/nagios/plugins/",
-    
-    "mysql" : {"user":"root",
-	       "password":"root"
-	      },
-
-    "mailq" : {
-	"warning": 1,
-	"critical": 2
-    },
-
-    "linux": {
-	"disks": {
-	    "warning": 10,
-	    "critical": 5
-	},
-	
-	"load-average":{
-	    "warning": 0.9,
-	    "critical": 1.5
-	},
-	
-	"memory":{
-	    "warning": 10,
-	    "critical": 5
-	},
-	
-	"swap":{
-	    "warning": 90,
-	    "critical": 80
-	}
-    }
-
+    "load":{"warning":1, "critical":2}
     
 }

@@ -1,0 +1,8 @@
+{
+    "detector": {
+        "tags": ["debian"],
+        "apply_if": "grep('debian', '/etc/os-release')",
+        "interval": "10s"
+    }
+}
+
