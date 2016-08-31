@@ -119,6 +119,7 @@ class Logger(object):
                 f = open(os.path.join(self.data_dir, '%s.log' % part), 'a')
                 self.logs[part] = f
             f.write(s + '\n')
+            f.flush()
     
     
     def do_debug(self, *args, **kwargs):

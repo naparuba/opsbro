@@ -1,0 +1,5 @@
+{
+    "shinken": {
+        "cfg_path": "/etc/shinken/agent"
+  }
+}

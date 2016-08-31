@@ -15,6 +15,7 @@ from kunai.pubsub import pubsub
 from kunai.httpdaemon import route, response, abort
 from kunai.encrypter import encrypter
 
+
 KGOSSIP = 10
 
 
@@ -83,7 +84,17 @@ class Gossip(object):
                 'services'   : {}, 'zone': self.zone}
         return node
     
-    
+
+    # Definitivly remove a node from our list, and warn others about it
+    def delete_node(self, nid):
+        try:
+            del self.nodes[nid]
+            pubsub.pub('delete-node', node_uuid=nid)
+        except IndexError:  # not here? it was was we want
+            pass
+        
+
+
     ############# Main new state handling methods
     
     # Set alive a node we eart about. 
@@ -593,7 +604,6 @@ class Gossip(object):
         
         # print "SUSPECT timeout", suspect_timeout
         now = int(time.time())
-        nodes = {}
         with self.nodes_lock:
             for node in self.nodes.values():
                 # Only look at suspect nodes of course...
@@ -608,28 +618,25 @@ class Gossip(object):
         
         # Now for leave nodes, this time we will really remove the entry from our nodes
         to_del = []
-        for (uuid, node) in nodes.iteritems():
-            # Only look at suspect nodes of course...
-            if node['state'] != 'leave':
-                continue
-            ltime = node.get('leave_time', now)
-            print "LEAVE TIME", node['name'], ltime, now - leave_timeout, (now - leave_timeout) - ltime
-            if ltime < (now - leave_timeout):
-                logger.log("LEAVE: NODE", node['name'], node['incarnation'], node['state'],
-                           "is now definitivly leaved. We remove it from our nodes", part='gossip')
-                to_del.append(uuid)
+        with self.nodes_lock:
+            for node in self.nodes.values():
+                # Only look at suspect nodes of course...
+                if node['state'] != 'leave':
+                    continue
+                ltime = node.get('leave_time', now)
+                logger.debug("LEAVE TIME for node %s %s %s %s" % (node['name'], ltime, now - leave_timeout, (now - leave_timeout) - ltime), part='gossip')
+                if ltime < (now - leave_timeout):
+                    logger.log("LEAVE: NODE", node['name'], node['incarnation'], node['state'],
+                               "is now definitivly leaved. We remove it from our nodes", part='gossip')
+                    to_del.append(node['uuid'])
         # now really remove them from our list :)
         for uuid in to_del:
-            try:
-                del self.nodes[uuid]
-            except IndexError:  # not here? it was was we want
-                pass
+            self.delete_node(uuid)
                 
                 
                 
                 
-                ########## Message managment
-    
+    ########## Message managment
     
     def create_alive_msg(self, node):
         return {'type'       : 'alive', 'name': node['name'], 'addr': node['addr'], 'port': node['port'],

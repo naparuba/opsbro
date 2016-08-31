@@ -40,6 +40,7 @@ if rq is None:
     logger.error('Missing python-requests lib, please install it')
     sys.exit(2)
 
+NO_ZONE_DEFAULT = '(no zone)'
 
 ############# ********************        MEMBERS management          ****************###########
 
@@ -54,19 +55,23 @@ def do_members():
     max_addr_size = max([len(m['addr']) + len(str(m['port'])) + 1 for m in members])
     zones = set()
     for m in members:
-        zones.add(m['zone'])
+        mzone = m.get('zone', '')
+        if mzone == '':
+            mzone = NO_ZONE_DEFAULT
+        m['zone'] = mzone  # be sure to fix broken zones
+        zones.add(mzone)
     zones = list(zones)
     zones.sort()
     for z in zones:
         z_display = z
         if not z:
-            z_display = '(no zone)'
+            z_display = NO_ZONE_DEFAULT
         z_display = z_display.ljust(15)
         cprint('Zone: [', end='')
         cprint(z_display, color='magenta', end='')
         cprint(']')
         for m in members:
-            zone = m['zone']
+            zone = m.get('zone', NO_ZONE_DEFAULT)
             if zone != z:
                 continue
             name = m['name']
@@ -76,7 +81,7 @@ def do_members():
             state = m['state']
             cprint('\t%s  ' % name.ljust(max_name_size), end='')
             c = {'alive': 'green', 'dead': 'red', 'suspect': 'yellow', 'leave': 'cyan'}.get(state, 'cyan')
-            cprint(state, color=c, end='')
+            cprint(state.ljust(7), color=c, end='')  # 7 for the maximum state string
             s = ' %s:%s ' % (addr, port)
             s = s.ljust(max_addr_size + 2)  # +2 for the spaces
             cprint(s, end='')
@@ -174,7 +179,7 @@ def do_info(show_logs):
     zone = d.get('zone')
     zone_color = 'green'
     if not zone:
-        zone = '(no zone)'
+        zone = NO_ZONE_DEFAULT
         zone_color = 'red'
     zone_value = {'value': zone, 'color': zone_color}
     nb_threads = d.get('threads')['nb_threads']
