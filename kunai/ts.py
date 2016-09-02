@@ -34,7 +34,7 @@ class UDPSender(object):
         T0 = time.time()
         STATS.incr('ts.graphite.push-key', 1)
         v64 = base64.b64encode(v)
-        logger.debug("PUSH KEY", k, "and value", len(v64))
+        logger.debug("PUSH KEY", k, "and value", len(v64), part='ts')
         # self.clust.put_key(k, v64, allow_udp=True, ttl=ttl)
         self.clust.stack_put_key(k, v64, ttl=ttl)
         STATS.timer('ts.graphite.push-key', (time.time() - T0) * 1000)
@@ -63,7 +63,7 @@ class TSBackend(object):
             self.db.Get(key, fill_cache=False)
         except KeyError:
             self.db.Put(key, '')
-            logger.debug('TS propagating a new key', key)
+            logger.debug('TS propagating a new key', key, part='ts')
             # now propagate the key to the other ts nodes
             self.clust.gossip.stack_new_ts_broadcast(key)
         return False
@@ -270,7 +270,7 @@ class TSBackend(object):
     # The reaper thread look at old minute objects that are not updated since long, and
     # force to archive them
     def launch_reaper_thread(self):
-        threader.create_and_launch(self.do_reaper_thread, name='TS-reaper-thread')
+        threader.create_and_launch(self.do_reaper_thread, name='TS-reaper-thread', essential=True)
     
     
     def do_reaper_thread(self):
@@ -281,7 +281,7 @@ class TSBackend(object):
             all_names = []
             with self.data_lock:
                 all_names = self.data.keys()
-            logger.info("DOING reaper thread on %d elements" % len(all_names))
+            logger.info("DOING reaper thread on %d elements" % len(all_names), part='ts')
             for name in all_names:
                 # Grok all minute entries
                 if name.startswith('min::'):
@@ -290,12 +290,12 @@ class TSBackend(object):
                     if e is None:
                         continue
                     ctime = e['ctime']
-                    logger.debug("REAPER old data for ", name)
+                    logger.debug("REAPER old data for ", name, part='ts')
                     # if the creation time of this structure is too old and
                     # really for data, force to save the entry in KV entry
                     if ctime < now - self.max_data_age and e['nb'] > 0:
                         STATS.incr('reaper-old-data', 1)
-                        logger.debug("REAPER TOO OLD DATA FOR", name)
+                        logger.debug("REAPER TOO OLD DATA FOR", name, part='ts')
                         # get the raw metric name
                         _id = name[5:]
                         self.archive_minute(e, _id)
@@ -355,13 +355,13 @@ class TSListener(object):
         
         # Now start our threads
         # STATSD
-        threader.create_and_launch(self.launch_statsd_udp_listener, name='TSL_statsd_thread')
-        threader.create_and_launch(self.launch_compute_stats_thread, name='TSC_thread')
+        threader.create_and_launch(self.launch_statsd_udp_listener, name='TSL_statsd_thread', essential=True)
+        threader.create_and_launch(self.launch_compute_stats_thread, name='TSC_thread', essential=True)
         # GRAPHITE
-        threader.create_and_launch(self.launch_graphite_udp_listener, name='TSL_graphite_udp_thread')
-        threader.create_and_launch(self.launch_graphite_tcp_listener, name='TSL_graphite_tcp_thread')
+        threader.create_and_launch(self.launch_graphite_udp_listener, name='TSL_graphite_udp_thread', essential=True)
+        threader.create_and_launch(self.launch_graphite_tcp_listener, name='TSL_graphite_tcp_thread', essential=True)
         
-        threader.create_and_launch(self.graphite_reaper, name='graphite-reaper-thread')
+        threader.create_and_launch(self.graphite_reaper, name='graphite-reaper-thread', essential=True)
     
     
     def log(self, *args):
@@ -391,7 +391,7 @@ class TSListener(object):
     
     def compute_stats(self):
         now = int(time.time())
-        logger.debug("Computing stats")
+        logger.debug("Computing stats", part='ts')
         names = []
         
         # First gauges, we take the data and put a void dict instead so the other thread can work now
@@ -486,21 +486,21 @@ class TSListener(object):
         self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
         self.udp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 1048576)
         self.udp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.log(self.udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF))
+        logger.debug(self.udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF), part='ts')
         self.udp_sock.bind((self.addr, self.statsd_port))
-        self.log("TS UDP port open", self.statsd_port)
-        self.log("UDP RCVBUF", self.udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF))
+        logger.info("TS UDP port open", self.statsd_port, part='ts')
+        logger.debug("UDP RCVBUF", self.udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF), part='ts')
         while True:  # not self.interrupted:
             try:
                 data, addr = self.udp_sock.recvfrom(65535)  # buffer size is 1024 bytes
             except socket.timeout:  # loop until we got something
                 continue
             
-            self.log("UDP: received message:", data, addr)
+            logger.debug("UDP: received message:", data, addr, part='ts')
             # No data? bail out :)
             if len(data) == 0:
                 continue
-            self.log("GETDATA", data)
+            logger.debug("GETDATA", data, part='ts')
             
             for line in data.splitlines():
                 # avoid invalid lines
@@ -564,13 +564,13 @@ class TSListener(object):
                         if _max is None or value > _max:
                             _max = value
                         self.gauges[mname] = (_sum, nb, _min, _max)
-                        self.log('NEW GAUGE', mname, self.gauges[mname])
+                        logger.debug('NEW GAUGE', mname, self.gauges[mname], part='ts')
                 
                 ## Timers: <metric name>:<value>|ms
                 ## But also
                 ## Histograms: <metric name>:<value>|h
                 elif _type == 'ms' or _type == 'h':
-                    self.log('timers', mname, value)
+                    logger.debug('timers', mname, value, part='ts')
                     # TODO: avoit the SET each time
                     timer = self.timers.get(mname, [])
                     timer.append(value)
@@ -578,14 +578,14 @@ class TSListener(object):
                 ## Counters: <metric name>:<value>|c[|@<sample rate>]
                 elif _type == 'c':
                     self.nb_data += 1
-                    self.log('COUNTER', mname, value, "rate", 1)
+                    logger.info('COUNTER', mname, value, "rate", 1, part='ts')
                     with self.stats_lock:
                         cvalue, ccount = self.counters.get(mname, (0, 0))
                         self.counters[mname] = (cvalue + value, ccount + 1)
-                        self.log('NEW COUNTER', mname, self.counters[mname])
+                        logger.debug('NEW COUNTER', mname, self.counters[mname], part='ts')
                         ## Meters: <metric name>:<value>|m
                 elif _type == 'm':
-                    self.log('METERs', mname, value)
+                    logger.debug('METERs', mname, value, part='ts')
                 else:  # unknow type, maybe a c[|@<sample rate>]
                     if _type[0] == 'c':
                         self.nb_data += 1
@@ -601,12 +601,12 @@ class TSListener(object):
                         # Invalid rate, 0.0 is invalid too ;)
                         if rate <= 0.0 or rate > 1.0:
                             continue
-                        self.log('COUNTER', mname, value, "rate", rate)
+                        logger.debug('COUNTER', mname, value, "rate", rate, part='ts')
                         with self.stats_lock:
                             cvalue, ccount = self.counters.get(mname, (0, 0))
-                            self.log('INCR counter', (value / rate))
+                            logger.debug('INCR counter', (value / rate), part='ts')
                             self.counters[mname] = (cvalue + (value / rate), ccount + 1 / rate)
-                            self.log('NEW COUNTER', mname, self.counters[mname])
+                            logger.debug('NEW COUNTER', mname, self.counters[mname], part='ts')
     
     
     # Thread for listening to the graphite port in UDP (2003)
@@ -616,14 +616,14 @@ class TSListener(object):
         self.graphite_udp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 1048576)
         self.log(self.graphite_udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF))
         self.graphite_udp_sock.bind((self.addr, self.graphite_port))
-        self.log("TS Graphite UDP port open", self.graphite_port)
-        self.log("UDP RCVBUF", self.graphite_udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF))
+        logger.info("TS Graphite UDP port open", self.graphite_port, part='ts')
+        logger.debug("UDP RCVBUF", self.graphite_udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF), part='ts')
         while True:  # not self.interrupted:
             try:
                 data, addr = self.graphite_udp_sock.recvfrom(65535)
             except socket.timeout:  # loop until we got some data
                 continue
-            self.log("UDP Graphite: received message:", len(data), addr)
+            logger.debug("UDP Graphite: received message:", len(data), addr, part='ts')
             STATS.incr('ts.graphite.udp.receive', 1)
             self.graphite_queue.append(data)
     
@@ -636,7 +636,7 @@ class TSListener(object):
         self.graphite_tcp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 1048576)
         self.graphite_tcp_sock.bind((self.addr, self.graphite_port))
         self.graphite_tcp_sock.listen(5)
-        self.log("TS Graphite TCP port open", self.graphite_port)
+        logger.info("TS Graphite TCP port open", self.graphite_port, part='ts')
         while True:
             try:
                 conn, addr = self.graphite_tcp_sock.accept()
@@ -698,7 +698,7 @@ class TSListener(object):
             ts_node_manager = self.clust.find_ts_node(hkey)
             # if it's me that manage this key, I add it in my backend
             if ts_node_manager == self.clust.uuid:
-                logger.debug("I am the TS node manager")
+                logger.debug("I am the TS node manager", part='ts')
                 try:
                     timestamp = int(timestamp)
                 except ValueError:
@@ -709,7 +709,7 @@ class TSListener(object):
                 self.tsb.add_value(timestamp, mname, value)
             # not me? stack a forwarder
             else:
-                logger.debug("The node manager for this Ts is ", ts_node_manager)
+                logger.debug("The node manager for this Ts is ", ts_node_manager, part='ts')
                 l = forwards.get(ts_node_manager, [])
                 l.append(line)
                 forwards[ts_node_manager] = l

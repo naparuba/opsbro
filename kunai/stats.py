@@ -1,7 +1,7 @@
 import socket
 
 UDP_IP = "192.168.56.104"
-UDP_PORT = 8125
+UDP_PORT = 18125  # curently disable
 
 
 ### Don't espect this part to work on your server without modifing the IP :)

@@ -44,6 +44,8 @@ class Gossip(object):
         # export my http uri now I got a real self
         self.export_http()
     
+        self.ping_another_in_progress = False
+    
     
     def __getitem__(self, uuid):
         return self.nodes[uuid]
@@ -394,6 +396,11 @@ class Gossip(object):
     # but talk to us
     # also exclude leave node, because thay said they are not here anymore ^^
     def ping_another(self):
+        # Only launch one parallel ping in the same time, max2 if we have thread
+        # that mess up with this flag :)
+        if self.ping_another_in_progress:
+            return
+        self.ping_another_in_progress = True
         # print "PING ANOTHER"
         nodes = {}
         with self.nodes_lock:
@@ -411,7 +418,8 @@ class Gossip(object):
         if len(others) >= 1:
             other = random.choice(others)
             self.do_ping(other)
-    
+        # Ok we did finish to ping another
+        self.ping_another_in_progress = False
     
     # Launch a ping to another node and if fail set it as suspect
     def do_ping(self, other):
@@ -435,7 +443,6 @@ class Gossip(object):
         except (socket.timeout, socket.gaierror), exp:
             logger.debug("PING: error joining the other node %s:%s : %s" % (addr, port, exp), part='gossip')
             logger.debug("PING: go indirect mode", part='gossip')
-            possible_relays = []
             with self.nodes_lock:
                 possible_relays = [n for n in self.nodes.values() if
                                    n['uuid'] != self.uuid and n != other and n['state'] == 'alive']

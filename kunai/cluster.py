@@ -385,7 +385,7 @@ class Cluster(object):
         
         self.put_key_buffer = []
         # Launch a thread that will reap all put key asked by the udp
-        self.put_key_reaper_thread = threader.create_and_launch(self.put_key_reaper, name='put-key-reaper')
+        self.put_key_reaper_thread = threader.create_and_launch(self.put_key_reaper, name='put-key-reaper', essential=True)
         
         # Execs launch as threads
         self.execs = {}
@@ -1023,29 +1023,29 @@ class Cluster(object):
     
     
     def launch_check_thread(self):
-        self.check_thread = threader.create_and_launch(self.do_check_thread, name='check-thread')
+        self.check_thread = threader.create_and_launch(self.do_check_thread, name='check-thread', essential=True)
     
     
     def launch_collector_thread(self):
-        self.collector_thread = threader.create_and_launch(collectormgr.do_collector_thread, name='collector-thread')
+        self.collector_thread = threader.create_and_launch(collectormgr.do_collector_thread, name='collector-thread', essential=True)
     
     
     def launch_generator_thread(self):
-        self.generator_thread = threader.create_and_launch(self.do_generator_thread, name='generator-thread')
+        self.generator_thread = threader.create_and_launch(self.do_generator_thread, name='generator-thread', essential=True)
     
     
     def launch_detector_thread(self):
-        self.detector_thread = threader.create_and_launch(detecter.do_detector_thread, name='detector-thread')
+        self.detector_thread = threader.create_and_launch(detecter.do_detector_thread, name='detector-thread', essential=True)
     
     
     def launch_replication_backlog_thread(self):
         self.replication_backlog_thread = threader.create_and_launch(self.do_replication_backlog_thread,
-                                                                     name='replication-backlog-thread')
+                                                                     name='replication-backlog-thread', essential=True)
     
     
     def launch_replication_first_sync_thread(self):
         self.replication_first_sync_thread = threader.create_and_launch(self.do_replication_first_sync_thread,
-                                                                        name='replication-first-sync-thread')
+                                                                        name='replication-first-sync-thread', essential=True)
     
     
     def launch_listeners(self):
@@ -3053,7 +3053,7 @@ Subject: %s
                                  part='gossip')
             
             if i % 15 == 0:
-                threader.create_and_launch(self.gossip.launch_full_sync, name='launch-full-sync')
+                threader.create_and_launch(self.gossip.launch_full_sync, name='launch-full-sync', essential=True)
             
             if i % 2 == 1:
                 threader.create_and_launch(self.gossip.ping_another, name='ping-another')
