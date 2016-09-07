@@ -1,9 +1,8 @@
-
 # Starting a pub-sub system for global set
 class PubSub(object):
     def __init__(self):
         self.registered = {}
-
+    
     
     # Subscribe to a thread
     def sub(self, k, f):

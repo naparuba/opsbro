@@ -15,7 +15,6 @@ from kunai.pubsub import pubsub
 from kunai.httpdaemon import route, response, abort
 from kunai.encrypter import encrypter
 
-
 KGOSSIP = 10
 
 
@@ -43,7 +42,7 @@ class Gossip(object):
         self.set_alive(myself, bootstrap=True)
         # export my http uri now I got a real self
         self.export_http()
-    
+        
         self.ping_another_in_progress = False
     
     
@@ -86,7 +85,7 @@ class Gossip(object):
                 'services'   : {}, 'zone': self.zone}
         return node
     
-
+    
     # Definitivly remove a node from our list, and warn others about it
     def delete_node(self, nid):
         try:
@@ -94,9 +93,22 @@ class Gossip(object):
             pubsub.pub('delete-node', node_uuid=nid)
         except IndexError:  # not here? it was was we want
             pass
-        
-
-
+    
+    
+    # Got a new node, great! Warn others about this
+    def add_new_node(self, node):
+        logger.info("New node detected", node, part='gossip')
+        nuuid = node['uuid']
+        # Add the node but in a protected mode
+        with self.nodes_lock:
+            self.nodes[nuuid] = node
+        # Warn network elements
+        self.stack_alive_broadcast(node)
+        # And finally callback other part of the code about this
+        pubsub.pub('new-node', node_uuid=nuuid)
+        return
+    
+    
     ############# Main new state handling methods
     
     # Set alive a node we eart about. 
@@ -118,11 +130,7 @@ class Gossip(object):
         
         # Maybe it's a new node that just enter the cluster?
         if uuid not in self.nodes:
-            logger.info("New node detected", node, part='gossip')
-            # Add the node but in a protected mode
-            with self.nodes_lock:
-                self.nodes[uuid] = node
-            self.stack_alive_broadcast(node)
+            self.add_new_node(node)
             return
         
         prev = self.nodes.get(uuid, None)
@@ -421,6 +429,7 @@ class Gossip(object):
         # Ok we did finish to ping another
         self.ping_another_in_progress = False
     
+    
     # Launch a ping to another node and if fail set it as suspect
     def do_ping(self, other):
         ping_payload = {'type': 'ping', 'seqno': 0, 'node': other['uuid'], 'from': self.uuid}
@@ -639,10 +648,8 @@ class Gossip(object):
         # now really remove them from our list :)
         for uuid in to_del:
             self.delete_node(uuid)
-                
-                
-                
-                
+    
+    
     ########## Message managment
     
     def create_alive_msg(self, node):

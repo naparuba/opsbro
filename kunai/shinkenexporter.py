@@ -1,15 +1,13 @@
 import os
-import json
 import glob
 import time
 import shutil
-import threading
 import hashlib
-from kunai.stats import STATS
 from kunai.log import logger
 from kunai.pubsub import pubsub
 from kunai.threadmgr import threader
 from kunai.stop import stopper
+
 
 class ShinkenExporter(object):
     def __init__(self):
@@ -19,7 +17,7 @@ class ShinkenExporter(object):
         self.gossiper = None
         # register to node events
         pubsub.sub('new-node', self.new_node_callback)
-        pubsub.sub('delete-node', self.new_node_callback)
+        pubsub.sub('delete-node', self.delete_node_callback)
     
     
     def load_cfg_path(self, cfg_path):
@@ -36,14 +34,14 @@ class ShinkenExporter(object):
     
     
     def new_node_callback(self, node_uuid=None):
-        self.node_changes.append( ('new-node', node_uuid) )
+        self.node_changes.append(('new-node', node_uuid))
         self.regenerate_flag = True
-
-
+    
+    
     def delete_node_callback(self, node_uuid=None):
-        self.node_changes.append( ('delete-node', node_uuid) )
+        self.node_changes.append(('delete-node', node_uuid))
         self.regenerate_flag = True
-
+    
     
     def __get_node_cfg_sha_paths(self, nid):
         cfg_p = os.path.join(self.cfg_path, nid + '.cfg')
@@ -148,7 +146,7 @@ class ShinkenExporter(object):
             self.generate_node_file(n)
         
         while not stopper.interrupted:
-            logger.debug('Shinken loop', part='shinken')
+            logger.debug('Shinken loop, regenerate [%s]' % self.regenerate_flag, part='shinken')
             time.sleep(1)
             # If not initialize, skip loop
             if self.cfg_path is None or self.gossiper is None:
@@ -156,6 +154,7 @@ class ShinkenExporter(object):
             # If nothing to do, skip it too
             if not self.regenerate_flag:
                 continue
+            logger.info('Shinken callback raised, managing events: %s' % self.node_changes, part='shinken')
             # Set that we will manage all now
             self.regenerate_flag = False
             node_ids = self.node_changes
@@ -167,8 +166,9 @@ class ShinkenExporter(object):
                         continue
                     logger.info('Manage new node %s' % n, part='shinken')
                     self.generate_node_file(n)
-                if evt == 'delete-node':
-                    logger.info('Removing deleted node %s' % nid)
+                elif evt == 'delete-node':
+                    logger.info('Removing deleted node %s' % nid, part='shinken')
                     self.clean_node_files(nid)
+
 
 shinkenexporter = ShinkenExporter()

@@ -23,7 +23,7 @@ class TTLDatabase(object):
         if not os.path.exists(self.ttldb_dir):
             os.mkdir(self.ttldb_dir)
         # Launch a thread that will look once a minute the old entries
-        threader.create_and_launch(self.ttl_cleaning_thread, name='ttl-cleaning-thread')
+        threader.create_and_launch(self.ttl_cleaning_thread, name='ttl-cleaning-thread', essential=True)
     
     
     # Load the hour ttl/H base where we will save all master

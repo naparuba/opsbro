@@ -414,14 +414,13 @@ class Cluster(object):
         # About detecting tags and such things
         detecter.load(self)
         detecter.export_http()
-    
+        
         # Start shinken exproter thread
         shinkenexporter.load_gossiper(self.gossip)
         shinkenexporter.launch_thread()
         
         # get the message in a pub-sub way
         pubsub.sub('manage-message', self.manage_message_pub)
-    
     
     
     # Try to guess uuid, but only if a constant one is here
@@ -585,18 +584,18 @@ class Cluster(object):
                 logger.log('ERROR: the statsd from the file %s is not a valid dict' % fp)
                 sys.exit(2)
             self.statsd = statsd
-
+        
         if 'shinken' in o:
             shinken = o['shinken']
             if not isinstance(shinken, dict):
                 logger.log('ERROR: the shinken from the file %s is not a valid dict' % fp)
                 sys.exit(2)
-    
+            
             mod_time = int(os.path.getmtime(fp))
             fname = fp[len(self.cfg_dir) + 1:]
             gname = os.path.splitext(fname)[0]
             self.import_shinken(shinken, fname, gname, mod_time=mod_time)
-
+        
         if 'websocket' in o:
             websocket = o['websocket']
             if not isinstance(websocket, dict):
@@ -835,8 +834,8 @@ class Cluster(object):
         
         # Add it into the generators list
         self.generators[generator['id']] = generator
-
-
+    
+    
     # Shinken will create files based on templates from
     # data and nodes after a change on a node
     def import_shinken(self, shinken, fr, gname, mod_time=0):
@@ -848,8 +847,8 @@ class Cluster(object):
         # and path must be a abs path
         cfg_path = os.path.abspath(cfg_path)
         shinkenexporter.load_cfg_path(cfg_path)
-
-
+    
+    
     # Detectors will run rules based on collectors and such things, and will tag the local node
     # if the rules are matching
     def import_detector(self, detector, fr, gname, mod_time=0):
