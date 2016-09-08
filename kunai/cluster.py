@@ -844,9 +844,11 @@ class Cluster(object):
                 logger.warning('Bad shinken definition, missing property %s' % (prop))
                 return
         cfg_path = shinken['cfg_path']
+        reload_command = shinken.get('reload_command', '')
         # and path must be a abs path
         cfg_path = os.path.abspath(cfg_path)
         shinkenexporter.load_cfg_path(cfg_path)
+        shinkenexporter.load_reload_command(reload_command)
     
     
     # Detectors will run rules based on collectors and such things, and will tag the local node

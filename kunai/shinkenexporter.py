@@ -3,6 +3,7 @@ import glob
 import time
 import shutil
 import hashlib
+import subprocess
 from kunai.log import logger
 from kunai.pubsub import pubsub
 from kunai.threadmgr import threader
@@ -12,9 +13,11 @@ from kunai.stop import stopper
 class ShinkenExporter(object):
     def __init__(self):
         self.regenerate_flag = False
+        self.reload_flag = False
         self.cfg_path = None
         self.node_changes = []
         self.gossiper = None
+        self.reload_command = ''
         # register to node events
         pubsub.sub('new-node', self.new_node_callback)
         pubsub.sub('delete-node', self.delete_node_callback)
@@ -24,13 +27,17 @@ class ShinkenExporter(object):
         self.cfg_path = os.path.abspath(cfg_path)
     
     
+    def load_reload_command(self, reload_command):
+        self.reload_command = reload_command
+    
+    
     def load_gossiper(self, gossiper):
         self.gossiper = gossiper
     
     
     def launch_thread(self):
         # Launch a thread that will reap all put key asked by the udp
-        self.shinken_thread = threader.create_and_launch(self.main_thread, name='shinken-exporter')
+        self.shinken_thread = threader.create_and_launch(self.main_thread, name='shinken-exporter', essential=True)
     
     
     def new_node_callback(self, node_uuid=None):
@@ -100,6 +107,8 @@ class ShinkenExporter(object):
             logger.error('Cannot create shinken node file at %s : %s' % (p, exp), part='shinken')
             return
         logger.info('Generated file %s for node %s' % (p, uuid), part='shinken')
+        # We did change configuration, reload shinken
+        self.reload_flag = True
     
     
     # A specific node id was detected as not need, try to clean it
@@ -108,6 +117,8 @@ class ShinkenExporter(object):
         if os.path.exists(cfgp):
             try:
                 os.unlink(cfgp)
+                # We did remove a file, reload shinken so
+                self.reload_flag = True
             except IOError, exp:
                 logger.error('Cannot remove deprecated file %s' % cfgp, part='shinken')
         if os.path.exists(shap):
@@ -147,6 +158,7 @@ class ShinkenExporter(object):
         
         while not stopper.interrupted:
             logger.debug('Shinken loop, regenerate [%s]' % self.regenerate_flag, part='shinken')
+            
             time.sleep(1)
             # If not initialize, skip loop
             if self.cfg_path is None or self.gossiper is None:
@@ -169,6 +181,18 @@ class ShinkenExporter(object):
                 elif evt == 'delete-node':
                     logger.info('Removing deleted node %s' % nid, part='shinken')
                     self.clean_node_files(nid)
+            
+            # If we need to reload and have a reload commmand, do it
+            if self.reload_flag and self.reload_command:
+                self.reload_flag = False
+                p = subprocess.Popen(self.reload_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                     close_fds=True, preexec_fn=os.setsid)
+                stdout, stderr = p.communicate()
+                stdout += stderr
+                if p.returncode != 0:
+                    logger.error('Cannot reload shinken daemon: %s' % stdout, part='shinken')
+                else:
+                    logger.info('Shinken daemon reload: OK')
 
 
 shinkenexporter = ShinkenExporter()
