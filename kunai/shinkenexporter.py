@@ -8,6 +8,7 @@ from kunai.log import logger
 from kunai.pubsub import pubsub
 from kunai.threadmgr import threader
 from kunai.stop import stopper
+from kunai.detectormgr import  detecter
 
 
 class ShinkenExporter(object):
@@ -80,7 +81,7 @@ class ShinkenExporter(object):
             display_name   %s
             address        %s
             use            %s
-        }\n''' % (n['uuid'], n['name'], n['addr'], ','.join(tpls))
+        }\n\n''' % (n['uuid'], n['name'], n['addr'], ','.join(tpls))
         buf_sha = hashlib.sha1(buf).hexdigest()
         logger.info('Will generate in path %s (sha1=%s): \n%s' % (p, buf_sha, buf), part='shinken')
         try:
@@ -147,6 +148,12 @@ class ShinkenExporter(object):
     # main method to export http interface. Must be in a method that got
     # a self entry
     def main_thread(self):
+        
+        # If the detector did not run, we are not sure about the tags of the local node
+        # so wait for it to be run, so we can generate shinken file ok from start
+        while detecter.did_run == False:
+            time.sleep(1)
+        
         self.clean_cfg_dir()
         # First look at all nodes in the cluster and regerate them
         node_keys = self.gossiper.nodes.keys()

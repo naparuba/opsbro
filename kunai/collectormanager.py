@@ -52,6 +52,8 @@ class CollectorManager:
         self.interrupted = False
         self.cfg_data = {}
         
+        self.did_run = False  # did our data are all ok or we did not launch all?
+        
         # results from the collectors, keep ony the last run
         self.results_lock = threading.RLock()
         self.results = {}
@@ -224,6 +226,7 @@ class CollectorManager:
             for colname in to_del:
                 del cur_launchs[colname]
             
+            self.did_run = True  # ok our data are filled, you can use this data
             time.sleep(1)
     
     

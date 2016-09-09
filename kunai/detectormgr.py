@@ -3,12 +3,13 @@ import json
 from kunai.log import logger
 from kunai.httpdaemon import route, response
 from kunai.evaluater import evaluater
-
+from kunai.collectormanager import collectormgr
 
 class DetectorMgr(object):
     def __init__(self):
         self.clust = None
-    
+        self.did_run = False  # did we run at least once? so are our tags ok currently?
+        
     
     def load(self, clust):
         self.clust = clust
@@ -16,6 +17,10 @@ class DetectorMgr(object):
     
     # Main thread for launching detectors
     def do_detector_thread(self):
+        # if the collector manager did not run, our evaluation can be invalid, so wait for all collectors to run at least once
+        while collectormgr.did_run == False:
+            time.sleep(1)
+        # Ok we can use collector data :)
         logger.log('DETECTOR thread launched', part='detector')
         while not self.clust.interrupted:
             for (gname, gen) in self.clust.detectors.iteritems():
@@ -36,7 +41,9 @@ class DetectorMgr(object):
                                 logger.info("New tag detected for this node: %s" % tag, part='detector')
                                 self.clust.tags.append(tag)
             
+            self.did_run = True  # ok we did detect our tags, we can be sure about us
             time.sleep(1)
+            
     
     
     # main method to export http interface. Must be in a method that got
