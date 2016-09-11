@@ -9,7 +9,7 @@ class DetectorMgr(object):
     def __init__(self):
         self.clust = None
         self.did_run = False  # did we run at least once? so are our tags ok currently?
-        
+        self.detected_tags = {}
     
     def load(self, clust):
         self.clust = clust
@@ -23,6 +23,7 @@ class DetectorMgr(object):
         # Ok we can use collector data :)
         logger.log('DETECTOR thread launched', part='detector')
         while not self.clust.interrupted:
+            matching_tags = set()
             for (gname, gen) in self.clust.detectors.iteritems():
                 interval = int(gen['interval'].split('s')[0])  # todo manage like it should
                 should_be_launch = gen['last_launch'] < int(time.time()) - interval
@@ -35,11 +36,17 @@ class DetectorMgr(object):
                         do_apply = False
                     if do_apply:
                         tags = gen['tags']
-                        logger.debug('Tags %s are applying' % tags, part='detector')
-                        for tag in tags:
-                            if tag not in self.clust.tags:
-                                logger.info("New tag detected for this node: %s" % tag, part='detector')
-                                self.clust.tags.append(tag)
+                        logger.debug('Tags %s are applying for the detector %s' % (tags, gname), part='detector')
+                        self.detected_tags[gname] = tags
+                    else:
+                        self.detected_tags[gname] = []
+            # take all from the current state of all detectors, and update gossiper about it
+            for tags in self.detected_tags.values():
+                for tag in tags:
+                    matching_tags.add(tag)
+            logger.debug('Detector loop generated tags: %s' % matching_tags, part='gossip')
+            # Merge with gossip part
+            self.clust.gossip.update_detected_tags(matching_tags)
             
             self.did_run = True  # ok we did detect our tags, we can be sure about us
             time.sleep(1)

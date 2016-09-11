@@ -6,6 +6,7 @@ import random
 import math
 import requests as rq
 import copy
+import sys
 from kunai.log import logger
 from kunai.threadmgr import threader
 # some singleton :)
@@ -28,7 +29,8 @@ class Gossip(object):
         self.name = name
         self.incarnation = incarnation
         self.uuid = uuid
-        self.tags = tags
+        self.tags = tags  # finally computed tags
+        self.detected_tags = set()  # tags from detectors, used to detect which to add/remove
         self.seeds = seeds
         self.bootstrap = bootstrap
         self.zone = zone
@@ -71,8 +73,54 @@ class Gossip(object):
             del self.nodes[k]
         except IndexError:
             pass
+
+    # Anotehr module/part did give a new tag, take it and warn others node about this
+    # change if there is really a change
+    def update_detected_tags(self, detected_tags):
+        # if no change, we finish, job done
+        if self.detected_tags == detected_tags:
+            return
+        logger.debug('We have an update for the detected tags. TAGS=%s  old-detected_tags=%s new-detected_tags=%s' % (self.tags, self.detected_tags, detected_tags))
+        # ok here we will change things
+        did_change = False
+        new_tags = detected_tags - self.detected_tags
+        deleted_tags = self.detected_tags - detected_tags
+        # ok now we can take the new values
+        self.detected_tags = detected_tags
+        
+        for tag in new_tags:
+            if tag not in self.tags:
+                did_change = True
+                self.tags.append(tag)
+                logger.info("New tag detected from detector for this node: %s" % tag, part='detector')
+        for tag in deleted_tags:
+            if tag in self.tags:
+                did_change = True
+                self.tags.remove(tag)
+                logger.info("Tag was lost from the previous detection for this node: %s" % tag, part='detector')
+        # warn other parts only if need
+        if did_change:
+            self.node_did_change(self.uuid)  # a node did change: ourselve
+            self.increase_incarnation_and_broadcast(broadcast_type='alive')
+
+
     
-    
+    # We did have a massive change or a bad information from network, we must
+    # fix this and warn others about good information
+    def increase_incarnation_and_broadcast(self, broadcast_type=None):
+        self.incarnation += 1
+        node = self.nodes[self.uuid]
+        node['incarnation'] = self.incarnation
+        if broadcast_type == 'alive':
+            self.stack_alive_broadcast(node)
+        elif broadcast_type == 'leave':
+            self.stack_leave_broadcast(node)
+        else:
+            logger.error('Asking for an unknown broadcast type for node: %s => %s' % (node, broadcast_type))
+            sys.exit(2)
+        logger.info('Did have to send a new incarnation node for myself. New incarnation=%d new-node=%s' % (self.incarnation, node), part='gossip')
+
+
     def change_zone(self, zname):
         self.zone = zname
         self.nodes[self.uuid]['zone'] = zname
@@ -108,6 +156,11 @@ class Gossip(object):
         pubsub.pub('new-node', node_uuid=nuuid)
         return
     
+
+    # Warn other about a node that is not new or remove, but just did change it's internals data
+    def node_did_change(self, nid):
+        pubsub.pub('change-node', node_uuid=nid)
+        
     
     ############# Main new state handling methods
     
@@ -153,6 +206,9 @@ class Gossip(object):
             # Only broadcast if it's a new data from somewhere else
             if (strong and change) or incarnation > prev['incarnation']:
                 logger.debug("Updating alive a node", prev, 'with', node)
+                # warn internal elements
+                self.node_did_change(uuid)
+                # and external ones
                 self.stack_alive_broadcast(node)
     
     
@@ -188,9 +244,10 @@ class Gossip(object):
         # Maybe it's us?? We need to say FUCKING NO, I'm alive!!
         if uuid == self.uuid:
             logger.warning('SUSPECT: SOMEONE THINK I AM SUSPECT, BUT I AM ALIVE', part='gossip')
-            self.incarnation += 1
-            node['incarnation'] = self.incarnation
-            self.stack_alive_broadcast(node)
+            self.increase_incarnation_and_broadcast(broadcast_type='alive')
+            #self.incarnation += 1
+            #node['incarnation'] = self.incarnation
+            #self.stack_alive_broadcast(node)
             return
         
         logger.info('SUSPECTING: I suspect node %s' % node['name'], part='gossip')
@@ -200,6 +257,10 @@ class Gossip(object):
         node['suspect_time'] = int(time.time())
         node['tags'] = tags
         node['services'] = services
+
+        # warn internal elements
+        self.node_did_change(uuid)
+        # and external ones
         self.stack_suspect_broadcast(node)
     
     
@@ -249,9 +310,10 @@ class Gossip(object):
         # Maybe it's us?? If so we must send our broadcast and exit in few seconds
         if uuid == self.uuid:
             logger.log('LEAVE: someone is asking me for leaving.', part='gossip')
-            self.incarnation += 1
-            node['incarnation'] = self.incarnation
-            self.stack_leave_broadcast(node)
+            self.increase_incarnation_and_broadcast(broadcast_type='leave')
+            #self.incarnation += 1
+            #node['incarnation'] = self.incarnation
+            #self.stack_leave_broadcast(node)
             
             
             def bailout_after_leave(self):
@@ -272,6 +334,10 @@ class Gossip(object):
         node['leave_time'] = int(time.time())
         node['tags'] = tags
         node['services'] = services
+
+        # warn internal elements
+        self.node_did_change(uuid)
+        # and external ones
         self.stack_leave_broadcast(node)
     
     
@@ -307,9 +373,10 @@ class Gossip(object):
         # Maybe it's us?? We need to say FUCKING NO, I'm alive!!
         if uuid == self.uuid:
             logger.warning('SUSPECT: SOMEONE THINK I AM SUSPECT, BUT I AM ALIVE', part='gossip')
-            self.incarnation += 1
-            node['incarnation'] = self.incarnation
-            self.stack_alive_broadcast(node)
+            self.increase_incarnation_and_broadcast(broadcast_type='alive')
+            #self.incarnation += 1
+            #node['incarnation'] = self.incarnation
+            #self.stack_alive_broadcast(node)
             return
         
         logger.log('DEAD: I put in dead node %s' % node['name'], part='gossip')
@@ -319,6 +386,10 @@ class Gossip(object):
         node['suspect_time'] = int(time.time())
         node['tags'] = tags
         node['services'] = services
+
+        # warn internal elements
+        self.node_did_change(uuid)
+        # and external ones
         self.stack_dead_broadcast(node)
     
     
@@ -332,7 +403,7 @@ class Gossip(object):
             # Maybe it's me? bail out
             # if node['addr'] == self.addr and node['port'] == self.port:
             if node['uuid'] == self.uuid:
-                logger.info('SKIPPING myself node entry in merge nodes')
+                logger.debug('SKIPPING myself node entry in merge nodes')
                 continue
             
             # Look if we got some duplicates, that got the same addr, but different
@@ -354,14 +425,7 @@ class Gossip(object):
                 self.set_suspect(node)
             elif state == 'leave':
                 self.set_leave(node)
-                
-                # Now clean old nodes
-                # for k in to_del:
-                #    try:
-                #        del self.nodes[k]
-                #    except KeyError:
-                #        pass
-    
+                    
     
     # We will choose a random guy in our nodes that is alive, and
     # sync with it

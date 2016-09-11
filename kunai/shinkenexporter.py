@@ -22,6 +22,7 @@ class ShinkenExporter(object):
         # register to node events
         pubsub.sub('new-node', self.new_node_callback)
         pubsub.sub('delete-node', self.delete_node_callback)
+        pubsub.sub('change-node', self.change_node_callback)
     
     
     def load_cfg_path(self, cfg_path):
@@ -49,7 +50,12 @@ class ShinkenExporter(object):
     def delete_node_callback(self, node_uuid=None):
         self.node_changes.append(('delete-node', node_uuid))
         self.regenerate_flag = True
-    
+
+
+    def change_node_callback(self, node_uuid=None):
+        self.node_changes.append(('change-node', node_uuid))
+        self.regenerate_flag = True
+
     
     def __get_node_cfg_sha_paths(self, nid):
         cfg_p = os.path.join(self.cfg_path, nid + '.cfg')
@@ -130,6 +136,8 @@ class ShinkenExporter(object):
     
     
     def clean_cfg_dir(self):
+        if not self.cfg_path:  # nothing to clean...
+            return
         node_keys = self.gossiper.nodes.keys()
         logger.debug('Current nodes uuids: %s' % node_keys, part='shinken')
         # First look at cfg file that don't match our inner elements, based on their file name
@@ -154,14 +162,15 @@ class ShinkenExporter(object):
         while detecter.did_run == False:
             time.sleep(1)
         
-        self.clean_cfg_dir()
-        # First look at all nodes in the cluster and regerate them
-        node_keys = self.gossiper.nodes.keys()
-        for nid in node_keys:
-            n = self.gossiper.nodes.get(nid, None)
-            if n is None:
-                continue
-            self.generate_node_file(n)
+        if self.cfg_path is not None and self.gossiper is not None:
+            self.clean_cfg_dir()
+            # First look at all nodes in the cluster and regerate them
+            node_keys = self.gossiper.nodes.keys()
+            for nid in node_keys:
+                n = self.gossiper.nodes.get(nid, None)
+                if n is None:
+                    continue
+                self.generate_node_file(n)
         
         while not stopper.interrupted:
             logger.debug('Shinken loop, regenerate [%s]' % self.regenerate_flag, part='shinken')
@@ -188,6 +197,11 @@ class ShinkenExporter(object):
                 elif evt == 'delete-node':
                     logger.info('Removing deleted node %s' % nid, part='shinken')
                     self.clean_node_files(nid)
+                elif evt == 'change-node':
+                    logger.info('A node did change, updating its configuration. Node %s' % nid, part='shinken')
+                    # TODO: better than just remove/recreate, really update if need
+                    self.clean_node_files(nid)
+                    self.generate_node_file(n)
             
             # If we need to reload and have a reload commmand, do it
             if self.reload_flag and self.reload_command:

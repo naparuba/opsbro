@@ -5,6 +5,7 @@ import operator as op
 import socket
 import json
 import base64
+import time
 
 try:
     import apt
@@ -23,10 +24,11 @@ from kunai.httpdaemon import route, response, request
 
 # supported operators
 operators = {
-    ast.Add : op.add, ast.Sub: op.sub, ast.Mult: op.mul,
-    ast.Div : op.truediv, ast.Pow: op.pow, ast.BitXor: op.xor,
-    ast.USub: op.neg, ast.Eq: op.eq, ast.Gt: op.gt, ast.Lt: op.lt,
-    ast.GtE : op.ge, ast.LtE: op.le, ast.Mod: op.mod,
+    ast.Add  : op.add, ast.Sub: op.sub, ast.Mult: op.mul,
+    ast.Div  : op.truediv, ast.Pow: op.pow, ast.BitXor: op.xor,
+    ast.USub : op.neg, ast.Eq: op.eq, ast.Gt: op.gt, ast.Lt: op.lt,
+    ast.GtE  : op.ge, ast.LtE: op.le, ast.Mod: op.mod, ast.Or: op.or_,
+    ast.BitOr: op.or_,
 }
 
 functions = {
@@ -87,22 +89,46 @@ def grep(s, p, regexp=False):
 
 
 deb_cache = None
+deb_cache_update_time = 0
+DEB_CACHE_MAX_AGE = 60  # if we cannot look at dpkg data age, allow a max cache of 60s to get a new apt update from disk
+DPKG_CACHE_PATH = '/var/cache/apt/pkgcache.bin'
+dpkg_cache_last_modification_epoch = 0.0
+
 yumbase = None
 
 
 @export
 def has_package(s):
-    global deb_cache
+    global deb_cache, deb_cache_update_time, dpkg_cache_last_modification_epoch
     global yumbase
     if apt:
+        t0 = time.time()
         if not deb_cache:
             deb_cache = apt.Cache()
-        return s in deb_cache
+            deb_cache_update_time = int(time.time())
+        else:  # ok already existing, look if we should update it
+            # because if there was a package installed, it's no more in cache
+            need_reload = False
+            if os.path.exists(DPKG_CACHE_PATH):
+                last_change = os.stat(DPKG_CACHE_PATH).st_mtime
+                if last_change != dpkg_cache_last_modification_epoch:
+                    need_reload = True
+                    dpkg_cache_last_modification_epoch = last_change
+            else:  # ok we cannot look at the dpkg file age, must limit by time
+                # the cache is just a memory view, so if too old, need to udpate it
+                if deb_cache_update_time < time.time() - DEB_CACHE_MAX_AGE:
+                    need_reload = True
+            if need_reload:
+                deb_cache.open(None)
+                deb_cache_update_time = int(time.time())
+        b = (s in deb_cache and deb_cache[s].is_installed)
+        logger.error('TIME TO QUERY APT: %.3f' % (time.time() - t0))
+        return b
     if yum:
         if not yumbase:
-            yb = yum.YumBase()
-            yb.conf.cache = 1
-        return s in (pkg.name for pkg in yb.rpmdb.returnPackages())
+            yumbase = yum.YumBase()
+            yumbase.conf.cache = 1
+        return s in (pkg.name for pkg in yumbase.rpmdb.returnPackages())
 
 
 @export

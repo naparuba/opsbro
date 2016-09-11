@@ -43,12 +43,19 @@ class Logger(object):
         self.log_file = None
         self.name = ''
         self.logs = {}
+        self.registered_parts = {}
         self.level = logging.INFO
         self.linkify_methods()
         
         # We will keep last 20 errors
         self.last_errors_stack_size = 20
         self.last_errors_stack = {'DEBUG': [], 'WARNING': [], 'INFO': [], 'ERROR': []}
+    
+    
+    # A code module register it's
+    def register_part(self, pname):
+        # By default we show it if the global level is ok with this
+        self.registered_parts[pname] = {'enabled': True}
     
     
     def linkify_methods(self):

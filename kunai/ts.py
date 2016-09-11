@@ -281,7 +281,7 @@ class TSBackend(object):
             all_names = []
             with self.data_lock:
                 all_names = self.data.keys()
-            logger.info("DOING reaper thread on %d elements" % len(all_names), part='ts')
+            logger.debug("DOING reaper thread on %d elements" % len(all_names), part='ts')
             for name in all_names:
                 # Grok all minute entries
                 if name.startswith('min::'):
