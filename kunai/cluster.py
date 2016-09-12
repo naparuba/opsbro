@@ -1293,7 +1293,7 @@ class Cluster(object):
             r = {'checks': {}, 'services': {}}
             # by default it's us
             # maybe its us, maybe not
-            if nname == '':
+            if nname == '' or nname == self.nodes[self.uuid]['name']:
                 for (cid, check) in self.checks.iteritems():
                     # maybe this chck is not a activated one for us, if so, bail out
                     if cid not in self.active_checks:
@@ -1314,7 +1314,7 @@ class Cluster(object):
                 # checks are harder, we must find them in the kv nodes
                 v = self.get_key('__health/%s' % nname)
                 if v is None or v == '':
-                    logger.debug('Cannot access to the checks list for', nname, part='http')
+                    logger.error('Cannot access to the checks list for', nname, part='http')
                     return r
                 
                 lst = json.loads(v)
@@ -2144,28 +2144,29 @@ class Cluster(object):
         key = ukey
         hkey = hashlib.sha1(key).hexdigest()
         nuuid = self.find_kv_node(hkey)
-        logger.debug('KV: key %s is managed by %s' % (ukey, nuuid), part='kv')
+        logger.info('KV: key %s is managed by %s' % (ukey, nuuid), part='kv')
         # that's me :)
         if nuuid == self.uuid:
-            logger.debug('KV: (get) My job to find %s' % key, part='kv')
+            logger.info('KV: (get) My job to find %s' % key, part='kv')
             v = self.kv.get(key)
             return v
         else:
+            logger.info('KV: another node is managing %s' % ukey)
             n = self.nodes.get(nuuid, None)
             # Maybe the node disapears, if so bailout and say we got no luck
             if n is None:
                 return None
             uri = 'http://%s:%s/kv/%s' % (n['addr'], n['port'], ukey)
             try:
-                logger.debug('KV: (get) relaying to %s: %s' % (n['name'], uri), part='kv')
+                logger.info('KV: (get) relaying to %s: %s' % (n['name'], uri), part='kv')
                 r = rq.get(uri)
                 if r.status_code == 404:
-                    logger.debug("GET KEY %s return a 404" % ukey, part='kv')
+                    logger.info("GET KEY %s return a 404" % ukey, part='kv')
                     return None
-                logger.debug('KV: get founded (%d)' % len(r.text), part='kv')
+                logger.info('KV: get founded (%d)' % len(r.text), part='kv')
                 return r.text
             except rq.exceptions.RequestException, exp:
-                logger.debug('KV: error asking to %s: %s' % (n['name'], str(exp)), part='kv')
+                logger.error('KV: error asking to %s: %s' % (n['name'], str(exp)), part='kv')
                 return None
     
     
@@ -2757,7 +2758,7 @@ Subject: %s
     # Will delete all checks into the kv and update new values, but in a thread
     def update_checks_kv(self):
         def do_update_checks_kv(self):
-            logger.debug("CHECK UPDATING KV checks", part='kv')
+            logger.info("CHECK UPDATING KV checks", part='kv')
             names = []
             for (cid, check) in self.checks.iteritems():
                 # Only the checks that we are really managing
@@ -2770,7 +2771,7 @@ Subject: %s
         
         
         # Ok go launch it :)
-        threader.create_and_launch(do_update_checks_kv, name='do_update_checks_kv', args=(self,))
+        threader.create_and_launch(do_update_checks_kv, name='do_update_checks_kv', args=(self,), essential=True)
     
     
     # Someone ask us to launch a new command (was already auth by RSA keys)

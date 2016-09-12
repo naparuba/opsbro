@@ -160,6 +160,7 @@ class KVBackend:
             logger.debug("TIME kv get", time.time() - t0, part='kv')
             return v
         except KeyError:
+            logger.error('Get for a missing key: %s' % key, part='kv')
             return None
     
     
@@ -191,12 +192,12 @@ class KVBackend:
         f = self.get_update_db(mtime)
         t0 = time.time()
         f.write('%s\n' % key)
-        # print "write", time.time() - t0
+        #print "write", time.time() - t0
         
         t0 = time.time()
         # and in the end save the real data :)
         self.db.Put(key, value)
-        # print "write db", time.time() - t0
+        #print "write db", time.time() - t0
     
     
     # Delete both leveldb and metadata entry
