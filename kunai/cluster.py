@@ -967,7 +967,12 @@ class Cluster(object):
         self.active_checks = active_checks
         # Also update our checks list in KV space
         self.update_checks_kv()
-    
+        # and in our own node object
+        checks_entry = {}
+        for cname in self.checks.keys():
+            checks_entry[cname] = {}
+        node['checks'] = checks_entry
+            
     
     # Load raw results of collectors, and give them to the
     # collectormgr that will know how to load them :)

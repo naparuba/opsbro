@@ -124,13 +124,13 @@ class Gossip(object):
     def change_zone(self, zname):
         self.zone = zname
         self.nodes[self.uuid]['zone'] = zname
-    
-    
+
+
     # get my own node entry
     def get_boostrap_node(self):
         node = {'addr'       : self.addr, 'port': self.port, 'name': self.name,
                 'incarnation': self.incarnation, 'uuid': self.uuid, 'state': 'alive', 'tags': self.tags,
-                'services'   : {}, 'zone': self.zone}
+                'services'   : {}, 'checks': {}, 'zone': self.zone}
         return node
     
     
@@ -221,6 +221,7 @@ class Gossip(object):
         uuid = suspect['uuid']
         tags = suspect.get('tags', [])
         services = suspect.get('services', {})
+        checks = suspect.get('checks', {})
         state = 'suspect'
         
         # Maybe we didn't even have this nodes in our list?
@@ -257,6 +258,7 @@ class Gossip(object):
         node['suspect_time'] = int(time.time())
         node['tags'] = tags
         node['services'] = services
+        node['checks'] = checks
 
         # warn internal elements
         self.node_did_change(uuid)
@@ -275,6 +277,7 @@ class Gossip(object):
         uuid = leaved['uuid']
         tags = leaved.get('tags', [])
         services = leaved.get('services', {})
+        checks = leaved.get('checks', {})
         state = 'leave'
         
         print "SET_LEAVE::", leaved
@@ -334,6 +337,7 @@ class Gossip(object):
         node['leave_time'] = int(time.time())
         node['tags'] = tags
         node['services'] = services
+        node['checks'] = checks
 
         # warn internal elements
         self.node_did_change(uuid)
@@ -350,6 +354,7 @@ class Gossip(object):
         uuid = suspect['uuid']
         tags = suspect.get('tags', [])
         services = suspect.get('services', {})
+        checks = suspect.get('checks', {})
         state = 'dead'
         
         # Maybe we didn't even have this nodes in our list?
@@ -386,6 +391,7 @@ class Gossip(object):
         node['suspect_time'] = int(time.time())
         node['tags'] = tags
         node['services'] = services
+        node['checks'] = checks
 
         # warn internal elements
         self.node_did_change(uuid)
@@ -715,37 +721,37 @@ class Gossip(object):
     
     
     ########## Message managment
-    
+
     def create_alive_msg(self, node):
         return {'type'       : 'alive', 'name': node['name'], 'addr': node['addr'], 'port': node['port'],
                 'uuid'       : node['uuid'],
                 'incarnation': node['incarnation'], 'state': 'alive', 'tags': node['tags'],
-                'services'   : node['services']}
-    
-    
+                'services'   : node['services'], 'checks': node['checks']}
+
+
     def create_event_msg(self, payload):
         return {'type'   : 'event', 'from': self.uuid, 'payload': payload, 'ctime': int(time.time()),
                 'eventid': libuuid.uuid1().get_hex()}
-    
-    
+
+
     def create_suspect_msg(self, node):
         return {'type'       : 'suspect', 'name': node['name'], 'addr': node['addr'], 'port': node['port'],
                 'uuid'       : node['uuid'],
                 'incarnation': node['incarnation'], 'state': 'suspect', 'tags': node['tags'],
-                'services'   : node['services']}
-    
-    
+                'services'   : node['services'], 'checks': node['checks']}
+
+
     def create_dead_msg(self, node):
         return {'type'       : 'dead', 'name': node['name'], 'addr': node['addr'], 'port': node['port'],
                 'uuid'       : node['uuid'],
-                'incarnation': node['incarnation'], 'state': 'dead', 'tags': node['tags'], 'services': node['services']}
-    
-    
+                'incarnation': node['incarnation'], 'state': 'dead', 'tags': node['tags'], 'services': node['services'], 'checks': node['checks']}
+
+
     def create_leave_msg(self, node):
         return {'type'       : 'leave', 'name': node['name'], 'addr': node['addr'], 'port': node['port'],
                 'uuid'       : node['uuid'],
                 'incarnation': node['incarnation'], 'state': 'leave', 'tags': node['tags'],
-                'services'   : node['services']}
+                'services'   : node['services'], 'checks': node['checks']}
     
     
     def create_new_ts_msg(self, key):
@@ -824,7 +830,7 @@ class Gossip(object):
                         node = n
             if node is None:
                 return abort(404, 'This node is not found')
-            logger.log('PUTTING LEAVE the node %s' % n, part='http')
+            logger.log('PUTTING LEAVE the node %s' % node, part='http')
             self.set_leave(node)
             return
         

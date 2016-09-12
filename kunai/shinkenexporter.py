@@ -77,17 +77,34 @@ class ShinkenExporter(object):
         ptmp = p + '.tmp'
         # shap = os.path.join(self.cfg_path, uuid + '.sha1')
         shaptmp = shap + '.tmp'
-        tpls = n.get('tags', [])
+        tpls = n.get('tags', [])[:]  # make a copy, because we will modify it
         zone = n.get('zone', '')
         if zone:
             tpls.append(zone)
+        tpls.insert(0, 'agent,kunai')
         
-        buf = '''define host{
+        # get checks names and sort them so file il always the same
+        cnames = n.get('checks', {}).keys()
+        cnames.sort()
+        
+        buf_service = '''define service{
+            host_name               %s
+            service_description     %s
+            use                     generic-service
+            active_checks_enabled   0
+            passive_checks_enabled  1
+            check_command           _echo
+        \n}\n
+        '''
+        
+        buf = '''# Auto generated host, do not edit
+        \ndefine host{
             host_name      %s
             display_name   %s
             address        %s
             use            %s
-        }\n\n''' % (n['uuid'], n['name'], n['addr'], ','.join(tpls))
+        \n}\n
+        \n%s\n''' % (n['uuid'], n['name'], n['addr'], ','.join(tpls), '\n'.join([buf_service % (n['uuid'], 'agent-%s' % cname.split('/')[-1]) for cname in cnames]))
         buf_sha = hashlib.sha1(buf).hexdigest()
         logger.info('Will generate in path %s (sha1=%s): \n%s' % (p, buf_sha, buf), part='shinken')
         try:
