@@ -126,30 +126,33 @@ class KVBackend:
         
         self.update_db_time = 0
         self.update_db = None
-    
+        self.lock = threading.RLock()
+
     
     # We will open a file with the keys writen during a minute
     # so we can easily look at previous changed
     def get_update_db(self, t):
-        cmin = divmod(t, 60)[0] * 60
-        if cmin == self.update_db_time and self.update_db:
-            # print "UPDATE DB CACHE HIT"
-            return self.update_db
-        else:  # not the good time
-            # print "UPDATE DB CACHE MISS"
-            if self.update_db:
-                logger.debug("FLUSINH PREVIOUS DB", part='kv')
-                t0 = time.time()
-                self.update_db.flush()
-                logger.debug("FLUSH TIME: %.4f" % (time.time() - t0), part='kv')
-                self.update_db.close()
-            db_dir = os.path.join(self.data_dir, 'updates')
-            db_path = os.path.join(db_dir, '%d.lst' % cmin)
-            if not os.path.exists(db_dir):
-                os.mkdir(db_dir)
-            self.update_db = open(db_path, 'a')
-            self.update_db_time = cmin
-            return self.update_db
+            cmin = divmod(t, 60)[0] * 60
+            if cmin == self.update_db_time and self.update_db:
+                # print "UPDATE DB CACHE HIT"
+                return self.update_db
+            else:  # not the good time
+                with self.lock:  # protect to not have flush and close mixed in different threads
+                    # print "UPDATE DB CACHE MISS"
+                    if self.update_db:
+                        logger.debug("FLUSINH PREVIOUS DB", part='kv')
+                        t0 = time.time()
+                        self.update_db.flush()
+                        logger.debug("FLUSH TIME: %.4f" % (time.time() - t0), part='kv')
+                        self.update_db.close()
+                        self.update_db = None
+                db_dir = os.path.join(self.data_dir, 'updates')
+                db_path = os.path.join(db_dir, '%d.lst' % cmin)
+                if not os.path.exists(db_dir):
+                    os.mkdir(db_dir)
+                self.update_db = open(db_path, 'a')
+                self.update_db_time = cmin
+                return self.update_db
     
     
     # Raw get in our db for a key

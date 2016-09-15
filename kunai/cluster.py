@@ -417,6 +417,7 @@ class Cluster(object):
         
         # Start shinken exproter thread
         shinkenexporter.load_gossiper(self.gossip)
+        shinkenexporter.load_cluster(self)
         shinkenexporter.launch_thread()
         
         # get the message in a pub-sub way
@@ -636,7 +637,7 @@ class Cluster(object):
                         logger.error('The parameter %s is not a list' % k)
                         return
                 else:
-                    logger.error('Unkown parameter type %s' % k)
+                    logger.error('Unknown parameter type %s' % k)
                     return
                 # It's valid, I set it :)
                 setattr(self, mapto, v)
@@ -969,10 +970,12 @@ class Cluster(object):
         self.update_checks_kv()
         # and in our own node object
         checks_entry = {}
-        for cname in self.checks.keys():
-            checks_entry[cname] = {}
+        for (cname, check) in self.checks.iteritems():
+            if cname not in active_checks:
+                continue
+            checks_entry[cname] = {'state_id': check['state_id']}  # by default state are unknown
         node['checks'] = checks_entry
-            
+        
     
     # Load raw results of collectors, and give them to the
     # collectormgr that will know how to load them :)
@@ -1312,14 +1315,14 @@ class Cluster(object):
                 # Services are easy, we already got them
                 r['services'] = node['services']
                 # checks are harder, we must find them in the kv nodes
-                v = self.get_key('__health/%s' % nname)
+                v = self.get_key('__health/%s' % node['uuid'])
                 if v is None or v == '':
                     logger.error('Cannot access to the checks list for', nname, part='http')
                     return r
                 
                 lst = json.loads(v)
                 for cid in lst:
-                    v = self.get_key('__health/%s/%s' % (nname, cid))
+                    v = self.get_key('__health/%s/%s' % (node['uuid'], cid))
                     if v is None:  # missing check entry? not a real problem
                         continue
                     check = json.loads(v)
@@ -2419,7 +2422,6 @@ class Cluster(object):
                     # randomize a bit the checks
                     script = check['script']
                     logger.debug('CHECK: launching check %s:%s' % (cid, script), part='check')
-                    logger.debug("LAUCHN CHECK", cid, script)
                     t = threader.create_and_launch(self.launch_check, name='check-%s' % cid, args=(check,))
                     cur_launchs[cid] = t
             
@@ -2565,7 +2567,7 @@ class Cluster(object):
         
         check['output'] = output + err
         check['last_check'] = int(time.time())
-        self.analyse_check(check)
+        self.analyse_check(check, did_change)
         
         # Launch the handlers, some need the data if the element did change or not
         self.launch_handlers(check, did_change)
@@ -2573,8 +2575,15 @@ class Cluster(object):
     
     # get a check return and look it it did change a service state. Also save
     # the result in the __health KV
-    def analyse_check(self, check):
+    def analyse_check(self, check, did_change):
         logger.debug('CHECK we got a check return, deal with it for %s' % check, part='check')
+        
+        # if did change, update the node check entry about it
+        if did_change:
+            self.gossip.update_check_state_id(check['name'], check['state_id'])
+        
+        # by default warn others nodes if the check did change
+        warn_about_our_change = did_change
         
         # If the check is related to a service, import the result into the service
         # and look for a service state change
@@ -2586,15 +2595,14 @@ class Cluster(object):
             cstate_id = check.get('state_id')
             if cstate_id != sstate_id:
                 service['state_id'] = cstate_id
-                logger.log('CHECK: we got a service state change from %s to %s for %s' % (
-                    sstate_id, cstate_id, service['name']), part='check')
-                # This node cannot be deleted, so we don't need a protection here
-                node = self.nodes.get(self.uuid)
-                self.gossip.incarnation += 1
-                node['incarnation'] = self.gossip.incarnation
-                self.gossip.stack_alive_broadcast(node)
+                logger.log('CHECK: we got a service state change from %s to %s for %s' % (sstate_id, cstate_id, service['name']), part='check')
+                warn_about_our_change = True
             else:
                 logger.debug('CHECK: service %s did not change (%s)' % (service['name'], sstate_id), part='check')
+        
+        # If our check or service did change, warn thers nodes about it
+        if warn_about_our_change:
+            self.gossip.increase_incarnation_and_broadcast('alive')
         
         # We finally put the result in the KV database
         self.put_check(check)
@@ -2603,7 +2611,7 @@ class Cluster(object):
     # Save the check as a jsono object into the __health/ KV part
     def put_check(self, check):
         value = json.dumps(check)
-        key = '__health/%s/%s' % (self.name, check['name'])
+        key = '__health/%s/%s' % (self.uuid, check['name'])
         logger.debug('CHECK SAVING %s:%s(len=%d)' % (key, value, len(value)), part='check')
         self.put_key(key, value, allow_udp=True)
         
@@ -2766,7 +2774,7 @@ Subject: %s
                     names.append(check['name'])
                     self.put_check(check)
             all_checks = json.dumps(names)
-            key = '__health/%s' % self.name
+            key = '__health/%s' % self.uuid
             self.put_key(key, all_checks)
         
         
@@ -2987,6 +2995,10 @@ Subject: %s
     
     def find_ts_node(self, hkey):
         return self.find_tag_node('ts', hkey)
+    
+    
+    def find_shinken_nodes(self):
+        return self.find_tag_nodes('shinken')
     
     
     def retention_nodes(self, force=False):

@@ -4,6 +4,7 @@ import time
 import shutil
 import hashlib
 import subprocess
+import json
 from kunai.log import logger
 from kunai.pubsub import pubsub
 from kunai.threadmgr import threader
@@ -18,6 +19,7 @@ class ShinkenExporter(object):
         self.cfg_path = None
         self.node_changes = []
         self.gossiper = None
+        self.clust = None
         self.reload_command = ''
         # register to node events
         pubsub.sub('new-node', self.new_node_callback)
@@ -35,6 +37,10 @@ class ShinkenExporter(object):
     
     def load_gossiper(self, gossiper):
         self.gossiper = gossiper
+    
+    
+    def load_cluster(self, clust):
+        self.clust = clust
     
     
     def launch_thread(self):
@@ -55,6 +61,40 @@ class ShinkenExporter(object):
     def change_node_callback(self, node_uuid=None):
         self.node_changes.append(('change-node', node_uuid))
         self.regenerate_flag = True
+        
+        
+    def sanatize_check_name(self, cname):
+        return 'Agent-%s' % cname.split('/')[-1]
+    
+    
+    def export_states_into_shinken(self, nuuid):
+        p = '/var/lib/shinken/nagios.cmd'
+        if not os.path.exists(p):
+            logger.error('Shinken command file is missing, skipping node information export')
+            return
+
+        v = self.clust.get_key('__health/%s' % nuuid)
+        if v is None or v == '':
+            logger.error('Cannot access to the checks list for', nuuid, part='shinken')
+            return
+
+        lst = json.loads(v)
+        for cname in lst:
+            v = self.clust.get_key('__health/%s/%s' % (nuuid, cname))
+            if v is None:  # missing check entry? not a real problem
+                continue
+            check = json.loads(v)
+            logger.error('CHECK VALUE %s' % check, part='shinken')
+            try:
+                f = open(p, 'a')
+                cmd = '[%s] PROCESS_SERVICE_CHECK_RESULT;%s;%s;%d;%s\n' % (int(time.time()), nuuid, self.sanatize_check_name(cname), check['state_id'], check['output'])
+                logger.error('SAVING COMMAND %s' % cmd, part='shinken')
+                f.write(cmd)
+                f.flush()
+                f.close()
+            except Exception, exp:
+                logger.error('Shinken command file write fail: %s' % exp)
+                return
 
     
     def __get_node_cfg_sha_paths(self, nid):
@@ -77,6 +117,16 @@ class ShinkenExporter(object):
         ptmp = p + '.tmp'
         # shap = os.path.join(self.cfg_path, uuid + '.sha1')
         shaptmp = shap + '.tmp'
+
+        old_sha_value = ''
+        if os.path.exists(shap):
+            try:
+                f = open(shap, 'r')
+                old_sha_value = f.read().strip()
+                f.close()
+            except Exception, exp:
+                logger.error('Cannot read old sha file value at %s: %s' % (shap, exp))
+        
         tpls = n.get('tags', [])[:]  # make a copy, because we will modify it
         zone = n.get('zone', '')
         if zone:
@@ -87,6 +137,7 @@ class ShinkenExporter(object):
         cnames = n.get('checks', {}).keys()
         cnames.sort()
         
+        # Services must be purely passive, and will only trigger once
         buf_service = '''define service{
             host_name               %s
             service_description     %s
@@ -94,6 +145,7 @@ class ShinkenExporter(object):
             active_checks_enabled   0
             passive_checks_enabled  1
             check_command           _echo
+            max_check_attempts      1
         \n}\n
         '''
         
@@ -104,8 +156,15 @@ class ShinkenExporter(object):
             address        %s
             use            %s
         \n}\n
-        \n%s\n''' % (n['uuid'], n['name'], n['addr'], ','.join(tpls), '\n'.join([buf_service % (n['uuid'], 'agent-%s' % cname.split('/')[-1]) for cname in cnames]))
+        \n%s\n''' % (n['uuid'], n['name'], n['addr'], ','.join(tpls), '\n'.join([buf_service % (n['uuid'], self.sanatize_check_name(cname)) for cname in cnames]))
         buf_sha = hashlib.sha1(buf).hexdigest()
+        
+        # if it the same as before?
+        logger.error('COMPARING OLD SHA/NEWSHA= %s   %s' % (old_sha_value, buf_sha), part='shinken')
+        if buf_sha == old_sha_value:
+            logger.error('SAME SHA VALUE, SKIP IT', part='shinken')
+            return
+        
         logger.info('Will generate in path %s (sha1=%s): \n%s' % (p, buf_sha, buf), part='shinken')
         try:
             # open both file, so if one goes wrong, will be consistent
@@ -211,18 +270,20 @@ class ShinkenExporter(object):
                         continue
                     logger.info('Manage new node %s' % n, part='shinken')
                     self.generate_node_file(n)
+                    self.export_states_into_shinken(nid)  # update it's inner checks states
                 elif evt == 'delete-node':
                     logger.info('Removing deleted node %s' % nid, part='shinken')
                     self.clean_node_files(nid)
                 elif evt == 'change-node':
                     logger.info('A node did change, updating its configuration. Node %s' % nid, part='shinken')
-                    # TODO: better than just remove/recreate, really update if need
-                    self.clean_node_files(nid)
                     self.generate_node_file(n)
+                    self.export_states_into_shinken(nid)  # update it's inner checks states
             
             # If we need to reload and have a reload commmand, do it
             if self.reload_flag and self.reload_command:
                 self.reload_flag = False
+                # TODO: remove
+                continue
                 p = subprocess.Popen(self.reload_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                      close_fds=True, preexec_fn=os.setsid)
                 stdout, stderr = p.communicate()

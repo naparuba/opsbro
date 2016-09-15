@@ -1,13 +1,18 @@
 {
-    "handler": {
-        "type": "mail",
-        "severities": [ "ok", "warning", "critical", "unknown"],
-	
-        "contacts": ["admin@mydomain.com"],
-	"addr_from": "kunai@mydomain.com",
-	"smtp_server": "localhost",
-
-	"subject_template": "email.subject.tpl",
-	"text_template": "email.text.tpl"
-    }
+  "handler": {
+    "type": "mail",
+    "severities": [
+      "ok",
+      "warning",
+      "critical",
+      "unknown"
+    ],
+    "contacts": [
+      "admin@mydomain.com"
+    ],
+    "addr_from": "kunai@mydomain.com",
+    "smtp_server": "localhost",
+    "subject_template": "email.subject.tpl",
+    "text_template": "email.text.tpl"
+  }
 }

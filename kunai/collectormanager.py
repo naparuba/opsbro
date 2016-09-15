@@ -191,12 +191,15 @@ class CollectorManager:
         col['results'] = results
         col['metrics'] = metrics
         col['active'] = True
-        
+
+        '''
+        # TODO: get back TS data?
         timestamp = NOW.now
         for (mname, value) in metrics:
             key = '%s.%s.%s' % (tsmgr.get_name(), cname, mname)
             if hasattr(tsmgr, 'tsb'):
                 tsmgr.tsb.add_value(timestamp, key, value)
+        '''
     
     
     # Main thread for launching collectors

@@ -40,13 +40,13 @@ class Gossip(object):
         # list of uuid to ping back because we though they were dead        
         self.to_ping_back = []
         
-        myself = self.get_boostrap_node()
-        self.set_alive(myself, bootstrap=True)
         # export my http uri now I got a real self
         self.export_http()
         
         self.ping_another_in_progress = False
-    
+        # create my own object, but do not export it to other nodes
+        self.register_myself()
+        
     
     def __getitem__(self, uuid):
         return self.nodes[uuid]
@@ -73,6 +73,12 @@ class Gossip(object):
             del self.nodes[k]
         except IndexError:
             pass
+
+
+    def register_myself(self):
+        myself = self.get_boostrap_node()
+        self.set_alive(myself, bootstrap=True)
+
 
     # Anotehr module/part did give a new tag, take it and warn others node about this
     # change if there is really a change
@@ -104,6 +110,13 @@ class Gossip(object):
             self.increase_incarnation_and_broadcast(broadcast_type='alive')
 
 
+    # A check did change it's state, update it in our structure
+    def update_check_state_id(self, cname, state_id):
+        node = self.nodes[self.uuid]
+        if not cname in node['checks']:
+            node['checks'][cname] = {'state_id': 3}
+        node['checks'][cname]['state_id'] = state_id
+    
     
     # We did have a massive change or a bad information from network, we must
     # fix this and warn others about good information
@@ -144,12 +157,16 @@ class Gossip(object):
     
     
     # Got a new node, great! Warn others about this
-    def add_new_node(self, node):
+    # but if it's a bootstrap, only change memory, do not export to other nodes
+    def add_new_node(self, node, bootstrap=False):
         logger.info("New node detected", node, part='gossip')
         nuuid = node['uuid']
         # Add the node but in a protected mode
         with self.nodes_lock:
             self.nodes[nuuid] = node
+        # if bootstrap, do not export to other nodes or modules
+        if bootstrap:
+            return
         # Warn network elements
         self.stack_alive_broadcast(node)
         # And finally callback other part of the code about this
@@ -175,7 +192,13 @@ class Gossip(object):
         uuid = node['uuid']
         state = node['state'] = 'alive'
         tags = node.get('tags', [])
-        
+        services = node.get('services', {})
+        checks = node.get('checks', {})
+
+        #if bootstrap:
+        #    print "ALL NODES", self.nodes
+        #    fuck
+            
         # Maybe it's me? if so skip it
         if not bootstrap:
             if node['uuid'] == self.uuid:
@@ -183,7 +206,7 @@ class Gossip(object):
         
         # Maybe it's a new node that just enter the cluster?
         if uuid not in self.nodes:
-            self.add_new_node(node)
+            self.add_new_node(node, bootstrap=bootstrap)
             return
         
         prev = self.nodes.get(uuid, None)
@@ -200,9 +223,14 @@ class Gossip(object):
                      (strong and change), (incarnation > prev['incarnation']))
         # only react to the new data if they are really new :)
         if strong or incarnation > prev['incarnation']:
+            # Update our last data with new ones
+            node['services'] = services
+            node['checks'] = checks
+
             # protect the nodes access with the lock so others threads are happy :)
             with self.nodes_lock:
                 self.nodes[uuid] = node
+                
             # Only broadcast if it's a new data from somewhere else
             if (strong and change) or incarnation > prev['incarnation']:
                 logger.debug("Updating alive a node", prev, 'with', node)
@@ -338,7 +366,7 @@ class Gossip(object):
         node['tags'] = tags
         node['services'] = services
         node['checks'] = checks
-
+        
         # warn internal elements
         self.node_did_change(uuid)
         # and external ones
@@ -759,6 +787,9 @@ class Gossip(object):
     
     
     def stack_alive_broadcast(self, node):
+        #if True or node['uuid'] != self.uuid:
+        #    print "FUCK NODE", node
+        #    fuck
         msg = self.create_alive_msg(node)
         b = {'send': 0, 'msg': msg}
         broadcaster.broadcasts.append(b)
