@@ -217,9 +217,31 @@ The parameter for this is:
 NOTE: the $$ evaluation is not matching the previous checks, we will fix it in a future version but it will break the current version configuration.
 
 
+## Notify check/node state change with emails
+
+// Handlers
+
 ## Export your nodes and check states into Shinken
 
-// Shinken exporter
+You can export all your nodes informations (new, deleted or change node) into your Shinken installation. It will automatically:
+  * create new host when you start a new node
+  * change the host configuration (host templates) when a new tag is add/removed on your agent
+  * remove your host when you delete your agent (by terminating your Cloud instance for example)
+
+You must add in the agent installed on your shinken arbiter daemon the following local configuration:
+
+     {
+         "shinken": {
+             "cfg_path": "/etc/shinken/agent"
+         }
+     }
+
+  * cfg_path: a directory where all your nodes will be sync as shinken hosts configuration (cfg files)
+
+Currently it also use hard path to manage your shinken communication:
+  * the unix socket */var/lib/shinken/nagios.cmd* should be created by your shinken arbiter/receiver [named-pipe](http://shinken.io/package/named-pipe) module.
+  * it call the "/etc/init.d/shinken reload" command when a node configuration is changed(new, removed or tag/template change) 
+
 
 ## Access your nodes informations by DNS
 
@@ -229,9 +251,14 @@ NOTE: the $$ evaluation is not matching the previous checks, we will fix it in a
 
 // statsd & graphite
 
+## Get notified when there is a node change (websocket)
+
+// Websocket
+
 ## Store your data/configuration into the cluster (KV store)
 
 // KV Store
+
 
 
 ## Use your node states and data/configuration (KV) to keep your application configuration up-to-date
