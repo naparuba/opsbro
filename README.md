@@ -25,19 +25,15 @@ You will need:
 
 
 To monitor linux:
-
   * sysstat
 
 To monitor mongodb server:
-
   * python-pymongo
 
 To monitor mysql server:
-
   * python-mysql
 
 To monitor redis server:
-
   * python-redis
 
 
@@ -142,19 +138,105 @@ You can list available collectors with the command:
  
 ![Agent](images/collectors-list.png) 
 
+ * enabled: it's running well
+ * disabled: it's missing a librairy for running
+
 ## Execute checks
 
- ==> nagios checks and evaluating checks
+You can execute checks on your agent by two means:
+  * Use the collectors data and evaluate check rule on it
+  * Execute a nagios-like plugin
+
+### Common check parameters for evaluated and nagios plugins based checks
+
+Some parameters are common on the two check types you can defined.
+
+  * interval: how much seconds the checks will be scheduled
+  * apply_on: if present, will declare and execute the check only if the agent tag is present
 
 
-## How to us the key store?
+### Evaluate check rule on collectors data
 
-==> KV store
+Evaluated check will use collectors data and should be defined with:
+  * ok_output: python expression that create a string that will be shown to the user if the state is OK
+  * critical_if: python expression that try to detect a CRITICAL state
+  * critical_output: python expression that create a string that will be shown to the user if the state is CRITICAL
+  * warning_if: python expression that try to detect WARNING state
+  * warning_output: python expression that create a string that will be shown to the user if the state is WARNING
+  * thresholds: [optionnal] you can set here dict of thresholds you will access from your check rule by "configuration.thresholds.XXX"
+  
+The evaluation is done like this:
+  * if the critical expression is True => go CRITICAL
+  * else if warning expression is True => go WARNING
+  * else go OK
+  
+For example here is a cpu check on a linux server:
+
+     {
+        "check": {
+            "interval":          "10s",
+            "apply_on":          "linux",
+            
+            "ok_output":         "'OK: cpu is great: %s%%' % (100-{collector.cpustats.cpuall.%idle})",
+            
+            "critical_if":      "{collector.cpustats.cpuall.%idle} < {configuration.thresholds.cpuidle.critical}",
+            "critical_output":  "'Critical: cpu is too high: %s%%' % (100-{collector.cpustats.cpuall.%idle})",
+
+            "warning_if":       "{collector.cpustats.cpuall.%idle} < {configuration.thresholds.cpuidle.warning}",
+            "warning_output":   "'Warning: cpu is very high: %s%%' % (100-{collector.cpustats.cpuall.%idle})",
+            
+            "thresholds" :       {"cpuidle" : { "warning": 5, "critical": 1} }
+        }
+     }
 
 
-## How to keep your application configuration up-to-date?
 
-==> generators
+### Use Nagios plugins
+
+Nagios based checks will use Nagios plugins and run them. Use them if you don't have access to the information you need in the collectors.
+
+The parameter for this is:
+  * script: the command line to execute your plugin
+  
+  Here is an example 
+  
+     {
+         "check": {
+	          "apply_on": "linux",
+              "script": "$nagiosplugins$/check_mailq -w $mailq.warning$ -c $mailq.critical$",
+              "interval": "60s",
+
+	           "mailq" : {
+	              "warning": 1,
+	              "critical": 2
+	           }
+         }
+     }
+     
+
+NOTE: the $$ evaluation is not matching the previous checks, we will fix it in a future version but it will break the current version configuration.
+
+
+## Export your nodes and check states into Shinken
+
+// Shinken exporter
+
+## Access your nodes informations by DNS
+
+// DNS provider
+
+## Export and store your application telemetry into the agent metric system 
+
+// statsd & graphite
+
+## Store your data/configuration into the cluster (KV store)
+
+// KV Store
+
+
+## Use your node states and data/configuration (KV) to keep your application configuration up-to-date
+
+// Generators
 
 
 ## How to see collected data? (metrology)
@@ -164,10 +246,6 @@ The kunai agent is by default getting lot of metrology data from your OS and app
     kunai collectors show
 
 
-## Is there an UI avialable?
-
-Yes. There is a UI available in the /var/lib/kuani/ui/ directory. It's just flat files and so you can just export the directory with apache/nginx and play with it.
-
 
 ## How to see docker performance informations?
 
@@ -176,4 +254,9 @@ If docker is launched on your server, Kunai will get data from it, like colelcto
 To list all of this just launch:
 
     kunai docker stats
+
+
+## Is there an UI available?
+
+Yes. There is a UI available in the /var/lib/kuani/ui/ directory. It's just flat files and so you can just export the directory with apache/nginx and play with it.
 
