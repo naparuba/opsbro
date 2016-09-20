@@ -105,6 +105,5 @@ class DNSQuery:
                 packet += str.join('', map(lambda x: chr(int(x)), ip.split('.')))  # 4bytes of IP
 
 
-
         logger.debug("Returning size: %s for nb ips:%s" % (len(packet), len(r)))
         return packet

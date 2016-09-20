@@ -41,7 +41,7 @@ To monitor redis server:
 #### Installation
 
 Just launch:
-   
+
     python setup.py install
 
 
@@ -200,18 +200,18 @@ The parameter for this is:
   
   Here is an example 
   
-     {
-         "check": {
-	          "apply_on": "linux",
-              "script": "$nagiosplugins$/check_mailq -w $mailq.warning$ -c $mailq.critical$",
-              "interval": "60s",
-
-	           "mailq" : {
-	              "warning": 1,
-	              "critical": 2
-	           }
-         }
-     }
+      {
+             "check": {
+                  "apply_on": "linux",
+                  "script": "$nagiosplugins$/check_mailq -w $mailq.warning$ -c $mailq.critical$",
+                  "interval": "60s",
+    
+                   "mailq" : {
+                      "warning": 1,
+                      "critical": 2
+                   }
+             }
+      }
      
 
 NOTE: the $$ evaluation is not matching the previous checks, we will fix it in a future version but it will break the current version configuration.
@@ -245,21 +245,66 @@ Currently it also use hard path to manage your shinken communication:
 
 ## Access your nodes informations by DNS
 
-// DNS provider
+If you enable the DNS interface for your agent, it will start an internal DNS server that will answer to queries. So your applications will be able to easily exchange with the valid node that is still alive or launched.
+
+You must define a dns object in your local configuration to enable this interface:
+
+    {
+        "dns":{
+	        "enabled"    : true,
+	        "port"       : 6766,
+	        "domain"     : ".kunai"
+        }    
+    }
+
+  * enabled: start or not the listener
+  * port: UDP port to listen for UDP requests
+  * domain: allowed domain to request, should match a specific domain name to be redirected to this 
+
+You will be able to query it with dig for test:
+
+    $dig -p 6766 @localhost redis.tag.dc1.kunai  +short
+    192.168.56.103
+    192.168.56.105
+
+TODO: document the local dns redirect to link into resolv.conf
+
 
 ## Export and store your application telemetry into the agent metric system 
 
 // statsd & graphite
 
+**TODO**: change the ts tag that enable this feature to real *role*
+
+
+## Get access to your graphite data with an external UI like Grafana
+
+
+
 ## Get notified when there is a node change (websocket)
 
-// Websocket
+You can get notified about a node change (new node, deleted node or new tag or check state change) with a websocket interface on your local agent.
+
+All you need is to enable it on your local node configuration:
+
+    {
+        "websocket": {
+	        "enabled"    : true,
+	        "port"       : 6769
+        }
+    }
+
+  * enabled: start or not the websocket listener
+  * port: which TCP port to listen for the websocket connections
+  
+**Note**: the HTTP UI need the websocket listener to be launched to access node states.
 
 ## Store your data/configuration into the cluster (KV store)
 
 // KV Store
 
 
+**TODO**: change the KV store from tag to a role
 
 ## Use your node states and data/configuration (KV) to keep your application configuration up-to-date
 
@@ -273,17 +318,31 @@ The kunai agent is by default getting lot of metrology data from your OS and app
     kunai collectors show
 
 
+**TODO** Allow to export into json format
+
 
 ## How to see docker performance informations?
 
-If docker is launched on your server, Kunai will get data from it, like colelctors, images and performances.
+If docker is launched on your server, Kunai will get data from it, like collectors, images and performances.
 
 To list all of this just launch:
 
-    kunai docker stats
+    kunai docker show
+
+
+## Get Quorum strong master/slave elections thanks to RAFT
+  
+You can ask your node cluster system to elect a node for a specific task or application thanks to the RAFT implementation inside the agents
+
+**TODO**: currently in alpha stade in the code   
+
+
+## Access the agent API documentation
+
+**TODO**: this must be developed, in order to access your node API available in text or HTTP
 
 
 ## Is there an UI available?
 
-Yes. There is a UI available in the /var/lib/kuani/ui/ directory. It's just flat files and so you can just export the directory with apache/nginx and play with it.
+Yes. There is a UI available in the */var/lib/kunai/ui/* directory. It's just flat files and so you can just export the directory with apache/nginx and play with it.
 
