@@ -219,7 +219,31 @@ NOTE: the $$ evaluation is not matching the previous checks, we will fix it in a
 
 ## Notify check/node state change with emails
 
-// Handlers
+You can be notified about check state changed with handlers. currently only one is managed: email.
+
+You must define it in your local configuration:
+
+    {
+          "handler": {
+                "type": "mail",
+                "severities": [ "ok", "warning", "critical", "unknown" ],
+                "contacts": [ "admin@mydomain.com" ],
+                "addr_from": "kunai@mydomain.com",
+                "smtp_server": "localhost",
+                "subject_template": "email.subject.tpl",
+                "text_template": "email.text.tpl"
+          }
+    }
+
+  * type: currently only 'mail' is managed
+  * severities: raise this handler only for this new states
+  * contacts: who notifies
+  * addr_from: from address to set your email from
+  * smtp_server: which SMTP server to end your notification
+  * subject_template: jinja2 template for the email subject, from the directory /templates
+  * text_template: jinja2 template for the email content, from the directory /templates
+
+Then your handler must be registered into your checks, in the "handlers" list.
 
 ## Export your nodes and check states into Shinken
 
@@ -267,18 +291,62 @@ You will be able to query it with dig for test:
     192.168.56.103
     192.168.56.105
 
+It list all available node with the "tag" redis.
+
+
 TODO: document the local dns redirect to link into resolv.conf
 
 
 ## Export and store your application telemetry into the agent metric system 
 
-// statsd & graphite
+### Real time application performance metrics
+
+The statsd protocol is a great way to extract performance statistics from your application into your monitoring system. You application will extract small timing metrics (like function execution time) and send it in a non blocking way (in UDP).
+
+The statsd daemon part will agregate counters for 10s and will then export the min/max/average/99thpercentile to a graphite server so you can store and graph them.
+
+In order to enable the statsd listener, you must define the statsd in your local configuration:
+
+    {
+        "statsd": {
+            "enabled"    : true,
+            "port"       : 8125,
+            "interval"   : 10
+        }
+    }
+    
+  * enabled: launch or not the statsd listener
+  * port: UDP port to listen
+  * interval: store metrics into memory for X seconds, then export them into graphite for storing
 
 **TODO**: change the ts tag that enable this feature to real *role*
 
 
+### Store your metrics for long term into Graphite
+
+You can store your metrics into a graphite like system, that will automatically agregate your data.
+
+In order to enable the graphite system, you must declare a graphite object in your local configuration:
+    
+    {
+        "graphite": {
+            "enabled"    : true,
+            "port"       : 2003,
+            "udp"        : true,
+            "tcp"        : true
+        }
+    }
+
+  * enabled: launch or not the graphite listener
+  * port: TCP and/or UDP port to listen metrics
+  * udp: listen in UDP mode
+  * tcp: listen to TCP mode
+
+**TODO**: finish the graphite part, to show storing and forwarding mode.
+
 ## Get access to your graphite data with an external UI like Grafana
 
+**TODO**: test and show graphite /render interface of the agent into grafana
 
 
 ## Get notified when there is a node change (websocket)
@@ -301,10 +369,21 @@ All you need is to enable it on your local node configuration:
 
 ## Store your data/configuration into the cluster (KV store)
 
-// KV Store
+The agent expose a KV store system. It will automatically dispatch your data into 3 nodes allowed to store raw data.
 
+Write and Read queries can be done on the node you want, it don't have to be a KV storing node. The agent will forward your read/write query to the node that manage your key, and this one will synchronize the data with 2 others nodes after it did answer to the requestor.
 
-**TODO**: change the KV store from tag to a role
+The KEY dispatching between nodes is based on a SHA1 consistent hashing.
+
+The API is:
+
+  * **/kv/** *(GET)* : list all keys store on the local node
+  * **/kv/KEY-NAME** *(GET)*: get the key value with base64 encoding
+  * **/kv/KEY-NAME** *(PUT)* : store a key value
+  * **/kv/KEY-NAME** *(DELETE)* : delete a key
+  
+
+**TODO**: change the KV store from tag to a role in the configuration
 
 ## Use your node states and data/configuration (KV) to keep your application configuration up-to-date
 
