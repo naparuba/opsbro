@@ -96,15 +96,15 @@ class DNSQuery:
         nb = len(r)
         if self.domain:
             packet += self.data[:2] + "\x81\x80"
-            packet += self.data[4:6] + self._get_size_hex(nb)  + '\x00\x00\x00\x00'  # Questions and Answers Counts
-            packet += self.__get_origianl_domain_name_question(self.data[12:])  # Original Domain Name Question
+            packet += self.data[4:6] + self._get_size_hex(nb)  + '\x00\x00\x00\x00'  # Questions and Answers Counts, and additionnal counts (0)
+            packet += self.__get_origianl_domain_name_question(self.data[12:])  # Original Domain Name Question, split to remove additonna parts
             
             for ip in r:
                 packet += '\xc0\x0c'  # Pointer to domain name
-                packet += '\x00\x01\x00\x01\x00\x00\x00\x3c\x00\x04'  # Response type, ttl and resource data length -> 4 bytes
+                packet += '\x00\x01\x00\x01\x00\x00\x00\x3c\x00\x04'  # Response type, ttl (60s) and resource data length -> 4 bytes
                 packet += str.join('', map(lambda x: chr(int(x)), ip.split('.')))  # 4bytes of IP
 
 
 
-        print "DNS RETURNing", len(packet), len(r)
+        logger.debug("Returning size: %s for nb ips:%s" % (len(packet), len(r)))
         return packet
