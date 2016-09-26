@@ -409,7 +409,7 @@ To list all of this just launch:
     kunai docker show
 
 
-## Get Quorum strong master/slave elections thanks to RAFT
+## Get quorum strong master/slave elections thanks to RAFT
   
 You can ask your node cluster system to elect a node for a specific task or application thanks to the RAFT implementation inside the agents
 
