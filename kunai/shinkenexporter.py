@@ -10,6 +10,7 @@ from kunai.pubsub import pubsub
 from kunai.threadmgr import threader
 from kunai.stop import stopper
 from kunai.detectormgr import  detecter
+from kunai.gossip import gossiper
 
 
 class ShinkenExporter(object):
@@ -18,7 +19,6 @@ class ShinkenExporter(object):
         self.reload_flag = False
         self.cfg_path = None
         self.node_changes = []
-        self.gossiper = None
         self.clust = None
         self.reload_command = ''
         # register to node events
@@ -33,10 +33,6 @@ class ShinkenExporter(object):
     
     def load_reload_command(self, reload_command):
         self.reload_command = reload_command
-    
-    
-    def load_gossiper(self, gossiper):
-        self.gossiper = gossiper
     
     
     def load_cluster(self, clust):
@@ -84,11 +80,11 @@ class ShinkenExporter(object):
             if v is None:  # missing check entry? not a real problem
                 continue
             check = json.loads(v)
-            logger.error('CHECK VALUE %s' % check, part='shinken')
+            logger.debug('CHECK VALUE %s' % check, part='shinken')
             try:
                 f = open(p, 'a')
                 cmd = '[%s] PROCESS_SERVICE_CHECK_RESULT;%s;%s;%d;%s\n' % (int(time.time()), nuuid, self.sanatize_check_name(cname), check['state_id'], check['output'])
-                logger.error('SAVING COMMAND %s' % cmd, part='shinken')
+                logger.debug('SAVING COMMAND %s' % cmd, part='shinken')
                 f.write(cmd)
                 f.flush()
                 f.close()
@@ -160,9 +156,9 @@ class ShinkenExporter(object):
         buf_sha = hashlib.sha1(buf).hexdigest()
         
         # if it the same as before?
-        logger.error('COMPARING OLD SHA/NEWSHA= %s   %s' % (old_sha_value, buf_sha), part='shinken')
+        logger.debug('COMPARING OLD SHA/NEWSHA= %s   %s' % (old_sha_value, buf_sha), part='shinken')
         if buf_sha == old_sha_value:
-            logger.error('SAME SHA VALUE, SKIP IT', part='shinken')
+            logger.debug('SAME SHA VALUE, SKIP IT', part='shinken')
             return
         
         logger.info('Will generate in path %s (sha1=%s): \n%s' % (p, buf_sha, buf), part='shinken')
@@ -214,7 +210,7 @@ class ShinkenExporter(object):
     def clean_cfg_dir(self):
         if not self.cfg_path:  # nothing to clean...
             return
-        node_keys = self.gossiper.nodes.keys()
+        node_keys = gossiper.nodes.keys()
         logger.debug('Current nodes uuids: %s' % node_keys, part='shinken')
         # First look at cfg file that don't match our inner elements, based on their file name
         # Note: if the user did do something silly, no luck for him!
@@ -238,12 +234,12 @@ class ShinkenExporter(object):
         while detecter.did_run == False:
             time.sleep(1)
         
-        if self.cfg_path is not None and self.gossiper is not None:
+        if self.cfg_path is not None:
             self.clean_cfg_dir()
             # First look at all nodes in the cluster and regerate them
-            node_keys = self.gossiper.nodes.keys()
+            node_keys = gossiper.nodes.keys()
             for nid in node_keys:
-                n = self.gossiper.nodes.get(nid, None)
+                n = gossiper.nodes.get(nid, None)
                 if n is None:
                     continue
                 self.generate_node_file(n)
@@ -253,7 +249,7 @@ class ShinkenExporter(object):
             
             time.sleep(1)
             # If not initialize, skip loop
-            if self.cfg_path is None or self.gossiper is None:
+            if self.cfg_path is None or gossiper is None:
                 continue
             # If nothing to do, skip it too
             if not self.regenerate_flag:
@@ -264,7 +260,7 @@ class ShinkenExporter(object):
             node_ids = self.node_changes
             self.node_changes = []
             for (evt, nid) in node_ids:
-                n = self.gossiper.nodes.get(nid, None)
+                n = gossiper.nodes.get(nid, None)
                 if evt == 'new-node':
                     if n is None:  # maybe someone just delete the node?
                         continue
@@ -282,8 +278,6 @@ class ShinkenExporter(object):
             # If we need to reload and have a reload commmand, do it
             if self.reload_flag and self.reload_command:
                 self.reload_flag = False
-                # TODO: remove
-                continue
                 p = subprocess.Popen(self.reload_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                      close_fds=True, preexec_fn=os.setsid)
                 stdout, stderr = p.communicate()

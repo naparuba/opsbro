@@ -21,7 +21,11 @@ KGOSSIP = 10
 
 # Main class for a Gossip cluster
 class Gossip(object):
-    def __init__(self, nodes, nodes_lock, addr, port, name, incarnation, uuid, tags, seeds, bootstrap, zone):
+    def __init__(self):
+        pass
+    
+    
+    def init(self, nodes, nodes_lock, addr, port, name, incarnation, uuid, tags, seeds, bootstrap, zone):
         self.nodes = nodes
         self.nodes_lock = nodes_lock
         self.addr = addr
@@ -889,3 +893,7 @@ class Gossip(object):
             r = self.do_push_pull(tgt)
             logger.info("HTTP: agent join for %s:%s result:%s" % (addr, port, r), part='http')
             return json.dumps(r)
+
+
+
+gossiper = Gossip()

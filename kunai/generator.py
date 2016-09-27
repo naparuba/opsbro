@@ -10,6 +10,7 @@ except Exception, exp:
     jinja2 = None
 
 from kunai.log import logger
+from kunai.gossip import gossiper
 
 gclust = None
 
@@ -18,7 +19,7 @@ gclust = None
 def ok_nodes(service=''):
     global gclust
     sname = service
-    with gclust.gossip.nodes_lock:
+    with gossiper.nodes_lock:
         nodes = copy.copy(gclust.nodes)  # just copy the dict, not the nodes themselves
     res = []
     for n in nodes.values():
@@ -58,7 +59,7 @@ class Generator(object):
         
         # copy objects because they can move
         node = copy.copy(clust.nodes[clust.uuid])
-        with clust.gossip.nodes_lock:
+        with gossiper.nodes_lock:
             nodes = copy.copy(clust.nodes)  # just copy the dict, not the nodes themselves
         
         # Now try to make it a jinja template object

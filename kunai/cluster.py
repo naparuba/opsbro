@@ -55,9 +55,10 @@ from kunai.util import copy_dir, get_public_address
 from kunai.threadmgr import threader
 from kunai.perfdata import PerfDatas
 from kunai.now import NOW
-from kunai.gossip import Gossip
+
 from kunai.generator import Generator
 # now singleton objects
+from kunai.gossip import gossiper
 from kunai.websocketmanager import websocketmgr
 from kunai.broadcast import broadcaster
 from kunai.httpdaemon import httpdaemon, route, response, request, abort, gserver
@@ -408,7 +409,7 @@ class Cluster(object):
         dockermgr.launch()
         
         # Our main object for gossip managment
-        self.gossip = Gossip(self.nodes, self.nodes_lock, self.addr, self.port, self.name, self.incarnation, self.uuid,
+        gossiper.init(self.nodes, self.nodes_lock, self.addr, self.port, self.name, self.incarnation, self.uuid,
                              self.tags, self.seeds, self.bootstrap, self.zone)
         
         # About detecting tags and such things
@@ -416,7 +417,6 @@ class Cluster(object):
         detecter.export_http()
         
         # Start shinken exproter thread
-        shinkenexporter.load_gossiper(self.gossip)
         shinkenexporter.load_cluster(self)
         shinkenexporter.launch_thread()
         
@@ -900,9 +900,9 @@ class Cluster(object):
         
         # We maybe got a new service, so export this data to every one in the gossip way :)
         node = self.nodes[self.uuid]
-        self.gossip.incarnation += 1
-        node['incarnation'] = self.gossip.incarnation
-        self.gossip.stack_alive_broadcast(node)
+        gossiper.incarnation += 1
+        node['incarnation'] = gossiper.incarnation
+        gossiper.stack_alive_broadcast(node)
         
         # Now we can save the received entry, but first clean unless props
         to_remove = ['from', 'last_check', 'modification_time', 'state', 'output', 'state_id', 'id']
@@ -937,9 +937,9 @@ class Cluster(object):
         self.link_services()
         # We maybe got a less service, so export this data to every one in the gossip way :)
         node = self.nodes[self.uuid]
-        self.gossip.incarnation += 1
-        node['incarnation'] = self.gossip.incarnation
-        self.gossip.stack_alive_broadcast(node)
+        gossiper.incarnation += 1
+        node['incarnation'] = gossiper.incarnation
+        gossiper.stack_alive_broadcast(node)
     
     
     # Look at our services dict and link the one we are apply_on
@@ -1121,7 +1121,7 @@ class Cluster(object):
                     node = self.nodes.get(fr_uuid, None)
                     if node and node['state'] != 'alive':
                         logger.debug('PINGBACK +ing node', node['name'], part='gossip')
-                        self.gossip.to_ping_back.append(fr_uuid)
+                        gossiper.to_ping_back.append(fr_uuid)
                 elif t == 'ping-relay':
                     tgt = m.get('tgt')
                     _from = m.get('from', '')
@@ -1704,7 +1704,7 @@ class Cluster(object):
             nzone = request.body.getvalue()
             logger.debug("HTTP: /agent/zone put %s" % (nzone), part='http')
             self.zone = nzone
-            self.gossip.change_zone(nzone)
+            gossiper.change_zone(nzone)
             with open(self.zone_file, 'w') as f:
                 f.write(nzone)
             return json.dumps(True)
@@ -2580,7 +2580,7 @@ class Cluster(object):
         
         # if did change, update the node check entry about it
         if did_change:
-            self.gossip.update_check_state_id(check['name'], check['state_id'])
+            gossiper.update_check_state_id(check['name'], check['state_id'])
         
         # by default warn others nodes if the check did change
         warn_about_our_change = did_change
@@ -2602,7 +2602,7 @@ class Cluster(object):
         
         # If our check or service did change, warn thers nodes about it
         if warn_about_our_change:
-            self.gossip.increase_incarnation_and_broadcast('alive')
+            gossiper.increase_incarnation_and_broadcast('alive')
         
         # We finally put the result in the KV database
         self.put_check(check)
@@ -3017,7 +3017,7 @@ Subject: %s
             
             # Same for the incarnation data!
             with open(self.incarnation_file + '.tmp', 'w') as f:
-                f.write(jsoner.dumps(self.gossip.incarnation))
+                f.write(jsoner.dumps(gossiper.incarnation))
             # now more the tmp file into the real one
             shutil.move(self.incarnation_file + '.tmp', self.incarnation_file)
             
@@ -3072,14 +3072,14 @@ Subject: %s
                                  part='gossip')
             
             if i % 15 == 0:
-                threader.create_and_launch(self.gossip.launch_full_sync, name='launch-full-sync', essential=True)
+                threader.create_and_launch(gossiper.launch_full_sync, name='launch-full-sync', essential=True)
             
             if i % 2 == 1:
-                threader.create_and_launch(self.gossip.ping_another, name='ping-another')
+                threader.create_and_launch(gossiper.ping_another, name='ping-another')
             
-            self.gossip.launch_gossip()
+            gossiper.launch_gossip()
             
-            self.gossip.look_at_deads()
+            gossiper.look_at_deads()
             
             self.retention_nodes()
             
@@ -3112,7 +3112,7 @@ Subject: %s
     
     
     def stack_event_broadcast(self, payload):
-        msg = self.gossip.create_event_msg(payload)
+        msg = gossiper.create_event_msg(payload)
         b = {'send': 0, 'msg': msg}
         broadcaster.broadcasts.append(b)
         return
@@ -3132,15 +3132,15 @@ Subject: %s
         if t is None:  # bad message, skip it
             return
         if t == 'push-pull-msg':
-            self.gossip.merge_nodes(m['nodes'])
+            gossiper.merge_nodes(m['nodes'])
         elif t == 'ack':
             logger.debug("GOT AN ACK?")
         elif t == 'alive':
-            self.gossip.set_alive(m)
+            gossiper.set_alive(m)
         elif t in ['suspect', 'dead']:
-            self.gossip.set_suspect(m)
+            gossiper.set_suspect(m)
         elif t == 'leave':
-            self.gossip.set_leave(m)
+            gossiper.set_leave(m)
         elif t == 'event':
             self.manage_event(m)
         else:
@@ -3231,7 +3231,7 @@ Subject: %s
     
     # We are joining the seed members and lock until we reach at least one
     def join(self):
-        self.gossip.join()
+        gossiper.join()
     
     
     # each second we look for all old events in order to clean and delete them :)

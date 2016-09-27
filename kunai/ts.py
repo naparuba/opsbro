@@ -17,6 +17,7 @@ from kunai.threadmgr import threader
 from kunai.util import to_best_int_float
 from kunai.now import NOW
 from kunai.dbwrapper import dbwrapper
+from kunai.gossip import gossiper
 
 # DO NOT FORGEET:
 # sysctl -w net.core.rmem_max=26214400
@@ -65,7 +66,7 @@ class TSBackend(object):
             self.db.Put(key, '')
             logger.debug('TS propagating a new key', key, part='ts')
             # now propagate the key to the other ts nodes
-            self.clust.gossip.stack_new_ts_broadcast(key)
+            gossiper.stack_new_ts_broadcast(key)
         return False
     
     

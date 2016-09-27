@@ -4,6 +4,8 @@ from kunai.log import logger
 from kunai.httpdaemon import route, response
 from kunai.evaluater import evaluater
 from kunai.collectormanager import collectormgr
+from kunai.gossip import gossiper
+
 
 class DetectorMgr(object):
     def __init__(self):
@@ -46,7 +48,7 @@ class DetectorMgr(object):
                     matching_tags.add(tag)
             logger.debug('Detector loop generated tags: %s' % matching_tags, part='gossip')
             # Merge with gossip part
-            self.clust.gossip.update_detected_tags(matching_tags)
+            gossiper.update_detected_tags(matching_tags)
             
             self.did_run = True  # ok we did detect our tags, we can be sure about us
             time.sleep(1)
