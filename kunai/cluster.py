@@ -551,7 +551,7 @@ class Cluster(object):
                 sys.exit(2)
             
             mod_time = int(os.path.getmtime(fp))
-            fname = fp[len(self.cfg_dir) + 1:]
+            fname = fp
             gname = os.path.splitext(fname)[0]
             self.import_generator(generator, fname, gname, mod_time=mod_time)
         
@@ -822,16 +822,17 @@ class Cluster(object):
                 return
         # Template must be from configuration path
         gen_base_dir = os.path.dirname(fr)
-        generator['template'] = os.path.normpath(os.path.join(self.cfg_dir, gen_base_dir, 'templates', generator['template']))
-        if not generator['template'].startswith(self.cfg_dir):
-            logger.error(
-                "Bad file path for your template property of your %s generator, is not in the cfg directory tree" % gname)
-            return
+        
+        generator['template'] = os.path.normpath(os.path.join(gen_base_dir, generator['template']))
         # and path must be a abs path
         generator['path'] = os.path.abspath(generator['path'])
         
         # We will try not to hummer the generator
         generator['modification_time'] = mod_time
+        
+        for k in ['partial_start', 'partial_end']:
+            if k not in generator:
+                generator[k] = ''
         
         # Add it into the generators list
         self.generators[generator['id']] = generator
@@ -2440,6 +2441,7 @@ class Cluster(object):
     def do_generator_thread(self):
         logger.log('GENERATOR thread launched', part='generator')
         while not self.interrupted:
+            logger.log('Looking for %d generators' % len(self.generators), part='generator')
             for (gname, gen) in self.generators.iteritems():
                 logger.debug('LOOK AT GENERATOR', gen, 'to be apply on', gen['apply_on'], 'with our tags', self.tags, part='generator')
                 apply_on = gen['apply_on']
@@ -2449,7 +2451,7 @@ class Cluster(object):
                 logger.debug('Generator %s will runs' % gname, part='generator')
                 g = Generator(gen)
                 logger.debug('Generator %s will generate' % str(g.__dict__), part='generator')
-                g.generate(self)
+                g.generate()
                 logger.debug('Generator %s is generated' % str(g.__dict__), part='generator')
                 should_launch = g.write_if_need()
                 if should_launch:
