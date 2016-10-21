@@ -147,42 +147,49 @@ class Generator(object):
                 # As we will pslit lines and so lost the \n we should look if the last one was ending with one or not
                 orig_content_finish_with_new_line = (orig_content[-1] == '\n')
                 lines = orig_content.splitlines()
-                del orig_content  # no more need
+                logger.debug('ORIGIANL CONTENT: %s' % orig_content, part='generator')
+                del orig_content
                 f.close()
                 # find the part to remove between start and end of the partial
                 try:
                     idx_start = lines.index(self.g['partial_start'])
                 except ValueError:  # not found?
-                    logger.error('Cannot find the partial_start "%s" in the file "%s" for the generator %s' % (self.g['partial_start'], self.g['path'], self.g['name']), part='generator')
-                    self.output = None
-                    self.template = ''
-                    self.buf = ''
-                    return False
+                    idx_start = None
                 try:
                     idx_end = lines.index(self.g['partial_end'])
                 except ValueError:  # not found?
-                    logger.error('Cannot find the partial_end "%s" in the file "%s" for the generator %s' % (self.g['partial_end'], self.g['path'], self.g['name']), part='generator')
-                    self.output = None
-                    self.template = ''
-                    self.buf = ''
-                    return False
+                    idx_end = None
                 
-                # Maybe there is a bad order in the index?
-                if idx_start > idx_end:
-                    logger.error('The partial_start "%s" and partial_end "%s" in the file "%s" for the generator %s are not in the good order' % (self.g['partial_start'], self.g['partial_end'], self.g['path'], self.g['name']), part='generator')
-                    self.output = None
-                    self.template = ''
-                    self.buf = ''
-                    return False
-                part_before = lines[:idx_start]
-                part_after = lines[idx_end+1:]
+                # Manage partial part not found, so maybe in the end
+                if idx_start is None or idx_end is None:
+                    if self.g['if_partial_missing'] == 'append':
+                        part_before = lines
+                        part_after = []
+                        logger.debug('APPEND MODE: force a return line? %s' % orig_content_finish_with_new_line, part='generator')
+                        # if the file did not finish with \n, force one
+                        if not orig_content_finish_with_new_line:
+                            part_before.append('\n')
+                    else:
+                        logger.error('The generator %s do not have a valid if_partial_missing property' % (self.g['name']), part='generator')
+                        return False
+                else:  # partial found, look at part before/after
+                    # Maybe there is a bad order in the index?
+                    if idx_start > idx_end:
+                        logger.error('The partial_start "%s" and partial_end "%s" in the file "%s" for the generator %s are not in the good order' % (self.g['partial_start'], self.g['partial_end'], self.g['path'], self.g['name']), part='generator')
+                        self.output = None
+                        self.template = ''
+                        self.buf = ''
+                        return False
+                    part_before = lines[:idx_start]
+                    part_after = lines[idx_end+1:]
                 last_char = '' if not orig_content_finish_with_new_line else '\n'
-                new_content = '%s%s%s%s' % ('\n'.join(part_before), self.output, '\n'.join(part_after), last_char)
-                logger.debug('Temporary file for partial replacement: %s and %s %d=>%d' % (part_before, part_after, idx_start, idx_end), part='generator')
+                new_content = '%s\n%s%s%s' % ('\n'.join(part_before), self.output, '\n'.join(part_after), last_char)
+                logger.debug('Temporary file for partial replacement: %s and %s %s=>%s' % (part_before, part_after, idx_start, idx_end), part='generator')
                 logger.debug('New content: %s' % new_content, part='generator')
                 tmp_path = '%s.temporary-generator' % self.g['path']
                 f2 = codecs.open(tmp_path, 'w', 'utf-8')
                 f2.write(new_content)
+                logger.debug('DID GENERATE: %s' % new_content)
                 f2.close()
                 # now the second file is ok, move it to the first one place, but with:
                 # * same user/group

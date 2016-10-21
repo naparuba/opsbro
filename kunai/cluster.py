@@ -833,6 +833,11 @@ class Cluster(object):
         for k in ['partial_start', 'partial_end']:
             if k not in generator:
                 generator[k] = ''
+
+        generator['if_partial_missing'] = generator.get('if_partial_missing', '')
+        if generator['if_partial_missing'] and generator['if_partial_missing'] not in ['append']:
+            logger.error('Generator %s if_partial_missing property is not valid: %s' % (generator['name'], generator['if_partial_missing']), part='generator')
+            return
         
         # Add it into the generators list
         self.generators[generator['id']] = generator
