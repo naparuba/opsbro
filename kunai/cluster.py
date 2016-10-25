@@ -231,19 +231,20 @@ class Cluster(object):
                 self.master_key_priv = os.path.join(self.cfg_dir, self.master_key_priv)
             if not os.path.exists(self.master_key_priv):
                 logger.error('Cannot find the master key private file at %s' % self.master_key_priv)
-            if RSA is None:
-                logger.error(
-                    'You set a master private key but but cannot import python-rsa module, please install it. Exiting.')
-                sys.exit(2)
-            
-            with open(self.master_key_priv, 'r') as f:
-                buf = f.read()
-            try:
-                self.mfkey_priv = RSA.PrivateKey.load_pkcs1(buf)
-            except Exception, exp:
-                logger.error('Invalid master private key at %s. (%s) Exiting.' % (self.master_key_priv, exp))
-                sys.exit(2)
-            logger.info('Master private key file %s is loaded' % self.master_key_priv)
+            else:
+                if RSA is None:
+                    logger.error(
+                        'You set a master private key but but cannot import python-rsa module, please install it. Exiting.')
+                    sys.exit(2)
+                
+                with open(self.master_key_priv, 'r') as f:
+                    buf = f.read()
+                try:
+                    self.mfkey_priv = RSA.PrivateKey.load_pkcs1(buf)
+                except Exception, exp:
+                    logger.error('Invalid master private key at %s. (%s) Exiting.' % (self.master_key_priv, exp))
+                    sys.exit(2)
+                logger.info('Master private key file %s is loaded' % self.master_key_priv)
         
         # Same for master fucking key PUBLIC
         if self.master_key_pub:
@@ -251,19 +252,20 @@ class Cluster(object):
                 self.master_key_pub = os.path.join(self.cfg_dir, self.master_key_pub)
             if not os.path.exists(self.master_key_pub):
                 logger.error('Cannot find the master key public file at %s' % self.master_key_pub)
-            if RSA is None:
-                logger.error(
-                    'You set a master public key but but cannot import python-crypto module, please install it. Exiting.')
-                sys.exit(2)
-            # let's try to open the key so :)
-            with open(self.master_key_pub, 'r') as f:
-                buf = f.read()
-            try:
-                self.mfkey_pub = RSA.PublicKey.load_pkcs1(buf)
-            except Exception, exp:
-                logger.error('Invalid master public key at %s. (%s) Exiting.' % (self.master_key_pub, exp))
-                sys.exit(2)
-            logger.info('Master public key file %s is loaded' % self.master_key_pub)
+            else:
+                if RSA is None:
+                    logger.error(
+                        'You set a master public key but but cannot import python-crypto module, please install it. Exiting.')
+                    sys.exit(2)
+                # let's try to open the key so :)
+                with open(self.master_key_pub, 'r') as f:
+                    buf = f.read()
+                try:
+                    self.mfkey_pub = RSA.PublicKey.load_pkcs1(buf)
+                except Exception, exp:
+                    logger.error('Invalid master public key at %s. (%s) Exiting.' % (self.master_key_pub, exp))
+                    sys.exit(2)
+                logger.info('Master public key file %s is loaded' % self.master_key_pub)
         
         # Open the retention data about our previous runs
         # but some are specific to this agent uuid
