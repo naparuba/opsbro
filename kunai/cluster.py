@@ -2448,7 +2448,7 @@ class Cluster(object):
     def do_generator_thread(self):
         logger.log('GENERATOR thread launched', part='generator')
         while not self.interrupted:
-            logger.log('Looking for %d generators' % len(self.generators), part='generator')
+            logger.debug('Looking for %d generators' % len(self.generators), part='generator')
             for (gname, gen) in self.generators.iteritems():
                 logger.debug('LOOK AT GENERATOR', gen, 'to be apply on', gen['apply_on'], 'with our tags', self.tags, part='generator')
                 apply_on = gen['apply_on']
