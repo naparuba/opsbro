@@ -698,14 +698,14 @@ class Gossip(object):
             r = rq.get(uri, params=payload)
             logger.debug("push-pull response", r, part='gossip')
             try:
-                back = json.loads(r.text)
+                back = json.loads(r.content)
             except ValueError, exp:
                 logger.error('ERROR CONNECTING TO %s:%s' % other, exp, part='gossip')
                 return False
             pubsub.pub('manage-message', msg=back)
             # self.manage_message(back)
             return True
-        except rq.exceptions.RequestException, exp:  # Exception, exp:
+        except (rq.exceptions.RequestException, rq.packages.urllib3.exceptions.HTTPError), exp:  # Exception, exp:
             logger.error('[push-pull] ERROR CONNECTING TO %s:%s' % other, exp, part='gossip')
             return False
     

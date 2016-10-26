@@ -46,7 +46,7 @@ class Generator(object):
             return
         try:
             f = open(self.g['template'], 'r')
-            self.buf = f.read().decode('utf8', errors='ignore')
+            self.buf = f.read().decode('utf8', 'ignore')
             f.close()
         except IOError, exp:
             logger.error('Cannot open template file %s : %s' % (self.g['template'], exp), part='generator')
