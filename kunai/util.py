@@ -56,7 +56,10 @@ def _sort_local_addresses(addr1, addr2):
     addr2_is_10 = addr2.startswith('10.')
     addr1_is_172 = addr1.startswith('172.')
     addr2_is_172 = addr2.startswith('172.')
-    
+    addr1_is_127 = addr1.startswith('127.')
+    addr2_is_127 = addr2.startswith('127.')
+
+    # lower is better
     addr1_order = 4
     if addr1_is_192:
         addr1_order = 1
@@ -64,6 +67,8 @@ def _sort_local_addresses(addr1, addr2):
         addr1_order = 2
     elif addr1_is_10:
         addr1_order = 3
+    if addr1_is_127:
+        addr1_order = 5
     addr2_order = 4
     if addr2_is_192:
         addr2_order = 1
@@ -71,7 +76,9 @@ def _sort_local_addresses(addr1, addr2):
         addr2_order = 2
     elif addr2_is_10:
         addr2_order = 3
-    
+    if addr2_is_127:
+        addr2_order = 5
+
     print "Address order: %s:%d %s:%d" % (addr1, addr1_order, addr2, addr2_order)
     if addr1_order > addr2_order:
         return 1
@@ -91,7 +98,9 @@ def _get_linux_local_addresses():
 
 
 def _is_valid_local_addr(addr):
-    if addr in ['', '127.0.0.1']:
+    if not addr:
+        return False
+    if addr.startswith('127.0.0.'):
         return False
     if addr.startswith('169.254.'):
         return False
