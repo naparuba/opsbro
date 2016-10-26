@@ -7,6 +7,10 @@ from kunai.log import logger
 from kunai.collector import Collector
 from kunai.util import get_public_address
 
+try:
+    import pwd
+except ImportError:
+    pwd = None
 
 class System(Collector):
     def launch(self):
@@ -30,7 +34,11 @@ class System(Collector):
         res['linux']['id'] = _id
 
         if hasattr(os, 'getlogin'):
-            res['user'] = os.getlogin()
+            try:
+                res['user'] = os.getlogin()
+            except OSError:  # some background daemon can have problem on ancien os
+                if pwd is not None:
+                    res['user'] = pwd.getpwuid(os.geteuid()).pw_name
             res['uid'] = os.getuid()
             res['gid'] = os.getgid()
 
