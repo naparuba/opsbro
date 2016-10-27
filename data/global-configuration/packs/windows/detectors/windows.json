@@ -1,0 +1,7 @@
+{
+    "detector": {
+        "tags": ["windows"],
+        "apply_if": "get_os() == 'windows'",
+        "interval": "3600s"
+    }
+}

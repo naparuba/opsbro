@@ -1,0 +1,8 @@
+{
+    "detector": {
+        "tags": ["linux"],
+        "apply_if": "get_os() == 'linux'",
+        "interval": "3600s"
+    }
+}
+

@@ -1,0 +1,18 @@
+{
+    "name": "windows",
+    "types": ["pack"],
+    "version": "1.0",
+    "homepage": "",
+    "author": "Shinken Solutions",
+    "description": "Various windows stuff",
+    "contributors": [],
+    "repository": "",
+    "keywords": [
+	"pack",
+	"windows"
+    ],
+    "dependencies": {
+	"core": ">=1.0"
+    },
+    "license": ""
+}

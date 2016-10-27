@@ -144,6 +144,12 @@ def check_tcp(hname, port, timeout=10):
         return False
 
 
+@export
+def get_os():
+    import platform
+    return platform.system().lower()
+
+
 names = {'True': True, 'False': False}
 
 
