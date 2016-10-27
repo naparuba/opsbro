@@ -37,7 +37,10 @@ class WebSocketBackend(object):
             msg = json.dumps(o)
         except ValueError:
             return
-        for client in self.server.connections.itervalues():
+        
+        # get in one show the connections because connections can change during send
+        clients = self.server.connections.itervalues()[:]
+        for client in clients:
             try:
                 client.sendMessage(msg)
             except Exception as exp:

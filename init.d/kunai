@@ -24,7 +24,7 @@
 # Reference:
 # http://refspecs.linuxfoundation.org/LSB_4.1.0/LSB-Core-generic/LSB-Core-generic/iniscrptact.html
 
-set -xv
+#set -xv
 
 NAME="kunai"
 
