@@ -39,7 +39,7 @@ class WebSocketBackend(object):
             return
         
         # get in one show the connections because connections can change during send
-        clients = self.server.connections.itervalues()[:]
+        clients = self.server.connections.values()[:]
         for client in clients:
             try:
                 client.sendMessage(msg)
