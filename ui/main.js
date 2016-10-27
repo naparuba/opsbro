@@ -454,7 +454,7 @@ function refresh_services() {
         s += '<div class="">';
         s += '<span class="pull-left" style="color:#C6C5FE">Nodes:</span>';
         for ( var j = 0; j < members.length; j++ ) {
-            mname = members[ j ];
+            var mname = members[ j ];
             if ( failing_members.indexOf( mname ) > -1 ) { // if found
                 s += '<span class="pull-left bold" style="color:#DD4E58">' + members[ j ] + ' </span>';
             } else {
@@ -508,7 +508,7 @@ function generate_host_list_entry( val ) {
         }
     } );
     
-    var name = val.name;
+    var nuuid = val.uuid;
     
     var state = val.state;
     // If len of members is 0, put it in unkown, not normal result here
@@ -536,17 +536,17 @@ function generate_host_list_entry( val ) {
     }
     
     // Then print all in our filter
-    var s = "<li onclick='detail(\"node\",\"" + val.name + "\")' class='bg-" + color + " list-group-item list-condensed-link ' data-state-id='" + state_id + "' id='" + val.name + "'>";
+    var s = "<li onclick='detail(\"node\",\"" + nuuid + "\")' class='bg-" + color + " list-group-item list-condensed-link ' data-state-id='" + state_id + "' id='" + nuuid + "'>";
     // Compact version
     s += '<div class="compact">';
-    s += '<div class="name pull-left">' + name + '<br/><small class="pull-left">' + val.addr + '</small>';
+    s += '<div class="name pull-left">' + val.name + '<br/><small class="pull-left">' + val.addr + '</small>';
     s += '</div>';
     s += '</div>';
     
     // Expanded version
     s += '<div class="expanded">';
     s += "<h4 class='list-group-item-heading'>";
-    s += name;
+    s += val.name;
     s += '<span class="pull-right"><small style="color:#FF71E2">' + state + '</small></span>';
     s += '</h4>';
     
@@ -628,10 +628,10 @@ function load_services() {
     
 }
 
-function find_node( name ) {
+function find_node( nuuid ) {
     var node = null;
     $.each( nodes, function( key, val ) {
-        if ( val.name == name ) {
+        if ( val.uuid == nuuid ) {
             node = val;
         }
     } );
@@ -649,25 +649,25 @@ function find_service( name ) {
 }
 
 // Detail show be called by a NON modal page
-function detail( type, name ) {
-    update_detail( type, name );
+function detail( type, nuuid ) {
+    update_detail( type, nuuid );
     // Show up the modal
     $( '.bs-example-modal-lg' ).modal( 'show' );
     
 }
 
-function update_detail( type, name ) {
+function update_detail( type, nuuid ) {
     // We got a click, tag the selected element
-    selected = name;
+    selected = nuuid;
     
-    console.debug( 'detail::' + type + '+' + name );
+    console.debug( 'detail::' + type + '+' + nuuid );
     if ( type == 'node' ) {
-        var node = find_node( name );
+        var node = find_node( nuuid );
         if ( node == null ) {
-            $( '#part-right' ).html( '<div class="bs-callout bs-callout-warning"><h4>No such node ' + name + '</h4></div>' );
+            $( '#part-right' ).html( '<div class="bs-callout bs-callout-warning"><h4>No such node ' + nuuid + '</h4></div>' );
         }
         var now = new Date().getTime();
-        $.getJSON( "http://" + server + "/agent/state/" + name + '?_t=' + now, function( data ) {
+        $.getJSON( "http://" + server + "/agent/state/" + nuuid + '?_t=' + now, function( data ) {
             s = '';
             
             // modal header part
@@ -931,24 +931,25 @@ function do_webso_connect() {
             
             o = oraw.payload;
             
-            var name = o.name;
+            var nuuid = o.uuid;
             // Delete the previously add host
             nodes    = $.grep( nodes, function( h ) {
-                return h.name != name;
+                return h.uuid != nuuid;
             } );
             // Save this host in the list :)
             nodes.push( o );
             // Now generate the doc string from our new host
             var s = generate_host_list_entry( o );
             // Delete the previous li for this node
-            $( '#' + name ).remove();
+            console.debug('Removing previous node entry:' + nuuid);
+            $( '#' + nuuid ).remove();
             // ok add new the one
             $( s ).appendTo( $( '#nodes > ul' ) );
             // resort and hide if need
             apply_filters();
             sort_lists();
             update_counts();
-            // If it was teh selected, update the detail panel
+            // If it was the selected, update the detail panel
             console.log( 'SELECTED ' + selected + ' AND ' + name );
             if ( name == selected ) {
                 detail( 'node', name );

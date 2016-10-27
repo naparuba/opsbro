@@ -1297,14 +1297,14 @@ class Cluster(object):
     # TODO: SPLIT into modules :)
     def launch_tcp_listener(self):
         
-        @route('/agent/state/:nname')
+        @route('/agent/state/:nuuid')
         @route('/agent/state')
-        def get_state(nname=''):
+        def get_state(nuuid=''):
             response.content_type = 'application/json'
             r = {'checks': {}, 'services': {}}
             # by default it's us
             # maybe its us, maybe not
-            if nname == '' or nname == self.nodes[self.uuid]['name']:
+            if nuuid == '' or nuuid == self.uuid:
                 for (cid, check) in self.checks.iteritems():
                     # maybe this chck is not a activated one for us, if so, bail out
                     if cid not in self.active_checks:
@@ -1313,11 +1313,7 @@ class Cluster(object):
                 r['services'] = self.nodes[self.uuid]['services']
                 return r
             else:  # find the elements
-                node = None
-                with self.nodes_lock:
-                    for n in self.nodes.values():
-                        if n['name'] == nname:
-                            node = n
+                node = self.nodes.get(nuuid, None)
                 if node is None:
                     return abort(404, 'This node is not found')
                 # Services are easy, we already got them
@@ -1325,7 +1321,7 @@ class Cluster(object):
                 # checks are harder, we must find them in the kv nodes
                 v = self.get_key('__health/%s' % node['uuid'])
                 if v is None or v == '':
-                    logger.error('Cannot access to the checks list for', nname, part='http')
+                    logger.error('Cannot access to the checks list for', nuuid, part='http')
                     return r
                 
                 lst = json.loads(v)
