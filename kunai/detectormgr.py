@@ -30,6 +30,7 @@ class DetectorMgr(object):
                 interval = int(gen['interval'].split('s')[0])  # todo manage like it should
                 should_be_launch = gen['last_launch'] < int(time.time()) - interval
                 if should_be_launch:
+                    logger.debug('Launching detector: %s rule: %s' % (gname, gen['apply_if']), part='detector')
                     gen['last_launch'] = int(time.time())
                     try:
                         do_apply = evaluater.eval_expr(gen['apply_if'])

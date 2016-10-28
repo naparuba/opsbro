@@ -1,0 +1,8 @@
+{
+    "detector": {
+        "tags": ["uml"],
+        "apply_if": "grep_file('/proc/cpuinfo', 'UML')",
+        "interval": "10s"
+    }
+}
+

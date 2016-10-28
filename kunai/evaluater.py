@@ -49,18 +49,18 @@ def export(f):
 
 
 @export
-def fileexists(p):
+def file_exists(p):
     return os.path.exists(p)
 
 
 @export
-def ip_in_range(ip, _range):
+def ip_is_in_range(ip, _range):
     ip_range = IP(_range)
     return ip in ip_range
 
 
 @export
-def grep(s, p, regexp=False):
+def grep_file(s, p, regexp=False):
     if not os.path.exists(p):
         return False
     try:
@@ -193,11 +193,14 @@ class Evaluater(object):
     
     
     def eval_expr(self, expr, check=None):
+        logger.debug('EVAL: expression: %s' % expr, part='evaluator')
         expr = self.compile(expr, check=check)
-        
+        logger.debug('EVAL: exp changed: %s' % expr, part='evaluator')
         # final tree
         tree = ast.parse(expr, mode='eval').body
-        return self.eval_(tree)
+        r = self.eval_(tree)
+        logger.debug('EVAL: result: %s' % r, part='evaluator')
+        return r
     
     
     def eval_(self, node):

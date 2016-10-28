@@ -1,0 +1,8 @@
+{
+    "detector": {
+        "tags": ["vserver"],
+        "apply_if": "grep_file('/proc/self/status', 'VxID: [0-9]*', regexp=True)",
+        "interval": "10s"
+    }
+}
+

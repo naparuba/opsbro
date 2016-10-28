@@ -1,15 +1,15 @@
 {
-    "name": "virtual",
+    "name": "hypervisor",
     "types": ["pack"],
     "version": "1.0",
     "homepage": "",
     "author": "Shinken Solutions",
-    "description": "Look at Virtualization data",
+    "description": "Look at Hypervisor information",
     "contributors": [],
     "repository": "",
     "keywords": [
 	"pack",
-	"ports"
+	"hypervisor"
     ],
     "dependencies": {
 	"core": ">=1.0"

@@ -1,0 +1,8 @@
+{
+    "detector": {
+        "tags": ["docker"],
+        "apply_if": "file_exists('/root/.dockerinit')",
+        "interval": "10s"
+    }
+}
+

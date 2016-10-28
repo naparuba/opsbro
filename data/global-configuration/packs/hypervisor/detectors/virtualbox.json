@@ -1,7 +1,7 @@
 {
     "detector": {
         "tags": ["virtualbox"],
-        "apply_if": "ip_in_range('{collector.system.publicip}', '10.0.2.0/24')",
+        "apply_if": "'{collector.dmidecode.product_name}' == 'VirtualBox'",
         "interval": "10s"
     }
 }

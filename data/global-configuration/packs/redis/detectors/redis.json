@@ -1,7 +1,7 @@
 {
     "detector": {
         "tags": ["redis"],
-	"apply_if": "fileexists('/etc/redis/redis.conf')",
+	"apply_if": "file_exists('/etc/redis/redis.conf')",
 	"interval": "10s"
     }
 }
