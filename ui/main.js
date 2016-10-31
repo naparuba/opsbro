@@ -138,7 +138,7 @@ elect_server();
 
 
 // Main structure to put nodes and services
-var services    = [];
+//var services    = [];
 var nodes       = [];
 var is_expanded = false;
 var selected    = '';
@@ -185,6 +185,7 @@ function load_nodes() {
 }
 
 
+/*
 function show_services() {
     // Switch services/nodes buttons
     $( '#services-btn' ).addClass( 'active' );
@@ -204,6 +205,7 @@ function show_services() {
     $( '#connexions' ).hide();
     
 }
+*/
 
 function show_nodes() {
     // Switch services/nodes buttons
@@ -247,7 +249,7 @@ function show_connexions() {
 // Coun the number of node and service, and update the btn badges
 function update_counts() {
     $( '#badge-nodes' ).html( nodes.length );
-    $( '#badge-services' ).html( services.length );
+    /*$( '#badge-services' ).html( services.length );*/
 }
 
 /*
@@ -265,7 +267,7 @@ function compare_name( a, b ) {
 
 function sort_lists() {
     sort_lists_for( 'nodes' );
-    sort_lists_for( 'services' );
+    //sort_lists_for( 'services' );
 }
 
 
@@ -282,7 +284,7 @@ function sort_lists_for( p ) {
 
 function apply_filters() {
     apply_filters_for( 'nodes' );
-    apply_filters_for( 'services' );
+    //apply_filters_for( 'services' );
 }
 
 function apply_filters_for( p ) {
@@ -309,10 +311,12 @@ function apply_filters_for( p ) {
             look_for = 'tags';
         }
         
+        /*
         if ( reg.startsWith( 's:' ) ) {
             console.debug( 'MATCH SERVICE' );
             look_for = 'services';
         }
+        */
     }
     
     $( '#' + p + ' > ul > li' ).each( function( index ) {
@@ -339,6 +343,7 @@ function apply_filters_for( p ) {
                     }
                 }
             }
+            /*
             if ( look_for == 'services' ) {
                 var sname = reg.replace( 's:', '' );
                 // Look for service name and really fot a node
@@ -349,6 +354,7 @@ function apply_filters_for( p ) {
                     }
                 }
             }
+            */
             
         }
         
@@ -409,6 +415,7 @@ $( function() {
     
 } );
 
+/*
 // Go with all services and print them on the list elements
 function refresh_services() {
     
@@ -483,6 +490,7 @@ function refresh_services() {
     sort_lists();
     update_counts();
 }
+*/
 
 // Generate a LI string with the host information
 function generate_host_list_entry( val ) {
@@ -496,6 +504,8 @@ function generate_host_list_entry( val ) {
     if ( val.state == 'leave' ) {
         state_id = 3;
     }
+    
+    /*
     var services = val.services;
     // also look at the services states
     $.each( services, function( sname, service ) {
@@ -507,6 +517,7 @@ function generate_host_list_entry( val ) {
             state_id = 1;
         }
     } );
+    */
     
     var nuuid = val.uuid;
     
@@ -562,6 +573,7 @@ function generate_host_list_entry( val ) {
     
     s += '<div style="clear: both;"></div>';
     
+    /*
     // get the number of services. Quite not so natural in js ... (ノ ゜Д゜)ノ ︵ ┻━┻
     var nb_s = $.map( services, function( n, i ) {
         return i;
@@ -585,6 +597,8 @@ function generate_host_list_entry( val ) {
         } );
         s += '</div>';
     }
+    */
+    
     
     s += '</div>';
     
@@ -614,6 +628,7 @@ function refresh_nodes() {
     
 }
 
+/*
 function load_services() {
     add_spinner( '#services' );
     var now  = new Date().getTime();
@@ -627,6 +642,7 @@ function load_services() {
     } );
     
 }
+*/
 
 function find_node( nuuid ) {
     var node = null;
@@ -638,6 +654,7 @@ function find_node( nuuid ) {
     return node;
 }
 
+/*
 function find_service( name ) {
     var node = null;
     $.each( services, function( key, val ) {
@@ -647,9 +664,11 @@ function find_service( name ) {
     } );
     return node;
 }
+*/
 
 // Detail show be called by a NON modal page
 function detail( type, nuuid ) {
+    console.debug('GET DETAIL FOR'+type+' => '+nuuid);
     update_detail( type, nuuid );
     // Show up the modal
     $( '.bs-example-modal-lg' ).modal( 'show' );
@@ -687,6 +706,7 @@ function update_detail( type, nuuid ) {
             
             s += '<hr/>';
             
+            /*
             // Now print services
             s += '<div style="color:#C6C5FE">Services:</div>';
             $.each( data.services, function( k, v ) {
@@ -711,6 +731,7 @@ function update_detail( type, nuuid ) {
                 s += '<div class="compact"><div class="name" style="color:' + color + ';margin-left:10px;">' + v.name + ' <span class="pull-right"><small>' + port + '</small></span></div></div>';
                 s += '</div>';
             } );
+            */
             
             s += '<hr/>';
             
@@ -750,7 +771,7 @@ function update_detail( type, nuuid ) {
         } );
         
     }
-    
+    /*
     if ( type == 'service' ) {
         var service = find_service( name );
         if ( service == null ) {
@@ -818,7 +839,7 @@ function update_detail( type, nuuid ) {
                     color = 'orange';
                 }
                 
-                sh += '<div class="compact show-pointer" style="height: 25px;" onclick="update_detail(\'node\',\'' + node.name + '\')"><div class="name">' + node.name + '<small> (' + node.addr + ')</small> <span class="pull-right"><span style="color:' + color + '">' + node.state + '</span></span></div></div>';
+                sh += '<div class="compact show-pointer" style="height: 25px;" onclick="update_detail(\'node\',\'' + node.uuid + '\')"><div class="name">' + node.name + '<small> (' + node.addr + ')</small> <span class="pull-right"><span style="color:' + color + '">' + node.state + '</span></span></div></div>';
                 
                 $.each( data.checks, function( k, v ) {
                     sh += '<ul style="margin-bottom: 0px;">';
@@ -849,6 +870,7 @@ function update_detail( type, nuuid ) {
         update_service_right_part();
         
     }
+    */
     
     // Show up the modal
     $( '.bs-example-modal-lg' ).modal( 'show' );
@@ -861,7 +883,7 @@ $( function() {
         if ( server != null ) {
             console.log( 'OK Election is done, we can load' );
             load_nodes();
-            load_services();
+            //load_services();
         } else {
             console.log( 'Cannot load, waiting server elecgtion' );
             setTimeout( do_load, 100 );
@@ -950,9 +972,9 @@ function do_webso_connect() {
             sort_lists();
             update_counts();
             // If it was the selected, update the detail panel
-            console.log( 'SELECTED ' + selected + ' AND ' + name );
-            if ( name == selected ) {
-                detail( 'node', name );
+            console.debug( 'SELECTED ' + selected + ' AND ' + nuuid );
+            if ( nuuid == selected ) {
+                detail( 'node', nuuid );
             }
         };
     }
