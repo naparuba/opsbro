@@ -684,9 +684,8 @@ class Gossip(object):
     # entries, and each other will be able to learn new nodes and so
     # launch gossip broadcasts if need
     def do_push_pull(self, other):
-        nodes = {}
         with self.nodes_lock:
-            nodes = copy.copy(self.nodes)
+            nodes = copy.deepcopy(self.nodes)
         m = {'type': 'push-pull-msg', 'nodes': nodes}
         message = json.dumps(m)
         
