@@ -13,7 +13,7 @@ Array.prototype.shuffle = function() {
     return this;
 };
 
-// javascript lak really useful function...
+// javascript lack really useful function...
 if ( typeof String.prototype.startsWith != 'function' ) {
     String.prototype.startsWith = function( str ) {
         return this.slice( 0, str.length ) == str;
@@ -71,10 +71,11 @@ $.each( servers, function( _idx, s ) {
 } );
 
 function update_connexions_view() {
-    $( '#connexions-ul' ).html( '' );
+    var ul = $( '#connexions-ul' );
+    ul.html( '' );
     $.each( pot_servers, function( _idx, e ) {
-        var li = $( '<li class="connexion ' + e.state + '" id="' + e.hostname + '-' + e.port + '">' );
-        color  = '#ABEBD9'; // blue
+        var li    = $( '<li class="connexion ' + e.state + '" id="' + e.hostname + '-' + e.port + '">' );
+        var color = '#ABEBD9'; // blue
         if ( e.state == 'ok' ) {
             color = '#7bc659'; // green
         }
@@ -87,7 +88,6 @@ function update_connexions_view() {
         }
         p += "</p>";
         li.append( p );
-        var ul = $( '#connexions-ul' );
         ul.append( li );
     } );
 }
@@ -100,19 +100,19 @@ console.debug( pot_servers );
 
 // We will look at all servers and take the first that answer us
 function elect_server() {
-    $.each( pot_servers, function( s, e ) {
+    $.each( pot_servers, function( s ) {
         var uri                       = "http://" + s;
         pot_servers[ s ][ 'state' ]   = 'pending';
         pot_servers[ s ][ 'elected' ] = false; // clean all previous elected thing
         $.ajax( {
             url: uri
         } )
-            .error( function( data ) {
+            .error( function() {
                 console.log( 'PING fail to the server: ' + s );
                 pot_servers[ s ][ 'state' ] = 'error';
                 update_connexions_view();
             } )
-            .done( function( data ) {
+            .done( function() {
                 console.log( 'Connexion OK to the server: ' + s );
                 pot_servers[ s ][ 'state' ] = 'ok';
                 if ( server == null ) {
@@ -130,15 +130,10 @@ function elect_server() {
 
 elect_server();
 
-// Main structure to put nodes and services
-//var services    = [];
+// Main structure to put nodes
 var nodes       = [];
 var is_expanded = false;
 var selected    = '';
-
-function get_server() {
-    
-}
 
 function add_spinner( place ) {
     var opts    = {
@@ -164,52 +159,42 @@ function add_spinner( place ) {
     target.append( spinner.el );
 }
 
+function Node( gossip_entry ) {
+    var properties = [ 'uuid', 'addr', 'checks', 'incarnation', 'name', 'port', 'state', 'tags' ];  // to copy from gossip
+    for ( var i = 0; i < properties.length; i++ ) {
+        var k     = properties[ i ];
+        this[ k ] = gossip_entry[ k ];
+    }
+}
+
+Node.prototype.print = function() {
+    console.log( 'Node: [name=' + this.addr + ']' );
+    console.log( this );
+};
+
 function load_nodes() {
     add_spinner( '#nodes' );
     var now = new Date().getTime();
     $.getJSON( "http://" + server + "/agent/members?_t=" + now, function( data ) {
-        // First put all services into our list
+        // First put all nodes into our list
         $.each( data, function( key, val ) {
-            nodes.push( val );
+            //console.log(val);
+            var n = new Node( val );
+            n.print();
+            nodes.push( n ); //val );
         } );
         refresh_nodes();
     } );
 }
 
-/*
- function show_services() {
- // Switch services/nodes buttons
- $( '#services-btn' ).addClass( 'active' );
- $( '#nodes-btn' ).removeClass( 'active' );
- $( '#connexions-btn' ).removeClass( 'active' );
- 
- // Show refresh btn only in service page
- $( '#refresh-services-btn' ).show()
- 
- // also show services and hide nodes
- $( '#services' ).show();
- $( '#nodes' ).hide();
- // show filters too
- $( '#filters' ).show();
- 
- // and hide the connexion part
- $( '#connexions' ).hide();
- 
- }
- */
-
 function show_nodes() {
-    // Switch services/nodes buttons
+    // Switch nodes buttons
     $( '#nodes-btn' ).addClass( 'active' );
-    $( '#services-btn' ).removeClass( 'active' );
     $( '#connexions-btn' ).removeClass( 'active' );
-    
-    // Show refresh btn only in service page
-    $( '#refresh-services-btn' ).hide()
     
     // also show services and hide nodes
     $( '#nodes' ).show();
-    $( '#services' ).hide();
+    
     // Show filters too
     $( '#filters' ).show();
     
@@ -221,15 +206,12 @@ function show_nodes() {
 function show_connexions() {
     // Switch services/nodes buttons
     $( '#nodes-btn' ).removeClass( 'active' );
-    $( '#services-btn' ).removeClass( 'active' );
-    $( '#connexions-btn' ).addClass( 'active' );
     
-    // Show refresh btn only in service page
-    $( '#refresh-services-btn' ).hide()
+    $( '#connexions-btn' ).addClass( 'active' );
     
     // also show services and hide nodes
     $( '#nodes' ).hide();
-    $( '#services' ).hide();
+    
     // Show filters too
     $( '#filters' ).hide();
     
@@ -240,24 +222,10 @@ function show_connexions() {
 // Coun the number of node and service, and update the btn badges
 function update_counts() {
     $( '#badge-nodes' ).html( nodes.length );
-    /*$( '#badge-services' ).html( services.length );*/
 }
-
-/*
- function compare_name( a, b ) {
- if ( a.name < b.name ) {
- return -1;
- }
- if ( a.name > b.name ) {
- return 1;
- }
- return 0;
- }
- */
 
 function sort_lists() {
     sort_lists_for( 'nodes' );
-    //sort_lists_for( 'services' );
 }
 
 function sort_lists_for( p ) {
@@ -273,14 +241,15 @@ function sort_lists_for( p ) {
 
 function apply_filters() {
     apply_filters_for( 'nodes' );
-    //apply_filters_for( 'services' );
 }
 
 function apply_filters_for( p ) {
     var reg   = $( "#filtername" ).val();
     var state = $( "#filterstate" ).val();
     
-    $( '#' + p + ' > ul > li' ).each( function( index ) {
+    var lis = $( '#' + p + ' > ul > li' );
+    
+    lis.each( function() {
         var li = $( this );
         if ( is_expanded ) {
             li.find( '.compact' ).hide();
@@ -300,15 +269,9 @@ function apply_filters_for( p ) {
             look_for = 'tags';
         }
         
-        /*
-         if ( reg.startsWith( 's:' ) ) {
-         console.debug( 'MATCH SERVICE' );
-         look_for = 'services';
-         }
-         */
     }
     
-    $( '#' + p + ' > ul > li' ).each( function( index ) {
+    lis.each( function() {
         var _id     = $( this ).attr( 'id' );
         var e_state = $( this ).data( 'state-id' );
         
@@ -332,18 +295,6 @@ function apply_filters_for( p ) {
                     }
                 }
             }
-            /*
-             if ( look_for == 'services' ) {
-             var sname = reg.replace( 's:', '' );
-             // Look for service name and really fot a node
-             if ( sname != '' && node != null ) {
-             if ( !(sname in node.services) ) {
-             $( this ).hide();
-             return;
-             }
-             }
-             }
-             */
             
         }
         
@@ -357,16 +308,13 @@ function apply_filters_for( p ) {
         } else {
             $( this ).hide();
         }
-        return;
-        
     } );
 }
 
 // Binding the filtering part
 $( function() {
-    // By default show the services
+    // By default show the nodes
     $( '#nodes' ).hide();
-    $( '#services' ).hide();
     
     apply_filters();
     
@@ -404,83 +352,6 @@ $( function() {
     
 } );
 
-/*
- // Go with all services and print them on the list elements
- function refresh_services() {
- 
- var items = [];
- for ( var i = 0; i < services.length; i++ ) {
- var val     = services[ i ];
- // Then print all in our filter
- var s       = "<li onclick='detail(\"service\",\"" + val.name + "\")' class='srv-item list-group-item list-condensed-link' data-state-id='" + val.state_id + "' id='" + val.name + "'>";
- var name    = val.name;
- var members = val.members;
- members.sort( function( a, b ) {
- return a.localeCompare( b );
- } );
- 
- var failing_members = val[ 'failing-members' ];
- var passing_members = val[ 'passing-members' ];
- // If len of members is 0, put it in unkown, not normal result here
- var color           = 'green';
- var text            = '' + passing_members.length + ' passing';
- if ( members.length == 0 ) {
- color = 'purple';
- text  = 'no nodes';
- }
- if ( failing_members.length > 0 ) {
- color = 'red';
- text  = '' + failing_members.length + ' failing';
- }
- 
- // Compact part
- s += '<div class="compact">';
- s += '<div class="name pull-left">' + name + '</div>';
- s += '<span class="pull-right" style="color:#FF71E2">' + text + '</span>';
- s += '</div>';
- 
- // Expanded version
- s += '<div class="expanded">';
- s += "<h4 class='list-group-item-heading'>&nbsp;";
- s += '<span class="pull-left">' + name + '</span>';
- s += '<span class="pull-right" ><small style="color:#FF71E2">' + text + '</small></span>';
- s += '</h4>';
- s += '<div style="clear: both;"></div>';
- 
- s += '<div class="">';
- s += '<span class="pull-left" style="color:#C6C5FE">Nodes:</span>';
- for ( var j = 0; j < members.length; j++ ) {
- var mname = members[ j ];
- if ( failing_members.indexOf( mname ) > -1 ) { // if found
- s += '<span class="pull-left bold" style="color:#DD4E58">' + members[ j ] + ' </span>';
- } else {
- s += '<span class="pull-left bold">' + members[ j ] + ' </span>';
- }
- }
- 
- s += '</div>';
- s += '<div style="clear: both;"></div>';
- 
- s += '</div>';
- 
- // Now we can close our li
- s += "</li>";
- items.push( s );
- }
- 
- $( "#services" ).html( '' );
- 
- var ul = $( "<ul/>", {
- "class": "service-list",
- html:    items.join( "" )
- } ).appendTo( "#services" );
- 
- apply_filters();
- sort_lists();
- update_counts();
- }
- */
-
 // Generate a LI string with the host information
 function generate_host_list_entry( val ) {
     var state_id = 0;
@@ -494,24 +365,10 @@ function generate_host_list_entry( val ) {
         state_id = 3;
     }
     
-    /*
-     var services = val.services;
-     // also look at the services states
-     $.each( services, function( sname, service ) {
-     var cstate = service[ 'check' ].state_id;
-     if ( cstate == 2 ) {
-     state_id = 2;
-     }
-     if ( cstate == 1 && state_id < 2 ) {
-     state_id = 1;
-     }
-     } );
-     */
-    
     var nuuid = val.uuid;
     
     var state = val.state;
-    // If len of members is 0, put it in unkown, not normal result here
+    // If len of members is 0, put it in unknown, not normal result here
     var color = 'green';
     if ( state == 'alive' ) {
         if ( state_id == 1 ) {
@@ -562,32 +419,6 @@ function generate_host_list_entry( val ) {
     
     s += '<div style="clear: both;"></div>';
     
-    /*
-     // get the number of services. Quite not so natural in js ... (ノ ゜Д゜)ノ ︵ ┻━┻
-     var nb_s = $.map( services, function( n, i ) {
-     return i;
-     } ).length;
-     if ( nb_s > 0 ) {
-     s += '<div class="pull-left"  style="color:#C6C5FE">';
-     s += '<span>Services:</span>';
-     $.each( services, function( sname, service ) {
-     if ( service[ 'check' ].state == 'OK' ) {
-     s += '<span class="bold">' + sname + '</span>';
-     }
-     if ( service[ 'check' ].state == 'WARNING' ) {
-     s += '<span class="bold" style="color:#FFAC5E;>' + sname + '</span>';
-     }
-     if ( service[ 'check' ].state == 'CRITICAL' ) {
-     s += '<span class="bold" style="color:#DD4E58">' + sname + '</span>';
-     }
-     if ( service[ 'check' ].state == 'UNKNOWN' ) {
-     s += '<span class="bold" style="color:#939393;">' + sname + '</span>';
-     }
-     } );
-     s += '</div>';
-     }
-     */
-    
     s += '</div>';
     
     s += "</li>";
@@ -596,7 +427,7 @@ function generate_host_list_entry( val ) {
     
 }
 
-// Go with all services and print them on the list elements
+// Go with all nodes and print them on the list elements
 function refresh_nodes() {
     var items = [];
     for ( var i = 0; i < nodes.length; i++ ) {
@@ -616,22 +447,6 @@ function refresh_nodes() {
     
 }
 
-/*
- function load_services() {
- add_spinner( '#services' );
- var now  = new Date().getTime();
- services = []; // first reset services
- $.getJSON( "http://" + server + "/state/services?_t=" + now, function( data ) {
- // First put all services into our list
- $.each( data, function( key, val ) {
- services.push( val );
- } );
- refresh_services();
- } );
- 
- }
- */
-
 function find_node( nuuid ) {
     var node = null;
     $.each( nodes, function( key, val ) {
@@ -641,18 +456,6 @@ function find_node( nuuid ) {
     } );
     return node;
 }
-
-/*
- function find_service( name ) {
- var node = null;
- $.each( services, function( key, val ) {
- if ( val.name == name ) {
- node = val;
- }
- } );
- return node;
- }
- */
 
 // Detail show be called by a NON modal page
 function detail( type, nuuid ) {
@@ -675,7 +478,7 @@ function update_detail( type, nuuid ) {
         }
         var now = new Date().getTime();
         $.getJSON( "http://" + server + "/agent/state/" + nuuid + '?_t=' + now, function( data ) {
-            s = '';
+            var s = '';
             
             // modal header part
             s += '<div class="modal-header">';
@@ -693,33 +496,6 @@ function update_detail( type, nuuid ) {
             s += '</div>';
             
             s += '<hr/>';
-            
-            /*
-             // Now print services
-             s += '<div style="color:#C6C5FE">Services:</div>';
-             $.each( data.services, function( k, v ) {
-             var port = v.port;
-             if ( typeof(port) == 'undefined' ) {
-             port = '';
-             } else {
-             port = ':' + port;
-             }
-             var color = 'green';
-             if ( v.check.state == 'WARNING' ) {
-             color = 'orange';
-             }
-             if ( v.check.state == 'CRITICAL' ) {
-             color = 'red';
-             }
-             if ( v.check.state == 'UNKNOWN' ) {
-             color = 'gray';
-             }
-             
-             s += '<div onclick=\'update_detail("service","' + v.name + '")\' class="list-group-item list-condensed-link">';
-             s += '<div class="compact"><div class="name" style="color:' + color + ';margin-left:10px;">' + v.name + ' <span class="pull-right"><small>' + port + '</small></span></div></div>';
-             s += '</div>';
-             } );
-             */
             
             s += '<hr/>';
             
@@ -739,7 +515,7 @@ function update_detail( type, nuuid ) {
                 }
                 
                 s += '<div class="expanded"><div class="bg-' + color + ' list-bar">&nbsp;</div><div class="name bloc-heading">' + v.name + ' <span class="pull-right"><small>' + v.state + '</small></span></div></div>';
-                //s += '<hr/>';
+                
                 if ( v.notes != '' ) {
                     s += '<h5>NOTES</h5>';
                     s += v.notes;
@@ -759,106 +535,6 @@ function update_detail( type, nuuid ) {
         } );
         
     }
-    /*
-     if ( type == 'service' ) {
-     var service = find_service( name );
-     if ( service == null ) {
-     $( '#part-right' ).html( '<div class="bs-callout bs-callout-warning"><h4>No such service ' + name + '</h4></div>' );
-     }
-     var s = '';
-     
-     // modal header part
-     s += '<div class="modal-header">';
-     s += '<button type="button" class="close" data-dismiss="modal">';
-     s += '<span aria-hidden="true" style="color:white;">&times;</span><span class="sr-only">Close</span></button>';
-     s += '<h4 class="modal-title" id="myModalLabel" style="color: #FFD357;">' + service.name + '</h4>';
-     s += '</div>';
-     s += '<div class="modal-body">';
-     
-     // Now print hosts
-     s += '<h5 style="color: #C6C5FE;">Hosts:</h5>';
-     
-     var sub_hosts = {};
-     // We will concatenate the right part of the service detail with all hosts by sort them by the node name
-     // and link all with the s from the detail header
-     function update_service_right_part() {
-     //first sort the sub_hosts by their names
-     var node_names = [];
-     $.each( sub_hosts, function( key, value ) {
-     node_names.push( key );
-     } );
-     node_names.sort();
-     var f = s;
-     $.each( node_names, function( idx, nname ) {
-     var sh = sub_hosts[ nname ];
-     f += sh;
-     } );
-     
-     // close modal body
-     f += '</div>';
-     // and add afooter to close it too
-     f += '<div class="modal-footer"><button type="button" class="btn btn-default" data-dismiss="modal">Close</button></div>';
-     
-     $( '#part-right' ).html( f );
-     }
-     
-     $.each( service.members, function( idx, hname ) {
-     var now = new Date().getTime();
-     $.getJSON( "http://" + server + "/agent/state/" + hname + '?_t=' + now, function( data ) {
-     var sh   = '';
-     var node = find_node( hname );
-     if ( node == null ) {
-     return;
-     }
-     
-     var state = node.state;
-     var color = 'gray';
-     if ( state == 'alive' ) {
-     color = '#bbf085';//green
-     }
-     
-     if ( state == 'dead' ) {
-     color = '#dd4e58'; // red
-     }
-     if ( state == 'leave' ) {
-     color = 'gray';
-     }
-     if ( state == 'suspect' ) {
-     color = 'orange';
-     }
-     
-     sh += '<div class="compact show-pointer" style="height: 25px;" onclick="update_detail(\'node\',\'' + node.uuid + '\')"><div class="name">' + node.name + '<small> (' + node.addr + ')</small> <span class="pull-right"><span style="color:' + color + '">' + node.state + '</span></span></div></div>';
-     
-     $.each( data.checks, function( k, v ) {
-     sh += '<ul style="margin-bottom: 0px;">';
-     var color = 'green';
-     if ( v.state == 'WARNING' ) {
-     color = 'orange';
-     }
-     if ( v.state == 'CRITICAL' ) {
-     color = '#dd4e58'; // red
-     }
-     if ( v.state == 'UNKNOWN' ) {
-     color = 'gray';
-     }
-     
-     sh += '<li style="list-style-type: none"><div class="compact" style="height: 25px;"  ><div class="name">' + v.name + ' <span class="pull-right"><small style="color:' + color + '">' + v.state + '</small></span></div></div></li>';
-     sh += '</ul>';
-     
-     } );
-     
-     // Ok add it to the s part
-     sub_hosts[ node.name ] = sh;
-     
-     update_service_right_part()
-     
-     } ); // end of the loop other the hname node
-     } );// End of all service.members
-     
-     update_service_right_part();
-     
-     }
-     */
     
     // Show up the modal
     $( '.bs-example-modal-lg' ).modal( 'show' );
@@ -871,7 +547,6 @@ $( function() {
         if ( server != null ) {
             console.log( 'OK Election is done, we can load' );
             load_nodes();
-            //load_services();
         } else {
             console.log( 'Cannot load, waiting server elecgtion' );
             setTimeout( do_load, 100 );
@@ -913,20 +588,20 @@ function do_webso_connect() {
             // Put the icon for connexion in red
             icon_connexion.addClass( 'red' );
             icon_connexion.attr( 'data-original-title', 'Websocket: ✘' ).tooltip( 'fixTitle' );
-            console.log( 'Wesocket connection error to ' + ws_uri );
+            console.log( 'Websocket connection error to ' + ws_uri );
             server = null;
             // We got a problem, reelect a new server
             elect_server();
         };
         
-        webso_con.onclose = function( e ) {
+        webso_con.onclose = function() {
             webso_con = null;
             // Put the icon for connexion in red
             icon_connexion.addClass( 'red' );
             icon_connexion.attr( 'data-original-title', 'Websocket: ✘' ).tooltip( 'fixTitle' );
             console.error( 'Wesocket connection error to ' + ws_uri );
             server = null;
-            // A problem? let's look at a new server to laod from
+            // A problem? let's look at a new server to load from
             elect_server();
         };
         
@@ -939,7 +614,7 @@ function do_webso_connect() {
                 return;
             }
             
-            o = oraw.payload;
+            var o = oraw.payload;
             
             var nuuid = o.uuid;
             // Delete the previously add host
@@ -947,7 +622,8 @@ function do_webso_connect() {
                 return h.uuid != nuuid;
             } );
             // Save this host in the list :)
-            nodes.push( o );
+            var n     = new Node( o );
+            nodes.push( n );
             // Now generate the doc string from our new host
             var s = generate_host_list_entry( o );
             // Delete the previous li for this node
