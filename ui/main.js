@@ -159,17 +159,27 @@ function add_spinner( place ) {
     target.append( spinner.el );
 }
 
+var __Node_properties = [ 'uuid', 'addr', 'checks', 'incarnation', 'name', 'port', 'state', 'tags' ];  // to copy from gossip
 function Node( gossip_entry ) {
-    var properties = [ 'uuid', 'addr', 'checks', 'incarnation', 'name', 'port', 'state', 'tags' ];  // to copy from gossip
-    for ( var i = 0; i < properties.length; i++ ) {
-        var k     = properties[ i ];
-        this[ k ] = gossip_entry[ k ];
-    }
+    this.update( gossip_entry );
+    console.debug( this.tostr() );
 }
 
-Node.prototype.print = function() {
-    console.log( 'Node: [name=' + this.addr + ']' );
+Node.prototype.update = function( gossip_entry ) {
+    for ( var i = 0; i < __Node_properties.length; i++ ) {
+        var k     = __Node_properties[ i ];
+        this[ k ] = gossip_entry[ k ];
+    }
+};
+
+Node.prototype.tostr = function() {
     console.log( this );
+    var s = 'Node:: ';
+    for ( var i = 0; i < __Node_properties.length; i++ ) {
+        var k = __Node_properties[ i ];
+        s += ' [' + k + '=' + this[ k ] + ']';
+    }
+    return s;
 };
 
 function load_nodes() {
@@ -180,8 +190,8 @@ function load_nodes() {
         $.each( data, function( key, val ) {
             //console.log(val);
             var n = new Node( val );
-            n.print();
-            nodes.push( n ); //val );
+            console.debug( n.tostr() );
+            nodes.push( n );
         } );
         refresh_nodes();
     } );
@@ -617,13 +627,16 @@ function do_webso_connect() {
             var o = oraw.payload;
             
             var nuuid = o.uuid;
-            // Delete the previously add host
-            nodes     = $.grep( nodes, function( h ) {
-                return h.uuid != nuuid;
-            } );
-            // Save this host in the list :)
-            var n     = new Node( o );
-            nodes.push( n );
+            
+            var n = find_node( nuuid );
+            if ( n != null ) {  // was existing
+                n.update( o );
+            } else { // ok a new one
+                // Save this host in the list :)
+                n = new Node( o );
+                nodes.push( n );
+            }
+            
             // Now generate the doc string from our new host
             var s = generate_host_list_entry( o );
             // Delete the previous li for this node
