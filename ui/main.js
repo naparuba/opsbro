@@ -13,12 +13,14 @@ Array.prototype.shuffle = function() {
     return this;
 };
 
+
 // javascript lack really useful function...
 if ( typeof String.prototype.startsWith != 'function' ) {
     String.prototype.startsWith = function( str ) {
         return this.slice( 0, str.length ) == str;
     };
 }
+
 
 function parse_uri( uri ) {
     var parser  = document.createElement( 'a' );
@@ -35,23 +37,30 @@ function parse_uri( uri ) {
      */
 }
 
+
 // If there is no servers in the config, take the http addr
 var server = null;
 
+
 var def_port = 6768;
+
 
 if ( servers.length == 0 ) {
     var p = parse_uri( window.location );
     servers.push( p.hostname + ':' + def_port );
 }
 
+
 // Do not connect always to the same first server, let a chance for other to manage the load
 servers.shuffle();
 
+
 console.debug( 'GET SERVERS' + servers );
+
 
 // Our list of servers and their states
 var pot_servers = {};
+
 
 $.each( servers, function( _idx, s ) {
     var elts     = s.split( ":" );
@@ -69,6 +78,7 @@ $.each( servers, function( _idx, s ) {
     console.debug( 'PORT +' + port );
     pot_servers[ s ] = { 'state': 'pending', 'uri': s, port: port, ws_port: ws_port, hostname: hostname, 'elected': false };
 } );
+
 
 function update_connexions_view() {
     var ul = $( '#connexions-ul' );
@@ -92,11 +102,14 @@ function update_connexions_view() {
     } );
 }
 
+
 $( function() {
     update_connexions_view();
 } );
 
+
 console.debug( pot_servers );
+
 
 // We will look at all servers and take the first that answer us
 function elect_server() {
@@ -130,10 +143,12 @@ function elect_server() {
 
 elect_server();
 
+
 // Main structure to put nodes
 var nodes       = [];
 var is_expanded = false;
 var selected    = '';
+
 
 function add_spinner( place ) {
     var opts    = {
@@ -159,11 +174,13 @@ function add_spinner( place ) {
     target.append( spinner.el );
 }
 
+
 var __Node_properties = [ 'uuid', 'addr', 'checks', 'incarnation', 'name', 'port', 'state', 'tags' ];  // to copy from gossip
 function Node( gossip_entry ) {
     this.update( gossip_entry );
     console.debug( this.tostr() );
 }
+
 
 Node.prototype.update = function( gossip_entry ) {
     for ( var i = 0; i < __Node_properties.length; i++ ) {
@@ -171,6 +188,7 @@ Node.prototype.update = function( gossip_entry ) {
         this[ k ] = gossip_entry[ k ];
     }
 };
+
 
 Node.prototype.tostr = function() {
     console.log( this );
@@ -181,6 +199,7 @@ Node.prototype.tostr = function() {
     }
     return s;
 };
+
 
 function load_nodes() {
     add_spinner( '#nodes' );
@@ -197,6 +216,7 @@ function load_nodes() {
     } );
 }
 
+
 function show_nodes() {
     // Switch nodes buttons
     $( '#nodes-btn' ).addClass( 'active' );
@@ -211,6 +231,7 @@ function show_nodes() {
     // and hide the connexion part
     $( '#connexions' ).hide();
 }
+
 
 // Connexions must hide nodes and services and filters
 function show_connexions() {
@@ -229,14 +250,17 @@ function show_connexions() {
     $( '#connexions' ).show();
 }
 
-// Coun the number of node and service, and update the btn badges
+
+// Count the number of node and service, and update the btn badges
 function update_counts() {
     $( '#badge-nodes' ).html( nodes.length );
 }
 
+
 function sort_lists() {
     sort_lists_for( 'nodes' );
 }
+
 
 function sort_lists_for( p ) {
     var mylist    = $( '#' + p + ' > ul' );
@@ -249,9 +273,11 @@ function sort_lists_for( p ) {
     } );
 }
 
+
 function apply_filters() {
     apply_filters_for( 'nodes' );
 }
+
 
 function apply_filters_for( p ) {
     var reg   = $( "#filtername" ).val();
@@ -321,6 +347,7 @@ function apply_filters_for( p ) {
     } );
 }
 
+
 // Binding the filtering part
 $( function() {
     // By default show the nodes
@@ -361,6 +388,7 @@ $( function() {
     } );
     
 } );
+
 
 // Generate a LI string with the host information
 function generate_host_list_entry( val ) {
@@ -437,6 +465,7 @@ function generate_host_list_entry( val ) {
     
 }
 
+
 // Go with all nodes and print them on the list elements
 function refresh_nodes() {
     var items = [];
@@ -457,6 +486,7 @@ function refresh_nodes() {
     
 }
 
+
 function find_node( nuuid ) {
     var node = null;
     $.each( nodes, function( key, val ) {
@@ -467,6 +497,7 @@ function find_node( nuuid ) {
     return node;
 }
 
+
 // Detail show be called by a NON modal page
 function detail( type, nuuid ) {
     console.debug( 'GET DETAIL FOR' + type + ' => ' + nuuid );
@@ -475,6 +506,7 @@ function detail( type, nuuid ) {
     $( '.bs-example-modal-lg' ).modal( 'show' );
     
 }
+
 
 function update_detail( type, nuuid ) {
     // We got a click, tag the selected element
@@ -550,6 +582,7 @@ function update_detail( type, nuuid ) {
     $( '.bs-example-modal-lg' ).modal( 'show' );
 }
 
+
 // Ok let's roll and really connect to our main server at soon
 // as it is connected :)
 $( function() {
@@ -566,7 +599,9 @@ $( function() {
     do_load();
 } );
 
+
 var webso_con = null;
+
 
 function do_webso_connect() {
     
@@ -657,7 +692,9 @@ function do_webso_connect() {
     }
 }
 
+
 setInterval( do_webso_connect, 1000 );
+
 
 $( function() {
     do_webso_connect();
