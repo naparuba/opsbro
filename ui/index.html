@@ -18,66 +18,66 @@
 <body>
 
 
-<div class="container-fluid">
-    <div class='col-md-12 nopadleft' id='main-cont'>
-        <div class='col-md-1 nopadleft' id='top-menu'>
-            <div class="btn-group-vertical">
+<div class='col-md-12 nopadleft' id='main-cont'>
+    <div class='col-md-2 nopadleft' id='menu-cont'>
 
-                <a id='nodes-btn' class='btn btn-default active' href='javascript:show_nodes();'>Nodes <span class="badge" id='badge-nodes'>?</span></a>
-                <!--<a id='services-btn' class='btn btn-default' href='javascript:show_services();'>Services <span class="badge" id='badge-services'>?</span></a>-->
-                <a id='connexions-btn' class='btn btn-default' href='javascript:show_connexions();'>Links <span class="glyphicon glyphicon-signal red" id='icon-connexion' data-toggle="tooltip" title="" data-placement="right"></span>
-                </a>
-            </div>
-        </div>
-
-        <div class='col-md-11 col-lg-11 padded-right-middle scrollable nopadleft' id='part-left'>
-            <div class='col-md-12 nopadleft' id='filters'>
-                <div class='col-md-5 nopadleft'>
-                    <div class="col-xs-11" style="padding-right:5px;">
-                        <input id='filtername' class='form-control form-control-mini' placeholder="Filter by name"></input>
-                    </div>
-                    <a style="color:gray;" class="show-pointer pull-left" id="filter-help" data-toggle="popover" title="Help about filtering"><span class="glyphicon glyphicon-question-sign"></span></a>
-                </div>
-                <div class='col-md-4'>
-                    <select id='filterstate' class='form-control form-control-mini'>
-                        <option value='any value'>any value</option>
-                        <option value='passing'>passing</option>
-                        <option value='failing'>failing</option>
-                    </select>
-                </div>
-                <div class='col-md-1'>
-                    <a id='expand-btn' class='btn btn-default'>Expand</a>
-                </div>
-                <!--<div class='col-md-1'>
-                    <a id='refresh-services-btn' onclick="load_services();" class='btn btn-default'><span class="glyphicon glyphicon-refresh"></span></a>
-                </div>
-                -->
-            </div>
-            <div class='col-md-12 nopadleft' id='list-left'>
-                <!--<div class='col-md-12 nopadleft' id='services'>
-                </div>
-                -->
-                <div class='col-md-12 nopadleft' id='nodes'>
-                </div>
-                <div class='col-md-12' id='connexions'>
-                    Backend connexions (websocket):
-                    <ul class="connexions" id='connexions-ul'>
-                    </ul>
-                    <a class='btn btn-default' href='javascript:elect_server()'>Recheck and re-elect servers</a>
-                </div>
-
-            </div>
-        </div>
-
-        <div class="modal fade bs-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content" id='part-right'>
-                </div>
-            </div>
-        </div>
-
+        <ul id="menu">
+            <li>
+                <a id='nodes-btn' class='' href='javascript:show_nodes();'>Nodes <span class="badge" id='badge-nodes'>?</span></a>
+            </li>
+            <li>
+                <a id='connexions-btn' class='' href='javascript:show_connexions();'>Links <span class="glyphicon glyphicon-signal red" id='icon-connexion' data-toggle="tooltip" title="" data-placement="right"></span></a>
+            </li>
+        </ul>
 
     </div>
+
+    <div class='col-md-10 col-lg-10 padded-right-middle scrollable nopadleft' id='data-cont'>
+        <div class='col-md-12 nopadleft' id='filters'>
+            <div class='col-md-5 nopadleft'>
+                <div class="col-xs-11" style="padding-right:5px;">
+                    <input id='filtername' class='form-control form-control-mini' placeholder="Filter by name"></input>
+                </div>
+                <a style="color:gray;" class="show-pointer pull-left" id="filter-help" data-toggle="popover" title="Help about filtering"><span class="glyphicon glyphicon-question-sign"></span></a>
+            </div>
+            <div class='col-md-4'>
+                <select id='filterstate' class='form-control form-control-mini'>
+                    <option value='any value'>any value</option>
+                    <option value='passing'>passing</option>
+                    <option value='failing'>failing</option>
+                </select>
+            </div>
+            <div class='col-md-1'>
+                <a id='expand-btn' class='btn btn-default'>Expand</a>
+            </div>
+            <!--<div class='col-md-1'>
+                <a id='refresh-services-btn' onclick="load_services();" class='btn btn-default'><span class="glyphicon glyphicon-refresh"></span></a>
+            </div>
+            -->
+        </div>
+        <div class='col-md-12 nopadleft' id='list-left'>
+            <!--<div class='col-md-12 nopadleft' id='services'>
+            </div>
+            -->
+            <div class='col-md-12 nopadleft' id='nodes'>
+            </div>
+            <div class='col-md-12' id='connexions'>
+                Backend connexions (websocket):
+                <ul class="connexions" id='connexions-ul'>
+                </ul>
+                <a class='btn btn-default' href='javascript:elect_server()'>Recheck and re-elect servers</a>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="modal fade bs-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" id='part-right'>
+            </div>
+        </div>
+    </div>
+
 
 </div>
 
