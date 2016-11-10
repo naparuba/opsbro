@@ -367,8 +367,8 @@ input, select {
     height : 100%;
 }
 #menu {
-    border-left     : 1px solid #FFFFFF;
-    border-right    : 1px solid #FFFFFF;
+    border-left     : 2px solid #FFFFFF;
+    border-right    : 2px solid #FFFFFF;
     background      : rgba(0, 0, 0, 0.5);
     float           : left;
     font-size       : 1.5em;
@@ -402,14 +402,13 @@ input, select {
 #menu li a:hover:after {
     content          : "";
     display          : block;
-    width            : 19px;
+    width            : 20px;
     height           : 1em;
     position         : absolute;
     top              : 0.5em;
-    right            : -19px;
-    -moz-transform   : rotate(45deg);
-    z-index          : -1;
-    background-image : url(img/right-pic.png);
+    right            : -9px;
+    z-index          : 2;
+    background-image : url(img/menu-right-tick.png);
 }
 #menu li ul {
     position         : absolute;
