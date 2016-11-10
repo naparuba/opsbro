@@ -83,8 +83,8 @@ input, select {
 .modal-content {
     background-color : #161616;
 }
-#data-cont{
-    margin-top: 10px;
+#data-cont {
+    margin-top : 10px;
 }
 /* BEGINING OF LEFT TABS */
 .tabs-below > .nav-tabs,
@@ -209,7 +209,7 @@ input, select {
 }
 .list-group-item.list-condensed-link:hover {
     /*cursor           : pointer;*/
-    cursor: url(cursor/elder.cur), progress !important;
+    cursor           : url(cursor/elder.cur), progress !important;
     background-color : #ADAFAE; /*#fafafa; */
 }
 .list-group-item.list-condensed-link, .list-group-item.list-condensed {
@@ -395,23 +395,21 @@ input, select {
 
 }
 #menu li a:hover, #menu li:hover > a {
-    color : #FFFFFF;
-    cursor: url(cursor/elder.cur), progress !important;
+    color  : #FFFFFF;
+    cursor : url(cursor/elder.cur), progress !important;
 }
+/* AFTER is the right tic that show when hover it*/
 #menu li a:hover:after {
-    content           : "";
-    display           : block;
-    width             : 1em;
-    height            : 1em;
-    background        : rgba(0, 0, 0, 1);
-    border            : 1px solid #FFFFFF;
-    position          : absolute;
-    top               : 0.5em;
-    right             : -10px;
-    -moz-transform    : rotate(45deg);
-    -webkit-transform : rotate(45deg);
-    transform         : rotate(45deg);
-    z-index           : -1;
+    content          : "";
+    display          : block;
+    width            : 19px;
+    height           : 1em;
+    position         : absolute;
+    top              : 0.5em;
+    right            : -19px;
+    -moz-transform   : rotate(45deg);
+    z-index          : -1;
+    background-image : url(img/right-pic.png);
 }
 #menu li ul {
     position         : absolute;
