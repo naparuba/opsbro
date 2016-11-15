@@ -181,7 +181,7 @@ class Generator(object):
                         self.buf = ''
                         return False
                     part_before = lines[:idx_start]
-                    part_after = lines[idx_end+1:]
+                    part_after = lines[idx_end + 1:]
                 last_char = '' if not orig_content_finish_with_new_line else '\n'
                 new_content = '%s\n%s%s%s' % ('\n'.join(part_before), self.output, '\n'.join(part_after), last_char)
                 logger.debug('Temporary file for partial replacement: %s and %s %s=>%s' % (part_before, part_after, idx_start, idx_end), part='generator')

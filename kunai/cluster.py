@@ -412,7 +412,7 @@ class Cluster(object):
         
         # Our main object for gossip managment
         gossiper.init(self.nodes, self.nodes_lock, self.addr, self.port, self.name, self.incarnation, self.uuid,
-                             self.tags, self.seeds, self.bootstrap, self.zone)
+                      self.tags, self.seeds, self.bootstrap, self.zone)
         
         # About detecting tags and such things
         detecter.load(self)
@@ -835,7 +835,7 @@ class Cluster(object):
         for k in ['partial_start', 'partial_end']:
             if k not in generator:
                 generator[k] = ''
-
+        
         generator['if_partial_missing'] = generator.get('if_partial_missing', '')
         if generator['if_partial_missing'] and generator['if_partial_missing'] not in ['append']:
             logger.error('Generator %s if_partial_missing property is not valid: %s' % (generator['name'], generator['if_partial_missing']), part='generator')
@@ -983,7 +983,7 @@ class Cluster(object):
                 continue
             checks_entry[cname] = {'state_id': check['state_id']}  # by default state are unknown
         node['checks'] = checks_entry
-        
+    
     
     # Load raw results of collectors, and give them to the
     # collectormgr that will know how to load them :)

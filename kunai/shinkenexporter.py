@@ -9,7 +9,7 @@ from kunai.log import logger
 from kunai.pubsub import pubsub
 from kunai.threadmgr import threader
 from kunai.stop import stopper
-from kunai.detectormgr import  detecter
+from kunai.detectormgr import detecter
 from kunai.gossip import gossiper
 
 
@@ -52,13 +52,13 @@ class ShinkenExporter(object):
     def delete_node_callback(self, node_uuid=None):
         self.node_changes.append(('delete-node', node_uuid))
         self.regenerate_flag = True
-
-
+    
+    
     def change_node_callback(self, node_uuid=None):
         self.node_changes.append(('change-node', node_uuid))
         self.regenerate_flag = True
-        
-        
+    
+    
     def sanatize_check_name(self, cname):
         return 'Agent-%s' % cname.split('/')[-1]
     
@@ -68,12 +68,12 @@ class ShinkenExporter(object):
         if not os.path.exists(p):
             logger.error('Shinken command file is missing, skipping node information export')
             return
-
+        
         v = self.clust.get_key('__health/%s' % nuuid)
         if v is None or v == '':
             logger.error('Cannot access to the checks list for', nuuid, part='shinken')
             return
-
+        
         lst = json.loads(v)
         for cname in lst:
             v = self.clust.get_key('__health/%s/%s' % (nuuid, cname))
@@ -91,7 +91,7 @@ class ShinkenExporter(object):
             except Exception, exp:
                 logger.error('Shinken command file write fail: %s' % exp)
                 return
-
+    
     
     def __get_node_cfg_sha_paths(self, nid):
         cfg_p = os.path.join(self.cfg_path, nid + '.cfg')
@@ -113,7 +113,7 @@ class ShinkenExporter(object):
         ptmp = p + '.tmp'
         # shap = os.path.join(self.cfg_path, uuid + '.sha1')
         shaptmp = shap + '.tmp'
-
+        
         old_sha_value = ''
         if os.path.exists(shap):
             try:

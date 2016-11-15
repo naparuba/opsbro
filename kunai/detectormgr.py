@@ -13,6 +13,7 @@ class DetectorMgr(object):
         self.did_run = False  # did we run at least once? so are our tags ok currently?
         self.detected_tags = {}
     
+    
     def load(self, clust):
         self.clust = clust
     
@@ -57,7 +58,6 @@ class DetectorMgr(object):
             
             self.did_run = True  # ok we did detect our tags, we can be sure about us
             time.sleep(1)
-            
     
     
     # main method to export http interface. Must be in a method that got

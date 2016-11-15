@@ -50,7 +50,7 @@ class Gossip(object):
         self.ping_another_in_progress = False
         # create my own object, but do not export it to other nodes
         self.register_myself()
-        
+    
     
     def __getitem__(self, uuid):
         return self.nodes[uuid]
@@ -77,13 +77,13 @@ class Gossip(object):
             del self.nodes[k]
         except IndexError:
             pass
-
-
+    
+    
     def register_myself(self):
         myself = self.get_boostrap_node()
         self.set_alive(myself, bootstrap=True)
-
-
+    
+    
     # Anotehr module/part did give a new tag, take it and warn others node about this
     # change if there is really a change
     def update_detected_tags(self, detected_tags):
@@ -112,10 +112,10 @@ class Gossip(object):
         if did_change:
             self.node_did_change(self.uuid)  # a node did change: ourselve
             self.increase_incarnation_and_broadcast(broadcast_type='alive')
-            
+        
         return did_change
-
-
+    
+    
     # A check did change it's state, update it in our structure
     def update_check_state_id(self, cname, state_id):
         node = self.nodes[self.uuid]
@@ -138,13 +138,13 @@ class Gossip(object):
             logger.error('Asking for an unknown broadcast type for node: %s => %s' % (node, broadcast_type))
             sys.exit(2)
         logger.info('Did have to send a new incarnation node for myself. New incarnation=%d new-node=%s' % (self.incarnation, node), part='gossip')
-
-
+    
+    
     def change_zone(self, zname):
         self.zone = zname
         self.nodes[self.uuid]['zone'] = zname
-
-
+    
+    
     # get my own node entry
     def get_boostrap_node(self):
         node = {'addr'       : self.addr, 'port': self.port, 'name': self.name,
@@ -179,11 +179,11 @@ class Gossip(object):
         pubsub.pub('new-node', node_uuid=nuuid)
         return
     
-
+    
     # Warn other about a node that is not new or remove, but just did change it's internals data
     def node_did_change(self, nid):
         pubsub.pub('change-node', node_uuid=nid)
-        
+    
     
     ############# Main new state handling methods
     
@@ -200,11 +200,11 @@ class Gossip(object):
         tags = node.get('tags', [])
         services = node.get('services', {})
         checks = node.get('checks', {})
-
-        #if bootstrap:
+        
+        # if bootstrap:
         #    print "ALL NODES", self.nodes
         #    fuck
-            
+        
         # Maybe it's me? if so skip it
         if not bootstrap:
             if node['uuid'] == self.uuid:
@@ -232,11 +232,11 @@ class Gossip(object):
             # Update our last data with new ones
             node['services'] = services
             node['checks'] = checks
-
+            
             # protect the nodes access with the lock so others threads are happy :)
             with self.nodes_lock:
                 self.nodes[uuid] = node
-                
+            
             # Only broadcast if it's a new data from somewhere else
             if (strong and change) or incarnation > prev['incarnation']:
                 logger.debug("Updating alive a node", prev, 'with', node)
@@ -280,9 +280,9 @@ class Gossip(object):
         if uuid == self.uuid:
             logger.warning('SUSPECT: SOMEONE THINK I AM SUSPECT, BUT I AM ALIVE', part='gossip')
             self.increase_incarnation_and_broadcast(broadcast_type='alive')
-            #self.incarnation += 1
-            #node['incarnation'] = self.incarnation
-            #self.stack_alive_broadcast(node)
+            # self.incarnation += 1
+            # node['incarnation'] = self.incarnation
+            # self.stack_alive_broadcast(node)
             return
         
         logger.info('SUSPECTING: I suspect node %s' % node['name'], part='gossip')
@@ -293,7 +293,7 @@ class Gossip(object):
         node['tags'] = tags
         node['services'] = services
         node['checks'] = checks
-
+        
         # warn internal elements
         self.node_did_change(uuid)
         # and external ones
@@ -348,9 +348,11 @@ class Gossip(object):
         if uuid == self.uuid:
             logger.log('LEAVE: someone is asking me for leaving.', part='gossip')
             self.increase_incarnation_and_broadcast(broadcast_type='leave')
-            #self.incarnation += 1
-            #node['incarnation'] = self.incarnation
-            #self.stack_leave_broadcast(node)
+            
+            
+            # self.incarnation += 1
+            # node['incarnation'] = self.incarnation
+            # self.stack_leave_broadcast(node)
             
             
             def bailout_after_leave(self):
@@ -413,9 +415,9 @@ class Gossip(object):
         if uuid == self.uuid:
             logger.warning('SUSPECT: SOMEONE THINK I AM SUSPECT, BUT I AM ALIVE', part='gossip')
             self.increase_incarnation_and_broadcast(broadcast_type='alive')
-            #self.incarnation += 1
-            #node['incarnation'] = self.incarnation
-            #self.stack_alive_broadcast(node)
+            # self.incarnation += 1
+            # node['incarnation'] = self.incarnation
+            # self.stack_alive_broadcast(node)
             return
         
         logger.log('DEAD: I put in dead node %s' % node['name'], part='gossip')
@@ -426,7 +428,7 @@ class Gossip(object):
         node['tags'] = tags
         node['services'] = services
         node['checks'] = checks
-
+        
         # warn internal elements
         self.node_did_change(uuid)
         # and external ones
@@ -465,7 +467,7 @@ class Gossip(object):
                 self.set_suspect(node)
             elif state == 'leave':
                 self.set_leave(node)
-                    
+    
     
     # We will choose a random guy in our nodes that is alive, and
     # sync with it
@@ -754,32 +756,32 @@ class Gossip(object):
     
     
     ########## Message managment
-
+    
     def create_alive_msg(self, node):
         return {'type'       : 'alive', 'name': node['name'], 'addr': node['addr'], 'port': node['port'],
                 'uuid'       : node['uuid'],
                 'incarnation': node['incarnation'], 'state': 'alive', 'tags': node['tags'],
                 'services'   : node['services'], 'checks': node['checks']}
-
-
+    
+    
     def create_event_msg(self, payload):
         return {'type'   : 'event', 'from': self.uuid, 'payload': payload, 'ctime': int(time.time()),
                 'eventid': libuuid.uuid1().get_hex()}
-
-
+    
+    
     def create_suspect_msg(self, node):
         return {'type'       : 'suspect', 'name': node['name'], 'addr': node['addr'], 'port': node['port'],
                 'uuid'       : node['uuid'],
                 'incarnation': node['incarnation'], 'state': 'suspect', 'tags': node['tags'],
                 'services'   : node['services'], 'checks': node['checks']}
-
-
+    
+    
     def create_dead_msg(self, node):
         return {'type'       : 'dead', 'name': node['name'], 'addr': node['addr'], 'port': node['port'],
                 'uuid'       : node['uuid'],
                 'incarnation': node['incarnation'], 'state': 'dead', 'tags': node['tags'], 'services': node['services'], 'checks': node['checks']}
-
-
+    
+    
     def create_leave_msg(self, node):
         return {'type'       : 'leave', 'name': node['name'], 'addr': node['addr'], 'port': node['port'],
                 'uuid'       : node['uuid'],
@@ -792,7 +794,7 @@ class Gossip(object):
     
     
     def stack_alive_broadcast(self, node):
-        #if True or node['uuid'] != self.uuid:
+        # if True or node['uuid'] != self.uuid:
         #    print "FUCK NODE", node
         #    fuck
         msg = self.create_alive_msg(node)
@@ -894,7 +896,6 @@ class Gossip(object):
             r = self.do_push_pull(tgt)
             logger.info("HTTP: agent join for %s:%s result:%s" % (addr, port, r), part='http')
             return json.dumps(r)
-
 
 
 gossiper = Gossip()

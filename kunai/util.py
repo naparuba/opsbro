@@ -58,7 +58,7 @@ def _sort_local_addresses(addr1, addr2):
     addr2_is_172 = addr2.startswith('172.')
     addr1_is_127 = addr1.startswith('127.')
     addr2_is_127 = addr2.startswith('127.')
-
+    
     # lower is better
     addr1_order = 4
     if addr1_is_192:
@@ -78,7 +78,7 @@ def _sort_local_addresses(addr1, addr2):
         addr2_order = 3
     if addr2_is_127:
         addr2_order = 5
-
+    
     print "Address order: %s:%d %s:%d" % (addr1, addr1_order, addr2, addr2_order)
     if addr1_order > addr2_order:
         return 1

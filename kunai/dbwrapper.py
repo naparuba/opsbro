@@ -4,6 +4,7 @@ except ImportError:
     leveldb = None
 from kunai.log import logger
 
+
 class FakeDB(object):
     def __init__(self):
         pass

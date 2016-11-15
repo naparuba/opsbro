@@ -63,7 +63,7 @@ class DNSQuery:
                 if state_id != 0:
                     logger.debug('Skipping node %s' % n['name'])
                     continue
-
+                
                 addr = n['addr']
                 # If already an ip, add it
                 if ipv4pattern.match(addr):
@@ -79,6 +79,7 @@ class DNSQuery:
         logger.debug('DNS return %s' % r)
         return r
     
+    
     # Get origianl question from DATA, and only this, so stip to NAME+0001(typeA)+0001(IN) and drop what is after
     def __get_origianl_domain_name_question(self, data):
         # first find the end of the string, with \x00
@@ -87,23 +88,22 @@ class DNSQuery:
             # ok bad query, fuck off
             return data
         # so give 2bytes after the end
-        return data[:end_string_idx+5]  # 5=1 for \00 and 2+2 for typeA+IN
+        return data[:end_string_idx + 5]  # 5=1 for \00 and 2+2 for typeA+IN
     
     
     def response(self, r):
         packet = ''
-        #r = ['192.168.56.103', '192.168.56.104' , '192.168.56.105']
+        # r = ['192.168.56.103', '192.168.56.104' , '192.168.56.105']
         nb = len(r)
         if self.domain:
             packet += self.data[:2] + "\x81\x80"
-            packet += self.data[4:6] + self._get_size_hex(nb)  + '\x00\x00\x00\x00'  # Questions and Answers Counts, and additionnal counts (0)
+            packet += self.data[4:6] + self._get_size_hex(nb) + '\x00\x00\x00\x00'  # Questions and Answers Counts, and additionnal counts (0)
             packet += self.__get_origianl_domain_name_question(self.data[12:])  # Original Domain Name Question, split to remove additonna parts
             
             for ip in r:
                 packet += '\xc0\x0c'  # Pointer to domain name
                 packet += '\x00\x01\x00\x01\x00\x00\x00\x3c\x00\x04'  # Response type, ttl (60s) and resource data length -> 4 bytes
                 packet += str.join('', map(lambda x: chr(int(x)), ip.split('.')))  # 4bytes of IP
-
-
+        
         logger.debug("Returning size: %s for nb ips:%s" % (len(packet), len(r)))
         return packet

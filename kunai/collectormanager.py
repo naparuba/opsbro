@@ -191,7 +191,7 @@ class CollectorManager:
         col['results'] = results
         col['metrics'] = metrics
         col['active'] = True
-
+        
         '''
         # TODO: get back TS data?
         timestamp = NOW.now
