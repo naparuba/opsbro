@@ -48,8 +48,12 @@ class DetectorMgr(object):
                 for tag in tags:
                     matching_tags.add(tag)
             logger.debug('Detector loop generated tags: %s' % matching_tags, part='gossip')
+            
             # Merge with gossip part
-            gossiper.update_detected_tags(matching_tags)
+            did_changed = gossiper.update_detected_tags(matching_tags)
+            # if tags did change, recompute checks
+            if did_changed:
+                self.clust.link_checks()
             
             self.did_run = True  # ok we did detect our tags, we can be sure about us
             time.sleep(1)

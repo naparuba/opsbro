@@ -112,6 +112,8 @@ class Gossip(object):
         if did_change:
             self.node_did_change(self.uuid)  # a node did change: ourselve
             self.increase_incarnation_and_broadcast(broadcast_type='alive')
+            
+        return did_change
 
 
     # A check did change it's state, update it in our structure
