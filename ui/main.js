@@ -145,9 +145,8 @@ elect_server();
 
 
 // Main structure to put nodes
-var nodes       = [];
-var is_expanded = false;
-var selected    = '';
+var nodes    = [];
+var selected = '';
 
 
 function add_spinner( place ) {
@@ -207,7 +206,6 @@ function load_nodes() {
     $.getJSON( "http://" + server + "/agent/members?_t=" + now, function( data ) {
         // First put all nodes into our list
         $.each( data, function( key, val ) {
-            //console.log(val);
             var n = new Node( val );
             console.debug( n.tostr() );
             nodes.push( n );
@@ -222,10 +220,7 @@ function show_nodes() {
     $( '#nodes-btn' ).addClass( 'active' );
     $( '#connexions-btn' ).removeClass( 'active' );
     
-    // also show services and hide nodes
     $( '#nodes' ).show();
-    
-    // Show filters too
     $( '#filters' ).show();
     
     // and hide the connexion part
@@ -280,20 +275,13 @@ function apply_filters() {
 
 
 function apply_filters_for( p ) {
-    var reg   = $( "#filtername" ).val();
-    var state = $( "#filterstate" ).val();
+    var reg   = $( "#filter-value" ).val();
+    var state = $( "#filter-state" ).val();
     
     var lis = $( '#' + p + ' > ul > li' );
     
     lis.each( function() {
         var li = $( this );
-        if ( is_expanded ) {
-            li.find( '.compact' ).hide();
-            li.find( '.expanded' ).show();
-        } else {
-            li.find( '.compact' ).show();
-            li.find( '.expanded' ).hide();
-        }
     } );
     
     var look_for = 'name';
@@ -311,7 +299,7 @@ function apply_filters_for( p ) {
         var _id     = $( this ).attr( 'id' );
         var e_state = $( this ).data( 'state-id' );
         
-        // We must mauch both name/tag/service and state
+        // We must mauch both name/tag and state
         // First name, bail out if no match
         if ( look_for == 'name' ) {
             if ( !(_id.indexOf( reg ) > -1) ) {
@@ -355,17 +343,11 @@ $( function() {
     
     apply_filters();
     
-    $( "#filtername" ).bind( 'input', function() {
+    $( "#filter-value" ).bind( 'input', function() {
         apply_filters();
     } );
     
-    $( "#filterstate" ).on( 'change', function() {
-        apply_filters();
-    } );
-    
-    $( '#expand-btn' ).on( 'click', function() {
-        is_expanded = !is_expanded;
-        $( this ).toggleClass( 'active' );
+    $( "#filter-state" ).on( 'change', function() {
         apply_filters();
     } );
     
@@ -375,11 +357,7 @@ $( function() {
                       '<ul>',
                       '<li>string => lookup by the node name</li>',
                       '<li>t:string => lookup by tag name</li>',
-                      '<li>s:string => lookup by service name</li>',
-                      '</ul>',
-                      'Services:',
-                      '<ul>',
-                      '<li>string => lookup by the service name</li>'
+                      '</ul>'
     ].join( '\n' );
     
     $( '#filter-help' ).popover( {
@@ -431,18 +409,13 @@ function generate_host_list_entry( val ) {
     }
     
     // Then print all in our filter
-    var s = "<li onclick='detail(\"node\",\"" + nuuid + "\")' class='bg-" + color + " list-group-item list-condensed-link ' data-state-id='" + state_id + "' id='" + nuuid + "'>";
+    var s = "<li onclick='detail(\"node\",\"" + nuuid + "\")' class='elder-li bg-" + color + " list-group-item list-condensed-link ' data-state-id='" + state_id + "' id='" + nuuid + "'>";
     // Compact version
     s += '<div class="compact">';
-    s += '<div class="name pull-left">' + val.name + '<br/><small class="pull-left">' + val.addr + '</small>';
-    s += '</div>';
-    s += '</div>';
+    s += '<div class="top-bloc-bar state-' + state + '">' + state + '</div>';
     
-    // Expanded version
-    s += '<div class="expanded">';
     s += "<h4 class='list-group-item-heading'>";
     s += val.name;
-    s += '<span class="pull-right"><small style="color:#FF71E2">' + state + '</small></span>';
     s += '</h4>';
     
     s += '<div class=""><span class="pull-left" style="color:#C6C5FE">Addr:</span><span class="pull-left"><small>' + val.addr + '</small></span></div>';
@@ -458,7 +431,9 @@ function generate_host_list_entry( val ) {
     s += '<div style="clear: both;"></div>';
     
     s += '</div>';
-    
+    s += '<img class="corner-bottom-left" src="img/corner-bottom-left.png" />';
+    s += '<img class="corner-bottom-right" src="img/corner-bottom-right.png" />';
+    s += '</div>';
     s += "</li>";
     
     return s;
@@ -476,7 +451,7 @@ function refresh_nodes() {
     }
     $( "#nodes" ).html( '' );
     var ul = $( "<ul/>", {
-        "class": "service-list",
+        "class": "node-list",
         html:    items.join( "" )
     } ).appendTo( "#nodes" );
     
@@ -502,9 +477,10 @@ function find_node( nuuid ) {
 function detail( type, nuuid ) {
     console.debug( 'GET DETAIL FOR' + type + ' => ' + nuuid );
     update_detail( type, nuuid );
-    // Show up the modal
-    $( '.bs-example-modal-lg' ).modal( 'show' );
-    
+    /*    // Show up the modal
+     $( '.bs-example-modal-lg' ).modal( 'show' );
+     */
+    open_right_panel();
 }
 
 
@@ -516,19 +492,18 @@ function update_detail( type, nuuid ) {
     if ( type == 'node' ) {
         var node = find_node( nuuid );
         if ( node == null ) {
-            $( '#part-right' ).html( '<div class="bs-callout bs-callout-warning"><h4>No such node ' + nuuid + '</h4></div>' );
+            $( '#part-right-content' ).html( '<div class="bs-callout bs-callout-warning"><h4>No such node ' + nuuid + '</h4></div>' );
         }
         var now = new Date().getTime();
         $.getJSON( "http://" + server + "/agent/state/" + nuuid + '?_t=' + now, function( data ) {
             var s = '';
             
             // modal header part
-            s += '<div class="modal-header">';
-            s += '<button type="button" class="close" data-dismiss="modal">';
+            s += '<div class="detail-header">';
             s += '<span aria-hidden="true" style="color:white;">&times;</span><span class="sr-only">Close</span></button>';
-            s += '<h4 class="modal-title" id="myModalLabel"><span style="color:#FFD357;">' + node.name + '</span><br/><small style="color:#ABEBD9">' + node.addr + '</small><span class="pull-right" style="color:#FF71E2">' + node.state + '</span></h4>';
+            s += '<h4 class="detail-title" id="myModalLabel"><span style="color:#FFD357;">' + node.name + '</span><br/><small style="color:#ABEBD9">' + node.addr + '</small><span class="pull-right" style="color:#FF71E2">' + node.state + '</span></h4>';
             s += '</div>';
-            s += '<div class="modal-body">';
+            s += '<div class="detail-body">';
             
             s += '<div>';
             s += '<span class="pull-left" style="color:#C6C5FE">Tags:</span>';
@@ -569,17 +544,42 @@ function update_detail( type, nuuid ) {
             
             // close modal body
             s += '</div>';
-            // and add afooter to close it too
-            s += '<div class="modal-footer"><button type="button" class="btn btn-default" data-dismiss="modal">Close</button></div>';
             
-            $( '#part-right' ).html( s );
+            $( '#part-right-content' ).html( s );
             
         } );
         
     }
     
-    // Show up the modal
-    $( '.bs-example-modal-lg' ).modal( 'show' );
+}
+
+var __is_panel_open = false;
+function toggle_right_panel() {
+    if ( __is_panel_open ) {
+        close_right_panel();
+    } else {
+        open_right_panel();
+    }
+}
+
+// Force a close of the right panel
+function close_right_panel() {
+    // if already close, bail out
+    if ( !__is_panel_open ) {
+        return;
+    }
+    __is_panel_open = false;
+    $( '#part-right-content' ).removeClass( 'shown' );
+}
+
+// Force an open of the right panel
+function open_right_panel() {
+    // if already open, bail out
+    if ( __is_panel_open ) {
+        return;
+    }
+    __is_panel_open = true;
+    $( '#part-right-content' ).addClass( 'shown' );
 }
 
 

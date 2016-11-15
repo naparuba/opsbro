@@ -18,8 +18,8 @@
 <body>
 
 
-<div class='col-md-12 nopadleft' id='main-cont'>
-    <div class='col-md-2 nopadleft' id='menu-cont'>
+<div class='nopadleft' id='main-cont'>
+    <div class='nopadleft' id='menu-cont'>
 
         <ul id="menu">
             <li>
@@ -32,36 +32,23 @@
 
     </div>
 
-    <div class='col-md-10 col-lg-10 padded-right-middle scrollable nopadleft' id='data-cont'>
-        <div class='col-md-12 nopadleft' id='filters'>
-            <div class='col-md-5 nopadleft'>
-                <div class="col-xs-11" style="padding-right:5px;">
-                    <input id='filtername' class='form-control form-control-mini' placeholder="Filter by name"></input>
-                </div>
-                <a style="color:gray;" class="show-pointer pull-left" id="filter-help" data-toggle="popover" title="Help about filtering"><span class="glyphicon glyphicon-question-sign"></span></a>
+    <div class='scrollable nopadleft' id='data-cont'>
+        <div class=' nopadleft' id='data-top-line'>
+            <div id='filter-value-cont'>
+                <a class="show-pointer" id="filter-help" data-toggle="popover" title="Help about filtering"><span class="glyphicon glyphicon-question-sign"></span></a>
+                <input id='filter-value' class='' placeholder="Filter by name"/>
+                <img src='img/right-pic.png'/>
             </div>
-            <div class='col-md-4'>
-                <select id='filterstate' class='form-control form-control-mini'>
-                    <option value='any value'>any value</option>
-                    <option value='passing'>passing</option>
-                    <option value='failing'>failing</option>
-                </select>
-            </div>
-            <div class='col-md-1'>
-                <a id='expand-btn' class='btn btn-default'>Expand</a>
-            </div>
-            <!--<div class='col-md-1'>
-                <a id='refresh-services-btn' onclick="load_services();" class='btn btn-default'><span class="glyphicon glyphicon-refresh"></span></a>
-            </div>
-            -->
+            <select id='filter-state'>
+                <option value='any value'>any value</option>
+                <option value='passing'>passing</option>
+                <option value='failing'>failing</option>
+            </select>
         </div>
-        <div class='col-md-12 nopadleft' id='list-left'>
-            <!--<div class='col-md-12 nopadleft' id='services'>
+        <div class='nopadleft' id='list-left'>
+            <div class='nopadleft' id='nodes'>
             </div>
-            -->
-            <div class='col-md-12 nopadleft' id='nodes'>
-            </div>
-            <div class='col-md-12' id='connexions'>
+            <div class='' id='connexions'>
                 Backend connexions (websocket):
                 <ul class="connexions" id='connexions-ul'>
                 </ul>
@@ -71,13 +58,10 @@
         </div>
     </div>
 
-    <div class="modal fade bs-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content" id='part-right'>
-            </div>
-        </div>
+    <div id="part-right">
+        <div id="part-right-button"><a id="toggle_btn" href="javascript:toggle_right_panel();"><span class="glyphicon glyphicon-question-sign"></span></a></div>
+        <div id="part-right-content">(nothing selected)</div>
     </div>
-
 
 </div>
 
