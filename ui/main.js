@@ -21,6 +21,53 @@ if ( typeof String.prototype.startsWith != 'function' ) {
     };
 }
 
+// dict.values()
+function dict_get_values( d ) {
+    var r = [];
+    $.each( d, function( _idx, e ) {
+        r.push( e );
+    } );
+    return r;
+}
+
+var __templates_cache = {};
+function get_template( tpl_name ) {
+    var tpl = __templates_cache[ tpl_name ];
+    if ( typeof tpl == 'undefined' ) {
+        tpl                           = $( '#' + tpl_name ).html();
+        __templates_cache[ tpl_name ] = tpl;
+    }
+    return tpl;
+}
+
+
+function add_spinner( place ) {
+    var opts    = {
+        lines:     17, // The number of lines to draw
+        length:    16, // The length of each line
+        width:     4, // The line thickness
+        radius:    13, // The radius of the inner circle
+        corners:   1, // Corner roundness (0..1)
+        rotate:    0, // The rotation offset
+        direction: 1, // 1: clockwise, -1: counterclockwise
+        color:     '#33000', // #rgb or #rrggbb or array of colors
+        speed:     1, // Rounds per second
+        trail:     66, // Afterglow percentage
+        shadow:    true, // Whether to render a shadow
+        hwaccel:   true, // Whether to use hardware acceleration
+        className: 'spinner', // The CSS class to assign to the spinner
+        zIndex:    2e9, // The z-index (defaults to 2000000000)
+        top:       '100px', // Top position relative to parent
+        left:      '50%' // Left position relative to parent
+    };
+    var target  = $( place );
+    var spinner = new Spinner( opts ).spin();
+    target.append( spinner.el );
+}
+
+/**************************************
+ Server Elections
+ *************************************/
 
 function parse_uri( uri ) {
     var parser  = document.createElement( 'a' );
@@ -37,11 +84,8 @@ function parse_uri( uri ) {
      */
 }
 
-
 // If there is no servers in the config, take the http addr
-var server = null;
-
-
+var server   = null;
 var def_port = 6768;
 
 
@@ -54,9 +98,7 @@ if ( servers.length == 0 ) {
 // Do not connect always to the same first server, let a chance for other to manage the load
 servers.shuffle();
 
-
 console.debug( 'GET SERVERS' + servers );
-
 
 // Our list of servers and their states
 var pot_servers = {};
@@ -73,42 +115,31 @@ $.each( servers, function( _idx, s ) {
     } else {
         s = s + ':' + def_port;
     }
-    var ws_port = port + 1;
-    console.debug( s );
-    console.debug( 'PORT +' + port );
-    pot_servers[ s ] = { 'state': 'pending', 'uri': s, port: port, ws_port: ws_port, hostname: hostname, 'elected': false };
+    var ws_port      = port + 1;
+    pot_servers[ s ] = {
+        'state':   'pending',
+        'uri':     s,
+        port:      port,
+        ws_port:   ws_port,
+        hostname:  hostname,
+        'elected': false
+    };
 } );
 
 
 function update_connexions_view() {
-    var ul = $( '#connexions-ul' );
-    ul.html( '' );
-    $.each( pot_servers, function( _idx, e ) {
-        var li    = $( '<li class="connexion ' + e.state + '" id="' + e.hostname + '-' + e.port + '">' );
-        var color = '#ABEBD9'; // blue
-        if ( e.state == 'ok' ) {
-            color = '#7bc659'; // green
-        }
-        if ( e.state == 'error' ) {
-            color = '#dd4e58'; // red
-        }
-        var p = "<p><span style='color:#FFD357'>" + e.hostname + ':' + e.port + "</span>  <span style='color:" + color + "'>" + e.state + "</span>";
-        if ( e.elected ) {
-            p += '<span style="color:#C6C5FE"> (elected)</span>';
-        }
-        p += "</p>";
-        li.append( p );
-        ul.append( li );
-    } );
+    var ul              = $( '#connexions-ul' );
+    var connections_tpl = get_template( 'tpl-connections-list' );
+    // get connections but as list for mustache
+    var connections     = dict_get_values( pot_servers );
+    var s_connections   = Mustache.to_html( connections_tpl, { connections: connections } );
+    ul.html( s_connections );
 }
 
 
 $( function() {
     update_connexions_view();
 } );
-
-
-console.debug( pot_servers );
 
 
 // We will look at all servers and take the first that answer us
@@ -149,30 +180,9 @@ var nodes    = [];
 var selected = '';
 
 
-function add_spinner( place ) {
-    var opts    = {
-        lines:     17, // The number of lines to draw
-        length:    16, // The length of each line
-        width:     4, // The line thickness
-        radius:    13, // The radius of the inner circle
-        corners:   1, // Corner roundness (0..1)
-        rotate:    0, // The rotation offset
-        direction: 1, // 1: clockwise, -1: counterclockwise
-        color:     '#33000', // #rgb or #rrggbb or array of colors
-        speed:     1, // Rounds per second
-        trail:     66, // Afterglow percentage
-        shadow:    true, // Whether to render a shadow
-        hwaccel:   true, // Whether to use hardware acceleration
-        className: 'spinner', // The CSS class to assign to the spinner
-        zIndex:    2e9, // The z-index (defaults to 2000000000)
-        top:       '100px', // Top position relative to parent
-        left:      '50%' // Left position relative to parent
-    };
-    var target  = $( place );
-    var spinner = new Spinner( opts ).spin();
-    target.append( spinner.el );
-}
-
+/***********************************************************
+ *                         Node                            *
+ ***********************************************************/
 
 var __Node_properties = [ 'uuid', 'addr', 'checks', 'incarnation', 'name', 'port', 'state', 'tags' ];  // to copy from gossip
 function Node( gossip_entry ) {
@@ -299,7 +309,7 @@ function apply_filters_for( p ) {
         var _id     = $( this ).attr( 'id' );
         var e_state = $( this ).data( 'state-id' );
         
-        // We must mauch both name/tag and state
+        // We must match both name/tag and state
         // First name, bail out if no match
         if ( look_for == 'name' ) {
             if ( !(_id.indexOf( reg ) > -1) ) {
@@ -355,8 +365,8 @@ $( function() {
     
     var help_text = [ 'Nodes:',
                       '<ul>',
-                      '<li>string => lookup by the node name</li>',
-                      '<li>t:string => lookup by tag name</li>',
+                      '<li>string   => lookup by the node name</li>',
+                      '<li><b>t:</b>string => lookup by tag name</li>',
                       '</ul>'
     ].join( '\n' );
     
@@ -477,22 +487,9 @@ function find_node( nuuid ) {
 function detail( type, nuuid ) {
     console.debug( 'GET DETAIL FOR' + type + ' => ' + nuuid );
     update_detail( type, nuuid );
-    /*    // Show up the modal
-     $( '.bs-example-modal-lg' ).modal( 'show' );
-     */
     open_right_panel();
 }
 
-
-var __templates_cache = {};
-function get_template( tpl_name ) {
-    var tpl = __templates_cache[ tpl_name ];
-    if ( typeof tpl == 'undefined' ) {
-        tpl                           = $( '#' + tpl_name ).html();
-        __templates_cache[ tpl_name ] = tpl;
-    }
-    return tpl;
-}
 
 function update_detail( type, nuuid ) {
     // We got a click, tag the selected element
@@ -580,7 +577,7 @@ function close_right_panel() {
         return;
     }
     __is_panel_open = false;
-    $( '#part-right-content' ).removeClass( 'shown' );
+    $( '#part-right' ).removeClass( 'expanded' );
 }
 
 // Force an open of the right panel
@@ -590,7 +587,7 @@ function open_right_panel() {
         return;
     }
     __is_panel_open = true;
-    $( '#part-right-content' ).addClass( 'shown' );
+    $( '#part-right' ).addClass( 'expanded' );
 }
 
 

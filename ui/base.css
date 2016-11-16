@@ -412,14 +412,21 @@ input, select {
     height           : 100%;
     border-left      : white 1px solid;
 }
-#part-right-content.shown {
+#part-right.expanded .part-right-content {
     display : inline-block;
+}
+/* When expandend, switch to chevron-right content */
+#part-right.expanded .right-panel-button:before {
+    content : "\e080";
 }
 #toggle_btn {
     position : absolute;
     top      : 50%;
     left     : 5px;
 }
+/**************************
+           Detail
+**************************/
 #detail-name {
     color     : #FFD357;
     font-size : 18px;
@@ -429,4 +436,16 @@ input, select {
 }
 #detail-state {
     color : #FF71E2;
+}
+/********************************
+           Connections panel
+********************************/
+#connexions-ul .state-pending {
+    color : #ABEBD9; /*blue*/
+}
+#connexions-ul .state-ok {
+    color : #7BC659; /*green*/
+}
+#connexions-ul .state-error {
+    color : #DD4E58; /*red*/
 }
