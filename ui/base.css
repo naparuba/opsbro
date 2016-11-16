@@ -386,7 +386,7 @@ input, select {
                   Right part
 *************************************************/
 #part-right {
-    min-width : 30px;
+    min-width : 25px;
     display   : inline;
     position  : absolute;
     right     : 0px;
@@ -394,10 +394,13 @@ input, select {
     top       : 0px;
 }
 #part-right-button {
-    background-color : red;
+    background-color : black;
     height           : 100%;
     width            : 25px;
     float            : left;
+}
+#part-right-button .right-panel-button {
+    color : white;
 }
 #part-right-content {
     display          : none;
@@ -406,6 +409,8 @@ input, select {
     background-color : black;
     float            : right;
     min-width        : 600px;
+    height           : 100%;
+    border-left      : white 1px solid;
 }
 #part-right-content.shown {
     display : inline-block;
@@ -413,4 +418,15 @@ input, select {
 #toggle_btn {
     position : absolute;
     top      : 50%;
+    left     : 5px;
+}
+#detail-name {
+    color     : #FFD357;
+    font-size : 18px;
+}
+#detail-addr {
+    color : #ABEBD9;
+}
+#detail-state {
+    color : #FF71E2;
 }

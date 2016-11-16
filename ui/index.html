@@ -12,6 +12,7 @@
     <script src="jquery.js"></script>
     <script src="bootstrap.min.js"></script>
     <script src="spin.min.js"></script>
+    <script src="mustache.min.js"></script>
 
     <script src="main.js"></script>
 </head>
@@ -59,7 +60,7 @@
     </div>
 
     <div id="part-right">
-        <div id="part-right-button"><a id="toggle_btn" href="javascript:toggle_right_panel();"><span class="glyphicon glyphicon-question-sign"></span></a></div>
+        <div id="part-right-button"><a id="toggle_btn" href="javascript:toggle_right_panel();"><span class="right-panel-button glyphicon glyphicon-chevron-left"></span></a></div>
         <div id="part-right-content">(nothing selected)</div>
     </div>
 
@@ -67,4 +68,14 @@
 
 
 </body>
+
+<!-- Templates -->
+<script id="tpl-detail-header" type="text/template">
+    <div id="detail-header">
+        <div id="detail-name">{{name}}</div>
+        <div id="detail-addr">{{addr}}</div>
+        <div id="detail-state" class="pull-right">{{state}}</div>
+    </div>
+</script>
+
 </html>

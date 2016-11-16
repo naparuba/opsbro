@@ -484,6 +484,16 @@ function detail( type, nuuid ) {
 }
 
 
+var __templates_cache = {};
+function get_template( tpl_name ) {
+    var tpl = __templates_cache[ tpl_name ];
+    if ( typeof tpl == 'undefined' ) {
+        tpl                           = $( '#' + tpl_name ).html();
+        __templates_cache[ tpl_name ] = tpl;
+    }
+    return tpl;
+}
+
 function update_detail( type, nuuid ) {
     // We got a click, tag the selected element
     selected = nuuid;
@@ -498,11 +508,12 @@ function update_detail( type, nuuid ) {
         $.getJSON( "http://" + server + "/agent/state/" + nuuid + '?_t=' + now, function( data ) {
             var s = '';
             
+            var detail_header_tpl = get_template( 'tpl-detail-header' );
+            var s_detail_header   = Mustache.to_html( detail_header_tpl, node );
+            
             // modal header part
-            s += '<div class="detail-header">';
-            s += '<span aria-hidden="true" style="color:white;">&times;</span><span class="sr-only">Close</span></button>';
-            s += '<h4 class="detail-title" id="myModalLabel"><span style="color:#FFD357;">' + node.name + '</span><br/><small style="color:#ABEBD9">' + node.addr + '</small><span class="pull-right" style="color:#FF71E2">' + node.state + '</span></h4>';
-            s += '</div>';
+            s += s_detail_header;
+            
             s += '<div class="detail-body">';
             
             s += '<div>';
