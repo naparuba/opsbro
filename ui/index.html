@@ -74,7 +74,9 @@
      **************************************** -->
 
 
-<!-- Detail header: at the top of the right part -->
+<!-- Detail header: at the top of the right part
+  Entry::   node
+-->
 <script id="tpl-detail-header" type="text/template">
     <div id="detail-header">
         <div id="detail-name">{{name}}</div>
@@ -84,19 +86,53 @@
 </script>
 
 
-<!-- Connection list: list of connections with their states -->
+<!-- Connection list: list of connections with their states
+ Entry::   {connection: [connections]}
+-->
 <script id="tpl-connections-list" type="text/template">
     {{#connections}}
-        <li class='connexion {{state}}' id={{hostname}}-{{port}}'>
-            <p>
-                <span style='color:#FFD357'>{{hostname}}:{{port}}</span>
-                <span class='state-{{state}}'>{{state}}</span>
-                {{#elected}}
-                <span style="color:#C6C5FE"> (elected)</span>
-                {{/elected}}
-            </p>
-        </li>
+    <li class='connexion {{state}}' id={{hostname}}-{{port}}'>
+        <p>
+            <span style='color:#FFD357'>{{hostname}}:{{port}}</span>
+            <span class='state-{{state}}'>{{state}}</span>
+            {{#elected}}
+            <span style="color:#C6C5FE"> (elected)</span>
+            {{/elected}}
+        </p>
+    </li>
     {{/connections}}
 </script>
+
+
+<!-- Connection list: list of connections with their states
+ Entry::   node
+-->
+<script id="tpl-node-bloc" type="text/template">
+    <li onclick="detail('node', '{{uuid}}')" class='elder-li list-group-item list-condensed-link ' id='{{uuid}}'>
+
+        <div>
+            <div class='top-bloc-bar state-{{state}}'>{{state}}</div>
+            <div class='list-group-item-heading'>{{name}}</div>
+            <div>
+                <span style="color:#C6C5FE">Addr:</span>
+                <small>{{addr}}</small>
+            </div>
+
+            <div>
+                <ul style="padding-left:0px;">
+                    <li style="display: inline-block;color:#C6C5FE" class='Apull-left'>Tags:</li>
+                    {{#tags}}
+                    <li style="display: inline-block">
+                        <small>{{.}}</small>
+                    </li>
+                    {{/tags}}
+                </ul>
+            </div>
+
+        </div>
+        <img class="corner-bottom-left" src="img/corner-bottom-left.png"/><img class="corner-bottom-right" src="img/corner-bottom-right.png"/></li>
+
+</script>
+
 
 </html>

@@ -35,6 +35,7 @@ function get_template( tpl_name ) {
     var tpl = __templates_cache[ tpl_name ];
     if ( typeof tpl == 'undefined' ) {
         tpl                           = $( '#' + tpl_name ).html();
+        Mustache.parse(tpl);
         __templates_cache[ tpl_name ] = tpl;
     }
     return tpl;
@@ -132,7 +133,7 @@ function update_connexions_view() {
     var connections_tpl = get_template( 'tpl-connections-list' );
     // get connections but as list for mustache
     var connections     = dict_get_values( pot_servers );
-    var s_connections   = Mustache.to_html( connections_tpl, { connections: connections } );
+    var s_connections   = Mustache.render( connections_tpl, { connections: connections } );
     ul.html( s_connections );
 }
 
@@ -209,6 +210,26 @@ Node.prototype.tostr = function() {
     return s;
 };
 
+// For the view part, to compute color
+Node.prototype.V_get_color = function() {
+    var state = this.state;
+    // If len of members is 0, put it in unknown, not normal result here
+    var color = 'green';
+    if ( state == 'alive' ) {
+        return 'green';
+    }
+    if ( state == 'dead' ) {
+        return 'red';
+    }
+    if ( state == 'leave' ) {
+        return 'gray';
+    }
+    if ( state == 'suspect' ) {
+        return 'orange';
+    }
+    // ??
+    return 'gray';
+};
 
 function load_nodes() {
     add_spinner( '#nodes' );
@@ -379,73 +400,9 @@ $( function() {
 
 
 // Generate a LI string with the host information
-function generate_host_list_entry( val ) {
-    var state_id = 0;
-    if ( val.state == 'dead' ) {
-        state_id = 2;
-    }
-    if ( val.state == 'suspect' ) {
-        state_id = 1;
-    }
-    if ( val.state == 'leave' ) {
-        state_id = 3;
-    }
-    
-    var nuuid = val.uuid;
-    
-    var state = val.state;
-    // If len of members is 0, put it in unknown, not normal result here
-    var color = 'green';
-    if ( state == 'alive' ) {
-        if ( state_id == 1 ) {
-            color = 'orange';
-        }
-        if ( state_id == 2 ) {
-            color = 'red';
-        }
-        if ( state_id == 3 ) {
-            color = 'gray';
-        }
-        
-    }
-    if ( state == 'dead' ) {
-        color = 'red';
-    }
-    if ( state == 'leave' ) {
-        color = 'gray';
-    }
-    if ( state == 'suspect' ) {
-        color = 'orange';
-    }
-    
-    // Then print all in our filter
-    var s = "<li onclick='detail(\"node\",\"" + nuuid + "\")' class='elder-li bg-" + color + " list-group-item list-condensed-link ' data-state-id='" + state_id + "' id='" + nuuid + "'>";
-    // Compact version
-    s += '<div class="compact">';
-    s += '<div class="top-bloc-bar state-' + state + '">' + state + '</div>';
-    
-    s += "<h4 class='list-group-item-heading'>";
-    s += val.name;
-    s += '</h4>';
-    
-    s += '<div class=""><span class="pull-left" style="color:#C6C5FE">Addr:</span><span class="pull-left"><small>' + val.addr + '</small></span></div>';
-    s += '<div style="clear: both;"></div>';
-    
-    s += '<div class="">';
-    s += '<span class="pull-left" style="color:#C6C5FE">Tags:</span>';
-    $.each( val.tags, function( idx, tname ) {
-        s += '<span class="pull-left"><small>' + tname + ' </small></span>';
-    } );
-    s += '</div>';
-    
-    s += '<div style="clear: both;"></div>';
-    
-    s += '</div>';
-    s += '<img class="corner-bottom-left" src="img/corner-bottom-left.png" />';
-    s += '<img class="corner-bottom-right" src="img/corner-bottom-right.png" />';
-    s += '</div>';
-    s += "</li>";
-    
+function generate_host_list_entry( node ) {
+    var node_bloc_tpl = get_template( 'tpl-node-bloc' );
+    var s             = Mustache.to_html( node_bloc_tpl, node );
     return s;
     
 }
@@ -455,10 +412,11 @@ function generate_host_list_entry( val ) {
 function refresh_nodes() {
     var items = [];
     for ( var i = 0; i < nodes.length; i++ ) {
-        var val = nodes[ i ];
-        var s   = generate_host_list_entry( val );
+        var n = nodes[ i ];
+        var s = generate_host_list_entry( n );
         items.push( s );
     }
+    
     $( "#nodes" ).html( '' );
     var ul = $( "<ul/>", {
         "class": "node-list",
@@ -681,7 +639,7 @@ function do_webso_connect() {
             }
             
             // Now generate the doc string from our new host
-            var s = generate_host_list_entry( o );
+            var s = generate_host_list_entry( n );
             // Delete the previous li for this node
             console.debug( 'Removing previous node entry:' + nuuid );
             $( '#' + nuuid ).remove();

@@ -177,7 +177,7 @@ input, select {
 }
 .node-list > li {
     display          : inline-block;
-    text-align       : center;
+    text-align       : left;
     width            : 220px;
     min-height       : 60px;
     margin           : 0.6em;
@@ -187,7 +187,6 @@ input, select {
     padding          : 15px;
     border-width     : 3px;
     border-style     : solid;
-    white-space      : pre;
 }
 .bloc-heading {
     padding       : 10px 7px;
