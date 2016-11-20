@@ -421,38 +421,33 @@ function find_node( nuuid ) {
 
 
 // Detail show be called by a NON modal page
-function detail( type, nuuid ) {
-    console.debug( 'GET DETAIL FOR' + type + ' => ' + nuuid );
-    update_detail( type, nuuid );
+function show_detail( nuuid ) {
+    update_detail( nuuid );
     open_right_panel();
 }
 
 
-function update_detail( type, nuuid ) {
+function update_detail( nuuid ) {
     // We got a click, tag the selected element
     selected = nuuid;
     
-    console.debug( 'detail::' + type + '+' + nuuid );
-    if ( type == 'node' ) {
-        var node = find_node( nuuid );
-        if ( node == null ) {
-            $( '#part-right-content' ).html( '<div class="bs-callout bs-callout-warning"><h4>No such node ' + nuuid + '</h4></div>' );
-        }
-        var now = new Date().getTime();
-        $.getJSON( "http://" + server + "/agent/state/" + nuuid + '?_t=' + now, function( data ) {
-            // first header
-            var detail_header_tpl = get_template( 'tpl-detail-header' );
-            var s_detail_header   = Mustache.to_html( detail_header_tpl, node );
-            
-            $( '#detail-header' ).html( s_detail_header );
-            
-            // now checks
-            var detail_checks_tpl = get_template( 'tpl-detail-checks' );
-            var s_detail_checks   = Mustache.to_html( detail_checks_tpl, { 'checks': dict_get_values( data.checks ) } );
-            $( '#detail-checks' ).html( s_detail_checks );
-        } );
-        
+    var node = find_node( nuuid );
+    if ( node == null ) {
+        $( '#part-right-content' ).html( '<div class="bs-callout bs-callout-warning"><h4>No such node ' + nuuid + '</h4></div>' );
     }
+    var now = new Date().getTime();
+    $.getJSON( "http://" + server + "/agent/state/" + nuuid + '?_t=' + now, function( data ) {
+        // first header
+        var detail_header_tpl = get_template( 'tpl-detail-header' );
+        var s_detail_header   = Mustache.to_html( detail_header_tpl, node );
+        $( '#detail-header' ).html( s_detail_header );
+        
+        // now checks
+        var detail_checks_tpl = get_template( 'tpl-detail-checks' );
+        var s_detail_checks   = Mustache.to_html( detail_checks_tpl, { 'checks': dict_get_values( data.checks ) } );
+        $( '#detail-checks' ).html( s_detail_checks );
+    } );
+    
     
 }
 
@@ -589,7 +584,7 @@ function do_webso_connect() {
             // If it was the selected, update the detail panel
             console.debug( 'SELECTED ' + selected + ' AND ' + nuuid );
             if ( nuuid == selected ) {
-                detail( 'node', nuuid );
+                update_detail( nuuid );
             }
         };
     }
