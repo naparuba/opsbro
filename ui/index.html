@@ -27,6 +27,12 @@
                 <a id='nodes-btn' class='' href='javascript:show_nodes();'>Nodes <span class="badge" id='badge-nodes'>?</span></a>
             </li>
             <li>
+                <a id='execution-btn' class='' href='javascript:show_executions();'>Executions</a>
+            </li>
+            <li>
+                <a id='configuration-btn' class='' href='javascript:show_configuration();'>Configuration</a>
+            </li>
+            <li>
                 <a id='connexions-btn' class='' href='javascript:show_connexions();'>Links <span class="glyphicon glyphicon-signal red" id='icon-connexion' data-toggle="tooltip" title="" data-placement="right"></span></a>
             </li>
         </ul>
@@ -61,7 +67,30 @@
 
     <div id="part-right">
         <div id="part-right-button"><a id="toggle_btn" href="javascript:toggle_right_panel();"><span class="right-panel-button glyphicon glyphicon-chevron-left"></span></a></div>
-        <div id="part-right-content" class="part-right-content">(nothing selected)</div>
+        <div id="part-right-content" class="part-right-content">
+            <div id="detail">
+                <div id="detail-header">
+                </div>
+                <div>
+                    <div class="detail-header-panel">
+                        Checks
+                    </div>
+                    <div class="detail-header-panel">
+                        Collectors
+                    </div>
+                    <div class="detail-header-panel">
+                        Detectors
+                    </div>
+                    <div class="detail-header-panel">
+                        Agent information
+                    </div>
+                </div>
+                <hr/>
+                <div id='detail-checks'>
+
+                </div>
+            </div>
+        </div>
     </div>
 
 </div>
@@ -76,13 +105,46 @@
 
 <!-- Detail header: at the top of the right part
   Entry::   node
+  Destination:  #detail-header
 -->
 <script id="tpl-detail-header" type="text/template">
-    <div id="detail-header">
-        <div id="detail-name">{{name}}</div>
-        <div id="detail-addr">{{addr}}</div>
-        <div id="detail-state" class="pull-right">{{state}}</div>
+    <div id="detail-name">{{name}}</div>
+    <div id="detail-addr">{{addr}}</div>
+    <div id="detail-state" class="pull-right">{{state}}</div>
+    <div>
+        <ul style="padding-left:0px;">
+            <li style="display: inline-block;color:#C6C5FE" class='Apull-left'>Tags:</li>
+            {{#tags}}
+            <li style="display: inline-block">
+                <small>{{.}}</small>
+            </li>
+            {{/tags}}
+        </ul>
     </div>
+    <hr/>
+
+</script>
+
+
+<!-- Detail checks: show checks for a node
+  Entry::   node
+  Destination:  #detail-checks
+-->
+<script id="tpl-detail-checks" type="text/template">
+    {{#checks}}
+    <div class="list-group-item list-condensed-link">
+        <div>
+            <div class="bg-{{state}} list-bar">&nbsp;</div>
+            <div class="name bloc-heading">{{name}}<span class="pull-right"><small>{{state}}</small></span>
+            </div>
+        </div>
+        {{#notes}}
+        Notes: {{notes}}
+        {{/notes}}
+        <h5>Output:</h5>
+        <pre style="background-color:#F0F0F0">{{output}}</pre>
+    </div>
+    {{/checks}}
 </script>
 
 
@@ -117,7 +179,6 @@
                 <span style="color:#C6C5FE">Addr:</span>
                 <small>{{addr}}</small>
             </div>
-
             <div>
                 <ul style="padding-left:0px;">
                     <li style="display: inline-block;color:#C6C5FE" class='Apull-left'>Tags:</li>

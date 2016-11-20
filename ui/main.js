@@ -34,8 +34,8 @@ var __templates_cache = {};
 function get_template( tpl_name ) {
     var tpl = __templates_cache[ tpl_name ];
     if ( typeof tpl == 'undefined' ) {
-        tpl                           = $( '#' + tpl_name ).html();
-        Mustache.parse(tpl);
+        tpl = $( '#' + tpl_name ).html();
+        Mustache.parse( tpl );
         __templates_cache[ tpl_name ] = tpl;
     }
     return tpl;
@@ -210,26 +210,6 @@ Node.prototype.tostr = function() {
     return s;
 };
 
-// For the view part, to compute color
-Node.prototype.V_get_color = function() {
-    var state = this.state;
-    // If len of members is 0, put it in unknown, not normal result here
-    var color = 'green';
-    if ( state == 'alive' ) {
-        return 'green';
-    }
-    if ( state == 'dead' ) {
-        return 'red';
-    }
-    if ( state == 'leave' ) {
-        return 'gray';
-    }
-    if ( state == 'suspect' ) {
-        return 'orange';
-    }
-    // ??
-    return 'gray';
-};
 
 function load_nodes() {
     add_spinner( '#nodes' );
@@ -350,7 +330,6 @@ function apply_filters_for( p ) {
                     }
                 }
             }
-            
         }
         
         // Here, the name match was not need or false,
@@ -461,58 +440,16 @@ function update_detail( type, nuuid ) {
         }
         var now = new Date().getTime();
         $.getJSON( "http://" + server + "/agent/state/" + nuuid + '?_t=' + now, function( data ) {
-            var s = '';
-            
+            // first header
             var detail_header_tpl = get_template( 'tpl-detail-header' );
             var s_detail_header   = Mustache.to_html( detail_header_tpl, node );
             
-            // modal header part
-            s += s_detail_header;
+            $( '#detail-header' ).html( s_detail_header );
             
-            s += '<div class="detail-body">';
-            
-            s += '<div>';
-            s += '<span class="pull-left" style="color:#C6C5FE">Tags:</span>';
-            $.each( node.tags, function( idx, tname ) {
-                s += '<span class="pull-left"><small>' + tname + '&nbsp; </small> </span>';
-            } );
-            s += '</div>';
-            
-            s += '<hr/>';
-            
-            s += '<hr/>';
-            
-            // Now print checks
-            s += '<h5>Checks</h5>';
-            $.each( data.checks, function( k, v ) {
-                s += '<div class="list-group-item list-condensed-link">';
-                var color = 'green';
-                if ( v.state == 'WARNING' ) {
-                    color = 'orange';
-                }
-                if ( v.state == 'CRITICAL' ) {
-                    color = 'red';
-                }
-                if ( v.state == 'UNKNOWN' ) {
-                    color = 'gray';
-                }
-                
-                s += '<div class="expanded"><div class="bg-' + color + ' list-bar">&nbsp;</div><div class="name bloc-heading">' + v.name + ' <span class="pull-right"><small>' + v.state + '</small></span></div></div>';
-                
-                if ( v.notes != '' ) {
-                    s += '<h5>NOTES</h5>';
-                    s += v.notes;
-                }
-                s += '<h5>OUTPUT</h5>';
-                s += '<pre style="background-color:#F0F0F0">' + v.output + '</pre>';
-                s += '</div>';
-            } );
-            
-            // close modal body
-            s += '</div>';
-            
-            $( '#part-right-content' ).html( s );
-            
+            // now checks
+            var detail_checks_tpl = get_template( 'tpl-detail-checks' );
+            var s_detail_checks   = Mustache.to_html( detail_checks_tpl, { 'checks': dict_get_values( data.checks ) } );
+            $( '#detail-checks' ).html( s_detail_checks );
         } );
         
     }
