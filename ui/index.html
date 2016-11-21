@@ -24,19 +24,21 @@
 
         <ul id="menu">
             <li>
-                <a id='nodes-btn' class='' href='javascript:show_nodes();'>Nodes <span class="badge" id='badge-nodes'>?</span></a>
+                <a id='nodes-btn' class='menu-a' href='javascript:show_main_part("nodes");'>Nodes <span class="badge" id='badge-nodes'>?</span></a>
             </li>
             <li>
-                <a id='execution-btn' class='' href='javascript:show_executions();'>Executions</a>
+                <a id='execution-btn' class='menu-a' href='javascript:show_main_part("execution");'>Commands executions</a>
             </li>
             <li>
-                <a id='configuration-btn' class='' href='javascript:show_configuration();'>Configuration</a>
+                <a id='evaluations-btn' class='menu-a' href='javascript:show_main_part("evaluations");'>Rules evaluations</a>
             </li>
             <li>
-                <a id='connexions-btn' class='' href='javascript:show_connexions();'>Links <span class="glyphicon glyphicon-signal red" id='icon-connexion' data-toggle="tooltip" title="" data-placement="right"></span></a>
+                <a id='configuration-btn' class='menu-a' href='javascript:show_main_part("configuration");'>Configuration</a>
+            </li>
+            <li>
+                <a id='connections-btn' class='menu-a' href='javascript:show_main_part("connections");'>Links <span class="glyphicon glyphicon-signal red" id='icon-connection' data-toggle="tooltip" title="" data-placement="right"></span></a>
             </li>
         </ul>
-
     </div>
 
     <div class='scrollable nopadleft' id='data-cont'>
@@ -53,11 +55,31 @@
             </select>
         </div>
         <div class='nopadleft' id='list-left'>
-            <div class='nopadleft' id='nodes'>
+            <!--        NODES            -->
+            <div class='nopadleft  main-part' id='nodes'>
             </div>
-            <div class='' id='connexions'>
-                Backend connexions (websocket):
-                <ul class="connexions" id='connexions-ul'>
+
+
+            <!--        EVALUATIONS            -->
+            <div class='main-part' id='evaluations'>
+                <a href="javascript:get_available_functions();">Show available functions</a>
+                <div id="evaluations-available-functions">
+                </div>
+                <hr/>
+                <div id="evaluations-evaluate-rule">
+                    Evaluations:
+                    <input id="evaluations-rule-input"/>
+                    <a class='btn btn-default' href='javascript:evaluate_expr()'>Evaluate expression</a>
+                    <div id="evaluations-result">
+                    </div>
+                </div>
+            </div>
+
+
+            <!--        Connections            -->
+            <div class='main-part' id='connections'>
+                Backend connections (websocket):
+                <ul class="connections" id='connections-ul'>
                 </ul>
                 <a class='btn btn-default' href='javascript:elect_server()'>Recheck and re-elect servers</a>
             </div>
@@ -205,7 +227,7 @@
     <div>Websocket:
         <div>Enabled: {{websocket.enabled}}</div>
         <div>Port {{websocket.port}}</div>
-        <div>Number of connections {{websocket_info.nb_connexions}}</div>
+        <div>Number of connections {{websocket_info.nb_connections}}</div>
     </div>
     <div>Graphite:
         <div>Enabled: {{graphite.enabled}}</div>
@@ -246,7 +268,7 @@
 -->
 <script id="tpl-connections-list" type="text/template">
     {{#connections}}
-    <li class='connexion {{state}}' id={{hostname}}-{{port}}'>
+    <li class='connection {{state}}' id={{hostname}}-{{port}}'>
         <p>
             <span style='color:#FFD357'>{{hostname}}:{{port}}</span>
             <span class='state-{{state}}'>{{state}}</span>
@@ -286,6 +308,22 @@
         </div>
         <img class="corner-bottom-left" src="img/corner-bottom-left.png"/><img class="corner-bottom-right" src="img/corner-bottom-right.png"/></li>
 
+</script>
+
+
+<!-- Show eval functions: get and display evaluation function from server
+  Entry::   {'functions':  /agent/evaluator/list result}
+  Destination:  #evaluations-available-functions
+-->
+<script id="tpl-evaluations-available-functions" type="text/template">
+    {{#functions}}
+    <div class='function'>
+        <div>
+            {{name}} : {{name}}({{prototype_cleaned}})
+        </div>
+        <div>Documentation: {{doc}}</div>
+    </div>
+    {{/functions}}
 </script>
 
 

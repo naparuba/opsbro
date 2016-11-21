@@ -6,6 +6,8 @@ import socket
 import json
 import base64
 import time
+import inspect
+import types
 
 try:
     import apt
@@ -43,13 +45,15 @@ def export(f):
     
     # Export the function to the allowed functions
     fname = f.__name__
-    functions[fname] = inner
+    functions[fname] = f  # inner
+    inner.linked = f
     logger.debug('Evaluater: exporting function %s' % fname)
-    return inner
+    return f  # inner
 
 
 @export
 def file_exists(p):
+    """file_exists(path) -> return True if a path exist on the system, False otherwise."""
     return os.path.exists(p)
 
 
@@ -98,9 +102,11 @@ yumbase = None
 
 
 @export
-def has_package(s):
+def has_package(package):
+    """has_package(package) -> return True if the package is installed on the system, False otherwise."""
     global deb_cache, deb_cache_update_time, dpkg_cache_last_modification_epoch
     global yumbase
+    
     if apt:
         t0 = time.time()
         if not deb_cache:
@@ -121,14 +127,14 @@ def has_package(s):
             if need_reload:
                 deb_cache.open(None)
                 deb_cache_update_time = int(time.time())
-        b = (s in deb_cache and deb_cache[s].is_installed)
+        b = (package in deb_cache and deb_cache[package].is_installed)
         logger.debug('TIME TO QUERY APT: %.3f' % (time.time() - t0), part='evaluator')
         return b
     if yum:
         if not yumbase:
             yumbase = yum.YumBase()
             yumbase.conf.cache = 1
-        return s in (pkg.name for pkg in yumbase.rpmdb.returnPackages())
+        return package in (pkg.name for pkg in yumbase.rpmdb.returnPackages())
 
 
 @export
@@ -139,7 +145,7 @@ def check_tcp(hname, port, timeout=10):
         sock.connect((hname, port))
         sock.close()
         return True
-    except socket.error, exp:
+    except socket.error:
         sock.close()
         return False
 
@@ -313,9 +319,41 @@ class Evaluater(object):
         @route('/agent/evaluator/list')
         def get_exports():
             response.content_type = 'application/json'
+            res = []
             fnames = functions.keys()
             fnames.sort()
-            return json.dumps(fnames)
+            for fname in fnames:
+                print "FNAME", fname
+                f = functions[fname]
+                print "FUNCTION", f
+                _doc = getattr(f, '__doc__')
+                # now get prototype
+                args = {}
+                # only possible if functions have
+                if isinstance(f, types.FunctionType):
+                    argspec = inspect.getargspec(f)
+                    print "ARGSPECS", argspec
+                    argnames = argspec.args
+                    print "ARGNAMES", argnames
+                    args = []
+                    for arg in argnames:
+                        args.append([arg, '__NO_DEFAULT__'])
+                    # varargs = argspec.varargs
+                    # keywords = argspec.keywords
+                    # unzip default parameters
+                    defaults = argspec.defaults
+                    if defaults:
+                        default_args = zip(argspec.args[-len(argspec.defaults):], argspec.defaults)
+                        for (argname, defavalue) in default_args:
+                            for c in args:
+                                if c[0] == argname:
+                                    c[1] = str(defavalue)
+                else:
+                    args = None
+                
+                prototype = args
+                res.append({'name': fname, 'doc': _doc, 'prototype': prototype})
+            return json.dumps(res)
         
         
         @route('/agent/evaluator/eval', method='POST')

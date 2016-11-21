@@ -128,8 +128,8 @@ $.each( servers, function( _idx, s ) {
 } );
 
 
-function update_connexions_view() {
-    var ul              = $( '#connexions-ul' );
+function update_connections_view() {
+    var ul              = $( '#connections-ul' );
     var connections_tpl = get_template( 'tpl-connections-list' );
     // get connections but as list for mustache
     var connections     = dict_get_values( pot_servers );
@@ -139,7 +139,7 @@ function update_connexions_view() {
 
 
 $( function() {
-    update_connexions_view();
+    update_connections_view();
 } );
 
 
@@ -155,7 +155,7 @@ function elect_server() {
             .error( function() {
                 console.log( 'PING fail to the server: ' + s );
                 pot_servers[ s ][ 'state' ] = 'error';
-                update_connexions_view();
+                update_connections_view();
             } )
             .done( function() {
                 console.log( 'Connexion OK to the server: ' + s );
@@ -168,7 +168,7 @@ function elect_server() {
                 if ( server == s ) {
                     pot_servers[ s ][ 'elected' ] = true; // clean all previous elected thing
                 }
-                update_connexions_view();
+                update_connections_view();
             } );
     } );
 }
@@ -226,34 +226,20 @@ function load_nodes() {
 }
 
 
-function show_nodes() {
-    // Switch nodes buttons
-    $( '#nodes-btn' ).addClass( 'active' );
-    $( '#connexions-btn' ).removeClass( 'active' );
+// Hide others main part, update menu and show the one desired
+function show_main_part( part ) {
+    // Hide
+    $( '#list-left > .main-part' ).hide();
     
-    $( '#nodes' ).show();
-    $( '#filters' ).show();
+    // clean menu
+    $( '#menu .menu-a' ).removeClass( 'active' );
     
-    // and hide the connexion part
-    $( '#connexions' ).hide();
-}
-
-
-// Connexions must hide nodes and services and filters
-function show_connexions() {
-    // Switch services/nodes buttons
-    $( '#nodes-btn' ).removeClass( 'active' );
+    // Show main part
+    $( '#' + part ).show();
     
-    $( '#connexions-btn' ).addClass( 'active' );
+    // and menu one
+    $( '#' + part + '-btn' ).addClass( 'active' );
     
-    // also show services and hide nodes
-    $( '#nodes' ).hide();
-    
-    // Show filters too
-    $( '#filters' ).hide();
-    
-    // and show the connexions part of course :)
-    $( '#connexions' ).show();
 }
 
 
@@ -361,7 +347,7 @@ $( function() {
         apply_filters();
     } );
     
-    show_nodes();
+    show_main_part( 'nodes' );
     
     var help_text = [ 'Nodes:',
                       '<ul>',
@@ -550,10 +536,10 @@ var webso_con = null;
 function do_webso_connect() {
     
     // No server to connect to, do nothing a wait a new can be elected
-    var icon_connexion = $( '#icon-connexion' );
+    var icon_connection = $( '#icon-connection' );
     if ( server == null ) {
-        icon_connexion.addClass( 'red' );
-        icon_connexion.attr( 'data-original-title', 'Websocket: ✘' ).tooltip( 'fixTitle' );
+        icon_connection.addClass( 'red' );
+        icon_connection.attr( 'data-original-title', 'Websocket: ✘' ).tooltip( 'fixTitle' );
         elect_server();
         return;
     }
@@ -564,19 +550,19 @@ function do_webso_connect() {
         var ws_uri = 'ws://' + e.hostname + ':' + e.ws_port + '/ws';
         console.log( 'Connexion to websocket: ' + ws_uri );
         webso_con = new WebSocket( ws_uri );
-        icon_connexion.tooltip( { title: 'Connexion to websocket in progress' } );
+        icon_connection.tooltip( { title: 'Connexion to websocket in progress' } );
         webso_con.onopen = function() {
             console.log( 'Connection open!' );
             // We remove the red from the icon so it's back to black
-            icon_connexion.removeClass( 'red' );
-            icon_connexion.attr( 'data-original-title', 'Websocket: ✔' ).tooltip( 'fixTitle' );
+            icon_connection.removeClass( 'red' );
+            icon_connection.attr( 'data-original-title', 'Websocket: ✔' ).tooltip( 'fixTitle' );
         };
         
         webso_con.onerror = function() {
             webso_con = null;
-            // Put the icon for connexion in red
-            icon_connexion.addClass( 'red' );
-            icon_connexion.attr( 'data-original-title', 'Websocket: ✘' ).tooltip( 'fixTitle' );
+            // Put the icon for connection in red
+            icon_connection.addClass( 'red' );
+            icon_connection.attr( 'data-original-title', 'Websocket: ✘' ).tooltip( 'fixTitle' );
             console.log( 'Websocket connection error to ' + ws_uri );
             server = null;
             // We got a problem, reelect a new server
@@ -585,9 +571,9 @@ function do_webso_connect() {
         
         webso_con.onclose = function() {
             webso_con = null;
-            // Put the icon for connexion in red
-            icon_connexion.addClass( 'red' );
-            icon_connexion.attr( 'data-original-title', 'Websocket: ✘' ).tooltip( 'fixTitle' );
+            // Put the icon for connection in red
+            icon_connection.addClass( 'red' );
+            icon_connection.attr( 'data-original-title', 'Websocket: ✘' ).tooltip( 'fixTitle' );
             console.error( 'Wesocket connection error to ' + ws_uri );
             server = null;
             // A problem? let's look at a new server to load from
@@ -645,3 +631,63 @@ $( function() {
 } );
 
 
+/*************************************************
+ EVAL (yes it's bad but soooo good)
+ *************************************************/
+function evaluate_expr() {
+    var expr = $( '#evaluations-rule-input' ).val();
+    console.log( 'EXPRESSION: ' + expr );
+    var expr64 = btoa( expr );
+    
+    var postdata = { 'expr': expr64 };
+    
+    var now = new Date().getTime();
+    $( '#evaluations-result' ).html( '' );
+    $.ajax( {
+        type:    "POST",
+        url:     'http://' + server + '/agent/evaluator/eval?_t=' + now,
+        data:    postdata,
+        success: function( data ) {
+            console.log( 'EVAL RETURN:' );
+            console.log( data );
+            $( '#evaluations-result' ).html( data.toString() );
+        }
+    } );
+}
+
+function get_available_functions() {
+    var now = new Date().getTime();
+    // Get available functions from the server
+    $.getJSON( 'http://' + server + '/agent/evaluator/list?_t=' + now, function( data ) {
+        // first agent information
+        var tpl = get_template( 'tpl-evaluations-available-functions' );
+        console.log( 'FUNCTIONS' );
+        console.log( data );
+        for ( var i = 0; i < data.length; i++ ) {
+            var e = data[ i ];
+            console.log( 'ARG' );
+            console.log( e );
+            var prototype = e.prototype;
+            if ( prototype != null ) {
+                var _parts = [];
+                for ( var j = 0; j < prototype.length; j++ ) {
+                    var p        = prototype[ j ];
+                    var arg_name = p[ 0 ];
+                    var arg_def  = p[ 1 ];
+                    if ( arg_def == '__NO_DEFAULT__' ) {
+                        _parts.push( arg_name );
+                    } else { // really with default value, set it
+                        _parts.push( arg_name + '=' + arg_def );
+                    }
+                }
+                e.prototype_cleaned = _parts;
+            } else {
+                e.prototype_cleaned = null;
+            }
+        }
+        var s = Mustache.to_html( tpl, { 'functions': data } );
+        $( '#evaluations-available-functions' ).html( s );
+        
+    } );
+    
+}
