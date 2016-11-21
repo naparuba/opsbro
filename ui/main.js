@@ -469,22 +469,24 @@ function update_detail( nuuid ) {
         var detail_checks_tpl = get_template( 'tpl-detail-checks' );
         var s_detail_checks   = Mustache.to_html( detail_checks_tpl, { 'checks': dict_get_values( data.checks ) } );
         $( '#detail-checks' ).html( s_detail_checks );
+        
     } );
     
-    // Agent informations
+    // Agent informations + information
     $.getJSON( 'http://' + node.addr + ':' + node.port + '/agent/info?_t=' + now, function( data ) {
-        console.log( 'INFO:' );
-        console.log( data );
         // first agent information
         var detail_information_tpl = get_template( 'tpl-detail-information' );
         var s_detail_information   = Mustache.to_html( detail_information_tpl, data );
         $( '#detail-information' ).html( s_detail_information );
+        
+        // and collectors basic information (more information with metrics will need more additional calls)
+        var detail_collectors_tpl = get_template( 'tpl-detail-collectors' );
+        var s_detail_collectors   = Mustache.to_html( detail_collectors_tpl, { 'collectors': dict_get_values( data.collectors ) } );
+        $( '#detail-collectors' ).html( s_detail_collectors );
     } );
     
     // Detectors informations
     $.getJSON( 'http://' + node.addr + ':' + node.port + '/agent/detectors/?_t=' + now, function( data ) {
-        console.log( 'INFO:' );
-        console.log( data );
         // first agent information
         var detail_detectors_tpl = get_template( 'tpl-detail-detectors' );
         var s_detail_detectors   = Mustache.to_html( detail_detectors_tpl, { 'detectors': data } );

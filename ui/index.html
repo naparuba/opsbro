@@ -136,7 +136,7 @@
 
 
 <!-- Detail checks: show checks for a node
-  Entry::   node
+  Entry::   {'checks':  node.checks.values() }
   Destination:  #detail-checks
 -->
 <script id="tpl-detail-checks" type="text/template">
@@ -154,6 +154,19 @@
         <pre style="background-color:#F0F0F0">{{output}}</pre>
     </div>
     {{/checks}}
+</script>
+
+
+<!-- Detail collectors: show basic information about collectors, like enable or not
+  Entry::   {'collectors':  node.collectors.values() }
+  Destination:  #detail-collectors
+-->
+<script id="tpl-detail-collectors" type="text/template">
+    {{#collectors}}
+    <div class='collector'>
+        {{name}} : {{active}}
+    </div>
+    {{/collectors}}
 </script>
 
 
