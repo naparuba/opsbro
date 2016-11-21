@@ -208,6 +208,26 @@
 </script>
 
 
+<!-- Detection:  list of connections with their states
+ Entry::   {'detectors':result of /agent/detectors/}
+-->
+<script id="tpl-detail-detectors" type="text/template">
+    {{#detectors}}
+    <div class="detector">
+        <div>Name:{{name}}</div>
+        <div>Did detect:{{do_apply}}</div>
+        <div>Tags: {{tags}}</div>
+        <div>From: {{from}}</div>
+        <div>Interval: {{interval}}</div>
+        <div>Notes: {{notes}}</div>
+        <div>Last execution: {{last_launch}}</div>
+        <div>Detection rule: {{apply_if}}</div>
+    </div>
+    <hr/>
+    {{/detectors}}
+</script>
+
+
 <!-- Connection list: list of connections with their states
  Entry::   {connection: [connections]}
 -->

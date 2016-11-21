@@ -38,6 +38,7 @@ class DetectorMgr(object):
                     except Exception, exp:
                         logger.error('Cannot execute detector %s: %s' % (gname, exp), part='detector')
                         do_apply = False
+                    gen['do_apply'] = do_apply
                     if do_apply:
                         tags = gen['tags']
                         logger.debug('Tags %s are applying for the detector %s' % (tags, gname), part='detector')

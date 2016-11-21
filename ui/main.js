@@ -430,21 +430,21 @@ function show_detail( nuuid ) {
 
 
 // Clean all detail content from old content
-function clean_detail(){
-    $('#detail-header').html('');
-    $('#detail-checks').html('');
-    $('#detail-collectors').html('');
-    $('#detail-detectors').html('');
-    $('#detail-information').html('');
-    show_detail_part('checks'); // show checks by default
+function clean_detail() {
+    $( '#detail-header' ).html( '' );
+    $( '#detail-checks' ).html( '' );
+    $( '#detail-collectors' ).html( '' );
+    $( '#detail-detectors' ).html( '' );
+    $( '#detail-information' ).html( '' );
+    show_detail_part( 'checks' ); // show checks by default
 }
 
 
 // only show a specific detail part (like checks)
-function show_detail_part(part){
+function show_detail_part( part ) {
     // first hide all
-    $('#detail .detail-part').hide();
-    $('#detail-'+part).show();
+    $( '#detail .detail-part' ).hide();
+    $( '#detail-' + part ).show();
 }
 
 
@@ -479,6 +479,16 @@ function update_detail( nuuid ) {
         var detail_information_tpl = get_template( 'tpl-detail-information' );
         var s_detail_information   = Mustache.to_html( detail_information_tpl, data );
         $( '#detail-information' ).html( s_detail_information );
+    } );
+    
+    // Detectors informations
+    $.getJSON( 'http://' + node.addr + ':' + node.port + '/agent/detectors/?_t=' + now, function( data ) {
+        console.log( 'INFO:' );
+        console.log( data );
+        // first agent information
+        var detail_detectors_tpl = get_template( 'tpl-detail-detectors' );
+        var s_detail_detectors   = Mustache.to_html( detail_detectors_tpl, { 'detectors': data } );
+        $( '#detail-detectors' ).html( s_detail_detectors );
     } );
     
 }

@@ -884,6 +884,9 @@ class Cluster(object):
         # Do not lunach too much
         detector['last_launch'] = 0
         
+        # By default do not match
+        detector['do_apply'] = False
+
         # Add it into the detectors list
         self.detectors[detector['id']] = detector
     
