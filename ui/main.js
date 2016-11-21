@@ -422,8 +422,29 @@ function find_node( nuuid ) {
 
 // Detail show be called by a NON modal page
 function show_detail( nuuid ) {
+    // First clean detail parts
+    clean_detail();
     update_detail( nuuid );
     open_right_panel();
+}
+
+
+// Clean all detail content from old content
+function clean_detail(){
+    $('#detail-header').html('');
+    $('#detail-checks').html('');
+    $('#detail-collectors').html('');
+    $('#detail-detectors').html('');
+    $('#detail-information').html('');
+    show_detail_part('checks'); // show checks by default
+}
+
+
+// only show a specific detail part (like checks)
+function show_detail_part(part){
+    // first hide all
+    $('#detail .detail-part').hide();
+    $('#detail-'+part).show();
 }
 
 
@@ -433,9 +454,11 @@ function update_detail( nuuid ) {
     
     var node = find_node( nuuid );
     if ( node == null ) {
-        $( '#part-right-content' ).html( '<div class="bs-callout bs-callout-warning"><h4>No such node ' + nuuid + '</h4></div>' );
+        return;
     }
     var now = new Date().getTime();
+    
+    // Node detail + checks
     $.getJSON( "http://" + server + "/agent/state/" + nuuid + '?_t=' + now, function( data ) {
         // first header
         var detail_header_tpl = get_template( 'tpl-detail-header' );
@@ -448,6 +471,15 @@ function update_detail( nuuid ) {
         $( '#detail-checks' ).html( s_detail_checks );
     } );
     
+    // Agent informations
+    $.getJSON( 'http://' + node.addr + ':' + node.port + '/agent/info?_t=' + now, function( data ) {
+        console.log( 'INFO:' );
+        console.log( data );
+        // first agent information
+        var detail_information_tpl = get_template( 'tpl-detail-information' );
+        var s_detail_information   = Mustache.to_html( detail_information_tpl, data );
+        $( '#detail-information' ).html( s_detail_information );
+    } );
     
 }
 
@@ -460,6 +492,7 @@ function toggle_right_panel() {
     }
 }
 
+
 // Force a close of the right panel
 function close_right_panel() {
     // if already close, bail out
@@ -469,6 +502,7 @@ function close_right_panel() {
     __is_panel_open = false;
     $( '#part-right' ).removeClass( 'expanded' );
 }
+
 
 // Force an open of the right panel
 function open_right_panel() {

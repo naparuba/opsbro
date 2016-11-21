@@ -73,22 +73,31 @@
                 </div>
                 <div>
                     <div class="detail-header-panel">
-                        Checks
+                        <a href="javascript:show_detail_part('checks');">Checks</a>
                     </div>
                     <div class="detail-header-panel">
-                        Collectors
+                        <a href="javascript:show_detail_part('collectors');">Collectors</a>
                     </div>
                     <div class="detail-header-panel">
-                        Detectors
+                        <a href="javascript:show_detail_part('detectors');">Detectors</a>
                     </div>
                     <div class="detail-header-panel">
-                        Agent information
+                        <a href="javascript:show_detail_part('information');">Agent information</a>
                     </div>
                 </div>
                 <hr/>
-                <div id='detail-checks'>
-
+                <div class='detail-part' id='detail-checks'>
                 </div>
+                <div class='detail-part' id='detail-collectors'>
+                    Collectors:
+                </div>
+                <div class='detail-part' id='detail-detectors'>
+                    Detectors:
+                </div>
+                <div class='detail-part' id='detail-information'>
+                    Informations:
+                </div>
+
             </div>
         </div>
     </div>
@@ -145,6 +154,57 @@
         <pre style="background-color:#F0F0F0">{{output}}</pre>
     </div>
     {{/checks}}
+</script>
+
+
+<!-- Detail information: show node information
+  Entry::   /agent/info result
+  Destination:  #detail-information
+-->
+<script id="tpl-detail-information" type="text/template">
+    <div>Kunai Daemon:
+        <div>Name: {{name}}</div>
+        <div>Addr: {{addr}}</div>
+        <div>Port: {{port}}</div>
+        <div>PID: {{pid}}</div>
+        <div>Socket: {{socket}}</div>
+        <div>UUID: {{uuid}}</div>
+        <div>Version: {{version}}</div>
+        <div>Socket: {{socket}}</div>
+        <div>Threads: {{threads.nb_threads}}</div>
+    </div>
+    <hr/>
+    <div>HTTP (LAN):
+        <div>Threads {{httpservers.external.nb_threads}}</div>
+        <div>Idle Threads {{httpservers.external.idle_threads}}</div>
+        <div>Queue {{httpservers.external.queue}}</div>
+    </div>
+    <div>HTTP (Unix socket):
+        <div>Threads {{httpservers.internal.nb_threads}}</div>
+        <div>Idle Threads {{httpservers.internal.idle_threads}}</div>
+        <div>Queue {{httpservers.internal.queue}}</div>
+    </div>
+    <div>DNS:
+        <div>Enabled: {{dns.enabled}}</div>
+        <div>Port {{dns.port}}</div>
+        <div>Domain {{dns.domain}}</div>
+    </div>
+    <div>Websocket:
+        <div>Enabled: {{websocket.enabled}}</div>
+        <div>Port {{websocket.port}}</div>
+        <div>Number of connections {{websocket_info.nb_connexions}}</div>
+    </div>
+    <div>Graphite:
+        <div>Enabled: {{graphite.enabled}}</div>
+        <div>Port {{graphite.port}}</div>
+        <div>TCP {{graphite.tcp}}</div>
+        <div>UDP {{graphite.udp}}</div>
+    </div>
+    <div>Statsd:
+        <div>Enabled: {{statsd.enabled}}</div>
+        <div>Port {{statsd.port}}</div>
+        <div>Interval {{statsd.interval}}</div>
+    </div>
 </script>
 
 
