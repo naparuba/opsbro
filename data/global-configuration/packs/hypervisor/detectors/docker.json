@@ -1,7 +1,7 @@
 {
     "detector": {
         "tags": ["docker"],
-        "apply_if": "file_exists('/root/.dockerinit')",
+        "apply_if": "file_exists('/var/run/docker.sock')",
         "interval": "10s"
     }
 }
