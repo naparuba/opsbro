@@ -52,19 +52,39 @@ def export(f):
 
 
 @export
-def file_exists(p):
-    """file_exists(path) -> return True if a path exist on the system, False otherwise."""
-    return os.path.exists(p)
+def file_exists(path):
+    """file_exists(path) -> return True if a path exist on the system, False otherwise.
+    * path: (string) path to check.
+    
+    Example: file_exists('/etc/mongodb.conf')
+    """
+    return os.path.exists(path)
 
 
 @export
-def ip_is_in_range(ip, _range):
-    ip_range = IP(_range)
+def ip_is_in_range(ip, range):
+    """ip_is_in_range(ip, range) -> return True if the ip is in the ip range, False otherwise.
+    * ip:     (string) ip (v4 or v6) to check
+    * range:  (string) ip range that the ip must be in
+    
+    Example:  ip_is_in_range('172.16.0.30', '172.16.0.0/24')
+    """
+
+    ip_range = IP(range)
     return ip in ip_range
 
 
 @export
-def grep_file(s, p, regexp=False):
+def grep_file(string, path, regexp=False):
+    """file_exists(path) -> return True if a string or a regexp match the content of a file, False otherwise.
+    * string: (string)  string (or regexp expression) to check
+    * path: (string) path of the file to look inside.
+    * regexp: (boolean) is the string a regexp or not.
+    
+    Example: grep_file('centos', '/etc/redhat-release')
+    """
+    s = string
+    p = path
     if not os.path.exists(p):
         return False
     try:
@@ -103,7 +123,11 @@ yumbase = None
 
 @export
 def has_package(package):
-    """has_package(package) -> return True if the package is installed on the system, False otherwise."""
+    """has_package(package) -> return True if the package is installed on the system, False otherwise.
+    * package: (string) name of the package to check for.
+    
+    Example: has_package('postfix')
+    """
     global deb_cache, deb_cache_update_time, dpkg_cache_last_modification_epoch
     global yumbase
     
@@ -138,11 +162,19 @@ def has_package(package):
 
 
 @export
-def check_tcp(hname, port, timeout=10):
+def check_tcp(host, port, timeout=10):
+    """check_tcp(host, port, timeout=10) -> return True if the TCP connection can be established, False otherwise.
+    * host: (string) ip/fqdn of the host to connect to.
+    * port: (integer) TCP port to connect to
+    * timeout [optionnal] (integer) timeout to use for the connection test.
+
+    Example: check_tcp('www.google.com', 80)
+    """
+    
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(timeout)
     try:
-        sock.connect((hname, port))
+        sock.connect((host, port))
         sock.close()
         return True
     except socket.error:
@@ -152,6 +184,13 @@ def check_tcp(hname, port, timeout=10):
 
 @export
 def get_os():
+    """get_os() -> return a string about the os.
+
+    Example: get_os()
+    
+    Returns:  linux
+    """
+
     import platform
     return platform.system().lower()
 
@@ -328,7 +367,7 @@ class Evaluater(object):
                 print "FUNCTION", f
                 _doc = getattr(f, '__doc__')
                 # now get prototype
-                args = {}
+
                 # only possible if functions have
                 if isinstance(f, types.FunctionType):
                     argspec = inspect.getargspec(f)
