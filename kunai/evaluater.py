@@ -1,6 +1,7 @@
 import os
 import re
 import ast
+import _ast
 import operator as op
 import socket
 import json
@@ -26,11 +27,23 @@ from kunai.httpdaemon import route, response, request
 
 # supported operators
 operators = {
-    ast.Add  : op.add, ast.Sub: op.sub, ast.Mult: op.mul,
-    ast.Div  : op.truediv, ast.Pow: op.pow, ast.BitXor: op.xor,
-    ast.USub : op.neg, ast.Eq: op.eq, ast.Gt: op.gt, ast.Lt: op.lt,
-    ast.GtE  : op.ge, ast.LtE: op.le, ast.Mod: op.mod, ast.Or: op.or_,
-    ast.BitOr: op.or_,
+    ast.Add   : op.add,  # A + B
+    ast.Sub   : op.sub,  # A - B
+    ast.Mult  : op.mul,  # A * B
+    ast.Div   : op.truediv,  # A / B
+    ast.Pow   : op.pow,  # ???
+    ast.BitXor: op.xor,  # ???
+    ast.USub  : op.neg,  # ???
+    ast.Eq    : op.eq,   # A == B
+    ast.Gt    : op.gt,   # A > B
+    ast.Lt    : op.lt,   # A < B
+    ast.GtE   : op.ge,   # A >= B
+    ast.LtE   : op.le,   # A <= B
+    ast.Mod   : op.mod,  # A % B
+    ast.Or    : op.or_, _ast.Or: op.or_,     # A or B
+    ast.And   : op.and_, _ast.And: op.and_,  # A and B
+    ast.BitOr : op.or_,   # A | B
+    ast.BitAnd: op.and_,  # A & B
 }
 
 functions = {
@@ -39,16 +52,11 @@ functions = {
 
 
 def export(f):
-    def inner(*args, **kwargs):  # 1
-        return f(*args, **kwargs)  # 2
-    
-    
     # Export the function to the allowed functions
     fname = f.__name__
-    functions[fname] = f  # inner
-    inner.linked = f
+    functions[fname] = f
     logger.debug('Evaluater: exporting function %s' % fname)
-    return f  # inner
+    return f
 
 
 @export
@@ -69,7 +77,7 @@ def ip_is_in_range(ip, range):
     
     Example:  ip_is_in_range('172.16.0.30', '172.16.0.0/24')
     """
-
+    
     ip_range = IP(range)
     return ip in ip_range
 
@@ -190,7 +198,7 @@ def get_os():
     
     Returns:  linux
     """
-
+    
     import platform
     return platform.system().lower()
 
@@ -243,18 +251,27 @@ class Evaluater(object):
         logger.debug('EVAL: exp changed: %s' % expr, part='evaluator')
         # final tree
         tree = ast.parse(expr, mode='eval').body
-        r = self.eval_(tree)
+        try:
+            r = self.eval_(tree)
+        except Exception, exp:
+            logger.debug('EVAL: fail to eval expr: %s : %s' % (expr, exp), part='evaluator')
+            raise
         logger.debug('EVAL: result: %s' % r, part='evaluator')
         return r
     
     
     def eval_(self, node):
+        logger.debug('eval_ node: %s => type=%s' % (node, type(node)), part='evaluator')
         if isinstance(node, ast.Num):  # <number>
             return node.n
         elif isinstance(node, ast.Str):  # <string>
             return node.s
         elif isinstance(node, ast.BinOp):  # <left> <operator> <right>
             return operators[type(node.op)](self.eval_(node.left), self.eval_(node.right))
+        elif isinstance(node, _ast.BoolOp):  # <elt1> OP <elt2>   TOD: manage more than 2 params
+            if len(node.values) != 2:
+                raise Exception('Cannot manage and/or operators woth more than 2 parts currently.')
+            return operators[type(node.op)](self.eval_(node.values[0]), self.eval_(node.values[1]))
         elif isinstance(node, ast.Compare):  # <left> <operator> <right>
             left = self.eval_(node.left)
             right = self.eval_(node.comparators[0])
@@ -274,16 +291,17 @@ class Evaluater(object):
                 fname = node.func.id
                 f = functions.get(fname, None)
             elif isinstance(node.func, ast.Attribute):
-                print 'UNMANAGED CALL', node.func, node.func.__dict__, node.func.value.__dict__
+                logger.error('Eval UNMANAGED CALL: %s %s %s is refused' % (node.func, node.func.__dict__, node.func.value.__dict__), part='evaluator')
             
             else:
-                print node.__dict__
+                logger.error('Eval UNMANAGED CALL: %s %s %s is refused' % (node.func, node.func.__dict__, node.func.value.__dict__), part='evaluator')
                 raise TypeError(node)
             
             if f:
                 v = f(*args)
                 return v
         else:
+            logger.error('Eval UNMANAGED node: %s %s and so is  refused' % (node, type(node)), part='evaluator')
             raise TypeError(node)
     
     
@@ -367,7 +385,7 @@ class Evaluater(object):
                 print "FUNCTION", f
                 _doc = getattr(f, '__doc__')
                 # now get prototype
-
+                
                 # only possible if functions have
                 if isinstance(f, types.FunctionType):
                     argspec = inspect.getargspec(f)
