@@ -111,7 +111,11 @@
                 <div class='detail-part' id='detail-checks'>
                 </div>
                 <div class='detail-part' id='detail-collectors'>
-                    Collectors:
+                    <div id='detail-collectors-list'>
+                    </div>
+                    <div id='detail-collectors-data'>
+                    </div>
+
                 </div>
                 <div class='detail-part' id='detail-detectors'>
                     Detectors:
@@ -181,9 +185,9 @@
 
 <!-- Detail collectors: show basic information about collectors, like enable or not
   Entry::   {'collectors':  node.collectors.values() }
-  Destination:  #detail-collectors
+  Destination:  #detail-collectors-list
 -->
-<script id="tpl-detail-collectors" type="text/template">
+<script id="tpl-detail-collectors-list" type="text/template">
     {{#collectors}}
     <div class='collector'>
         {{name}} : {{active}}

@@ -408,6 +408,7 @@ input, select {
     background-color : black;
     float            : right;
     min-width        : 600px;
+    max-width        : 800px;
     height           : 100%;
     border-left      : white 1px solid;
 }
@@ -451,4 +452,13 @@ input, select {
 }
 #connexions-ul .state-error {
     color : #DD4E58; /*red*/
+}
+/*********************************
+         Collector data
+*********************************/
+#detail-collectors .collector-data {
+    display : none;
+}
+#detail-collectors-list {
+    display : none;
 }

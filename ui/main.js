@@ -419,7 +419,8 @@ function show_detail( nuuid ) {
 function clean_detail() {
     $( '#detail-header' ).html( '' );
     $( '#detail-checks' ).html( '' );
-    $( '#detail-collectors' ).html( '' );
+    $( '#detail-collectors-list' ).html( '' );
+    $( '#detail-collectors-data' ).html( '' );
     $( '#detail-detectors' ).html( '' );
     $( '#detail-information' ).html( '' );
     show_detail_part( 'checks' ); // show checks by default
@@ -466,9 +467,9 @@ function update_detail( nuuid ) {
         $( '#detail-information' ).html( s_detail_information );
         
         // and collectors basic information (more information with metrics will need more additional calls)
-        var detail_collectors_tpl = get_template( 'tpl-detail-collectors' );
+        var detail_collectors_tpl = get_template( 'tpl-detail-collectors-list' );
         var s_detail_collectors   = Mustache.to_html( detail_collectors_tpl, { 'collectors': dict_get_values( data.collectors ) } );
-        $( '#detail-collectors' ).html( s_detail_collectors );
+        $( '#detail-collectors-list' ).html( s_detail_collectors );
     } );
     
     // Detectors informations
@@ -479,7 +480,56 @@ function update_detail( nuuid ) {
         $( '#detail-detectors' ).html( s_detail_detectors );
     } );
     
+    // Collectors informations
+    $.getJSON( 'http://' + node.addr + ':' + node.port + '/collectors/?_t=' + now, function( data ) {
+        var data_str = '';
+        for ( var k in data ) {
+            if ( data.hasOwnProperty( k ) ) {
+                var collector_data_id = "collector-data-" + k;
+                var k_s               = '<div class="collector-data-cont" >';
+                k_s += '<a href="javascript:show_collector(\'' + k + '\')">' + k + '</a>';
+                var results           = data[ k ].results;
+                console.log( 'RESULTS ' + k );
+                console.log( results );
+                console.log( typeof results );
+                function tree_to_string( r ) {
+                    var s = '';
+                    if ( typeof r == 'object' ) {
+                        s = '<ul>';
+                        for ( var k2 in r ) {
+                            if ( r.hasOwnProperty( k2 ) ) {
+                                s += '<li>' + k2;
+                                s += tree_to_string( r[ k2 ] );
+                                s += '</li>';
+                            }
+                        }
+                        s += '</ul>';
+                    } else {
+                        if ( r == '' ) {
+                            r = '""';
+                        }
+                        s = ' => ' + r;
+                    }
+                    return s;
+                }
+                
+                k_s += '<div class="collector-data" id="' + collector_data_id + '" >';
+                k_s += tree_to_string( results );
+                k_s += '</div>'
+                k_s += '</div>'
+            }
+            data_str += k_s;
+        }
+        $( '#detail-collectors-data' ).html( data_str );
+    } );
+    
 }
+
+
+function show_collector( col_name ) {
+    $( '#collector-data-' + col_name ).show();
+}
+
 
 var __is_panel_open = false;
 function toggle_right_panel() {
