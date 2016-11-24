@@ -684,6 +684,23 @@ $( function() {
 /*************************************************
  EVAL (yes it's bad but soooo good)
  *************************************************/
+function get_and_display_eval_result( node, postdata ) {
+    var addr        = node.addr;
+    var port        = node.port;
+    var server_addr = addr + ':' + port;
+    var _id         = 'eval-result-' + node.uuid;
+    var now         = new Date().getTime();
+    $.ajax( {
+        type:    "POST",
+        url:     'http://' + server_addr + '/agent/evaluator/eval?_t=' + now,
+        data:    postdata,
+        success: function( data ) {
+            console.log( 'UPDATE _id' + _id );
+            $( '#' + _id ).html( data.toString() );
+        }
+    } );
+}
+
 function evaluate_expr() {
     var expr = $( '#evaluations-rule-input' ).val();
     console.log( 'EXPRESSION: ' + expr );
@@ -691,18 +708,24 @@ function evaluate_expr() {
     
     var postdata = { 'expr': expr64 };
     
-    var now = new Date().getTime();
-    $( '#evaluations-result' ).html( '' );
-    $.ajax( {
-        type:    "POST",
-        url:     'http://' + server + '/agent/evaluator/eval?_t=' + now,
-        data:    postdata,
-        success: function( data ) {
-            console.log( 'EVAL RETURN:' );
-            console.log( data );
-            $( '#evaluations-result' ).html( data.toString() );
-        }
-    } );
+    
+    var eval_result_cont = $( '#evaluations-result' );
+    // First clean previous result
+    eval_result_cont.html( '' );
+    var ul = $( '<ul>' );
+    eval_result_cont.append( ul );
+    for ( var i = 0; i < nodes.length; i++ ) {
+        var uuid = nodes[ i ].uuid;
+        var name = nodes[ i ].name;
+        var _id  = 'eval-result-' + uuid;
+        var li   = $( '<li >' + name + ':<span id="' + _id + '" >[.... in progress ....]</span></li>' );
+        ul.append( li );
+    }
+    
+    for ( var i = 0; i < nodes.length; i++ ) {
+        var node = nodes[ i ];
+        get_and_display_eval_result( node, postdata );
+    }
 }
 
 function get_available_functions() {
@@ -734,6 +757,10 @@ function get_available_functions() {
             } else {
                 e.prototype_cleaned = null;
             }
+            
+            var converter = new showdown.Converter();
+            var _html     = converter.makeHtml( e.doc );
+            e.doc         = _html;
         }
         var s = Mustache.to_html( tpl, { 'functions': data } );
         $( '#evaluations-available-functions' ).html( s );
