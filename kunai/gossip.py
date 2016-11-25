@@ -15,6 +15,8 @@ from kunai.websocketmanager import websocketmgr
 from kunai.pubsub import pubsub
 from kunai.httpdaemon import route, response, abort
 from kunai.encrypter import encrypter
+from kunai.httpclient import HTTP_EXCEPTIONS
+
 
 KGOSSIP = 10
 
@@ -708,7 +710,7 @@ class Gossip(object):
             pubsub.pub('manage-message', msg=back)
             # self.manage_message(back)
             return True
-        except (rq.exceptions.RequestException, rq.packages.urllib3.exceptions.HTTPError), exp:  # Exception, exp:
+        except HTTP_EXCEPTIONS, exp:  # Exception, exp:
             logger.error('[push-pull] ERROR CONNECTING TO %s:%s' % other, exp, part='gossip')
             return False
     

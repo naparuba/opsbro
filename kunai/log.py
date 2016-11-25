@@ -37,6 +37,12 @@ else:
             print s
 
 
+def get_unicode_string(s):
+    if isinstance(s, str):
+        return unicode(s, 'utf8', errors='ignore')
+    return str(s)
+
+
 class Logger(object):
     def __init__(self):
         self.data_dir = ''
@@ -100,7 +106,7 @@ class Logger(object):
         now = int(time.time())
         part = kwargs.get('part', '')
         s_part = '' if not part else '[%s]' % part.upper()
-        s = '%s [%d]%s: %s' % (name, now, s_part, ' '.join([str(s) for s in args]))
+        s = '%s [%d]%s: %s' % (name, now, s_part, ' '.join([get_unicode_string(s) for s in args]))
         if 'color' in kwargs:
             cprint(s, color=kwargs['color'])
         else:

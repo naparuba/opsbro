@@ -41,10 +41,22 @@ except ImportError:
 try:
     import rsa as RSA
 except ImportError:
-    RSA = None
+    # NOTE: rsa lib import itself as RSA, so we must hook the sys.path to be happy with this...
+    _internal_rsa_dir = os.path.join(os.path.dirname(__file__), 'misc', 'internalrsa')
+    sys.path.insert(0, _internal_rsa_dir)
+    # ok so try the mist one
+    try:
+        import kunai.misc.internalrsa.rsa as RSA
+    except ImportError:
+        # even local one fail? arg!
+        RSA = None
+    # so now we did import it, refix sys.path to do not have misc inside
+    #sys.path.pop(0)
 
-# DO NOT FORGEET:
+# DO NOT FORGET:
 # sysctl -w net.core.rmem_max=26214400
+
+
 
 
 from kunai.log import logger
@@ -55,6 +67,7 @@ from kunai.util import copy_dir, get_public_address
 from kunai.threadmgr import threader
 from kunai.perfdata import PerfDatas
 from kunai.now import NOW
+from kunai.httpclient import HTTP_EXCEPTIONS
 
 from kunai.generator import Generator
 # now singleton objects
@@ -1944,7 +1957,7 @@ class Cluster(object):
                         logger.debug("TS /render relay GOT RETURN", v, "AND RES", res)
                         res.extend(v)
                         logger.debug("TS /render res is now", res)
-                    except rq.exceptions.RequestException, exp:
+                    except HTTP_EXCEPTIONS, exp:
                         logger.debug('TS: /render relay error asking to %s: %s' % (n['name'], str(exp)), part='ts')
                         continue
             
@@ -2175,7 +2188,7 @@ class Cluster(object):
                     return None
                 logger.info('KV: get founded (%d)' % len(r.text), part='kv')
                 return r.text
-            except rq.exceptions.RequestException, exp:
+            except HTTP_EXCEPTIONS, exp:
                 logger.error('KV: error asking to %s: %s' % (n['name'], str(exp)), part='kv')
                 return None
     
@@ -2240,7 +2253,7 @@ class Cluster(object):
                 r = rq.put(uri, data=value, params=params)
                 logger.debug('KV: PUT return %s' % r.status_code, part='kv')
                 return None
-            except rq.exceptions.RequestException, exp:
+            except HTTP_EXCEPTIONS, exp:
                 logger.debug('KV: PUT error asking to %s: %s' % (n['name'], str(exp)), part='kv')
                 return None
     
@@ -2268,7 +2281,7 @@ class Cluster(object):
                 r = rq.delete(uri)
                 logger.debug('KV: DELETE return %s' % r.status_code, part='kv')
                 return None
-            except rq.exceptions.RequestException, exp:
+            except HTTP_EXCEPTIONS, exp:
                 logger.debug('KV: DELETE error asking to %s: %s' % (n['name'], str(exp)), part='kv')
                 return None
     
@@ -2365,7 +2378,7 @@ class Cluster(object):
                         params = {'force': True, 'meta': json.dumps(bl['meta'])}
                         r = rq.put(uri, data=value, params=params)
                         logger.debug('KV: PUT(force) return %s' % r, part='kv')
-                    except rq.exceptions.RequestException, exp:
+                    except HTTP_EXCEPTIONS, exp:
                         logger.debug('KV: PUT(force) error asking to %s: %s' % (n['name'], str(exp)), part='kv')
             time.sleep(1)
     
@@ -2394,13 +2407,13 @@ class Cluster(object):
                     logger.debug("SYNC kv-changed response from %s " % repl['name'], r, part='kv')
                     try:
                         to_merge = json.loads(r.text)
-                    except ValueError, exp:
+                    except (ValueError, TypeError), exp:
                         logger.debug('SYNC : error asking to %s: %s' % (repl['name'], str(exp)), part='kv')
                         continue
                     self.kv.do_merge(to_merge)
                     logger.debug("SYNC thread done, bailing out", part='kv')
                     return
-                except rq.exceptions.RequestException, exp:
+                except HTTP_EXCEPTIONS, exp:
                     logger.debug('SYNC : error asking to %s: %s' % (repl['name'], str(exp)), part='kv')
                     continue
             time.sleep(1)

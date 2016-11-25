@@ -228,7 +228,7 @@ for o in not_allowed_options:
     if o in sys.argv:
         sys.argv.remove(o)
 
-required_pkgs = ['leveldb', 'jinja2', 'pycurl', 'requests', 'cherrypy', 'crypto']
+required_pkgs = ['leveldb', 'jinja2', 'pycurl', 'requests', 'cherrypy', 'crypto', 'rsa', 'pyasn1']
 setup(
     name="Kunai",
     version="0.9-beta1",
