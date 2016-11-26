@@ -465,9 +465,18 @@ input, select {
 /**********************************
         Evaluation
 **********************************/
+#evaluations-rule-input{
+    min-width: 400px;
+}
 .function {
     border  : white 1px solid;
     padding : 20px;
     margin  : 10px;
     width   : calc(100% - 200px);
+}
+/*********************************
+        Execution
+*********************************/
+#execution-result .execution-bloc{
+    border: white 1px solid;
 }

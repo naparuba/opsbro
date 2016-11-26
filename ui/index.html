@@ -28,7 +28,7 @@
                 <a id='nodes-btn' class='menu-a' href='javascript:show_main_part("nodes");'>Nodes <span class="badge" id='badge-nodes'>?</span></a>
             </li>
             <li>
-                <a id='execution-btn' class='menu-a' href='javascript:show_main_part("execution");'>Commands executions</a>
+                <a id='executions-btn' class='menu-a' href='javascript:show_main_part("executions");'>Commands executions</a>
             </li>
             <li>
                 <a id='evaluations-btn' class='menu-a' href='javascript:show_main_part("evaluations");'>Rules evaluations</a>
@@ -58,6 +58,16 @@
         <div class='nopadleft' id='list-left'>
             <!--        NODES            -->
             <div class='nopadleft  main-part' id='nodes'>
+            </div>
+
+            <!--        EXECUTIONS              -->
+            <div class='main-part' id='executions'>
+                Execute:
+                <input id="executions-tag-input"/>
+                <input id="executions-command-input"/>
+                <a class='btn btn-default' href='javascript:launch_executions()'>Launch execution</a>
+                <div id="execution-result">
+                </div>
             </div>
 
 

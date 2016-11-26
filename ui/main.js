@@ -715,6 +715,9 @@ function evaluate_expr() {
     var ul = $( '<ul>' );
     eval_result_cont.append( ul );
     for ( var i = 0; i < nodes.length; i++ ) {
+        if( nodes[i].state != 'alive'){
+            continue;
+        }
         var uuid = nodes[ i ].uuid;
         var name = nodes[ i ].name;
         var _id  = 'eval-result-' + uuid;
@@ -724,6 +727,11 @@ function evaluate_expr() {
     
     for ( var i = 0; i < nodes.length; i++ ) {
         var node = nodes[ i ];
+
+        if( node.state != 'alive'){
+            continue;
+        }
+
         get_and_display_eval_result( node, postdata );
     }
 }
@@ -764,6 +772,93 @@ function get_available_functions() {
         }
         var s = Mustache.to_html( tpl, { 'functions': data } );
         $( '#evaluations-available-functions' ).html( s );
+        
+    } );
+    
+}
+
+
+/***************************************************************
+ *                Executions
+ **************************************************************/
+var execution_results = {};
+var exec_start = 0;
+
+function get_and_show_result( nuuid, exec_id ) {
+    console.log( 'GET RESULT FOR ' + nuuid + ' and exec id' + exec_id );
+    $.getJSON( 'http://' + server + '/exec-get/' + exec_id, function( data ) {
+        if ( data == null ) {
+            return;  // still not finish
+        }
+        console.log( 'GET RESULT DATA for ' + nuuid );
+        console.log( data );
+        delete execution_results[ nuuid ];
+        $( '#execution-result-' + nuuid ).html( 'RESULT:' + data.output );
+    } ); // if error, still missing key
+    
+}
+
+
+// now loop to get results
+function get_and_show_results() {
+    
+    console.log( 'EXEC RESULTS' );
+    console.log( execution_results );
+    
+    nb_still_execute = 0;
+    for ( var nuuid in execution_results ) {
+        if ( execution_results.hasOwnProperty( nuuid ) ) {
+            nb_still_execute += 1;
+            var exec_id = execution_results[ nuuid ].exec_id;
+            console.log( 'GET RESULT FOR ' + nuuid + 'and exec id ' + exec_id );
+            get_and_show_result( nuuid, exec_id );
+        }
+    }
+    var now = new Date().getTime();
+    // quit after 10s
+    if ( (now - exec_start) > 30000){
+        console.log('EXITING EXECUTION');
+        execution_results = {};
+        return;
+    }
+    // If there is still results, loop more
+    if ( nb_still_execute != 0 ) {
+        console.log( 'STILL EXEC RESULT, more ' + nb_still_execute );
+        setTimeout( get_and_show_results, 1000 );
+    }
+}
+
+
+function launch_executions() {
+    execution_results = {};
+    var tag           = $( '#executions-tag-input' ).val();
+    var cmd           = $( '#executions-command-input' ).val();
+    console.log( 'EXECUTE COMMANDS:[' + cmd + '] for tag [' + tag + ']' );
+    
+    // First clean execution container
+    var result_cont = $( '#execution-result' );
+    result_cont.html( '' );
+    exec_start = new Date().getTime();
+    $.getJSON( 'http://' + server + '/exec/' + tag + '?cmd=' + cmd + '&_t=' + exec_start, function( data ) {
+        console.log( 'GET RESULT FOR exec' );
+        console.log( data );
+        var nodes_exec = data.nodes;
+        
+        for ( var i = 0; i < nodes_exec.length; i++ ) {
+            var nuuid   = nodes_exec[ i ][ 0 ];
+            var exec_id = nodes_exec[ i ][ 1 ];
+            var node    = find_node( nuuid );
+            // if cannot find it, bail out, not a problem
+            if ( node == null ) {
+                continue;
+            }
+            execution_results[ nuuid ] = { 'uuid': nuuid, 'exec_id': exec_id };
+            var div                    = $( '<div class="execution-bloc"><div class="execution-name">' + node.name + '</div><div class="execution-result" id="execution-result-' + node.uuid + '" ></div></div>' );
+            result_cont.append( div );
+        }
+        
+        
+        setTimeout( get_and_show_results, 1000 );
         
     } );
     

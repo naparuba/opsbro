@@ -50,8 +50,8 @@ except ImportError:
     except ImportError:
         # even local one fail? arg!
         RSA = None
-    # so now we did import it, refix sys.path to do not have misc inside
-    #sys.path.pop(0)
+        # so now we did import it, refix sys.path to do not have misc inside
+        # sys.path.pop(0)
 
 # DO NOT FORGET:
 # sysctl -w net.core.rmem_max=26214400
@@ -899,7 +899,7 @@ class Cluster(object):
         
         # By default do not match
         detector['do_apply'] = False
-
+        
         # Add it into the detectors list
         self.detectors[detector['id']] = detector
     
@@ -1208,11 +1208,15 @@ class Cluster(object):
                 elif t == '/exec/challenge/ask':
                     # If we don't have the public key, bailing out now
                     if self.mfkey_pub is None:
-                        logger.debug('EXEC skipping exec call becaue we do not have a public key', part='exec')
+                        logger.debug('EXEC skipping exec call because we do not have a public key', part='exec')
+                        continue
+                    # get the with execution id from ask
+                    exec_id = m.get('exec_id', None)
+                    if exec_id is None:
                         continue
                     cid = libuuid.uuid1().get_hex()  # challgenge id
                     challenge = libuuid.uuid1().get_hex()
-                    e = {'ctime': int(time.time()), 'challenge': challenge}
+                    e = {'ctime': int(time.time()), 'challenge': challenge, 'exec_id': exec_id}
                     self.challenges[cid] = e
                     # return a tuple with only the first element useful (str)                    
                     # TOCLEAN:: _c = self.mfkey_pub.encrypt(challenge, 0)[0] # encrypt 0=dummy param not used
@@ -1242,7 +1246,8 @@ class Cluster(object):
                     p = self.challenges.get(cid, None)
                     if not p:
                         continue
-                    
+                    # We will have to save result in KV store
+                    exec_id = p['exec_id']
                     try:
                         response = base64.b64decode(response64)
                     except ValueError:
@@ -1255,8 +1260,8 @@ class Cluster(object):
                     if response == p['challenge']:
                         logger.debug('EXEC GOT GOOD FROM A CHALLENGE, DECRYPTED DATA', cid, response, p['challenge'],
                                      response == p['challenge'], part='exec')
-                        threader.create_and_launch(self.do_launch_exec, name='do-launch-exec-%s' % cid,
-                                                   args=(cid, cmd, addr))
+                        threader.create_and_launch(self.do_launch_exec, name='do-launch-exec-%s' % exec_id,
+                                                   args=(cid, exec_id, cmd, addr))
                 else:
                     self.manage_message(m)
     
@@ -1998,13 +2003,11 @@ class Cluster(object):
             return uid
         
         
-        @route('/exec-get/:cid')
-        def launch_exec(cid):
+        @route('/exec-get/:exec_id')
+        def get_exec(exec_id):
             response.content_type = 'application/json'
-            res = self.execs.get(cid, None)
-            if res is None:
-                return abort(400, 'BAD cid')
-            return json.dumps(res)
+            v = self.get_key('__exec/%s' % exec_id)
+            return v  # can be None
         
         
         self.external_http_thread = threader.create_and_launch(httpdaemon.run, name='external-http-thread',
@@ -2023,38 +2026,40 @@ class Cluster(object):
     # Launch an exec thread and save its uuid so we can keep a look at it then
     def launch_exec(self, cmd, tag):
         uid = libuuid.uuid1().get_hex()
-        e = {'cmd': cmd, 'tag': tag, 'thread': None, 'res': {}, 'nodes': [], 'ctime': int(time.time())}
-        self.execs[uid] = e
-        threader.create_and_launch(self.do_exec_thread, name='exec-%s' % uid, args=(uid,))
-        return uid
-    
-    
-    # Look at all nodes, ask them a challenge to manage with our priv key (they all got
-    # our pub key)
-    def do_exec_thread(self, uid):
-        # first look at which command we need to run
-        e = self.execs[uid]
-        tag = e['tag']
-        cmd = e['cmd']
         logger.debug('EXEC ask for launching command', cmd, part='exec')
         all_uuids = []
         with self.nodes_lock:  # get the nodes that follow the tag (or all in *)
             for (uuid, n) in self.nodes.iteritems():
-                if tag == '*' or tag in n['tags']:
-                    all_uuids.append(uuid)
-        e['nodes'] = all_uuids
-        asks = {}
-        e['res'] = asks
-        for nuid in all_uuids:
+                if (tag == '*' or tag in n['tags']) and n['state'] == 'alive':
+                    exec_id = libuuid.uuid1().get_hex()  # to get back execution id
+                    all_uuids.append((uuid, exec_id))
+        
+        e = {'cmd': cmd, 'tag': tag, 'thread': None, 'res': {}, 'nodes': all_uuids, 'ctime': int(time.time())}
+        self.execs[uid] = e
+        threader.create_and_launch(self.do_exec_thread, name='exec-%s' % uid, args=(e,), essential=True)
+        return e
+    
+    
+    # Look at all nodes, ask them a challenge to manage with our priv key (they all got
+    # our pub key)
+    def do_exec_thread(self, e):
+        # first look at which command we need to run
+        cmd = e['cmd']
+        logger.debug('EXEC ask for launching command', cmd, part='exec')
+        all_uuids = e['nodes']
+        logger.debug('WILL EXEC command for %s' % all_uuids, part='exec')
+        for (nuid, exec_id) in all_uuids:
             node = self.nodes.get(nuid, None)
+            logger.debug('WILL EXEC A NODE? %s' % node, part='exec')
             if node is None:  # was removed, don't play lotery today...
                 continue
-            # Get a socekt to talk with this node
+            # Get a socket to talk with this node
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             d = {'node': node, 'challenge': '', 'state': 'pending', 'rc': 3, 'output': '', 'err': ''}
-            asks[nuid] = d
+            e['res'][nuid] = d
             logger.debug('EXEC asking for node %s' % node['name'], part='exec')
-            payload = {'type': '/exec/challenge/ask', 'fr': self.uuid}
+            
+            payload = {'type': '/exec/challenge/ask', 'fr': self.uuid, 'exec_id': exec_id}
             packet = json.dumps(payload)
             enc_packet = encrypter.encrypt(packet)
             logger.debug('EXEC: sending a challenge request to %s' % node['name'], part='exec')
@@ -2141,24 +2146,24 @@ class Cluster(object):
                 logger.error('EXEC bad return from node %s : no cid' % node['name'], part='exec')
                 d['state'] = 'error'
                 continue
-            v = self.get_key('__exec/%s' % cid)
+            v = self.get_key('__exec/%s' % exec_id)
             if v is None:
-                logger.error('EXEC void KV entry from return from %s and cid %s' % (node['name'], cid), part='exec')
+                logger.error('EXEC void KV entry from return from %s and cid %s' % (node['name'], exec_id), part='exec')
                 d['state'] = 'error'
                 continue
             
             try:
-                e = json.loads(v)
+                t = json.loads(v)
             except ValueError, exp:
                 logger.error('EXEC bad json entry return from %s and cid %s: %s' % (node['name'], cid, exp),
                              part='exec')
                 d['state'] = 'error'
                 continue
-            logger.debug('EXEC GOT A RETURN! %s %s %s %s' % (node['name'], cid, e['rc'], e['output']), part='exec')
+            logger.debug('EXEC GOT A RETURN! %s %s %s %s' % (node['name'], cid, t['rc'], t['output']), part='exec')
             d['state'] = 'done'
-            d['output'] = e['output']
-            d['err'] = e['err']
-            d['rc'] = e['rc']
+            d['output'] = t['output']
+            d['err'] = t['err']
+            d['rc'] = t['rc']
     
     
     # Get a key from whatever me or another node
@@ -2804,7 +2809,7 @@ Subject: %s
     
     
     # Someone ask us to launch a new command (was already auth by RSA keys)
-    def do_launch_exec(self, cid, cmd, addr):
+    def do_launch_exec(self, cid, exec_id, cmd, addr):
         logger.debug('EXEC launching a command %s' % cmd, part='exec')
         
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True,
@@ -2812,18 +2817,19 @@ Subject: %s
         output, err = p.communicate()  # Will lock here
         rc = p.returncode
         logger.debug("EXEC RETURN for command %s : %s %s %s" % (cmd, rc, output, err), part='exec')
-        o = {'output': output, 'rc': rc, 'err': err}
+        o = {'output': output, 'rc': rc, 'err': err, 'cmd': cmd}
         j = json.dumps(o)
         # Save the return and put it in the KV space
-        key = '__exec/%s' % cid
+        key = '__exec/%s' % exec_id
         self.put_key(key, j, ttl=3600)  # only one hour live is good :)
         
         # Now send a finish to the asker
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        payload = {'type': '/exec/done', 'cid': cid}
+        payload = {'type': '/exec/done', 'exec_id': exec_id, 'cid': cid}
         packet = json.dumps(payload)
         enc_packet = encrypter.encrypt(packet)
-        logger.debug('EXEC: sending a exec done packet %s:%s' % addr, part='exec')
+        logger.debug('EXEC: sending a exec done packet to %s:%s' % addr, part='exec')
+        logger.debug('EXEC: sending a exec done for the execution %s and the challenge id %s' % (exec_id, cid), part='exec')
         try:
             sock.sendto(enc_packet, addr)
             sock.close()
