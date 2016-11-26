@@ -24,6 +24,7 @@ from kunai.collectormanager import collectormgr
 from kunai.log import logger
 from kunai.misc.IPy import IP
 from kunai.httpdaemon import route, response, request
+from kunai.gossip import gossiper
 
 # supported operators
 operators = {
@@ -198,9 +199,18 @@ def get_os():
     
     Returns:  linux
     """
-    
     import platform
     return platform.system().lower()
+
+
+@export
+def have_tag(tag):
+    """have_tag(tag) -> return True if the node have the tag, False otherwise.
+    * tag: (string) tag to check.
+
+    Example: have_tag('linux')
+    """
+    return gossiper.have_tag(tag)
 
 
 names = {'True': True, 'False': False}

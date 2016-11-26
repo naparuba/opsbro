@@ -86,6 +86,10 @@ class Gossip(object):
         self.set_alive(myself, bootstrap=True)
     
     
+    def have_tag(self, tag):
+        return tag in self.tags
+    
+    
     # Anotehr module/part did give a new tag, take it and warn others node about this
     # change if there is really a change
     def update_detected_tags(self, detected_tags):
@@ -758,7 +762,6 @@ class Gossip(object):
     
     
     ########## Message managment
-    
     def create_alive_msg(self, node):
         return {'type'       : 'alive', 'name': node['name'], 'addr': node['addr'], 'port': node['port'],
                 'uuid'       : node['uuid'],
