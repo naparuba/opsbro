@@ -41,6 +41,8 @@ class DetectorMgr(object):
                     gen['do_apply'] = do_apply
                     if do_apply:
                         tags = gen['tags']
+                        # Try to evaluate the tag if need (can be an expression {} )
+                        tags = [evaluater.compile(t) for t in tags]
                         logger.debug('Tags %s are applying for the detector %s' % (tags, gname), part='detector')
                         self.detected_tags[gname] = tags
                     else:

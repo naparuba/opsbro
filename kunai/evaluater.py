@@ -35,15 +35,16 @@ operators = {
     ast.Pow   : op.pow,  # ???
     ast.BitXor: op.xor,  # ???
     ast.USub  : op.neg,  # ???
-    ast.Eq    : op.eq,   # A == B
-    ast.Gt    : op.gt,   # A > B
-    ast.Lt    : op.lt,   # A < B
-    ast.GtE   : op.ge,   # A >= B
-    ast.LtE   : op.le,   # A <= B
+    ast.Eq    : op.eq,  # A == B
+    ast.NotEq : op.ne,  # A != B
+    ast.Gt    : op.gt,  # A > B
+    ast.Lt    : op.lt,  # A < B
+    ast.GtE   : op.ge,  # A >= B
+    ast.LtE   : op.le,  # A <= B
     ast.Mod   : op.mod,  # A % B
-    ast.Or    : op.or_, _ast.Or: op.or_,     # A or B
+    ast.Or    : op.or_, _ast.Or: op.or_,  # A or B
     ast.And   : op.and_, _ast.And: op.and_,  # A and B
-    ast.BitOr : op.or_,   # A | B
+    ast.BitOr : op.or_,  # A | B
     ast.BitAnd: op.and_,  # A & B
 }
 
