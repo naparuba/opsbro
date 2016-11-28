@@ -1,90 +1,8 @@
-// Add a way to shuffle an array
-Array.prototype.shuffle = function() {
-    var i = this.length, j, temp;
-    if ( i == 0 ) {
-        return this;
-    }
-    while ( --i ) {
-        j         = Math.floor( Math.random() * ( i + 1 ) );
-        temp      = this[ i ];
-        this[ i ] = this[ j ];
-        this[ j ] = temp;
-    }
-    return this;
-};
-
-
-// javascript lack really useful function...
-if ( typeof String.prototype.startsWith != 'function' ) {
-    String.prototype.startsWith = function( str ) {
-        return this.slice( 0, str.length ) == str;
-    };
-}
-
-// dict.values()
-function dict_get_values( d ) {
-    var r = [];
-    $.each( d, function( _idx, e ) {
-        r.push( e );
-    } );
-    return r;
-}
-
-var __templates_cache = {};
-function get_template( tpl_name ) {
-    var tpl = __templates_cache[ tpl_name ];
-    if ( typeof tpl == 'undefined' ) {
-        tpl = $( '#' + tpl_name ).html();
-        Mustache.parse( tpl );
-        __templates_cache[ tpl_name ] = tpl;
-    }
-    return tpl;
-}
-
-
-function add_spinner( place ) {
-    var opts    = {
-        lines:     17, // The number of lines to draw
-        length:    16, // The length of each line
-        width:     4, // The line thickness
-        radius:    13, // The radius of the inner circle
-        corners:   1, // Corner roundness (0..1)
-        rotate:    0, // The rotation offset
-        direction: 1, // 1: clockwise, -1: counterclockwise
-        color:     '#33000', // #rgb or #rrggbb or array of colors
-        speed:     1, // Rounds per second
-        trail:     66, // Afterglow percentage
-        shadow:    true, // Whether to render a shadow
-        hwaccel:   true, // Whether to use hardware acceleration
-        className: 'spinner', // The CSS class to assign to the spinner
-        zIndex:    2e9, // The z-index (defaults to 2000000000)
-        top:       '100px', // Top position relative to parent
-        left:      '50%' // Left position relative to parent
-    };
-    var target  = $( place );
-    var spinner = new Spinner( opts ).spin();
-    target.append( spinner.el );
-}
-
 /**************************************
  Server Elections
  *************************************/
-
-function parse_uri( uri ) {
-    var parser  = document.createElement( 'a' );
-    parser.href = uri;
-    return parser;
-    /*
-     parser.protocol; // => "http:"
-     parser.host;     // => "example.com:3000"
-     parser.hostname; // => "example.com"
-     parser.port;     // => "3000"
-     parser.pathname; // => "/pathname/"
-     parser.hash;     // => "#hash"
-     parser.search;   // => "?search=test"
-     */
-}
-
+    
+    
 // If there is no servers in the config, take the http addr
 var server   = null;
 var def_port = 6768;
@@ -187,8 +105,11 @@ var selected = '';
 
 var __Node_properties = [ 'uuid', 'addr', 'checks', 'incarnation', 'name', 'port', 'state', 'tags' ];  // to copy from gossip
 function Node( gossip_entry ) {
+    // Get properties directly from gossip objects
     this.update( gossip_entry );
-    console.debug( this.tostr() );
+    
+    // and display properties
+    this.V_li_bloc = null;  // view li bloc
 }
 
 
@@ -208,6 +129,125 @@ Node.prototype.tostr = function() {
         s += ' [' + k + '=' + this[ k ] + ']';
     }
     return s;
+};
+
+
+Node.prototype.update_and_show_detail = function() {
+    // We got a click, tag the selected element
+    selected = this.uuid;
+    
+    // first header, we have enough data for this
+    var detail_header_tpl = get_template( 'tpl-detail-header' );
+    var s_detail_header   = Mustache.to_html( detail_header_tpl, this );
+    $( '#detail-header' ).html( s_detail_header );
+    
+    
+    var now = new Date().getTime();
+    
+    var srv = this.addr + ':' + this.port;
+    // Node detail + checks
+    $.getJSON( "http://" + srv + "/agent/state/" + this.uuid + '?_t=' + now, function( data ) {
+        // now checks
+        var detail_checks_tpl = get_template( 'tpl-detail-checks' );
+        var s_detail_checks   = Mustache.to_html( detail_checks_tpl, { 'checks': dict_get_values( data.checks ) } );
+        $( '#detail-checks' ).html( s_detail_checks );
+        
+    } );
+    
+    // Agent informations + information
+    $.getJSON( 'http://' + srv + '/agent/info?_t=' + now, function( data ) {
+        // first agent information
+        var detail_information_tpl = get_template( 'tpl-detail-information' );
+        var s_detail_information   = Mustache.to_html( detail_information_tpl, data );
+        $( '#detail-information' ).html( s_detail_information );
+        
+        // and collectors basic information (more information with metrics will need more additional calls)
+        var detail_collectors_tpl = get_template( 'tpl-detail-collectors-list' );
+        var s_detail_collectors   = Mustache.to_html( detail_collectors_tpl, { 'collectors': dict_get_values( data.collectors ) } );
+        $( '#detail-collectors-list' ).html( s_detail_collectors );
+    } );
+    
+    // Detectors informations
+    $.getJSON( 'http://' + srv + '/agent/detectors/?_t=' + now, function( data ) {
+        // first agent information
+        var detail_detectors_tpl = get_template( 'tpl-detail-detectors' );
+        var s_detail_detectors   = Mustache.to_html( detail_detectors_tpl, { 'detectors': data } );
+        $( '#detail-detectors' ).html( s_detail_detectors );
+    } );
+    
+    // Collectors informations
+    $.getJSON( 'http://' + srv + '/collectors/?_t=' + now, function( data ) {
+        var data_str = '';
+        for ( var k in data ) {
+            if ( data.hasOwnProperty( k ) ) {
+                var collector_data_id = "collector-data-" + k;
+                var k_s               = '<div class="collector-data-cont" >';
+                k_s += '<a href="javascript:show_collector(\'' + k + '\')">' + k + '</a>';
+                var results           = data[ k ].results;
+                
+                function tree_to_string( r ) {
+                    var s = '';
+                    if ( typeof r == 'object' ) {
+                        s = '<ul>';
+                        for ( var k2 in r ) {
+                            if ( r.hasOwnProperty( k2 ) ) {
+                                s += '<li>' + k2;
+                                s += tree_to_string( r[ k2 ] );
+                                s += '</li>';
+                            }
+                        }
+                        s += '</ul>';
+                    } else {
+                        if ( r == '' ) {
+                            r = '""';
+                        }
+                        s = ' => ' + r;
+                    }
+                    return s;
+                }
+                
+                k_s += '<div class="collector-data" id="' + collector_data_id + '" >';
+                k_s += tree_to_string( results );
+                k_s += '</div>'
+                k_s += '</div>'
+            }
+            data_str += k_s;
+        }
+        $( '#detail-collectors-data' ).html( data_str );
+    } );
+    
+};
+
+
+// Generate a LI string with the host information
+Node.prototype.generate_host_list_entry = function() {
+    var node_bloc_tpl = get_template( 'tpl-node-bloc' );
+    var s             = Mustache.to_html( node_bloc_tpl, this );
+    var li            = $( s );
+    // link the node on the li object
+    li.data( 'node', this );
+    
+    // and link click on the li
+    li.on( 'click', function() {
+        var this_node = $( this ).data( 'node' ); // this == the li object here
+        // First clean detail parts
+        clean_detail();
+        this_node.update_and_show_detail();
+        open_right_panel();
+    } );
+    
+    // Save the dom li bloc on the node data
+    this.V_li_bloc = li;
+    
+    return li;
+};
+
+// Hide/show functions for the li
+Node.prototype.hide = function() {
+    this.V_li_bloc.hide();
+};
+Node.prototype.show = function() {
+    this.V_li_bloc.show();
 };
 
 
@@ -250,12 +290,12 @@ function update_counts() {
 
 
 function sort_lists() {
-    sort_lists_for( 'nodes' );
+    sort_lists_for();
 }
 
 
-function sort_lists_for( p ) {
-    var mylist    = $( '#' + p + ' > ul' );
+function sort_lists_for() {
+    var mylist    = $( '#nodes > ul' );
     var listitems = mylist.children( 'li' ).get();
     listitems.sort( function( a, b ) {
         return $( a ).attr( 'id' ).localeCompare( $( b ).attr( 'id' ) );
@@ -267,73 +307,73 @@ function sort_lists_for( p ) {
 
 
 function apply_filters() {
-    apply_filters_for( 'nodes' );
-}
-
-
-function apply_filters_for( p ) {
-    var reg   = $( "#filter-value" ).val();
-    var state = $( "#filter-state" ).val();
-    
-    var lis = $( '#' + p + ' > ul > li' );
-    
-    lis.each( function() {
-        var li = $( this );
-    } );
+    var reg          = $( "#filter-value" ).val();
+    var filter_state = $( "#filter-state" ).val();
     
     var look_for = 'name';
     // For nodes we can look for others things
-    if ( p == 'nodes' ) {
-        // Look at filter type
-        if ( reg.startsWith( 't:' ) ) {
-            console.debug( 'MATCH TAG' );
-            look_for = 'tags';
+    // Look at filter type
+    if ( reg.startsWith( 't:' ) ) {
+        console.debug( 'MATCH TAG' );
+        look_for = 'tags';
+        var tag  = reg.replace( 't:', '' );
+        // if void tag, exit
+        if ( tag == '' ) {
+            return;
         }
-        
     }
     
-    lis.each( function() {
-        var _id     = $( this ).attr( 'id' );
-        var e_state = $( this ).data( 'state-id' );
+    // look for all nodes, and apply filter.
+    // to be shown, must match name filter AND state filter
+    // so any bad filter means hide
+    for ( var i = 0; i < nodes.length; i++ ) {
+        var node    = nodes[ i ];
+        var name    = node.name;
+        var e_state = node.state;
         
         // We must match both name/tag and state
         // First name, bail out if no match
         if ( look_for == 'name' ) {
-            if ( !(_id.indexOf( reg ) > -1) ) {
-                $( this ).hide();
-                return;
+            if ( !(name.indexOf( reg ) > -1) ) {
+                node.hide();
+            } else {
+                node.show();
             }
-        } else {// Something will need to find the real node then
-            var node = find_node( _id );
-            if ( look_for == 'tags' ) {
-                var tag = reg.replace( 't:', '' );
-                // Look for tag and really fot a node
-                if ( tag != '' && node != null ) {
-                    // Tag not found
-                    if ( !(node.tags.indexOf( tag ) > -1) ) {
-                        $( this ).hide();
-                        return;
-                    }
+        } else {
+            var founded = false;
+            for ( var j = 0; j < node.tags.length; j++ ) {
+                if ( reg == node.tags[ j ] ) {
+                    founded = true;
                 }
+            }
+            if ( founded ) {
+                node.show();
+            } else {
+                node.hide();
             }
         }
         
-        // Here, the name match was not need or false,
-        // so look at the state
-        if ( (state == 'any value') ||
-             ((state == 'passing') && (e_state == 0)) ||
-             ((state == 'failing') && (e_state == 1 || e_state == 2 || e_state == 3))
-        ) {
-            $( this ).show();
-        } else {
-            $( this ).hide();
-        }
-    } );
+        /* CASSE
+         // Here, the name match was not need or false,
+         // so look at the state
+         if ( (state == 'any value') ||
+         ((state == 'passing') && (e_state == 'alive')) ||
+         ((state == 'failing') && (e_state == 'leave' || e_state == 'dead' || e_state == 'suspect'))
+         ) {
+         node.show();
+         } else {
+         node.hide();
+         }
+         */
+        
+    }
+    
+    
 }
-
 
 // Binding the filtering part
 $( function() {
+    
     // By default show the nodes
     $( '#nodes' ).hide();
     
@@ -364,29 +404,24 @@ $( function() {
 } );
 
 
-// Generate a LI string with the host information
-function generate_host_list_entry( node ) {
-    var node_bloc_tpl = get_template( 'tpl-node-bloc' );
-    var s             = Mustache.to_html( node_bloc_tpl, node );
-    return s;
-    
-}
-
-
 // Go with all nodes and print them on the list elements
 function refresh_nodes() {
     var items = [];
     for ( var i = 0; i < nodes.length; i++ ) {
         var n = nodes[ i ];
-        var s = generate_host_list_entry( n );
+        var s = n.generate_host_list_entry();
         items.push( s );
     }
     
     $( "#nodes" ).html( '' );
+    
     var ul = $( "<ul/>", {
-        "class": "node-list",
-        html:    items.join( "" )
+        "class": "node-list"
     } ).appendTo( "#nodes" );
+    
+    for ( var i = 0; i < items.length; i++ ) {
+        ul.append( items[ i ] );
+    }
     
     apply_filters();
     sort_lists();
@@ -408,10 +443,11 @@ function find_node( nuuid ) {
 
 // Detail show be called by a NON modal page
 function show_detail( nuuid ) {
-    // First clean detail parts
-    clean_detail();
-    update_detail( nuuid );
-    open_right_panel();
+    var node = find_node( nuuid );
+    if ( node == null ) {
+        // no such node
+        return;
+    }
 }
 
 
@@ -432,97 +468,6 @@ function show_detail_part( part ) {
     // first hide all
     $( '#detail .detail-part' ).hide();
     $( '#detail-' + part ).show();
-}
-
-
-function update_detail( nuuid ) {
-    // We got a click, tag the selected element
-    selected = nuuid;
-    
-    var node = find_node( nuuid );
-    if ( node == null ) {
-        return;
-    }
-    var now = new Date().getTime();
-    
-    // Node detail + checks
-    $.getJSON( "http://" + server + "/agent/state/" + nuuid + '?_t=' + now, function( data ) {
-        // first header
-        var detail_header_tpl = get_template( 'tpl-detail-header' );
-        var s_detail_header   = Mustache.to_html( detail_header_tpl, node );
-        $( '#detail-header' ).html( s_detail_header );
-        
-        // now checks
-        var detail_checks_tpl = get_template( 'tpl-detail-checks' );
-        var s_detail_checks   = Mustache.to_html( detail_checks_tpl, { 'checks': dict_get_values( data.checks ) } );
-        $( '#detail-checks' ).html( s_detail_checks );
-        
-    } );
-    
-    // Agent informations + information
-    $.getJSON( 'http://' + node.addr + ':' + node.port + '/agent/info?_t=' + now, function( data ) {
-        // first agent information
-        var detail_information_tpl = get_template( 'tpl-detail-information' );
-        var s_detail_information   = Mustache.to_html( detail_information_tpl, data );
-        $( '#detail-information' ).html( s_detail_information );
-        
-        // and collectors basic information (more information with metrics will need more additional calls)
-        var detail_collectors_tpl = get_template( 'tpl-detail-collectors-list' );
-        var s_detail_collectors   = Mustache.to_html( detail_collectors_tpl, { 'collectors': dict_get_values( data.collectors ) } );
-        $( '#detail-collectors-list' ).html( s_detail_collectors );
-    } );
-    
-    // Detectors informations
-    $.getJSON( 'http://' + node.addr + ':' + node.port + '/agent/detectors/?_t=' + now, function( data ) {
-        // first agent information
-        var detail_detectors_tpl = get_template( 'tpl-detail-detectors' );
-        var s_detail_detectors   = Mustache.to_html( detail_detectors_tpl, { 'detectors': data } );
-        $( '#detail-detectors' ).html( s_detail_detectors );
-    } );
-    
-    // Collectors informations
-    $.getJSON( 'http://' + node.addr + ':' + node.port + '/collectors/?_t=' + now, function( data ) {
-        var data_str = '';
-        for ( var k in data ) {
-            if ( data.hasOwnProperty( k ) ) {
-                var collector_data_id = "collector-data-" + k;
-                var k_s               = '<div class="collector-data-cont" >';
-                k_s += '<a href="javascript:show_collector(\'' + k + '\')">' + k + '</a>';
-                var results           = data[ k ].results;
-                console.log( 'RESULTS ' + k );
-                console.log( results );
-                console.log( typeof results );
-                function tree_to_string( r ) {
-                    var s = '';
-                    if ( typeof r == 'object' ) {
-                        s = '<ul>';
-                        for ( var k2 in r ) {
-                            if ( r.hasOwnProperty( k2 ) ) {
-                                s += '<li>' + k2;
-                                s += tree_to_string( r[ k2 ] );
-                                s += '</li>';
-                            }
-                        }
-                        s += '</ul>';
-                    } else {
-                        if ( r == '' ) {
-                            r = '""';
-                        }
-                        s = ' => ' + r;
-                    }
-                    return s;
-                }
-                
-                k_s += '<div class="collector-data" id="' + collector_data_id + '" >';
-                k_s += tree_to_string( results );
-                k_s += '</div>'
-                k_s += '</div>'
-            }
-            data_str += k_s;
-        }
-        $( '#detail-collectors-data' ).html( data_str );
-    } );
-    
 }
 
 
@@ -653,9 +598,9 @@ function do_webso_connect() {
             }
             
             // Now generate the doc string from our new host
-            var s = generate_host_list_entry( n );
+            var s = n.generate_host_list_entry();
+            
             // Delete the previous li for this node
-            console.debug( 'Removing previous node entry:' + nuuid );
             $( '#' + nuuid ).remove();
             // ok add new the one
             $( s ).appendTo( $( '#nodes > ul' ) );
@@ -666,7 +611,7 @@ function do_webso_connect() {
             // If it was the selected, update the detail panel
             console.debug( 'SELECTED ' + selected + ' AND ' + nuuid );
             if ( nuuid == selected ) {
-                update_detail( nuuid );
+                n.update_and_show_detail();
             }
         };
     }
@@ -715,7 +660,7 @@ function evaluate_expr() {
     var ul = $( '<ul>' );
     eval_result_cont.append( ul );
     for ( var i = 0; i < nodes.length; i++ ) {
-        if( nodes[i].state != 'alive'){
+        if ( nodes[ i ].state != 'alive' ) {
             continue;
         }
         var uuid = nodes[ i ].uuid;
@@ -727,11 +672,11 @@ function evaluate_expr() {
     
     for ( var i = 0; i < nodes.length; i++ ) {
         var node = nodes[ i ];
-
-        if( node.state != 'alive'){
+        
+        if ( node.state != 'alive' ) {
             continue;
         }
-
+        
         get_and_display_eval_result( node, postdata );
     }
 }
@@ -782,7 +727,7 @@ function get_available_functions() {
  *                Executions
  **************************************************************/
 var execution_results = {};
-var exec_start = 0;
+var exec_start        = 0;
 
 function get_and_show_result( nuuid, exec_id ) {
     console.log( 'GET RESULT FOR ' + nuuid + ' and exec id' + exec_id );
@@ -816,8 +761,8 @@ function get_and_show_results() {
     }
     var now = new Date().getTime();
     // quit after 10s
-    if ( (now - exec_start) > 30000){
-        console.log('EXITING EXECUTION');
+    if ( (now - exec_start) > 30000 ) {
+        console.log( 'EXITING EXECUTION' );
         execution_results = {};
         return;
     }
