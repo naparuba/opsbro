@@ -56,7 +56,6 @@ class Launcher(object):
         # TODO: other daemon run on nt
         if os.name == 'nt':
             logger.warning("The parallel daemon check is not available on nt")
-            self.open_pidfile(write=True)
             return
         
         # First open the pid file in open mode
@@ -163,7 +162,8 @@ class Launcher(object):
         if is_daemon:
             self.daemonize()
         else:
-            self.write_pid()
+            if os.name != 'nt':
+                self.write_pid()
             
             # Here only the son-son reach this part :)
     

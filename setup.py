@@ -228,9 +228,14 @@ for o in not_allowed_options:
     if o in sys.argv:
         sys.argv.remove(o)
 
-required_pkgs = ['leveldb', 'jinja2', 'pycurl', 'requests', 'cherrypy', 'crypto', 'rsa', 'pyasn1']
+required_pkgs = ['jinja2', 'pycurl', 'requests', 'cherrypy', 'crypto', 'rsa', 'pyasn1']
+
+# leveldb is not available on windows
+if os.name != 'nt':
+	required_pkgs.append('leveldb')
+
 setup(
-    name="Kunai",
+    name="kunai",
     version="0.9-beta1",
     packages=find_packages(),
     package_data={'': package_data},
