@@ -1,7 +1,7 @@
 {
     "detector": {
         "tags": ["virtualbox"],
-        "apply_if": "'{collector.dmidecode.product_name}' == 'VirtualBox'",
+        "apply_if": "'{collector.hypervisor.hypervisor}' == 'VBoxVBoxVBox'",        
         "interval": "10s"
     }
 }
