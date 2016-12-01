@@ -1,6 +1,8 @@
 import os
 import sys
 import signal
+import locale
+
 from kunai.cluster import Cluster
 from kunai.log import cprint, logger
 
@@ -13,6 +15,10 @@ class Launcher(object):
         self.lock_path = lock_path
         self.debug_path = debug_path
         self.cfg_dir = cfg_dir
+        
+        # on windows, skip locale globaly
+        if os.name == 'nt':
+            locale.setlocale(locale.LC_ALL, 'C')
     
     
     def change_to_workdir(self):

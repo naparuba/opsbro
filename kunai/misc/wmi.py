@@ -87,7 +87,7 @@ import warnings
 
 from win32com.client import GetObject, Dispatch
 import pywintypes
-
+import pythoncom
 
 def signed_to_unsigned(signed):
     """Convert a (possibly signed) long to unsigned hex. Useful
@@ -1549,12 +1549,35 @@ def Registry(
         handle_com_error()
 
 
+
+class WMIAccess(object):
+    def __init__(self):
+        pass
+
+    
+    def get_table_where(self, tname, where={}):
+        try:
+            pythoncom.CoInitialize()
+            c = WMI()
+            f = getattr(c, tname)
+            return f(**where)
+        finally:
+            pythoncom.CoUninitialize()
+
+
+wmiaccess = WMIAccess()
+
+
 #
 # Typical use test
 #
 if __name__ == '__main__':
+    import time
+    t0 = time.time()
     system = WMI()
+    print "TIME: ", time.time() - t0
     for my_computer in system.Win32_ComputerSystem():
         print ("Disks on", my_computer.Name)
         for disk in system.Win32_LogicalDisk():
             print (disk.Caption, disk.Description, disk.ProviderName or "")
+    print "TIME2", time.time() - t0

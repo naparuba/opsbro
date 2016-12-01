@@ -12,14 +12,25 @@ import _winreg
 t0 = time.time()
 c = wmi.WMI()
 t1 = time.time()
+print "WMI TIME", t1 - t0
 
 
+_os = c.Win32_OperatingSystem(Primary=1)[0]
+
+_os = getattr(c, "Win32_OperatingSystem")
+d = {'Primary':1}
+_os = _os(**d)
+_os = _os[0]
+print _os.Caption
+fuck
+'''
 print "PROCESS"
 t0 = time.time()
 for process in c.Win32_Process():
   print process.ProcessId, process.Name
 t1 = time.time()
 print "Process time: %s" % (t1 - t0)
+'''
 # Ex de rendu:
 '''
 instance of Win32_Process
@@ -70,11 +81,14 @@ isk0\\Partition3";
 '''
 
 
-print c.Win32_Process.Create
+#print c.Win32_Process.Create
 
 
 
 ####Auto services
+print "#####"*200
+print "SERVICES"
+print "#####"*200
 stopped_services = c.Win32_Service(StartMode="Auto", State="Stopped")
 if stopped_services:
     for s in stopped_services:
@@ -119,6 +133,10 @@ exe";
 
 
 ####### Disks
+print "#####"*200
+print "DISKS"
+print "#####"*200
+
 for disk in c.Win32_LogicalDisk (DriveType=3):
     print disk.Caption, "%0.2f%% free" % (100.0 * long (disk.FreeSpace) / long (disk.Size))
 
@@ -156,8 +174,13 @@ instance of Win32_LogicalDisk
 
 
 ########## OK
+print "#####"*200
+print "OK"
+print "#####"*200
 os = c.Win32_OperatingSystem (Primary=1)[0]
 print os
+print os.Caption
+fuck
 # rendu
 '''
 instance of Win32_OperatingSystem
@@ -224,6 +247,10 @@ k0\\Partition3";
 
 
 ##### NETWORK
+print "#####"*200
+print "NETWORK"
+print "#####"*200
+
 for interface in c.Win32_NetworkAdapterConfiguration (IPEnabled=1):
     print interface.Description, interface.MACAddress
     for ip_address in interface.IPAddress:
@@ -275,6 +302,9 @@ instance of Win32_NetworkAdapterConfiguration
 
 
 ### startup
+print "#####"*200
+print "Startup"
+print "#####"*200
 for s in c.Win32_StartupCommand ():
   print "[%s] %s <%s>" % (s.Location, s.Caption, s.Command)
 
@@ -282,6 +312,10 @@ for s in c.Win32_StartupCommand ():
 
 
 ##### logs
+print "#####"*200
+print "LOGS"
+print "#####"*200
+
 '''
 c2 = wmi.WMI (privileges=["Security"])
 
@@ -298,6 +332,9 @@ while 1:
 '''
 
 ### Registry
+print "#####"*200
+print "REGISTRY"
+print "#####"*200
 r = wmi.Registry()
 try:
     result, names = r.EnumKey(
@@ -306,17 +343,24 @@ try:
     )
     for key in names:
         print 'Registry', key
-except:
-    pass
+except Exception, exp:
+    print "FUCK", exp
+
 
 
 ####Shared
 print '\n\n\n'
+print "#####"*200
+print "SHARE"
+print "#####"*200
 for share in c.Win32_Share ():
   print 'Share:', share.Name, share.Path
 
 
 #### Print
+print "#####"*200
+print "printer"
+print "#####"*200
 for printer in c.Win32_Printer ():
     print printer.Caption
     for job in c.Win32_PrintJob (DriverName=printer.DriverName):
@@ -378,6 +422,9 @@ instance of Win32_Printer
 '''
 
 ### Phys disks:
+print "#####"*200
+print "Phy disks"
+print "#####"*200
 for physical_disk in c.Win32_DiskDrive ():
   for partition in physical_disk.associators ("Win32_DiskDriveToDiskPartition"):
     for logical_disk in partition.associators ("Win32_LogicalDiskToPartition"):
@@ -455,11 +502,17 @@ instance of Win32_LogicalDisk
 '''
 
 #####Scheduled jobs
+print "#####"*200
+print "SCHEDULED"
+print "#####"*200
 for job in c.Win32_ScheduledJob():
     print 'Scheduled job', job
 
 
 ### drive types
+print "#####"*200
+print "DRIVE TYPE"
+print "#####"*200
 DRIVE_TYPES = {
   0 : "Unknown",
   1 : "No Root Directory",
@@ -472,7 +525,7 @@ DRIVE_TYPES = {
 for drive in c.Win32_LogicalDisk ():
   print 'Drive', drive.Caption, DRIVE_TYPES[drive.DriveType]
 
-
+'''
 ### Dans un thread
 import pythoncom
 import threading
@@ -498,5 +551,5 @@ class Info(threading.Thread):
 for process in c.Win32_Process():
     print process.ProcessId, process.Name
 Info().start()
-
+'''
 

@@ -12,6 +12,11 @@ try:
 except ImportError:
     pwd = None
 
+
+if os.name == 'nt':
+    from kunai.misc.wmi import wmiaccess
+
+    
 class System(Collector):
     def launch(self):
         logger.debug('getSystem: start')
@@ -19,19 +24,33 @@ class System(Collector):
         
         res['hostname'] = platform.node()
         res['fqdn'] = socket.getfqdn()
-        
+
         res['os'] = {}
-        res['os']['name'] = os.name
+        res['os']['name'] = platform.system().lower()
         res['os']['platform'] = sys.platform
         res['architecture'] = platform.uname()[-1]
         
         res['cpucount'] = multiprocessing.cpu_count()
         
-        res['linux'] = {'distname': '', 'version': '', 'id': ''}
-        (distname, version, _id) = platform.linux_distribution()
-        res['linux']['distname'] = distname
-        res['linux']['version'] = version
-        res['linux']['id'] = _id
+        # Linux, directly ask python
+        if os.name == 'linux2':
+            res['linux'] = {'distname': '', 'version': '', 'id': ''}
+            (distname, version, _id) = platform.linux_distribution()
+            res['linux']['distname'] = distname
+            res['linux']['version'] = version
+            res['linux']['id'] = _id
+
+        # Windows, get data from Win32_OperatingSystem
+        if os.name == 'nt':
+            win = {}
+            res['windows'] = win
+            _os = wmiaccess.get_table_where('Win32_OperatingSystem', {'Primary': 1})
+            # only the first entry
+            _os = _os[0]
+            props = ['Caption', 'ServicePackMajorVersion', 'ServicePackMinorVersion',
+                     'SerialNumber', 'OSArchitecture', 'MUILanguages', 'CSDVersion']
+            for prop in props:
+                win[prop.lower()] = getattr(_os, prop)
 
         if hasattr(os, 'getlogin'):
             try:
