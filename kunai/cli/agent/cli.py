@@ -13,6 +13,7 @@ import uuid
 import time
 import json
 import socket
+import os
 
 try:
     import requests as rq
@@ -26,6 +27,11 @@ try:
     import pygments.formatters
 except ImportError:
     pygments = None
+
+if os.name == 'nt':
+    import win32serviceutil
+    import win32api
+    from kunai.windows_service.windows_service import Service
 
 from kunai.log import cprint, logger
 from kunai.version import VERSION
@@ -41,6 +47,7 @@ if rq is None:
     sys.exit(2)
 
 NO_ZONE_DEFAULT = '(no zone)'
+
 
 ############# ********************        MEMBERS management          ****************###########
 
@@ -120,13 +127,13 @@ def do_state(name=''):
     except request_errors, exp:
         logger.error(exp)
         return
-
+    
     try:
         d = json.loads(r)
     except ValueError, exp:  # bad json
         logger.error('Bad return from the server %s' % exp)
         return
-
+    
     print 'Services:'
     for (sname, service) in d['services'].iteritems():
         state = service['state_id']
@@ -136,7 +143,7 @@ def do_state(name=''):
         cprint('%s - ' % state.ljust(8), color=c, end='')
         output = service['check']['output']
         cprint(output.strip(), color='grey')
-
+    
     print "Checks:"
     cnames = d['checks'].keys()
     cnames.sort()
@@ -161,6 +168,25 @@ def do_state(name=''):
 
 def do_version():
     cprint(VERSION)
+
+
+def __call_service_handler():
+    def __ctrlHandler(ctrlType):
+        return True
+    win32api.SetConsoleCtrlHandler(__ctrlHandler, True)
+    win32serviceutil.HandleCommandLine(Service)
+
+
+def do_service_install():
+    # hack argv for the install
+    sys.argv = ['c:\\kunai\\bin\\kunai', 'install']
+    __call_service_handler()
+
+
+def do_service_remove():
+    # hack argv for the remove
+    sys.argv = ['c:\\kunai\\bin\\kunai', 'remove']
+    __call_service_handler()
 
 
 def do_info(show_logs):
@@ -193,10 +219,10 @@ def do_info(show_logs):
     tags = ','.join(d.get('tags'))
     _docker = d.get('docker')
     collectors = d.get('collectors')
-
+    
     e = [('name', name), ('uuid', _uuid), ('tags', tags), ('version', version), ('pid', pid), ('port', port), ('addr', addr),
-        ('zone', zone_value), ('socket', socket_path), ('threads', nb_threads)]
-
+         ('zone', zone_value), ('socket', socket_path), ('threads', nb_threads)]
+    
     # Normal agent information
     print_info_title('Kunai Daemon')
     print_2tab(e)
@@ -208,7 +234,7 @@ def do_info(show_logs):
              ('queue', int_server['queue']))
         print_info_title('HTTP (LAN)')
         print_2tab(e)
-
+    
     # Unix socket http daemon
     int_server = httpservers['internal']
     if int_server:
@@ -216,7 +242,7 @@ def do_info(show_logs):
              ('queue', int_server['queue']))
         print_info_title('HTTP (Unix Socket)')
         print_2tab(e)
-
+    
     # Now DNS part
     print_info_title('DNS')
     if dns is None:
@@ -237,7 +263,7 @@ def do_info(show_logs):
         if st:
             e.append(('Nb connexions', st.get('nb_connexions')))
         print_2tab(e)
-
+    
     # Now graphite part
     print_info_title('Graphite')
     if graphite is None:
@@ -246,7 +272,7 @@ def do_info(show_logs):
         g = graphite
         e = [('enabled', g['enabled']), ('port', g['port']), ('udp', g['udp']), ('tcp', g['tcp'])]
         print_2tab(e)
-
+    
     # Now statsd part
     print_info_title('Statsd')
     if statsd is None:
@@ -255,7 +281,7 @@ def do_info(show_logs):
         s = statsd
         e = [('enabled', s['enabled']), ('port', s['port']), ('interval', s['interval'])]
         print_2tab(e)
-
+    
     # Now collectors part
     print_info_title('Collectors')
     cnames = collectors.keys()
@@ -283,14 +309,14 @@ def do_info(show_logs):
             ('enabled', {'value': _d['enabled'], 'color': 'grey'}),
             ('connected', {'value': _d['connected'], 'color': 'grey'}),
         ]
-
+    
     print_2tab(e)
     
     # Show errors logs if any
     print_info_title('Logs')
     errors = logs.get('ERROR')
     warnings = logs.get('WARNING')
-
+    
     # Put warning and errors in red/yellow if need only
     e = []
     if len(errors) > 0:
@@ -301,20 +327,20 @@ def do_info(show_logs):
         e.append(('warning', {'value': len(warnings), 'color': 'yellow'}))
     else:
         e.append(('warning', len(warnings)))
-
+    
     print_2tab(e)
-
+    
     if show_logs:
         if len(errors) > 0:
             print_info_title('Error logs')
             for s in errors:
                 cprint(s, color='red')
-
+        
         if len(warnings) > 0:
             print_info_title('Warning logs')
             for s in warnings:
                 cprint(s, color='yellow')
-
+    
     logger.debug('Raw information: %s' % d)
 
 
@@ -400,7 +426,7 @@ def do_exec(tag='*', cmd='uname -a'):
         logger.error(exp)
         return
     j = json.loads(r)
-
+    
     res = j['res']
     for (uuid, e) in res.iteritems():
         node = e['node']
@@ -431,29 +457,29 @@ def do_zone_change(name=''):
     print_info_title('Result')
     print r
 
+
 def do_detect_nodes():
     # Send UDP broadcast packets
-
+    
     MYPORT = 6768
-
-
+    
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.bind(('', 0))
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-
+    
     data = repr(time.time()) + '\n'
     s.sendto(data, ('255.255.255.255', MYPORT))
 
 
 exports = {
-    do_members: {
+    do_members        : {
         'keywords'   : ['members'],
         'args'       : [],
         'description': 'List the cluster members'
     },
-
-    do_start  : {
+    
+    do_start          : {
         'keywords'   : ['agent', 'start'],
         'args'       : [
             {'name': '--daemon', 'type': 'bool', 'default': False, 'description': 'Start kunai into the background'},
@@ -461,34 +487,46 @@ exports = {
         ],
         'description': 'Start the kunai daemon'
     },
-
-    do_stop   : {
+    
+    do_stop           : {
         'keywords'   : ['agent', 'stop'],
         'args'       : [],
         'description': 'Stop the kunai daemon'
     },
-
-    do_version: {
+    
+    do_service_install: {
+        'keywords'   : ['agent', 'service-install'],
+        'args'       : [],
+        'description': 'Install windows service'
+    },
+    
+    do_service_remove: {
+        'keywords'   : ['agent', 'service-remove'],
+        'args'       : [],
+        'description': 'Remove windows service'
+    },
+    
+    do_version        : {
         'keywords'   : ['version'],
         'args'       : [],
         'description': 'Print the daemon version'
     },
-
-    do_info   : {
+    
+    do_info           : {
         'keywords'   : ['info'],
         'args'       : [
             {'name': '--show-logs', 'default': False, 'description': 'Dump last warning & error logs', 'type': 'bool'},
         ],
         'description': 'Show info af a daemon'
     },
-
-    do_keygen : {
+    
+    do_keygen         : {
         'keywords'   : ['keygen'],
         'args'       : [],
         'description': 'Generate a encryption key'
     },
-
-    do_exec   : {
+    
+    do_exec           : {
         'keywords'   : ['exec'],
         'args'       : [
             {'name': 'tag', 'default': '', 'description': 'Name of the node tag to execute command on'},
@@ -496,16 +534,16 @@ exports = {
         ],
         'description': 'Execute a command (default to uname -a) on a group of node of the good tag (default to all)'
     },
-
-    do_join   : {
+    
+    do_join           : {
         'keywords'   : ['join'],
         'description': 'Join another node cluster',
         'args'       : [
             {'name': 'seed', 'default': '', 'description': 'Other node to join. For example 192.168.0.1:6768'},
         ],
     },
-
-    do_leave  : {
+    
+    do_leave          : {
         'keywords'   : ['leave'],
         'description': 'Put in leave a cluster node',
         'args'       : [
@@ -513,8 +551,8 @@ exports = {
              'description': 'Name of the node to force leave. If void, leave our local node'},
         ],
     },
-
-    do_state  : {
+    
+    do_state          : {
         'keywords'   : ['state'],
         'description': 'Print the state of a node',
         'args'       : [
@@ -523,7 +561,7 @@ exports = {
         ],
     },
     
-    do_zone_change: {
+    do_zone_change    : {
         'keywords'   : ['zone', 'change'],
         'args'       : [
             {'name': 'name', 'default': '', 'description': 'Change to the zone'},
@@ -531,7 +569,7 @@ exports = {
         'description': 'Change the zone of the node'
     },
     
-    do_detect_nodes: {
+    do_detect_nodes   : {
         'keywords'   : ['agent', 'detect'],
         'args'       : [],
         'description': 'Try to detect (broadcast) others nodes in the network'
