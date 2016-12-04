@@ -48,13 +48,11 @@ else:
 
     
     def post_kunai_json(uri, data):
-        local_socket = get_local_socket()
-        return get_json(uri, local_socket, params=data, method='POST')
+        return get_json(uri, params=data, method='POST')
     
     
     def put_kunai_json(uri, data):
-        local_socket = get_local_socket()
-        return get_json(uri, local_socket, params=data, method='PUT')
+        return get_json(uri, params=data, method='PUT')
     
 
 def print_info_title(title):

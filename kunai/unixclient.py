@@ -77,20 +77,28 @@ request_errors = (urllib2.URLError, rq.exceptions.ConnectionError,)
 # Get on the local socket. Beware to monkeypatch the get
 def get_local(u, local_socket, params={}, method='GET'):
     UnixHTTPConnection.socket_timeout = 5
-    
-    url_opener = urllib2.build_opener(UnixSocketHandler())  # debuglevel=1
-    p = local_socket
+    data = None
     special_headers = []
+    
     if method == 'GET' and params:
         u = "%s?%s" % (u, urllib.urlencode(params))
-    data = None
     if method == 'POST' and params:
         data = urllib.urlencode(params)
     if method == 'PUT' and params:
         special_headers.append(('Content-Type', 'your/contenttype'))
         data = params
-    uri = 'unix:/%s%s' % (p, u)
-    logger.debug("Connecting to local http unix socket at: %s with method %s" % (uri, method))
+    
+    # not the same way to connect
+    # * windows: TCP
+    # * unix   : unix socket
+    if os.name == 'nt':
+        url_opener = urllib2.build_opener(urllib2.HTTPHandler)
+        uri = 'http://127.0.0.1:6770%s' % u
+    else:  # unix
+        url_opener = urllib2.build_opener(UnixSocketHandler())
+        uri = 'unix:/%s%s' % (local_socket, u)
+    
+    logger.debug("Connecting to local http/unix socket at: %s with method %s" % (uri, method))
     req = urllib2.Request(uri, data)
     req.get_method = lambda: method
     for (k, v) in special_headers:
