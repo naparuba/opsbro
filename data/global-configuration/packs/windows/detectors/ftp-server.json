@@ -1,0 +1,7 @@
+{
+    "detector": {
+        "tags": ["ftp-server"],
+        "apply_if": "'FTP Server' in {{collector.system.windows.features}}",
+	    "interval": "10s"
+    }
+}

@@ -113,7 +113,7 @@ def get_local(u, local_socket, params={}, method='GET'):
 def get_json(uri, local_socket='', params={}, multi=False, method='GET'):
     try:
         (code, r) = get_local(uri, local_socket=local_socket, params=params, method=method)
-    except request_errors, exp:
+    except request_errors:
         raise
     
     if r == '':

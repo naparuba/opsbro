@@ -1,0 +1,7 @@
+{
+    "detector": {
+        "tags": ["asp.net-server"],
+        "apply_if": "'ASP.NET' in {{collector.system.windows.features}}",
+	    "interval": "10s"
+    }
+}

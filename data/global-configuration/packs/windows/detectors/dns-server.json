@@ -1,0 +1,7 @@
+{
+    "detector": {
+        "tags": ["dns-server"],
+        "apply_if": "'DNS Server' in {{collector.system.windows.features}}",
+	    "interval": "10s"
+    }
+}
