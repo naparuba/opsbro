@@ -1,12 +1,12 @@
 {
     "check": {
-	"ok_output": "'OK: memory is at %s%%' % {collector.memory.phys_used}",
+	"ok_output": "'OK: memory is at %s%%' % {{collector.memory.phys_used}}",
 	
-	"critical_if": "{collector.memory.phys_used} > {configuration.threshold.memory.critical}",
-	"critical_output": "'CRITICAL: memory is at %s%%' % {collector.memory.phys_used}",	
+	"critical_if": "{{collector.memory.phys_used}} > {{configuration.threshold.memory.critical}}",
+	"critical_output": "'CRITICAL: memory is at %s%%' % {{collector.memory.phys_used}}",
 
-	"warning_if": "{collector.memory.phys_used} > {configuration.threshold.memory.warning}",	
-	"warning_output":  "'WARNING: memory is at %s%%' % {collector.memory.phys_used}",	
+	"warning_if": "{{collector.memory.phys_used}} > {{configuration.threshold.memory.warning}}",
+	"warning_output":  "'WARNING: memory is at %s%%' % {{collector.memory.phys_used}}",
 	
 	"threshold" : {"memory" : { "warning": 90, "critical": 95} },
 	

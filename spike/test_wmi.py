@@ -22,7 +22,13 @@ d = {'Primary':1}
 _os = _os(**d)
 _os = _os[0]
 print _os.Caption
+
+features = c.Win32_ServerFeature()
+for f in features:
+    print f
+    
 fuck
+
 '''
 print "PROCESS"
 t0 = time.time()

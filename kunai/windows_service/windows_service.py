@@ -4,7 +4,6 @@ import win32api
 import win32event
 import sys
 
-
 from kunai.pubsub import pubsub
 from kunai.launcher import Launcher
 from kunai.threadmgr import threader
@@ -22,6 +21,7 @@ class Service(win32serviceutil.ServiceFramework):
         self.hWaitStop = win32event.CreateEvent(None, 0, 0, None)
         # core logic of the service
     
+    
     def __check_for_hWaitStop(self):
         while True:
             rc = None
@@ -31,17 +31,18 @@ class Service(win32serviceutil.ServiceFramework):
                 rc = win32event.WaitForSingleObject(self.hWaitStop, 100)
             # ok here we stop, warn the other parts about it
             pubsub.pub('interrupt')
-
-       
+    
+    
     def destroy_stdout_stderr(self):
         class NullWriter(object):
             def write(self, value): pass
+        
         sys.stdout = sys.stderr = NullWriter()
-
-
+    
+    
     def SvcDoRun(self):
         import servicemanager
-
+        
         # under service, stdout and stderr are not available
         # TODO: enable debug mode?
         self.destroy_stdout_stderr()
@@ -65,6 +66,6 @@ def ctrlHandler(ctrlType):
     return True
 
 
-#if __name__ == '__main__':
+# if __name__ == '__main__':
 #    win32api.SetConsoleCtrlHandler(ctrlHandler, True)
 #    win32serviceutil.HandleCommandLine(Service)

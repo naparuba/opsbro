@@ -9,6 +9,7 @@ import base64
 import time
 import inspect
 import types
+import itertools
 
 try:
     import apt
@@ -28,24 +29,27 @@ from kunai.gossip import gossiper
 
 # supported operators
 operators = {
-    ast.Add   : op.add,  # A + B
-    ast.Sub   : op.sub,  # A - B
-    ast.Mult  : op.mul,  # A * B
-    ast.Div   : op.truediv,  # A / B
-    ast.Pow   : op.pow,  # ???
-    ast.BitXor: op.xor,  # ???
-    ast.USub  : op.neg,  # ???
-    ast.Eq    : op.eq,  # A == B
-    ast.NotEq : op.ne,  # A != B
-    ast.Gt    : op.gt,  # A > B
-    ast.Lt    : op.lt,  # A < B
-    ast.GtE   : op.ge,  # A >= B
-    ast.LtE   : op.le,  # A <= B
-    ast.Mod   : op.mod,  # A % B
-    ast.Or    : op.or_, _ast.Or: op.or_,  # A or B
-    ast.And   : op.and_, _ast.And: op.and_,  # A and B
-    ast.BitOr : op.or_,  # A | B
-    ast.BitAnd: op.and_,  # A & B
+    ast.Add      : op.add,  # A + B
+    ast.Sub      : op.sub,  # A - B
+    ast.Mult     : op.mul,  # A * B
+    ast.Div      : op.truediv,  # A / B
+    ast.Pow      : op.pow,  # ???
+    ast.BitXor   : op.xor,  # ???
+    ast.USub     : op.neg,  # ???
+    ast.Eq       : op.eq,  # A == B
+    ast.NotEq    : op.ne,  # A != B
+    ast.Gt       : op.gt,  # A > B
+    ast.Lt       : op.lt,  # A < B
+    ast.GtE      : op.ge,  # A >= B
+    ast.LtE      : op.le,  # A <= B
+    ast.Mod      : op.mod,  # A % B
+    ast.Or       : op.or_, _ast.Or: op.or_,  # A or B
+    ast.And      : op.and_, _ast.And: op.and_,  # A and B
+    ast.BitOr    : op.or_,  # A | B
+    ast.BitAnd   : op.and_,  # A & B
+    ast.Not      : op.not_, _ast.Not: op.not_,  # not A
+    ast.In       : op.contains,  # A in L
+    #NOTMANAGE ast.Subscript: op.getitem, _ast.Subscript: op.getitem,  # d[k]
 }
 
 functions = {
@@ -259,12 +263,12 @@ class Evaluater(object):
     
     def compile(self, expr, check=None):
         # first manage {} thing and look at them
-        all_parts = re.findall('{.*?}', expr)
+        all_parts = re.findall('{{.*?}}', expr)
         
         changes = []
         
         for p in all_parts:
-            p = p[1:-1]
+            p = p[2:-2]  # remove {{ and }}
             
             if p.startswith('collector.'):
                 s = p[len('collector.'):]
@@ -277,10 +281,10 @@ class Evaluater(object):
                 changes.append((p, v))
         
         if not len(changes) == len(all_parts):
-            raise ValueError('Some parts cannot be changed')
+            raise ValueError('Some parts between {} cannot be changed')
         
         for (p, v) in changes:
-            expr = expr.replace('{%s}' % p, str(v))
+            expr = expr.replace('{{%s}}' % p, str(v))
         
         return expr
     
@@ -306,6 +310,13 @@ class Evaluater(object):
             return node.n
         elif isinstance(node, ast.Str):  # <string>
             return node.s
+        elif isinstance(node, ast.List):  # <list>
+            return [self.eval_(e) for e in node.elts]
+        elif isinstance(node, ast.Dict):  # <dict>
+            _keys = [self.eval_(e) for e in node.keys]
+            _values = [self.eval_(e) for e in node.values]
+            _dict = dict(itertools.izip(_keys, _values))  # zip it into a new dict
+            return _dict
         elif isinstance(node, ast.BinOp):  # <left> <operator> <right>
             return operators[type(node.op)](self.eval_(node.left), self.eval_(node.right))
         elif isinstance(node, _ast.BoolOp):  # <elt1> OP <elt2>   TOD: manage more than 2 params
@@ -315,7 +326,12 @@ class Evaluater(object):
         elif isinstance(node, ast.Compare):  # <left> <operator> <right>
             left = self.eval_(node.left)
             right = self.eval_(node.comparators[0])
-            return operators[type(node.ops[0])](left, right)
+            _op = operators[type(node.ops[0])]
+            reversed_operator = [op.contains]  # some operators are in the right,left order!!
+            if _op not in reversed_operator:
+                return _op(left, right)
+            else:  # reverse order
+                return _op(right, left)
         elif isinstance(node, ast.UnaryOp):  # <operator> <operand> e.g., -1
             return operators[type(node.op)](self.eval_(node.operand))
         elif isinstance(node, ast.Name):  # name? try to look at it
@@ -331,10 +347,10 @@ class Evaluater(object):
                 fname = node.func.id
                 f = functions.get(fname, None)
             elif isinstance(node.func, ast.Attribute):
-                logger.error('Eval UNMANAGED CALL: %s %s %s is refused' % (node.func, node.func.__dict__, node.func.value.__dict__), part='evaluator')
+                logger.error('Eval UNMANAGED (ast.aTTribute) CALL: %s %s %s is refused' % (node.func, node.func.__dict__, node.func.value.__dict__), part='evaluator')
             
             else:
-                logger.error('Eval UNMANAGED CALL: %s %s %s is refused' % (node.func, node.func.__dict__, node.func.value.__dict__), part='evaluator')
+                logger.error('Eval UNMANAGED (othercall) CALL: %s %s %s is refused' % (node.func, node.func.__dict__, node.func.value.__dict__), part='evaluator')
                 raise TypeError(node)
             
             if f:

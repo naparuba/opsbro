@@ -51,6 +51,14 @@ class System(Collector):
                      'SerialNumber', 'OSArchitecture', 'MUILanguages', 'CSDVersion']
             for prop in props:
                 win[prop.lower()] = getattr(_os, prop)
+                
+            # Also get server roles
+            win['features'] = []
+            _features = wmiaccess.get_table_where('Win32_ServerFeature')
+            for f in _features:
+                win['features'].append(f.Name)
+            win['features'].sort()
+
 
         if hasattr(os, 'getlogin'):
             try:

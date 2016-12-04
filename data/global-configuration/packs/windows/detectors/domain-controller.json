@@ -1,0 +1,7 @@
+{
+    "detector": {
+        "tags": ["domain-controller"],
+        "apply_if": "'Active Directory Domain Controller' in {{collector.system.windows.features}}",
+	    "interval": "10s"
+    }
+}
