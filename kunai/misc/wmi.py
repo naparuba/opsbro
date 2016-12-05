@@ -84,10 +84,15 @@ import datetime
 import re
 import struct
 import warnings
+import ctypes
+pdh = ctypes.windll.pdh
 
 from win32com.client import GetObject, Dispatch
 import pywintypes
 import pythoncom
+import win32pdh
+
+import kunai.misc.winstats as winstats
 
 def signed_to_unsigned(signed):
     """Convert a (possibly signed) long to unsigned hex. Useful
@@ -1549,12 +1554,83 @@ def Registry(
         handle_com_error()
 
 
+import _winreg as winreg
+
+def regkey_value(path, name="", start_key = None):
+    if isinstance(path, str):
+        path = path.split("\\")
+    if start_key is None:
+        start_key = getattr(winreg, path[0])
+        return regkey_value(path[1:], name, start_key)
+    else:
+        subkey = path.pop(0)
+    with winreg.OpenKey(start_key, subkey) as handle:
+        assert handle
+        if path:
+            return regkey_value(path, name, handle)
+        else:
+            desc, i = None, 0
+            while not desc or desc[0] != name:
+                desc = winreg.EnumValue(handle, i)
+                i += 1
+            return desc[1]
+
 
 class WMIAccess(object):
     def __init__(self):
-        pass
+        self.need_pdh_translate = not hasattr(pdh, 'PdhAddEnglishCounterW')
+        self.q_cache = {}
+        self.pdh_indexes = {}
 
-    
+    # If we don't have any acess to the call PdhAddEnglishCounterW
+    # we will need to translate calls
+    def __compute_pdh_indexes(self):
+        # maybe it's already done
+        if self.pdh_indexes != {}:
+            return
+        counters_idx = regkey_value(r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Perflib\009", "Counter")
+        idx = 0
+        cur_idx = None
+        for s in counters_idx:
+            if idx % 2 == 0:  # number
+                cur_idx = int(s)
+            else:
+                self.pdh_indexes[s] = cur_idx
+            idx += 1
+
+
+    def __parse_and_translate_query(self, q):
+        # if we have a direct access to english counters, go for it
+        if not self.need_pdh_translate:
+            return q
+        # if not need, compute pdh translation indexes
+        self.__compute_pdh_indexes()
+        # Maybe the query is already in cache? if so take it
+        if q in self.q_cache:
+            return self.q_cache[q]
+        # ok no cache, need to really compute it so ^^
+        parts = q.split('\\')
+        print "PARTS", parts
+        nparts = []
+        for p in parts:
+            if p:
+                # Maybe it's a XXX(bla), if so only translate XXX
+                if '(' in p:
+                    elts = p.split('(', 1)
+                    xxx = elts[0]
+                    bla = '(' + elts[1]
+                    xxx_t = win32pdh.LookupPerfNameByIndex(None, self.pdh_indexes[elts[0]])
+                    nparts.append(xxx_t + bla)
+                else:
+                    np = win32pdh.LookupPerfNameByIndex(None, self.pdh_indexes[p])
+                    nparts.append(np)
+            else:  # just ''
+                nparts.append(p)
+        res = '\\'.join(nparts)
+        self.q_cache[q] = res
+        return res
+
+
     def get_table_where(self, tname, where={}):
         try:
             pythoncom.CoInitialize()
@@ -1563,6 +1639,21 @@ class WMIAccess(object):
             return f(**where)
         finally:
             pythoncom.CoUninitialize()
+
+
+    def get_perf_data(self, q, unit='long', delay=0):
+        # english query are anble if we do not need translate
+        english = not self.need_pdh_translate
+        print "NOT TRANSLATED QUERY", q
+        q = self.__parse_and_translate_query(q)
+        print "TRANSLATED QUERY:", q
+        print "QUERY IN ENGLISH?", english
+        raw = winstats.get_perf_data(q, fmts=unit, delay=delay, english=english)
+        # only the first element is need
+        r = raw[0]
+        tr = {'long':long, 'double':float}
+        r = tr[unit](r)
+        return r
 
 
 wmiaccess = WMIAccess()

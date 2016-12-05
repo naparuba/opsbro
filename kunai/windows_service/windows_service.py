@@ -1,6 +1,6 @@
 import win32service
 import win32serviceutil
-import win32api
+import locale
 import win32event
 import sys
 
@@ -42,6 +42,9 @@ class Service(win32serviceutil.ServiceFramework):
     
     def SvcDoRun(self):
         import servicemanager
+
+        # Set as english
+        locale.setlocale(locale.LC_ALL, '')
         
         # under service, stdout and stderr are not available
         # TODO: enable debug mode?

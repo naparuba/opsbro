@@ -6,7 +6,11 @@ import sys
 
 sys.path.insert(0, '.')
 
+import locale
+locale.setlocale( locale.LC_ALL, 'English_Australia.1252' )
+
 import kunai.misc.wmi as wmi
+import kunai.misc.winstats as winstats
 import _winreg
 
 t0 = time.time()
@@ -23,10 +27,89 @@ _os = _os(**d)
 _os = _os[0]
 print _os.Caption
 
-features = c.Win32_ServerFeature()
-for f in features:
-    print f
-    
+#features = c.Win32_ServerFeature()
+#for f in features:
+#    print f
+
+
+### Registry
+print "#####"*200
+print "REGISTRY"
+print "#####"*200
+r = wmi.Registry()
+try:
+    result, names = r.EnumKey(
+    hDefKey=_winreg.HKEY_LOCAL_MACHINE,
+    sSubKeyName="Software"
+    )
+    for key in names:
+        print 'Registry', key
+except Exception, exp:
+    #print "FUCK", exp
+    pass
+
+'''
+# example usage
+t0 = time.time()
+counters_idx = regkey_value(r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Perflib\009", "Counter")
+
+indexes = {}
+idx = 0
+cur_idx = None
+for s in counters_idx:
+    if 'Processor' in s:
+        print s
+    if idx % 2 == 0:  # number
+        cur_idx = int(s)
+    else:
+        indexes[s] = cur_idx
+    idx += 1
+print "INDEXES", time.time() - t0
+'''
+
+import win32pdh
+
+
+
+
+q = r"\System\Context Switches/sec"
+
+usage = wmi.wmiaccess.get_perf_data(q, unit='double', delay=100)
+print "QQQ: q", q, "=>", usage
+
+
+q = r"\Processor(_Total)\% Processor Time"
+tq = parse_and_translate_query(q)
+print "QUERY TRANSLATE", q, "=>", tq
+
+usage = winstats.get_perf_data(tq, fmts='double', delay=100)
+print "QQQ: q", q, "tq:",tq, "=>", usage
+
+
+### win32pdh.LookupPerfNameByIndex  == reverse l'id ENGLISH en nom local
+q = r"\%s\%s" % (win32pdh.LookupPerfNameByIndex(None,indexes['System']), win32pdh.LookupPerfNameByIndex(None,indexes["Context Switches/sec"]))
+usage = winstats.get_perf_data(q, fmts='double', delay=100)
+print "QQQ: q", q, usage
+
+bye
+usage = winstats.get_perf_data(r"System\Context Switches/sec", fmts='double', delay=100)
+print "SYSTEM/ctxswitch/sec 2", usage
+
+
+#\Processor(*)\% User Time
+q = r"\%d(_Total)\%d" % (indexes['Processor'], indexes["% User Time"])
+print "QUERY: %s" % q
+usage = winstats.get_perf_data(q, fmts='double', delay=100)
+print "PROC %", usage
+
+#for (k,v) in indexes.iteritems():
+#    print "K:%s V:%d" % (k,v)
+byebye
+#usage = winstats.get_perf_data(r'\Processor(_Total)\% Processor Time', fmts='double', delay=100)
+usage = winstats.get_perf_data(r'\2\6', fmts='double', delay=100)
+
+print '    CPU Usage: %.02f %%' % usage
+
 fuck
 
 '''
