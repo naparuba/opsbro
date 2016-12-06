@@ -44,7 +44,7 @@ class Service(win32serviceutil.ServiceFramework):
         import servicemanager
 
         # Set as english
-        locale.setlocale(locale.LC_ALL, '')
+        locale.setlocale(locale.LC_ALL, 'English_Australia.1252')
         
         # under service, stdout and stderr are not available
         # TODO: enable debug mode?
