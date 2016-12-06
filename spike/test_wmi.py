@@ -69,15 +69,40 @@ print "INDEXES", time.time() - t0
 
 import win32pdh
 
-
-
+from collections import namedtuple
 
 q = r"\System\Context Switches/sec"
 
 usage = wmi.wmiaccess.get_perf_data(q, unit='double', delay=100)
 print "QQQ: q", q, "=>", usage
+class Counter:
+    def __init__(self, label, query, delay=0):
+        self.label = label
+        self.query = query
+        self.delay = delay
+        
+#Counter = namedtuple('Counter', ['label', 'query', 'delay'])
+counters = [Counter(r'cpu usage %', r'\Processor(_Total)\% Processor Time', delay=10),
+            Counter('ctx switches/sec', r'\System\Context Switches/sec', delay=10),
+            Counter(r'cpu_kernel_%', r'\Processor(_Total)\% Privileged Time', delay=10),
+            Counter(r'user_kernel_%', r'\Processor(_Total)\% User Time', delay=10),
+            Counter(r'interrupts/sec', r'\Processor(_Total)\Interrupts/sec', delay=10),
+            Counter(r'Available MBytes', r'\Memory\Available MBytes'),
+            Counter(r'swap Input/sec', r'\Memory\Pages Input/sec', delay=100),
+            Counter(r'swap % usage', r'\Paging File(*)\% Usage'),
+            Counter(r'swap % usage peak', r'\Paging File(*)\% Usage Peak'),
+            Counter(r'io read /sec', r'\PhysicalDisk(*)\Avg. Disk sec/Read', delay=100),
+            Counter(r'io write /sec', r'\PhysicalDisk(*)\Avg. Disk sec/Write', delay=100),
+            Counter(r'network total/sec', r'\Network Interface(*)\Bytes Total/sec', delay=100),
+            ]
 
+for counter in counters:
+    print "\n##############"
+    print "Query:", counter.query
+    v = wmi.wmiaccess.get_perf_data(counter.query, unit='double', delay=counter.delay)
+    print "Result =>", v
 
+fuck
 q = r"\Processor(_Total)\% Processor Time"
 tq = parse_and_translate_query(q)
 print "QUERY TRANSLATE", q, "=>", tq

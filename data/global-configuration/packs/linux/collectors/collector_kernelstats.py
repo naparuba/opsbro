@@ -1,7 +1,11 @@
 import sys
 import time
+import os
 from kunai.log import logger
 from kunai.collector import Collector
+
+if os.name == 'nt':
+    import kunai.misc.wmi as wmi
 
 
 class KernelStats(Collector):
@@ -9,18 +13,32 @@ class KernelStats(Collector):
         super(KernelStats, self).__init__(config, put_result)
         self.store = {}
         self.last_launch = 0.0
-
-
+    
+    
     def launch(self):
         now = int(time.time())
         diff = now - self.last_launch
         self.last_launch = now
         
         logger.debug('getKernelStats: start')
-
+        
+        if os.name == 'nt':
+            data = {}
+            counters = [
+                ('ctx switches/sec', r'\System\Context Switches/sec', 100),
+                (r'interrupts/sec', r'\Processor(_Total)\Interrupts/sec', 100),
+            ]
+            for c in counters:
+                _label = c[0]
+                _query = c[1]
+                _delay = c[2]
+                v = wmi.wmiaccess.get_perf_data(_query, unit='double', delay=_delay)
+                data[_label] = v
+            return data
+        
         if sys.platform == 'linux2':
             logger.debug('getKernelStats: linux2')
-
+            
             try:
                 logger.debug('getKernelStats: attempting open')
                 lines = []
@@ -31,9 +49,9 @@ class KernelStats(Collector):
             except IOError, e:
                 logger.error('getKernelStat: exception = %s', e)
                 return False
-
+            
             logger.debug('getKernelStat: open success, parsing')
-
+            
             data = {}
             for line in lines:
                 elts = line.split(' ', 1)
@@ -59,9 +77,9 @@ class KernelStats(Collector):
                 del data[k]
             data.update(to_add)
             logger.debug('getKernelStats: completed, returning')
-
+            
             return data
-
+        
         else:
             logger.debug('getKernelStats: other platform, returning')
             return False

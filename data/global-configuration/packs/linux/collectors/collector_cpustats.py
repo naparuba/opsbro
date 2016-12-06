@@ -1,24 +1,42 @@
+import os
 import sys
 import re
 import traceback
 from kunai.log import logger
 from kunai.collector import Collector
 
+if os.name == 'nt':
+    import kunai.misc.wmi as wmi
+
 
 class CpuStats(Collector):
     def launch(self):
         logger.debug('getCPUStats: start')
-
+        
         cpuStats = {}
-
+        
+        if os.name == 'nt':
+            counters = [
+                (r'cpu usage %', r'\Processor(_Total)\% Processor Time', 100),
+                (r'cpu_kernel_%', r'\Processor(_Total)\% Privileged Time', 100),
+                (r'cpu_user_%', r'\Processor(_Total)\% User Time', 100)
+            ]
+            for c in counters:
+                _label = c[0]
+                _query = c[1]
+                _delay = c[2]
+                v = wmi.wmiaccess.get_perf_data(_query, unit='double', delay=_delay)
+                cpuStats[_label] = v
+            return cpuStats
+        
         if sys.platform == 'linux2':
             logger.debug('getCPUStats: linux2')
-
+            
             headerRegexp = re.compile(r'.*?([%][a-zA-Z0-9]+)[\s+]?')
             itemRegexp = re.compile(r'.*?\s+(\d+)[\s+]?')
             itemRegexpAll = re.compile(r'.*?\s+(all)[\s+]?')
             valueRegexp = re.compile(r'\d+\.\d+')
-
+            
             try:
                 cmd = 'mpstat -P ALL 1 1'
                 stats = self.execute_shell(cmd)
@@ -31,7 +49,7 @@ class CpuStats(Collector):
                 
                 for statsIndex in range(3, len(stats)):  # no skip "all"
                     row = stats[statsIndex]
-
+                    
                     if not row:  # skip the averages
                         break
                     deviceMatchAll = re.match(itemRegexpAll, row)
@@ -47,13 +65,13 @@ class CpuStats(Collector):
                     for headerIndex in range(0, len(headerNames)):
                         headerName = headerNames[headerIndex]
                         cpuStats[device][headerName] = float(values[headerIndex])
-
+            
             except Exception:
                 logger.error('getCPUStats: exception = %s', traceback.format_exc())
                 return False
         else:
             logger.debug('getCPUStats: unsupported platform')
             return False
-
+        
         logger.debug('getCPUStats: completed, returning')
         return cpuStats

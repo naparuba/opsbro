@@ -1,10 +1,8 @@
 import os
-import sys
 import re
 import commands
 from kunai.log import logger
 from kunai.collector import Collector
-from kunai.util import get_public_address
 
 
 def extract(input):
