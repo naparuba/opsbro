@@ -15,8 +15,11 @@ class Memory(Collector):
         # logger.debug('getMemoryUsage: start')
         if os.name == 'nt':
             data = {}
+            # get physical available memory
+            _os = wmi.wmiaccess.get_table_where('Win32_OperatingSystem', {})[0]
+            data['Memory Total MBytes'] = total_memory = int(_os.TotalVisibleMemorySize) / 1024
             counters = [
-                (r'Available MBytes', r'\Memory\Available MBytes', 0),
+                (r'Memory Available MBytes', r'\Memory\Available MBytes', 0),
                 (r'swap Input/sec', r'\Memory\Pages Input/sec', 100),
                 (r'swap % usage', r'\Paging File(*)\% Usage', 0),
                 (r'swap % usage peak', r'\Paging File(*)\% Usage Peak', 0),
@@ -27,6 +30,7 @@ class Memory(Collector):
                 _delay = c[2]
                 v = wmi.wmiaccess.get_perf_data(_query, unit='double', delay=_delay)
                 data[_label] = v
+            data['Memory Usage %'] = 100 * (total_memory - data['Memory Available MBytes']) / total_memory
             return data
         
         # If Linux like procfs system is present and mounted we use meminfo, else we use "native" mode (vmstat and swapinfo)
