@@ -96,6 +96,21 @@ counters = [Counter(r'cpu usage %', r'\Processor(_Total)\% Processor Time', dela
             Counter(r'network total/sec', r'\Network Interface(*)\Bytes Total/sec', delay=100),
             ]
 
+counters = [
+Counter(r'iis total bytes/sec', r'\web service(_total)\bytes total/sec', delay=100),
+Counter(r'iis current connections', r'\web service(_total)\current connections', delay=0),
+Counter(r'asp.net total requests failed', r'\asp.net applications(__total__)\requests failed', delay=0),
+Counter(r'asp.net total requests/sec', r'\asp.net applications(__total__)\requests/sec', delay=100),
+Counter(r'asp.net total errors/sec', r'\asp.net applications(__total__)\errors total/sec', delay=100),
+Counter(r'asp.net total pipeline instance count', r'\asp.net applications(__total__)\pipeline instance count', delay=0),
+Counter(r'asp.net total sessions active', r'\asp.net applications(__total__)\sessions active', delay=0),
+Counter(r'asp.net requests queued', r'\asp.net\requests queued', delay=0),
+
+]
+
+counters = [
+Counter(r'.net clr exceptions - nb thrown/sec', r'\.net clr exceptions(*)\\', delay=0),
+]
 for counter in counters:
     print "\n##############"
     print "Query:", counter.query
