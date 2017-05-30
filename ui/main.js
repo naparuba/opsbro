@@ -3,7 +3,7 @@
  *************************************/
     
     
-// If there is no servers in the config, take the http addr
+    // If there is no servers in the config, take the http addr
 var server   = null;
 var def_port = 6768;
 
@@ -31,16 +31,17 @@ $.each( servers, function( _idx, s ) {
     if ( elts.length > 1 ) {
         hostname = elts[ 0 ];
         port     = parseInt( elts[ 1 ] );
-    } else {
+    }
+    else {
         s = s + ':' + def_port;
     }
     var ws_port      = port + 1;
     pot_servers[ s ] = {
-        'state':   'pending',
-        'uri':     s,
-        port:      port,
-        ws_port:   ws_port,
-        hostname:  hostname,
+        'state'  : 'pending',
+        'uri'    : s,
+        port     : port,
+        ws_port  : ws_port,
+        hostname : hostname,
         'elected': false
     };
 } );
@@ -70,26 +71,27 @@ function elect_server() {
         $.ajax( {
             url: uri
         } )
-            .error( function() {
-                console.log( 'PING fail to the server: ' + s );
-                pot_servers[ s ][ 'state' ] = 'error';
-                update_connections_view();
-            } )
-            .done( function() {
-                console.log( 'Connexion OK to the server: ' + s );
-                pot_servers[ s ][ 'state' ] = 'ok';
-                if ( server == null ) {
-                    console.log( 'We just elected a new server: ' + s );
-                    server = s;
-                }
-                // If we choose or kept this server as elected, say it
-                if ( server == s ) {
-                    pot_servers[ s ][ 'elected' ] = true; // clean all previous elected thing
-                }
-                update_connections_view();
-            } );
+         .error( function() {
+             console.log( 'PING fail to the server: ' + s );
+             pot_servers[ s ][ 'state' ] = 'error';
+             update_connections_view();
+         } )
+         .done( function() {
+             console.log( 'Connexion OK to the server: ' + s );
+             pot_servers[ s ][ 'state' ] = 'ok';
+             if ( server == null ) {
+                 console.log( 'We just elected a new server: ' + s );
+                 server = s;
+             }
+             // If we choose or kept this server as elected, say it
+             if ( server == s ) {
+                 pot_servers[ s ][ 'elected' ] = true; // clean all previous elected thing
+             }
+             update_connections_view();
+         } );
     } );
 }
+
 
 elect_server();
 
@@ -197,7 +199,8 @@ Node.prototype.update_and_show_detail = function() {
                             }
                         }
                         s += '</ul>';
-                    } else {
+                    }
+                    else {
                         if ( r == '' ) {
                             r = '""';
                         }
@@ -208,8 +211,8 @@ Node.prototype.update_and_show_detail = function() {
                 
                 k_s += '<div class="collector-data" id="' + collector_data_id + '" >';
                 k_s += tree_to_string( results );
-                k_s += '</div>'
-                k_s += '</div>'
+                k_s += '</div>';
+                k_s += '</div>';
             }
             data_str += k_s;
         }
@@ -336,10 +339,12 @@ function apply_filters() {
         if ( look_for == 'name' ) {
             if ( !(name.indexOf( reg ) > -1) ) {
                 node.hide();
-            } else {
+            }
+            else {
                 node.show();
             }
-        } else {
+        }
+        else {
             var founded = false;
             for ( var j = 0; j < node.tags.length; j++ ) {
                 if ( reg == node.tags[ j ] ) {
@@ -348,7 +353,8 @@ function apply_filters() {
             }
             if ( founded ) {
                 node.show();
-            } else {
+            }
+            else {
                 node.hide();
             }
         }
@@ -389,15 +395,16 @@ $( function() {
     
     show_main_part( 'nodes' );
     
-    var help_text = [ 'Nodes:',
-                      '<ul>',
-                      '<li>string   => lookup by the node name</li>',
-                      '<li><b>t:</b>string => lookup by tag name</li>',
-                      '</ul>'
+    var help_text = [
+        'Nodes:',
+        '<ul>',
+        '<li>string   => lookup by the node name</li>',
+        '<li><b>t:</b>string => lookup by tag name</li>',
+        '</ul>'
     ].join( '\n' );
     
     $( '#filter-help' ).popover( {
-        html:    true,
+        html   : true,
         content: help_text
     } );
     
@@ -480,7 +487,8 @@ var __is_panel_open = false;
 function toggle_right_panel() {
     if ( __is_panel_open ) {
         close_right_panel();
-    } else {
+    }
+    else {
         open_right_panel();
     }
 }
@@ -515,7 +523,8 @@ $( function() {
         if ( server != null ) {
             console.log( 'OK Election is done, we can load' );
             load_nodes();
-        } else {
+        }
+        else {
             console.log( 'Cannot load, waiting server elecgtion' );
             setTimeout( do_load, 100 );
         }
@@ -591,7 +600,8 @@ function do_webso_connect() {
             var n = find_node( nuuid );
             if ( n != null ) {  // was existing
                 n.update( o );
-            } else { // ok a new one
+            }
+            else { // ok a new one
                 // Save this host in the list :)
                 n = new Node( o );
                 nodes.push( n );
@@ -636,9 +646,9 @@ function get_and_display_eval_result( node, postdata ) {
     var _id         = 'eval-result-' + node.uuid;
     var now         = new Date().getTime();
     $.ajax( {
-        type:    "POST",
-        url:     'http://' + server_addr + '/agent/evaluator/eval?_t=' + now,
-        data:    postdata,
+        type   : "POST",
+        url    : 'http://' + server_addr + '/agent/evaluator/eval?_t=' + now,
+        data   : postdata,
         success: function( data ) {
             console.log( 'UPDATE _id' + _id );
             $( '#' + _id ).html( data.toString() );
@@ -702,12 +712,14 @@ function get_available_functions() {
                     var arg_def  = p[ 1 ];
                     if ( arg_def == '__NO_DEFAULT__' ) {
                         _parts.push( arg_name );
-                    } else { // really with default value, set it
+                    }
+                    else { // really with default value, set it
                         _parts.push( arg_name + '=' + arg_def );
                     }
                 }
                 e.prototype_cleaned = _parts;
-            } else {
+            }
+            else {
                 e.prototype_cleaned = null;
             }
             
