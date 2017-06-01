@@ -434,6 +434,17 @@ function refresh_nodes() {
     sort_lists();
     update_counts();
     
+    var tile_items = [];
+    for ( var i = 0; i < nodes.length; i++ ) {
+        var n   = nodes[ i ];
+        var grp = create_empty_tile( n );
+        tile_items.push( grp );
+        // add to the layer, it was set to not visible at the creation, and will be set to visible when inserted into a panel
+        layer.add( grp );
+    }
+    fill_panel( node2, tile_items );
+    layer.draw();
+    console.log( 'FINISH' );
 }
 
 
@@ -820,3 +831,554 @@ function launch_executions() {
     } );
     
 }
+
+
+///////////////// TREEMAP VIEW
+
+
+var aparencies = [
+    {
+        radius         : 30,
+        XOffset        : 60,
+        YOffset        : 55,
+        stroke_width   : 3,
+        PairVal        : 60,
+        ImpairVal      : 30,
+        tile_box_size_x: 68,
+        tile_box_size_y: 60
+    },
+    {
+        radius         : 15,
+        XOffset        : 35,
+        YOffset        : 30,
+        stroke_width   : 2,
+        PairVal        : 45,
+        ImpairVal      : 30,
+        tile_box_size_x: 36,
+        tile_box_size_y: 30
+    }
+];
+
+
+///////////// TREEMAP
+var node_display_groups = [];
+var state,
+    layer,
+    right_stage,
+    right_layer         = null;
+var MARGIN              = 10;
+var node2               = null;
+
+var right_tile,
+    right_label_char;
+
+var renderer = function( x, y, w, h, n ) {
+    console.debug( 'renderer::', x, y, w, h, stage );
+    
+    if ( n.data ) {
+        n.new_x = x;
+        n.new_y = y;
+        n.new_w = w;
+        n.new_h = h;
+    }
+};
+
+function __get_node_stroke_color( node ) {
+    if ( node.state === 'alive' ) {
+        stroke_color = '#56D444';  // vert flashy
+    }
+    if ( node.status === 'warning' ) {
+        stroke_color = 'orange';
+    }
+    if ( node.status === 'leave' ) {
+        stroke_color = '#6FB8FD';  // bleu clair
+    }
+    if ( node.state === 'dead' ) {
+        stroke_color = '#D54C46';  // rouge
+    }
+    return stroke_color;
+}
+
+
+function reset_node_preview() {
+    right_tile.attrs.stroke       = '#666666';
+    right_tile.attrs.strokeWitdth = 0;
+    
+    right_label_char.setText( '' );
+    right_tile.draw();
+    right_label_char.draw();
+    right_layer.draw();
+}
+function update_node_preview( node ) {
+    console.log( 'PREVIEW NODE:', node );
+    var stroke_color              = __get_node_stroke_color( node );
+    right_tile.attrs.stroke       = stroke_color;
+    right_tile.attrs.strokeWitdth = 3;
+    
+    right_label_char.setText( node.name );
+    
+    right_tile.draw();
+    right_label_char.draw();
+    right_layer.draw();
+}
+
+
+var print_panel = function( n ) {
+    console.log( 'Priting node', n );
+    console.log( 'Parent:', n.my_parent, '     n.frame.x:', n.frame.x, '        x+n.parent.frame.x:', n.parent.frame.x );
+    
+    var n_x      = n.frame.x;
+    var n_y      = n.frame.y;
+    var n_width  = n.frame.width;
+    var n_height = n.frame.height;
+    // If parent, remove margin
+    if ( n.my_parent ) {
+        console.log( 'Remove margin from my parent:', n_x, n.my_parent.pos_x, MARGIN );
+        n_x += n.my_parent.pos_x + MARGIN;
+        n_y += n.my_parent.pos_y + MARGIN;
+        n_width  = n_width - 2 * MARGIN;
+        n_height = n_height - 2 * MARGIN;
+        console.log( 'RES ', n_x );
+    }
+    
+    n.pos_x      = n_x;
+    n.pos_y      = n_y;
+    n.pos_width  = n_width;
+    n.pos_height = n_height;
+    
+    var rect = new Kinetic.Rect( {
+        x          : 0,
+        y          : 0,
+        width      : n_width,
+        height     : n_height,
+        stroke     : "red",
+        strokeWidth: 1,
+        fill       : n.color
+    } );
+    
+    var label_char = new Kinetic.Text( {
+        x        : 0,
+        y        : 0,
+        text     : n.data,
+        fontSize : 20,
+        width    : 140,
+        align    : 'center',
+        fill     : 'black',
+        draggable: false
+    } );
+    
+    
+    var grp = new Kinetic.Group( {
+        x        : n_x,
+        y        : n_y,
+        draggable: false
+    } );
+    
+    grp.on( 'click', function() {
+        console.log( this );
+    } );
+    
+    
+    
+    grp.on( 'mouseover', function() {
+        //this.opacity(0.1);
+        //this.attrs.x += 10;
+        layer.draw();
+    } );
+    
+    grp.on( 'mouseout', function() {
+        //this.opacity(1);
+        layer.draw();
+        //console.log(this);
+    } );
+    
+    
+    grp.add( rect );
+    grp.add( label_char );
+    
+    console.log( 'RECT    color:', n.color, '  name:', n.data, '    n_y:', n_y, '     n_x:', n_x, '     y_height:', n_height, '   x_width:', n_width );
+    layer.add( grp );
+    n.rect = grp;
+};
+
+
+
+
+function create_empty_tile( node ) {
+    
+    if ( typeof node === 'undefined' ) {
+        node = null;
+    }
+    
+    var apar_idx = 1;
+    var aparency = aparencies[ apar_idx ];
+    
+    var radius = aparency.radius;
+    // if a place holder, set a radius
+    if ( node == null ) {
+        radius -= 1;
+    }
+    else {
+        radius += 1;
+    }
+    var stroke_width = aparency.stroke_width;
+    var color        = '#666666'; // noir
+    if ( node == null ) {
+        var color = '#BBBBBB';
+    }
+    //'#EBEBEB'; // gray
+    var name = '';
+    
+    var stroke_color = '#6FB8FD';// bleu clair
+    if ( node !== null ) {
+        stroke_color = __get_node_stroke_color( node );
+    }
+    
+    
+    var tile = new Kinetic.RegularPolygon( {
+        x        : 0,
+        y        : 0,
+        sides    : 6,
+        radius   : radius,
+        fill     : color,
+        draggable: false
+    } );
+    
+    if ( node != null ) {
+        tile.attrs.stroke        = stroke_color;
+        tile.attrs.strokeWidth   = stroke_width;
+        tile.attrs.shadowOpacity = 0.1;
+    }
+    
+    
+    var grp = new Kinetic.Group( {
+        x        : 10,
+        y        : 10,
+        draggable: false
+    } );
+    
+    grp.__data = { 'node': node };
+    
+    
+    // z_index:
+    // * placeholder: 100
+    // * real node: 200 (over place holder)
+    
+    var z_index = 100;
+    if ( node != null ) {
+        z_index = 200;
+    }
+    //grp.setZIndex(z_index);
+    
+    // If a node, don't display it currently, only when need
+    if ( node != null ) {
+        grp.setVisible( false );
+    }
+    
+    grp.add( tile );
+    
+    // only add hover and clic on group with a real node on it
+    if ( node != null ) {
+        grp.on( 'click', function() {
+            console.log( 'Click on :', this.__data.node );
+            clean_detail();
+            this.__data.node.update_and_show_detail();
+            open_right_panel();
+            update_node_preview( this.__data.node );
+        } );
+        
+        grp.on( 'mouseover', function() {
+            console.log( 'GROUP OVER ', this );
+            //this.opacity(0.9);
+            //this.attrs.scaleX = 2;
+            //this.attrs.scaleY = 2;
+            // High Z the element when overing it
+            //this.setZIndex(99999);
+            //this.rotateDeg(0);
+            //layer.draw();
+            update_node_preview( this.__data.node );
+            //this.draw();
+        } );
+        
+        grp.on( 'mouseout', function() {
+            //this.opacity(1);
+            //this.attrs.scaleX = 1;
+            //this.attrs.scaleY = 1;
+            //this.rotateDeg(0);
+            //layer.draw();
+            //console.log(this);
+            reset_node_preview( this.__data.node );
+        } );
+    }
+    
+    return grp;
+}
+
+
+
+
+//   create_hive
+function fill_panel( panel, node_tiles ) {
+    
+    var apar_idx = 1;
+    var aparency = aparencies[ apar_idx ];
+    var XOffset  = aparency.XOffset;
+    var YOffset  = aparency.YOffset;
+    
+    if ( typeof node_tiles === 'undefined' ) {
+        node_tiles = [];
+    }
+    
+    // Size of a tile for rect box size, so we know how much we can put on the screen
+    var tile_box_size_x = aparency.tile_box_size_x;
+    var tile_box_size_y = aparency.tile_box_size_y;
+    
+    var panel_width  = panel.pos_width;
+    var panel_height = panel.pos_height;
+    
+    console.debug( 'FILL PANEL ', panel.data, panel_width / tile_box_size_x );
+    var mtpl = parseInt( (panel_width - 2 * MARGIN) / tile_box_size_x );
+    console.debug( 'mtpl::', mtpl );
+    
+    var numberLines = parseInt( (panel_height - 2 * MARGIN) / tile_box_size_y );
+    
+    console.log( 'Tiles: ', mtpl, ' by line.\nNumber of lines:', numberLines, '.\nTotal of tiles:', numberLines * mtpl );
+    // Now fill it
+    
+    // If we are in filling place holder, fill all the lines
+    if ( node_tiles.length == 0 ) {
+        // FILL tile place holders on the panel
+        var x_idx = 0;
+        // We try to fill the screen
+        var y_idx = 1;
+        
+        while ( y_idx < numberLines + 1 ) {
+            // odd/even line are not the same number of tile
+            if ( y_idx % 2 === 0 ) {
+                var tpl           = mtpl;
+                var PairImpairVal = aparency.PairVal;
+            }
+            else {
+                var tpl           = mtpl;
+                var PairImpairVal = aparency.ImpairVal;
+            }
+            while ( x_idx < tpl ) {
+                var grp     = create_empty_tile( null );
+                var x       = panel.pos_x + x_idx * XOffset + PairImpairVal;
+                var y       = panel.pos_y + y_idx * YOffset;
+                grp.attrs.x = x;
+                grp.attrs.y = y;
+                //console.log('SET TO', tnum, x, y_idx, y);
+                layer.add( grp );
+                x_idx++;
+            }
+            x_idx = 0;
+            y_idx++;
+        }
+        //layer.draw();
+    }
+    else { // only fill nodes that must be
+        
+        var node_idx = 0;
+        
+        // FILL tile place holders on the panel
+        var x_idx  = 0;
+        // We try to fill the screen
+        var y_idx  = 1;
+        var finish = false;
+        while ( y_idx < numberLines + 1 ) {
+            
+            if ( finish ) {
+                break;
+            }
+            
+            // odd/even line are not the same number of tile
+            if ( y_idx % 2 === 0 ) {
+                var tpl           = mtpl;
+                var PairImpairVal = aparency.PairVal;
+            }
+            else {
+                var tpl           = mtpl;
+                var PairImpairVal = aparency.ImpairVal;
+            }
+            while ( x_idx < tpl ) {
+                if ( node_idx == node_tiles.length ) {
+                    finish = true;
+                    break;
+                }
+                
+                var node_grp = node_tiles[ node_idx ];
+                // as we insert into a panel, set visible
+                node_grp.setVisible( true );
+                node_idx += 1;
+                
+                //var grp = create_empty_tile();
+                var x            = panel.pos_x + x_idx * XOffset + PairImpairVal;
+                var y            = panel.pos_y + y_idx * YOffset;
+                node_grp.attrs.x = x;
+                node_grp.attrs.y = y;
+                //console.log('SET TO', tnum, x, y_idx, y);
+                // TODO: only add once?
+                console.log( 'ADD SPECIAL NODE GROUP', node_grp, x_idx, y_idx );
+                
+                x_idx++;
+            }
+            x_idx = 0;
+            y_idx++;
+        }
+    }
+}
+
+
+
+$( function() {
+    
+    
+    var WIDTH  = $( '#container' ).width() - 50;
+    var HEIGHT = $( '#container' ).height() - 50;
+    
+    stage = new Kinetic.Stage( {
+        container: "container",
+        width    : WIDTH,
+        height   : HEIGHT
+    } );
+    
+    layer = new Kinetic.Layer();
+    
+    
+    // Right focus
+    var right_focus_width  = $( '#right-container' ).width();
+    var right_focus_height = $( '#right-container' ).height();
+    
+    right_stage = new Kinetic.Stage( {
+        container: "right-container",
+        width    : right_focus_width,
+        height   : right_focus_height
+    } );
+    
+    right_layer = new Kinetic.Layer();
+    right_stage.add( right_layer );
+    right_tile = new Kinetic.RegularPolygon( {
+        x        : 90,
+        y        : 95,
+        sides    : 6,
+        radius   : 90,
+        fill     : '#666666',
+        draggable: false
+    } );
+    right_layer.add( right_tile );
+    right_label_char = new Kinetic.Text( {
+        x        : 20,
+        y        : 60,
+        text     : 'BB',
+        fontSize : 20,
+        width    : 140,
+        align    : 'center',
+        fill     : 'white',
+        draggable: false
+    } );
+    right_layer.add( right_label_char );
+    right_layer.draw();
+    
+    stage.add( layer );
+    
+    var root  = { data: "root", my_parent: null, pos_x: MARGIN, pos_y: MARGIN, pos_width: WIDTH, pos_height: HEIGHT, frame: { x: 0, y: 0, width: WIDTH, height: HEIGHT } };
+    var node1 = {
+        data     : "Leaf 1", weight: 0.3, "bla": 1,
+        x        : null, y: null,
+        new_x    : null, new_y: null,
+        new_w    : null, new_h: null,
+        my_parent: root, color: 'brown', rect: null
+    };
+    node2     = {
+        data     : "Leaf 2", weight: 0.6, x: null, y: null,
+        new_x    : null, new_y: null,
+        new_w    : null, new_h: null,
+        my_parent: root, color: 'white', rect: null
+    };
+    
+    var tree = {
+        frame: { x: 0, y: 0, width: WIDTH, height: HEIGHT },
+        nodes: [
+            node1, node2
+        ]
+    };
+    
+    treemap.squarify( tree, renderer );
+    
+    
+    
+    
+    for ( var i = 0; i < tree.nodes.length; i++ ) {
+        var n = tree.nodes[ i ];
+        //console.log(rect);
+        print_panel( n );
+    }
+    
+    layer.draw();
+    
+    var node6 = {
+        data     : "Leaf 6", weight: 0.6, x: null, y: null,
+        new_x    : null, new_y: null,
+        new_w    : null, new_h: null,
+        my_parent: node1, color: 'green', rect: null
+    };
+    
+    
+    console.log( 'Print in:' );
+    console.log( node1.frame );
+    var tree_in_1 = {
+        //frame: {x:0,y:0, width:node1.frame.width, height:node1.frame.height},
+        frame: { x: 0, y: 0, width: node1.pos_width, height: node1.pos_height },
+        nodes: [
+            node6
+        ]
+    };
+    
+    
+    treemap.squarify( tree_in_1, renderer );
+    for ( var i = 0; i < tree_in_1.nodes.length; i++ ) {
+        var n = tree_in_1.nodes[ i ];
+        console.log( 'Printing tree_in_1::', n );
+        print_panel( n );
+    }
+    
+    layer.draw();
+    
+    /*
+     var tween = new Kinetic.Tween({
+     node: this,
+     duration: 0.2,
+     x: 200,
+     y: 100,
+     }).play();
+     */
+    
+    
+    fill_panel( node2 );
+    fill_panel( node6 );
+    
+    
+    // generate 50 node groups from random servers
+    for ( var i = 0; i < 50; i++ ) {
+        var node = { 'status': 'OK' };
+        if ( i % 10 == 0 ) {
+            node[ 'status' ] = 'WARNING';
+        }
+        if ( i % 10 == 1 ) {
+            node[ 'status' ] = 'LEAVE';
+        }
+        if ( i % 10 == 2 ) {
+            node[ 'status' ] = 'CRITICAL';
+        }
+        
+        var grp = create_empty_tile( node );
+        node_display_groups.push( grp );
+        // add to the layer, it was set to not visible at the creation, and will be set to visible when inserted into a panel
+        layer.add( grp );
+    }
+    //fill_panel( node2, node_display_groups );
+    
+    layer.draw();
+} );
+

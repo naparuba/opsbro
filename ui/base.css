@@ -480,3 +480,25 @@ input, select {
 #execution-result .execution-bloc{
     border: white 1px solid;
 }
+/* DEBUG
+ */
+#nodes {
+    display : none !important;
+}
+#container {
+
+    min-width  : 60%;
+    min-height : 85%;
+    max-width  : 1368px;
+    max-height : 832px;
+    border     : black 2px solid;
+    width      : 600px;
+    height     : 800px;
+
+    float      : left;
+}
+#right-container {
+    display : inline-block;
+    width   : 170px;
+    height  : 400px;
+}

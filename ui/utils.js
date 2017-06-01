@@ -1,6 +1,8 @@
 // Add a way to shuffle an array
 Array.prototype.shuffle = function() {
-    var i = this.length, j, temp;
+    var i = this.length,
+        j,
+        temp;
     if ( i == 0 ) {
         return this;
     }
@@ -18,6 +20,12 @@ Array.prototype.shuffle = function() {
 if ( typeof String.prototype.startsWith != 'function' ) {
     String.prototype.startsWith = function( str ) {
         return this.slice( 0, str.length ) == str;
+    };
+}
+
+if ( typeof String.prototype.endsWith != 'function' ) {
+    String.prototype.endsWith = function( suffix ) {
+        return this.indexOf( suffix, this.length - suffix.length ) !== -1;
     };
 }
 
@@ -48,22 +56,22 @@ function get_template( tpl_name ) {
 
 function add_spinner( place ) {
     var opts    = {
-        lines:     17, // The number of lines to draw
-        length:    16, // The length of each line
-        width:     4, // The line thickness
-        radius:    13, // The radius of the inner circle
-        corners:   1, // Corner roundness (0..1)
-        rotate:    0, // The rotation offset
+        lines    : 17, // The number of lines to draw
+        length   : 16, // The length of each line
+        width    : 4, // The line thickness
+        radius   : 13, // The radius of the inner circle
+        corners  : 1, // Corner roundness (0..1)
+        rotate   : 0, // The rotation offset
         direction: 1, // 1: clockwise, -1: counterclockwise
-        color:     '#33000', // #rgb or #rrggbb or array of colors
-        speed:     1, // Rounds per second
-        trail:     66, // Afterglow percentage
-        shadow:    true, // Whether to render a shadow
-        hwaccel:   true, // Whether to use hardware acceleration
+        color    : '#33000', // #rgb or #rrggbb or array of colors
+        speed    : 1, // Rounds per second
+        trail    : 66, // Afterglow percentage
+        shadow   : true, // Whether to render a shadow
+        hwaccel  : true, // Whether to use hardware acceleration
         className: 'spinner', // The CSS class to assign to the spinner
-        zIndex:    2e9, // The z-index (defaults to 2000000000)
-        top:       '100px', // Top position relative to parent
-        left:      '50%' // Left position relative to parent
+        zIndex   : 2e9, // The z-index (defaults to 2000000000)
+        top      : '100px', // Top position relative to parent
+        left     : '50%' // Left position relative to parent
     };
     var target  = $( place );
     var spinner = new Spinner( opts ).spin();
