@@ -1,6 +1,6 @@
 {
 
-    "tags"           : ["linux"],
+    "tags"           : [],
     "datacenters"    : ["dc1"],
     "bootstrap"      : false,
     "seeds"          : [],

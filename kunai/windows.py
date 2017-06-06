@@ -1,6 +1,6 @@
 try:
     import kunai.misc.wmi as wmi
-except ImportError:
+except (ImportError, AttributeError):
     wmi = None
 
 
