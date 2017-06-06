@@ -480,11 +480,7 @@ input, select {
 #execution-result .execution-bloc{
     border: white 1px solid;
 }
-/* DEBUG
- */
-#nodes {
-    display : none !important;
-}
+/* DEBUG */
 #container {
 
     min-width  : 60%;

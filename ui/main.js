@@ -833,6 +833,9 @@ function launch_executions() {
 }
 
 
+
+
+
 ///////////////// TREEMAP VIEW
 
 
@@ -868,6 +871,7 @@ var state,
     right_layer         = null;
 var MARGIN              = 10;
 var node2               = null;
+var root                = null;
 
 var right_tile,
     right_label_char;
@@ -1147,6 +1151,9 @@ function fill_panel( panel, node_tiles ) {
     
     // If we are in filling place holder, fill all the lines
     if ( node_tiles.length == 0 ) {
+        
+        panel.place_holder_tiles = [];
+        
         // FILL tile place holders on the panel
         var x_idx = 0;
         // We try to fill the screen
@@ -1170,6 +1177,7 @@ function fill_panel( panel, node_tiles ) {
                 grp.attrs.y = y;
                 //console.log('SET TO', tnum, x, y_idx, y);
                 layer.add( grp );
+                panel.place_holder_tiles.push( grp );
                 x_idx++;
             }
             x_idx = 0;
@@ -1231,6 +1239,68 @@ function fill_panel( panel, node_tiles ) {
 
 
 
+function do_split() {
+    
+    // First clean all previous panel
+    node2.rect.remove();
+    for ( var i = 0; i < node2.place_holder_tiles.length; i++ ) {
+        var grp = node2.place_holder_tiles[ i ];
+        grp.remove();
+    }
+    node2.place_holder_tiles = [];
+    node2.rect               = null;
+    
+    var node_1 = {
+        data     : "NODE 1", weight: 1, x: null, y: null,
+        new_x    : null, new_y: null,
+        new_w    : null, new_h: null,
+        my_parent: root, color: 'white', rect: null
+    };
+    
+    var node_2 = {
+        data     : "NODE 2", weight: 1, x: null, y: null,
+        new_x    : null, new_y: null,
+        new_w    : null, new_h: null,
+        my_parent: root, color: 'white', rect: null
+    };
+    
+    var tree = {
+        frame: { x: 0, y: 0, width: root.pos_width, height: root.pos_height },
+        nodes: [ node_1, node_2 ]
+    };
+    
+    treemap.squarify( tree, renderer );
+    
+    
+    for ( var i = 0; i < tree.nodes.length; i++ ) {
+        var n = tree.nodes[ i ];
+        //console.log(rect);
+        print_panel( n );
+    }
+    fill_panel( node_1 );
+    fill_panel( node_2 );
+    
+    var tile_items_1 = [];
+    var tile_items_2 = [];
+    for ( var i = 0; i < nodes.length; i++ ) {
+        var n   = nodes[ i ];
+        var grp = create_empty_tile( n );
+        if ( i % 2 == 0 ) {
+            tile_items_1.push( grp );
+        }
+        else {
+            tile_items_2.push( grp );
+        }
+        // add to the layer, it was set to not visible at the creation, and will be set to visible when inserted into a panel
+        layer.add( grp );
+    }
+    fill_panel( node_1, tile_items_1 );
+    fill_panel( node_2, tile_items_2 );
+    
+    layer.draw();
+    
+}
+
 $( function() {
     
     
@@ -1282,15 +1352,8 @@ $( function() {
     
     stage.add( layer );
     
-    var root  = { data: "root", my_parent: null, pos_x: MARGIN, pos_y: MARGIN, pos_width: WIDTH, pos_height: HEIGHT, frame: { x: 0, y: 0, width: WIDTH, height: HEIGHT } };
-    var node1 = {
-        data     : "Leaf 1", weight: 0.3, "bla": 1,
-        x        : null, y: null,
-        new_x    : null, new_y: null,
-        new_w    : null, new_h: null,
-        my_parent: root, color: 'brown', rect: null
-    };
-    node2     = {
+    root  = { data: "root", my_parent: null, pos_x: MARGIN, pos_y: MARGIN, pos_width: WIDTH, pos_height: HEIGHT, frame: { x: 0, y: 0, width: WIDTH, height: HEIGHT } };
+    node2 = {
         data     : "Leaf 2", weight: 0.6, x: null, y: null,
         new_x    : null, new_y: null,
         new_w    : null, new_h: null,
@@ -1300,7 +1363,7 @@ $( function() {
     var tree = {
         frame: { x: 0, y: 0, width: WIDTH, height: HEIGHT },
         nodes: [
-            node1, node2
+            node2
         ]
     };
     
@@ -1314,36 +1377,39 @@ $( function() {
         //console.log(rect);
         print_panel( n );
     }
+    fill_panel( node2 );
     
     layer.draw();
     
-    var node6 = {
-        data     : "Leaf 6", weight: 0.6, x: null, y: null,
-        new_x    : null, new_y: null,
-        new_w    : null, new_h: null,
-        my_parent: node1, color: 'green', rect: null
-    };
+    /*
+     var node6 = {
+     data     : "Leaf 6", weight: 0.6, x: null, y: null,
+     new_x    : null, new_y: null,
+     new_w    : null, new_h: null,
+     my_parent: node1, color: 'green', rect: null
+     };
+     */
     
-    
-    console.log( 'Print in:' );
-    console.log( node1.frame );
-    var tree_in_1 = {
-        //frame: {x:0,y:0, width:node1.frame.width, height:node1.frame.height},
-        frame: { x: 0, y: 0, width: node1.pos_width, height: node1.pos_height },
-        nodes: [
-            node6
-        ]
-    };
-    
-    
-    treemap.squarify( tree_in_1, renderer );
-    for ( var i = 0; i < tree_in_1.nodes.length; i++ ) {
-        var n = tree_in_1.nodes[ i ];
-        console.log( 'Printing tree_in_1::', n );
-        print_panel( n );
-    }
-    
-    layer.draw();
+    /*
+     var tree_in_1 = {
+     //frame: {x:0,y:0, width:node1.frame.width, height:node1.frame.height},
+     frame: { x: 0, y: 0, width: node1.pos_width, height: node1.pos_height },
+     nodes: [
+     node6
+     ]
+     };
+     
+     
+     treemap.squarify( tree_in_1, renderer );
+     for ( var i = 0; i < tree_in_1.nodes.length; i++ ) {
+     var n = tree_in_1.nodes[ i ];
+     console.log( 'Printing tree_in_1::', n );
+     print_panel( n );
+     }
+     
+     
+     layer.draw();
+     */
     
     /*
      var tween = new Kinetic.Tween({
@@ -1354,31 +1420,5 @@ $( function() {
      }).play();
      */
     
-    
-    fill_panel( node2 );
-    fill_panel( node6 );
-    
-    
-    // generate 50 node groups from random servers
-    for ( var i = 0; i < 50; i++ ) {
-        var node = { 'status': 'OK' };
-        if ( i % 10 == 0 ) {
-            node[ 'status' ] = 'WARNING';
-        }
-        if ( i % 10 == 1 ) {
-            node[ 'status' ] = 'LEAVE';
-        }
-        if ( i % 10 == 2 ) {
-            node[ 'status' ] = 'CRITICAL';
-        }
-        
-        var grp = create_empty_tile( node );
-        node_display_groups.push( grp );
-        // add to the layer, it was set to not visible at the creation, and will be set to visible when inserted into a panel
-        layer.add( grp );
-    }
-    //fill_panel( node2, node_display_groups );
-    
-    layer.draw();
 } );
 

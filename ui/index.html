@@ -28,6 +28,9 @@
                 <a id='nodes-btn' class='menu-a' href='javascript:show_main_part("nodes");'>Nodes <span class="badge" id='badge-nodes'>?</span></a>
             </li>
             <li>
+                <a id='treemap-btn' class='menu-a' href='javascript:show_main_part("treemap");'>Treemap (beta)</a>
+            </li>
+            <li>
                 <a id='executions-btn' class='menu-a' href='javascript:show_main_part("executions");'>Commands executions</a>
             </li>
             <li>
@@ -57,13 +60,19 @@
         </div>
         <div class='nopadleft' id='list-left'>
 
-            <div id="container">
-            </div>
-            <div id="right-container">
-            </div>
-
             <!--        NODES            -->
             <div class='nopadleft  main-part' id='nodes'>
+            </div>
+
+
+            <!--        TREEMAP          -->
+            <div class='nopadleft  main-part' id='treemap'>
+                <a id="split" href='javascript:do_split();'>SPLIT</a>
+                <div id="container">
+                </div>
+                <div id="right-container">
+                </div>
+
             </div>
 
 
