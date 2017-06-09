@@ -87,7 +87,11 @@ from kunai.packer import packer
 from kunai.ts import tsmgr
 from kunai.jsonmgr import jsoner
 from kunai.shinkenexporter import shinkenexporter
+from kunai.module import Module
 from kunai.defaultpaths import DEFAULT_LIBEXEC_DIR, DEFAULT_LOCK_PATH, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR, DEFAULT_CFG_DIR
+
+# Modules
+from kunai.modules.dns.module import DNSModule
 
 REPLICATS = 1
 
@@ -129,6 +133,7 @@ class Cluster(object):
         self.generators = {}
         self.detectors = {}
         self.handlers = {}
+        self.modules = []
         
         # keep a list of the checks names that match our tags
         self.active_checks = []
@@ -430,6 +435,24 @@ class Cluster(object):
         # About detecting tags and such things
         detecter.load(self)
         detecter.export_http()
+
+        # Now load modules
+        modules_clss = Module.get_sub_class()
+        for cls in modules_clss:
+            try:
+                mod = cls(self)
+                self.modules.append(mod)
+            except Exception, exp:
+                logger.error('The module %s did fail to create: %s' % (cls, str(traceback.print_exc())))
+                sys.exit(2)
+        # Now prepare them (open socket and co)
+        for mod in self.modules:
+            # If the prepare fail, exit
+            try:
+                mod.prepare()
+            except Exception, exp:
+                logger.error('The module %s did fail to prepare: %s' % (mod, str(traceback.print_exc())))
+                sys.exit(2)
         
         # Start shinken exproter thread
         shinkenexporter.load_cluster(self)
@@ -592,6 +615,7 @@ class Cluster(object):
             if not isinstance(dns, dict):
                 logger.log('ERROR: the dns from the file %s is not a valid dict' % fp)
                 sys.exit(2)
+            logger.error('DNS: set %s' % dns)
             self.dns = dns
         
         if 'statsd' in o:
@@ -1086,7 +1110,13 @@ class Cluster(object):
         self.tcp_thread = threader.create_and_launch(self.launch_tcp_listener, name='tcp-thread', essential=True)
         self.webso_thread = threader.create_and_launch(self.launch_websocket_listener, name='websocket-thread',
                                                        essential=True)
-        self.dns_thread = threader.create_and_launch(self.launch_dns_listener, name='dns-thread', essential=True)
+        # Launch all modules like DNS
+        for mod in self.modules:
+            try:
+                mod.launch()
+            except Exception, exp:
+                logger.error('Cannot launch module %s: %s' % (mod, str(traceback.print_exc())))
+        #self.dns_thread = threader.create_and_launch(self.launch_dns_listener, name='dns-thread', essential=True)
     
     
     def launch_udp_listener(self):

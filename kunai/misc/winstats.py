@@ -17,7 +17,8 @@ LPDWORD = PDWORD = ctypes.POINTER(DWORD)
 
 
 # Mem Stats-------------------------------------------------------------------
-kernel32 = ctypes.windll.kernel32
+if hasattr(ctypes, 'windll'):
+    kernel32 = ctypes.windll.kernel32
 
 class MemoryStatusEX(Structure):
     ''' I/O Struct for Windows .GlobalMemoryStatusEx() call.
