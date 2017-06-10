@@ -87,6 +87,7 @@ from kunai.packer import packer
 from kunai.ts import tsmgr
 from kunai.jsonmgr import jsoner
 from kunai.shinkenexporter import shinkenexporter
+from kunai.modulemanager import modulemanager
 from kunai.module import Module
 from kunai.defaultpaths import DEFAULT_LIBEXEC_DIR, DEFAULT_LOCK_PATH, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR, DEFAULT_CFG_DIR
 
@@ -435,23 +436,36 @@ class Cluster(object):
         # About detecting tags and such things
         detecter.load(self)
         detecter.export_http()
-
+        
+        modulemanager.load_module_sources()
+        
         # Now load modules
         modules_clss = Module.get_sub_class()
+        
         for cls in modules_clss:
             try:
                 mod = cls(self)
                 self.modules.append(mod)
-            except Exception, exp:
+            except Exception:
                 logger.error('The module %s did fail to create: %s' % (cls, str(traceback.print_exc())))
                 sys.exit(2)
+                
         # Now prepare them (open socket and co)
         for mod in self.modules:
             # If the prepare fail, exit
             try:
                 mod.prepare()
-            except Exception, exp:
+            except Exception:
                 logger.error('The module %s did fail to prepare: %s' % (mod, str(traceback.print_exc())))
+                sys.exit(2)
+
+        # Now prepare them (open socket and co)
+        for mod in self.modules:
+            # If the prepare fail, exit
+            try:
+                mod.export_http()
+            except Exception:
+                logger.error('The module %s did fail to export the HTTP API: %s' % (mod, str(traceback.print_exc())))
                 sys.exit(2)
         
         # Start shinken exproter thread
@@ -1116,7 +1130,7 @@ class Cluster(object):
                 mod.launch()
             except Exception, exp:
                 logger.error('Cannot launch module %s: %s' % (mod, str(traceback.print_exc())))
-        #self.dns_thread = threader.create_and_launch(self.launch_dns_listener, name='dns-thread', essential=True)
+                # self.dns_thread = threader.create_and_launch(self.launch_dns_listener, name='dns-thread', essential=True)
     
     
     def launch_udp_listener(self):

@@ -27,3 +27,5 @@ class Module(object):
         return
     
     
+    def export_http(self):
+        return
