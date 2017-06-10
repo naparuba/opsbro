@@ -2,13 +2,16 @@ from kunai.log import logger
 from kunai.now import NOW
 
 class Module(object):
+    implement = ''
     class __metaclass__(type):
         __inheritors__ = set()
         
         
         def __new__(meta, name, bases, dct):
             klass = type.__new__(meta, name, bases, dct)
-            meta.__inheritors__.add(klass)
+            # This class need to implement a real role to be load
+            if klass.implement:
+                meta.__inheritors__.add( klass )
             return klass
     
     @classmethod

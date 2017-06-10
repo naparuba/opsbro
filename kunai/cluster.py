@@ -91,8 +91,6 @@ from kunai.modulemanager import modulemanager
 from kunai.module import Module
 from kunai.defaultpaths import DEFAULT_LIBEXEC_DIR, DEFAULT_LOCK_PATH, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR, DEFAULT_CFG_DIR
 
-# Modules
-from kunai.modules.dns.module import DNSModule
 
 REPLICATS = 1
 

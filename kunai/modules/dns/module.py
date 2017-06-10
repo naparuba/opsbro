@@ -7,6 +7,7 @@ from kunai.dnsquery import DNSQuery
 
 
 class DNSModule(Module):
+    implement = 'dns'
     def __init__(self, daemon):
         Module.__init__(self, daemon)
         self.dns = None

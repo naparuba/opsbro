@@ -1,5 +1,5 @@
-from kunai.bottle import route, run, request, abort, error, redirect, response, gserver
-import kunai.bottle as bottle
+from kunai.misc.bottle import route, run, request, abort, error, redirect, response, gserver
+import kunai.misc.bottle as bottle
 
 bottle.debug(True)
 
