@@ -61,7 +61,6 @@ except ImportError:
 
 from kunai.log import logger
 from kunai.kv import KVBackend
-from kunai.dnsquery import DNSQuery
 from kunai.wsocket import WebSocketBackend
 from kunai.util import copy_dir, get_public_address
 from kunai.threadmgr import threader
@@ -1272,41 +1271,7 @@ class Cluster(object):
                 else:
                     self.manage_message(m)
     
-    
-    def launch_dns_listener(self):
-        if self.dns is None:
-            logger.log('No dns object defined in the configuration, skipping it')
-            return
-        enabled = self.dns.get('enabled', False)
-        if not enabled:
-            logger.log('Dns server is disabled, skipping it')
-            return
         
-        port = self.dns.get('port', 53)
-        domain = self.dns.get('domain', '.kunai')
-        # assume that domain is like .foo.
-        if not domain.endswith('.'):
-            domain += '.'
-        if not domain.startswith('.'):
-            domain = '.' + domain
-        
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        logger.info('DNS launched server port %d' % port, part='dns')
-        sock.bind(('', port))
-        while not self.interrupted:
-            try:
-                data, addr = sock.recvfrom(1024)
-            except socket.timeout:
-                continue  # loop until we got some data :)
-            try:
-                p = DNSQuery(data)
-                r = p.lookup_for_nodes(self.nodes, domain)
-                logger.debug("DNS lookup nodes response:", r, part='dns')
-                sock.sendto(p.response(r), addr)
-            except Exception, exp:
-                logger.log("DNS problem", exp, part='dns')
-    
-    
     def launch_websocket_listener(self):
         if self.websocket is None:
             logger.log('No websocket object defined in the configuration, skipping it')

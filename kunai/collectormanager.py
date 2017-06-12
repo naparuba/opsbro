@@ -9,10 +9,9 @@ import copy
 from kunai.log import logger
 from kunai.threadmgr import threader
 from kunai.stop import stopper
-from kunai.httpdaemon import route, response, protected
+from kunai.httpdaemon import route, response
 from kunai.collector import Collector
-from kunai.ts import tsmgr
-from kunai.now import NOW
+
 from jsonmgr import jsoner
 
 

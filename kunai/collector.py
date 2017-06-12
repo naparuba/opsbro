@@ -7,7 +7,7 @@ from kunai.log import logger
 pythonVersion = platform.python_version_tuple()
 
 
-class Collector:
+class Collector(object):
     class __metaclass__(type):
         __inheritors__ = set()
         

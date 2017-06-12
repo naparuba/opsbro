@@ -1,5 +1,5 @@
 import json
-from websocketserver import WebSocket, SimpleWebSocketServer
+from kunai.misc.websocketserver import WebSocket, SimpleWebSocketServer
 from kunai.log import logger
 
 

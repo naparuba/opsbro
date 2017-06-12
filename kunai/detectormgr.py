@@ -87,7 +87,7 @@ class DetectorMgr(object):
                 if dname and dname != gname:
                     continue
                 res[gname] = {'matched': False, 'tags': [], 'new_tags': []}
-                print "LAUNCHING DETECTOR", gen
+                logger.info("LAUNCHING DETECTOR: %s" % gen, part='detector')
                 try:
                     res[gname]['matched'] = evaluater.eval_expr(gen['apply_if'])
                 except Exception, exp:
@@ -98,7 +98,7 @@ class DetectorMgr(object):
                     for tag in res[gname]['tags']:
                         if tag not in self.clust.tags:
                             res[gname]['new_tags'].append(tag)
-                            print "ADDING NEW TAGS", tag
+                            logger.info("ADDING NEW TAGS: %s" % tag, part='detector')
             
             return json.dumps(res)
 

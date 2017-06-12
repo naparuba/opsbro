@@ -6,7 +6,7 @@ import os
 from kunai.log import logger
 from kunai.threadmgr import threader
 from kunai.httpdaemon import route, response
-from kunai.cgroups import cgroupmgr
+from kunai.misc.cgroups import cgroupmgr
 from kunai.unixclient import get_json, request_errors
 
 

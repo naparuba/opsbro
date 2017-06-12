@@ -3,7 +3,7 @@ import socket
 from kunai.log import logger
 from kunai.threadmgr import threader
 from kunai.module import Module
-from kunai.dnsquery import DNSQuery
+from dnsquery import DNSQuery
 
 
 class DNSModule(Module):

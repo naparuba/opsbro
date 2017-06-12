@@ -10,7 +10,7 @@ try:
 except ImportError:
     fcntl = None
 
-from kunai.windows import windowser
+from kunai.misc.windows import windowser
 
 
 def make_dir(path):
