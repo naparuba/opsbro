@@ -61,7 +61,6 @@ except ImportError:
 
 from kunai.log import logger
 from kunai.kv import KVBackend
-from kunai.wsocket import WebSocketBackend
 from kunai.util import copy_dir, get_public_address
 from kunai.threadmgr import threader
 from kunai.perfdata import PerfDatas
@@ -71,7 +70,6 @@ from kunai.httpclient import HTTP_EXCEPTIONS
 from kunai.generator import Generator
 # now singleton objects
 from kunai.gossip import gossiper
-from kunai.websocketmanager import websocketmgr
 from kunai.broadcast import broadcaster
 from kunai.httpdaemon import httpdaemon, route, response, request, abort, gserver
 from kunai.pubsub import pubsub
@@ -87,7 +85,6 @@ from kunai.ts import tsmgr
 from kunai.jsonmgr import jsoner
 from kunai.modulemanager import modulemanager
 from kunai.defaultpaths import DEFAULT_LIBEXEC_DIR, DEFAULT_LOCK_PATH, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR, DEFAULT_CFG_DIR
-
 
 REPLICATS = 1
 
@@ -136,7 +133,6 @@ class Cluster(object):
         # graphite and statsd objects
         self.graphite = None
         self.statsd = None
-        self.websocket = None
         self.dns = None
         self.shinken = None
         
@@ -176,9 +172,9 @@ class Cluster(object):
         
         # Let the modules know about the daemon object
         modulemanager.set_daemon(self)
-
+        
         # save the known types for the configuration
-        self.known_types = ['check', 'service', 'handler', 'generator', 'graphite', 'dns', 'statsd', 'websocket', 'shinken']
+        self.known_types = ['check', 'service', 'handler', 'generator', 'graphite', 'statsd']
         # and extend with the ones from the modules
         self.modules_known_types = modulemanager.get_managed_configuration_types()
         self.known_types.extend(self.modules_known_types)
@@ -203,7 +199,6 @@ class Cluster(object):
         # We can start with a void log dir too
         if not os.path.exists(self.log_dir):
             os.mkdir(self.log_dir)
-
         
         # Then we will need to look at other directories, list from
         # * global-confugration = comon to all nodes
@@ -403,9 +398,6 @@ class Cluster(object):
         # by defualt do not launch timeserie listeners
         self.ts = None
         
-        # Now no websocket
-        self.webso = None
-        
         # Compile the macro pattern once
         self.macro_pat = re.compile(r'(\$ *(.*?) *\$)+')
         
@@ -533,7 +525,6 @@ class Cluster(object):
             sys.exit(2)
         logger.debug("Configuration, opening file data", o, fp)
         
-        
         if 'check' in o:
             check = o['check']
             if not isinstance(check, dict):
@@ -596,20 +587,13 @@ class Cluster(object):
                 logger.log('ERROR: the graphite from the file %s is not a valid dict' % fp)
                 sys.exit(2)
             self.graphite = graphite
-            
+        
         if 'statsd' in o:
             statsd = o['statsd']
             if not isinstance(statsd, dict):
                 logger.log('ERROR: the statsd from the file %s is not a valid dict' % fp)
                 sys.exit(2)
             self.statsd = statsd
-        
-        if 'websocket' in o:
-            websocket = o['websocket']
-            if not isinstance(websocket, dict):
-                logger.log('ERROR: the websocket from the file %s is not a valid dict' % fp)
-                sys.exit(2)
-            self.websocket = websocket
         
         # grok all others data so we can use them in our checks
         parameters = self.__class__.parameters
@@ -859,7 +843,7 @@ class Cluster(object):
         
         # Add it into the generators list
         self.generators[generator['id']] = generator
-        
+    
     
     # Detectors will run rules based on collectors and such things, and will tag the local node
     # if the rules are matching
@@ -1072,7 +1056,6 @@ class Cluster(object):
     def launch_listeners(self):
         self.udp_thread = threader.create_and_launch(self.launch_udp_listener, name='udp-thread', essential=True)
         self.tcp_thread = threader.create_and_launch(self.launch_tcp_listener, name='tcp-thread', essential=True)
-        self.webso_thread = threader.create_and_launch(self.launch_websocket_listener, name='websocket-thread', essential=True)
         
         # Launch modules threads
         modulemanager.launch()
@@ -1254,21 +1237,6 @@ class Cluster(object):
                 else:
                     self.manage_message(m)
     
-        
-    def launch_websocket_listener(self):
-        if self.websocket is None:
-            logger.log('No websocket object defined in the configuration, skipping it')
-            return
-        enabled = self.websocket.get('enabled', False)
-        if not enabled:
-            logger.log('Websocket is disabled, skipping it')
-            return
-        self.webso = WebSocketBackend(self)
-        # also load it in the websockermanager so other part
-        # can easily forward messages
-        websocketmgr.set(self.webso)
-        self.webso.run()
-    
     
     # TODO: SPLIT into modules :)
     def launch_tcp_listener(self):
@@ -1316,16 +1284,17 @@ class Cluster(object):
             r = {'logs'      : logger.get_errors(), 'pid': os.getpid(), 'name': self.name,
                  'port'      : self.port, 'addr': self.addr, 'socket': self.socket_path, 'zone': self.zone,
                  'uuid'      : self.uuid, 'graphite': self.graphite,
-                 'statsd'    : self.statsd, 'websocket': self.websocket,
-                 'dns'       : self.dns, 'threads': threader.get_info(),
+                 'statsd'    : self.statsd,
+                 #                 'dns'       : self.dns,
+                 'threads'   : threader.get_info(),
                  'version'   : VERSION, 'tags': self.tags,
                  'docker'    : dockermgr.get_info(),
                  'collectors': collectormgr.get_info(),
                  }
-            if self.webso:
-                r['websocket_info'] = self.webso.get_info()
-            else:
-                r['websocket_info'] = None
+            
+            # Update the infos with modules ones
+            mod_infos = modulemanager.get_infos()
+            r.update(mod_infos)
             
             r['httpservers'] = {}
             # Look at both http servers
@@ -2977,7 +2946,7 @@ Subject: %s
     
     def find_ts_node(self, hkey):
         return self.find_tag_node('ts', hkey)
-       
+    
     
     def retention_nodes(self, force=False):
         # Ok we got no nodes? something is strange, we don't save this :)

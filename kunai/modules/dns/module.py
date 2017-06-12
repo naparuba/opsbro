@@ -10,6 +10,7 @@ class DNSModule(Module):
     implement = 'dns'
     manage_configuration_objects = ['dns']
     
+    
     def __init__(self):
         Module.__init__(self)
         self.dns = None
@@ -18,14 +19,14 @@ class DNSModule(Module):
         self.domain = ''
         self.sock = None
     
+    
     def import_configuration_object(self, object_type, o, mod_time, fname, short_name):
         self.dns = o
-
+    
     
     # Prepare to open the UDP port
     def prepare(self):
         logger.debug('DNS: prepare phase')
-        #self.dns = self.daemon.dns
         if self.dns:
             self.enabled = self.dns.get('enabled', False)
             self.port = self.dns.get('port', 53)
@@ -43,6 +44,10 @@ class DNSModule(Module):
                 self.sock.bind(('', self.port))
             else:
                 logger.info('DNS is not enabled, skipping it')
+    
+    
+    def get_infos(self):
+        return {'dns': self.dns, 'dns_info': None}
     
     
     def launch(self):

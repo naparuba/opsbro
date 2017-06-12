@@ -6,7 +6,7 @@ class WebsocketManager(object):
     
     def set(self, webso):
         self.webso = webso
-    
+        
     
     def forward(self, msg):
         if self.webso:

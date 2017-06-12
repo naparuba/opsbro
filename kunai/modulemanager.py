@@ -113,4 +113,11 @@ class ModuleManager(object):
         mod = self.modules_configuration_types[object_type]
         mod.import_configuration_object(object_type, obj, mod_time, fname, short_name)
 
+    def get_infos(self):
+        r = {}
+        for mod in self.modules:
+            mod_info = mod.get_infos()
+            r.update(mod_info)
+        return r
+
 modulemanager = ModuleManager()

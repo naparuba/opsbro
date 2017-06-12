@@ -26,6 +26,10 @@ class Module(object):
         self.daemon = None
 
 
+    def get_infos(self):
+        return {}
+
+
     def import_configuration_object(self, object_type, o, mod_time, fname, short_name):
         raise NotImplementedError('Error: you must implement the import_confgiguration_object method for the module %s' % self)
     

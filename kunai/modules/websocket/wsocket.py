@@ -22,6 +22,7 @@ class WebSocketBackend(object):
         self.clust = clust
         port = clust.websocket.get('port', 6769)
         self.server = SimpleWebSocketServer(clust.listening_addr, port, WebExporter)
+        self.websocket_configuration = clust.websocket
     
     
     def run(self):
