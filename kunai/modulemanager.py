@@ -4,6 +4,7 @@ import imp
 import traceback
 
 from kunai.log import logger
+from kunai.module import Module
 
 myself_dir = os.path.dirname(__file__)
 internal_modules_dir = os.path.join(myself_dir, 'modules')
@@ -13,8 +14,8 @@ class ModuleManager(object):
     def __init__(self):
         self.modules = []
     
+    
     # Raw import module source code. So they will be available in the Modules class as Class.
-    # TODO: manage also module instanciation
     def load_module_sources(self):
         modules_dirs = []
         
@@ -44,10 +45,59 @@ class ModuleManager(object):
             except Exception:
                 logger.error('The module %s did fail to be imported: %s' % (dirname, str(traceback.print_exc())))
                 sys.exit(2)
-
+            
             # remove the module dir from sys.path, it's not need anymore
             # NOTE: as I don't think set sys.path to a new list is a good idea (switching pointer) I prefer to use a del here
             del sys.path[:1]
-            
+        
+        # Now load modules
+        modules_clss = Module.get_sub_class()
+        
+        for cls in modules_clss:
+            try:
+                mod = cls()
+                logger.info('[module] %s did load' % mod)
+                self.modules.append(mod)
+            except Exception:
+                logger.error('The module %s did fail to create: %s' % (cls, str(traceback.print_exc())))
+                sys.exit(2)
+    
+    
+    def set_daemon(self, daemon):
+        for mod in self.modules:
+            mod.set_daemon(daemon)
+    
+    
+    def prepare(self):
+        # Now prepare them (open socket and co)
+        for mod in self.modules:
+            # If the prepare fail, exit
+            try:
+                mod.prepare()
+            except Exception:
+                logger.error('The module %s did fail to prepare: %s' % (mod, str(traceback.print_exc())))
+                sys.exit(2)
+    
+    
+    def export_http(self):
+        # Now prepare them (open socket and co)
+        for mod in self.modules:
+            # If the prepare fail, exit
+            try:
+                mod.export_http()
+            except Exception:
+                logger.error('The module %s did fail to export the HTTP API: %s' % (mod, str(traceback.print_exc())))
+                sys.exit(2)
+    
+    
+    def launch(self):
+        # Launch all modules like DNS
+        for mod in self.modules:
+            try:
+                mod.launch()
+            except Exception, exp:
+                logger.error('Cannot launch module %s: %s' % (mod, str(traceback.print_exc())))
+                sys.exit(2)
+
 
 modulemanager = ModuleManager()

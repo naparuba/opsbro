@@ -7,8 +7,12 @@ class ShinkenModule(Module):
     implement = 'shinken'
     
     
-    def __init__(self, daemon):
-        Module.__init__(self, daemon)
+    def __init__(self):
+        Module.__init__(self)
+    
+    
+    def set_daemon(self, daemon):
+        self.daemon = daemon
     
     
     # Prepare to open the UDP port

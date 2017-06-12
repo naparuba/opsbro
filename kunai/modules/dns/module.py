@@ -10,8 +10,8 @@ class DNSModule(Module):
     implement = 'dns'
     
     
-    def __init__(self, daemon):
-        Module.__init__(self, daemon)
+    def __init__(self):
+        Module.__init__(self)
         self.dns = None
         self.enabled = False
         self.port = 0

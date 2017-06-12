@@ -16,6 +16,7 @@ sys.path.append('.')
 from kunai.log import cprint, logger
 from kunai import cli as cli_mod
 from kunai.version import VERSION
+from kunai.modulemanager import modulemanager
 from kunai.defaultpaths import DEFAULT_LOG_DIR, DEFAULT_CFG_FILE
 
 logger.setLevel('WARNING')
@@ -64,16 +65,24 @@ class CLICommander(object):
         self.keywords = {}
         
         self.config = config
-
+        
         log_dir = config.get('log', DEFAULT_LOG_DIR)  # '/var/lib/kunai')
         log_level = config.get('log_level', 'INFO')
         # early set the logger part
         logger.load(log_dir, '(cli)')
         logger.setLevel(log_level)
-
+        
+        # First warn the modules
+        self.load_modules()
+        
         # We will now try to load the keywords from the modules
         self.load_cli_mods(opts)
-
+    
+    
+    def load_modules(self):
+        # We should load modules to let them export what they need as configuration
+        modulemanager.load_module_sources()
+    
     
     def load_cli_mods(self, opts):
         # Main list of keywords for the first parameter
@@ -85,7 +94,7 @@ class CLICommander(object):
         logger.debug("Loading the cli directory %s" % cli_mods_dir)
         cli_mods_dirs = [os.path.join(cli_mods_dir, d) for d in os.listdir(cli_mods_dir) if
                          os.path.isdir(os.path.join(cli_mods_dir, d))]
-
+        
         # Link the CONFIG objet into the common
         # cli mod
         cli_mod.CONFIG = self.config
@@ -114,27 +123,27 @@ class CLICommander(object):
                         self.keywords[sub_cmd] = {}
                     # Finally save it
                     self.keywords[sub_cmd][k] = e
-
+        
         logger.debug('We load the keywords %s' % self.keywords)
     
-
+    
     # Execute a function based on the command line
     def one_loop(self, command_args):
         logger.debug("ARGS: %s" % command_args)
         sub_cmd = 'global'
-
+        
         # cannot be void because if so won't be in this loop
         if len(command_args) == 1:
             keyword = command_args.pop(0)
         else:
             sub_cmd = command_args.pop(0)
             keyword = command_args.pop(0)
-
+        
         d = self.keywords.get(sub_cmd, None)
         if d is None:
             logger.error('Unknown sub command %s' % sub_cmd)
             return
-
+        
         mod = d.get(keyword, None)
         if mod is None:
             if sub_cmd == 'global':
@@ -147,13 +156,13 @@ class CLICommander(object):
             else:
                 logger.error("UNKNOWN command %s" % keyword)
             return
-
+        
         # Now prepare a new parser, for the command call this time
         command_parser = optparse.OptionParser(
             '',
             version="%prog " + VERSION)
         command_parser.prog = keyword
-
+        
         f_args = []
         for a in mod.get('args', []):
             n = a.get('name', None)
@@ -179,12 +188,12 @@ class CLICommander(object):
                 if not isinstance(default, Dummy):
                     d['default'] = default
                 command_parser.add_option(n, **d)
-
+        
         cmd_opts, cmd_args = command_parser.parse_args(command_args)
         f = mod.get('f', None)
         logger.debug("CALLING " + str(f) + " WITH " + str(cmd_args) + " and " + str(cmd_opts))
         f(*cmd_args, **cmd_opts.__dict__)
-
+    
     
     def print_list(self, keyword=''):
         print "Available commands:"
@@ -233,7 +242,7 @@ if __name__ == '__main__':
                       dest="do_verbose", help=("Be more verbose"))
     parser.add_option('-h', '--help', action='store_true',
                       dest="do_help", help=("Print help"))
-
+    
     # First parsing, for purely internal parameters, but disable
     # errors, because we only want to see the -D -v things
     old_error = parser.error
@@ -241,15 +250,15 @@ if __name__ == '__main__':
     opts, args = parser.parse_args()
     # reenable the errors for later use
     parser.error = old_error
-
+    
     do_help = opts.do_help
     if do_help and len(args) == 0:
         parser.print_help()
         sys.exit(0)
-
+    
     if opts.do_verbose:
         logger.setLevel('INFO')
-
+    
     if opts.do_debug:
         logger.setLevel('DEBUG')
     
@@ -264,16 +273,16 @@ if __name__ == '__main__':
         except Exception, exp:
             logger.error('Cannot load configuration file %s: %s' % (opts.jsonconfig, exp))
             sys.exit(2)
-
+    
     CLI = CLICommander(CONFIG, opts)
-
+    
     # Reset levels if cli setup it
     if opts.do_verbose:
         logger.setLevel('INFO')
     if opts.do_debug:
         logger.setLevel('DEBUG')
-
-
+    
+    
     # We should look on the sys.argv if we find a valid keywords to
     # call in one loop or not.
     def hack_sys_argv():
@@ -295,22 +304,22 @@ if __name__ == '__main__':
                 command_values.append(arg)
             else:  # ok still not, it's for the shinekn command so
                 internal_values.append(arg)
-
+        
         logger.debug('Internal args %s' % internal_values)
         logger.debug('Command values %s' % command_values)
         sys.argv = internal_values
         return command_values
-
-
+    
+    
     # We will remove specific commands from the sys.argv list and keep
     # them for parsing them after
     command_args = hack_sys_argv()
-
+    
     # Global command parsing, with the error enabled this time
     opts, args = parser.parse_args()
     
     logger.debug('CLI ARGS: %s' % args)
-
+    
     if opts.do_help:
         if len(command_args) == 0:
             logger.error("Cannot find any help for you")
@@ -326,20 +335,20 @@ if __name__ == '__main__':
             desc = arg.get('description', '')
             cprint('\t%s' % n.ljust(10), 'green', end='')
             cprint(': %s' % desc)
-
+        
         sys.exit(0)
-
+    
     # Maybe he/she just want to list our commands?
     if opts.do_list:
         CLI.print_list()
         sys.exit(0)
-
+    
     # if just call kunai, we must show the available commands
     if len(command_args) == 0:
         cprint(banner, color='blue')
         parser.print_help()
         CLI.print_list()
         sys.exit(0)
-
+    
     # If it's just a one call shot, do it!
     CLI.one_loop(command_args)

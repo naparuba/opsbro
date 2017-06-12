@@ -87,7 +87,6 @@ from kunai.packer import packer
 from kunai.ts import tsmgr
 from kunai.jsonmgr import jsoner
 from kunai.modulemanager import modulemanager
-from kunai.module import Module
 from kunai.defaultpaths import DEFAULT_LIBEXEC_DIR, DEFAULT_LOCK_PATH, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR, DEFAULT_CFG_DIR
 
 
@@ -131,7 +130,6 @@ class Cluster(object):
         self.generators = {}
         self.detectors = {}
         self.handlers = {}
-        self.modules = []
         
         # keep a list of the checks names that match our tags
         self.active_checks = []
@@ -177,6 +175,9 @@ class Cluster(object):
         
         self.log_level = 'INFO'
         
+        # Let the modules know about the daemon object
+        modulemanager.set_daemon(self)
+        
         # Now look at the cfg_dir part
         if cfg_dir:
             self.cfg_dir = os.path.abspath(cfg_dir)
@@ -198,20 +199,6 @@ class Cluster(object):
         if not os.path.exists(self.log_dir):
             os.mkdir(self.log_dir)
 
-        # We should load modules to let them export what they need as configuration
-        modulemanager.load_module_sources()
-
-        # Now load modules
-        modules_clss = Module.get_sub_class()
-
-        for cls in modules_clss:
-            try:
-                mod = cls(self)
-                logger.info('[module] %s did load' % mod)
-                self.modules.append(mod)
-            except Exception:
-                logger.error('The module %s did fail to create: %s' % (cls, str(traceback.print_exc())))
-                sys.exit(2)
         
         # Then we will need to look at other directories, list from
         # * global-confugration = comon to all nodes
@@ -449,25 +436,9 @@ class Cluster(object):
         detecter.load(self)
         detecter.export_http()
         
-
-                
-        # Now prepare them (open socket and co)
-        for mod in self.modules:
-            # If the prepare fail, exit
-            try:
-                mod.prepare()
-            except Exception:
-                logger.error('The module %s did fail to prepare: %s' % (mod, str(traceback.print_exc())))
-                sys.exit(2)
-
-        # Now prepare them (open socket and co)
-        for mod in self.modules:
-            # If the prepare fail, exit
-            try:
-                mod.export_http()
-            except Exception:
-                logger.error('The module %s did fail to export the HTTP API: %s' % (mod, str(traceback.print_exc())))
-                sys.exit(2)
+        # Let the modules preapre themselve
+        modulemanager.prepare()
+        modulemanager.export_http()
         
         # get the message in a pub-sub way
         pubsub.sub('manage-message', self.manage_message_pub)
@@ -1119,15 +1090,10 @@ class Cluster(object):
     def launch_listeners(self):
         self.udp_thread = threader.create_and_launch(self.launch_udp_listener, name='udp-thread', essential=True)
         self.tcp_thread = threader.create_and_launch(self.launch_tcp_listener, name='tcp-thread', essential=True)
-        self.webso_thread = threader.create_and_launch(self.launch_websocket_listener, name='websocket-thread',
-                                                       essential=True)
-        # Launch all modules like DNS
-        for mod in self.modules:
-            try:
-                mod.launch()
-            except Exception, exp:
-                logger.error('Cannot launch module %s: %s' % (mod, str(traceback.print_exc())))
-                # self.dns_thread = threader.create_and_launch(self.launch_dns_listener, name='dns-thread', essential=True)
+        self.webso_thread = threader.create_and_launch(self.launch_websocket_listener, name='websocket-thread', essential=True)
+        
+        # Launch modules threads
+        modulemanager.launch()
     
     
     def launch_udp_listener(self):
