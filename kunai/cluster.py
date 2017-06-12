@@ -86,7 +86,6 @@ from kunai.detectormgr import detecter
 from kunai.packer import packer
 from kunai.ts import tsmgr
 from kunai.jsonmgr import jsoner
-from kunai.shinkenexporter import shinkenexporter
 from kunai.modulemanager import modulemanager
 from kunai.module import Module
 from kunai.defaultpaths import DEFAULT_LIBEXEC_DIR, DEFAULT_LOCK_PATH, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR, DEFAULT_CFG_DIR
@@ -198,6 +197,21 @@ class Cluster(object):
         # We can start with a void log dir too
         if not os.path.exists(self.log_dir):
             os.mkdir(self.log_dir)
+
+        # We should load modules to let them export what they need as configuration
+        modulemanager.load_module_sources()
+
+        # Now load modules
+        modules_clss = Module.get_sub_class()
+
+        for cls in modules_clss:
+            try:
+                mod = cls(self)
+                logger.info('[module] %s did load' % mod)
+                self.modules.append(mod)
+            except Exception:
+                logger.error('The module %s did fail to create: %s' % (cls, str(traceback.print_exc())))
+                sys.exit(2)
         
         # Then we will need to look at other directories, list from
         # * global-confugration = comon to all nodes
@@ -435,18 +449,7 @@ class Cluster(object):
         detecter.load(self)
         detecter.export_http()
         
-        modulemanager.load_module_sources()
-        
-        # Now load modules
-        modules_clss = Module.get_sub_class()
-        
-        for cls in modules_clss:
-            try:
-                mod = cls(self)
-                self.modules.append(mod)
-            except Exception:
-                logger.error('The module %s did fail to create: %s' % (cls, str(traceback.print_exc())))
-                sys.exit(2)
+
                 
         # Now prepare them (open socket and co)
         for mod in self.modules:
@@ -465,10 +468,6 @@ class Cluster(object):
             except Exception:
                 logger.error('The module %s did fail to export the HTTP API: %s' % (mod, str(traceback.print_exc())))
                 sys.exit(2)
-        
-        # Start shinken exproter thread
-        shinkenexporter.load_cluster(self)
-        shinkenexporter.launch_thread()
         
         # get the message in a pub-sub way
         pubsub.sub('manage-message', self.manage_message_pub)
@@ -902,11 +901,11 @@ class Cluster(object):
                 logger.warning('Bad shinken definition, missing property %s' % (prop))
                 return
         cfg_path = shinken['cfg_path']
-        reload_command = shinken.get('reload_command', '')
+        shinken['reload_command'] = shinken.get('reload_command', '')
         # and path must be a abs path
-        cfg_path = os.path.abspath(cfg_path)
-        shinkenexporter.load_cfg_path(cfg_path)
-        shinkenexporter.load_reload_command(reload_command)
+        shinken['cfg_path'] = os.path.abspath(cfg_path)
+        self.shinken = shinken
+        # Will be loaded by the module
     
     
     # Detectors will run rules based on collectors and such things, and will tag the local node
@@ -3064,11 +3063,7 @@ Subject: %s
     
     def find_ts_node(self, hkey):
         return self.find_tag_node('ts', hkey)
-    
-    
-    def find_shinken_nodes(self):
-        return self.find_tag_nodes('shinken')
-    
+       
     
     def retention_nodes(self, force=False):
         # Ok we got no nodes? something is strange, we don't save this :)

@@ -45,5 +45,9 @@ class ModuleManager(object):
                 logger.error('The module %s did fail to be imported: %s' % (dirname, str(traceback.print_exc())))
                 sys.exit(2)
 
+            # remove the module dir from sys.path, it's not need anymore
+            # NOTE: as I don't think set sys.path to a new list is a good idea (switching pointer) I prefer to use a del here
+            del sys.path[:1]
+            
 
 modulemanager = ModuleManager()

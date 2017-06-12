@@ -8,6 +8,8 @@ from kunai.dnsquery import DNSQuery
 
 class DNSModule(Module):
     implement = 'dns'
+    
+    
     def __init__(self, daemon):
         Module.__init__(self, daemon)
         self.dns = None
@@ -15,7 +17,7 @@ class DNSModule(Module):
         self.port = 0
         self.domain = ''
         self.sock = None
-        
+    
     
     # Prepare to open the UDP port
     def prepare(self):
@@ -48,14 +50,14 @@ class DNSModule(Module):
         if not self.enabled:
             logger.error('No dns object defined in the configuration or not enabled, skipping it')
             return
-    
+        
         while not self.daemon.interrupted:
             logger.debug('DNS MODULE LOOP', part='dns')
             try:
                 data, addr = self.sock.recvfrom(1024)
             except socket.timeout:
                 continue  # loop until we got some data :)
-                
+            
             try:
                 p = DNSQuery(data)
                 r = p.lookup_for_nodes(self.daemon.nodes, self.domain)
@@ -63,4 +65,3 @@ class DNSModule(Module):
                 self.sock.sendto(p.response(r), addr)
             except Exception, exp:
                 logger.log("DNS problem", exp, part='dns')
-

@@ -4,7 +4,7 @@ import requests
 from kunai.log import cprint, logger
 from kunai.unixclient import get_json, get_local, request_errors
 
-# Will be populated by the shinken CLI command
+# Will be populated by the kunai CLI command
 CONFIG = None
 
 

@@ -247,6 +247,7 @@ class ShinkenExporter(object):
                 self.generate_node_file(n)
         
         while not stopper.interrupted:
+            logger.error('SHINKEN LOOP')
             logger.debug('Shinken loop, regenerate [%s]' % self.regenerate_flag, part='shinken')
             
             time.sleep(1)
