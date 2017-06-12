@@ -4,6 +4,7 @@ from kunai.now import NOW
 
 class Module(object):
     implement = ''
+    manage_configuration_objects = []
     
     class __metaclass__(type):
         __inheritors__ = set()
@@ -23,6 +24,10 @@ class Module(object):
     
     def __init__(self):
         self.daemon = None
+
+
+    def import_configuration_object(self, object_type, o, mod_time, fname, short_name):
+        raise NotImplementedError('Error: you must implement the import_confgiguration_object method for the module %s' % self)
     
     
     def set_daemon(self, daemon):

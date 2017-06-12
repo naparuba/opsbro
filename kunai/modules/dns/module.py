@@ -8,7 +8,7 @@ from dnsquery import DNSQuery
 
 class DNSModule(Module):
     implement = 'dns'
-    
+    manage_configuration_objects = ['dns']
     
     def __init__(self):
         Module.__init__(self)
@@ -18,11 +18,14 @@ class DNSModule(Module):
         self.domain = ''
         self.sock = None
     
+    def import_configuration_object(self, object_type, o, mod_time, fname, short_name):
+        self.dns = o
+
     
     # Prepare to open the UDP port
     def prepare(self):
         logger.debug('DNS: prepare phase')
-        self.dns = self.daemon.dns
+        #self.dns = self.daemon.dns
         if self.dns:
             self.enabled = self.dns.get('enabled', False)
             self.port = self.dns.get('port', 53)

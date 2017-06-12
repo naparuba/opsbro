@@ -176,6 +176,12 @@ class Cluster(object):
         
         # Let the modules know about the daemon object
         modulemanager.set_daemon(self)
+
+        # save the known types for the configuration
+        self.known_types = ['check', 'service', 'handler', 'generator', 'graphite', 'dns', 'statsd', 'websocket', 'shinken']
+        # and extend with the ones from the modules
+        self.modules_known_types = modulemanager.get_managed_configuration_types()
+        self.known_types.extend(self.modules_known_types)
         
         # Now look at the cfg_dir part
         if cfg_dir:
@@ -526,8 +532,8 @@ class Cluster(object):
             logger.log('ERROR: the configuration file %s content is not a valid dict' % fp)
             sys.exit(2)
         logger.debug("Configuration, opening file data", o, fp)
-        known_types = ['check', 'service', 'handler', 'generator',
-                       'graphite', 'dns', 'statsd', 'websocket', 'shinken']
+        
+        
         if 'check' in o:
             check = o['check']
             if not isinstance(check, dict):
@@ -590,32 +596,13 @@ class Cluster(object):
                 logger.log('ERROR: the graphite from the file %s is not a valid dict' % fp)
                 sys.exit(2)
             self.graphite = graphite
-        
-        if 'dns' in o:
-            dns = o['dns']
-            if not isinstance(dns, dict):
-                logger.log('ERROR: the dns from the file %s is not a valid dict' % fp)
-                sys.exit(2)
-            logger.error('DNS: set %s' % dns)
-            self.dns = dns
-        
+            
         if 'statsd' in o:
             statsd = o['statsd']
             if not isinstance(statsd, dict):
                 logger.log('ERROR: the statsd from the file %s is not a valid dict' % fp)
                 sys.exit(2)
             self.statsd = statsd
-        
-        if 'shinken' in o:
-            shinken = o['shinken']
-            if not isinstance(shinken, dict):
-                logger.log('ERROR: the shinken from the file %s is not a valid dict' % fp)
-                sys.exit(2)
-            
-            mod_time = int(os.path.getmtime(fp))
-            fname = fp[len(self.cfg_dir) + 1:]
-            gname = os.path.splitext(fname)[0]
-            self.import_shinken(shinken, fname, gname, mod_time=mod_time)
         
         if 'websocket' in o:
             websocket = o['websocket']
@@ -627,8 +614,19 @@ class Cluster(object):
         # grok all others data so we can use them in our checks
         parameters = self.__class__.parameters
         for (k, v) in o.iteritems():
+            # Manage modules object types
+            if k in self.modules_known_types:
+                # File modification time
+                mod_time = int(os.path.getmtime(fp))
+                # file name
+                fname = fp[len(self.cfg_dir) + 1:]
+                # file short name
+                gname = os.path.splitext(fname)[0]
+                # Go import it
+                modulemanager.import_managed_configuration_object(k, v, mod_time, fname, gname)
+                continue
             # check, service, ... are already managed
-            if k in known_types:
+            if k in self.known_types:
                 continue
             # if k is not a internal parameters, use it in the cfg_data part
             if k not in parameters:
@@ -861,22 +859,7 @@ class Cluster(object):
         
         # Add it into the generators list
         self.generators[generator['id']] = generator
-    
-    
-    # Shinken will create files based on templates from
-    # data and nodes after a change on a node
-    def import_shinken(self, shinken, fr, gname, mod_time=0):
-        for prop in ['cfg_path']:
-            if prop not in shinken:
-                logger.warning('Bad shinken definition, missing property %s' % (prop))
-                return
-        cfg_path = shinken['cfg_path']
-        shinken['reload_command'] = shinken.get('reload_command', '')
-        # and path must be a abs path
-        shinken['cfg_path'] = os.path.abspath(cfg_path)
-        self.shinken = shinken
-        # Will be loaded by the module
-    
+        
     
     # Detectors will run rules based on collectors and such things, and will tag the local node
     # if the rules are matching

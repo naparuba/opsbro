@@ -13,7 +13,7 @@ internal_modules_dir = os.path.join(myself_dir, 'modules')
 class ModuleManager(object):
     def __init__(self):
         self.modules = []
-    
+        self.modules_configuration_types = {}
     
     # Raw import module source code. So they will be available in the Modules class as Class.
     def load_module_sources(self):
@@ -58,6 +58,10 @@ class ModuleManager(object):
                 mod = cls()
                 logger.info('[module] %s did load' % mod)
                 self.modules.append(mod)
+                for configuration_type in mod.manage_configuration_objects:
+                    if configuration_type not in self.modules_configuration_types:
+                        logger.info('Adding %s to manage configuration objects type %s' % (mod, configuration_type))
+                        self.modules_configuration_types[configuration_type] = mod
             except Exception:
                 logger.error('The module %s did fail to create: %s' % (cls, str(traceback.print_exc())))
                 sys.exit(2)
@@ -99,5 +103,14 @@ class ModuleManager(object):
                 logger.error('Cannot launch module %s: %s' % (mod, str(traceback.print_exc())))
                 sys.exit(2)
 
+   
+    def get_managed_configuration_types(self):
+        return self.modules_configuration_types.keys()
+
+
+    def import_managed_configuration_object(self, object_type, obj, mod_time, fname, short_name):
+        logger.debug("IMPORT managed configuration object", object_type, obj, mod_time, fname, short_name)
+        mod = self.modules_configuration_types[object_type]
+        mod.import_configuration_object(object_type, obj, mod_time, fname, short_name)
 
 modulemanager = ModuleManager()
