@@ -13,4 +13,4 @@ else:
     DEFAULT_LIBEXEC_DIR = r'/var/lib/kunai/libexec'
     DEFAULT_CFG_DIR = r'/etc/kunai'
 
-DEFAULT_CFG_FILE = os.path.join(DEFAULT_LOG_DIR, 'local.json')
+DEFAULT_CFG_FILE = os.path.join(DEFAULT_CFG_DIR, 'local.json')
