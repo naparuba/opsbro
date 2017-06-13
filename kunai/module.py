@@ -26,7 +26,7 @@ class Module(object):
         self.daemon = None
 
 
-    def get_infos(self):
+    def get_info(self):
         return {}
 
 

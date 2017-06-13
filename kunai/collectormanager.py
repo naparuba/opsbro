@@ -31,18 +31,6 @@ def get_collectors(self):
     self.load_all_collectors()
 
 
-#    collector_clss = Collector.get_sub_class()
-#    for ccls in collector_clss:
-#        # skip base module Collector
-#        if ccls == Collector:
-#            continue
-#        # Maybe this collector is already loaded
-#        if ccls in self.collectors:
-#            continue
-#        self.load_collector(ccls)
-
-
-
 
 
 class CollectorManager:

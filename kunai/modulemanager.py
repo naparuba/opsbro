@@ -99,7 +99,7 @@ class ModuleManager(object):
         for mod in self.modules:
             try:
                 mod.launch()
-            except Exception, exp:
+            except Exception:
                 logger.error('Cannot launch module %s: %s' % (mod, str(traceback.print_exc())))
                 sys.exit(2)
 
@@ -116,8 +116,8 @@ class ModuleManager(object):
     def get_infos(self):
         r = {}
         for mod in self.modules:
-            mod_info = mod.get_infos()
-            r.update(mod_info)
+            mod_info = mod.get_info()
+            r[mod.implement] = mod_info
         return r
 
 modulemanager = ModuleManager()

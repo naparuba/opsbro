@@ -195,7 +195,6 @@ def do_info(show_logs):
     except request_errors, exp:
         logger.error('Cannot join kunai agent: %s' % exp)
         sys.exit(1)
-    
     logs = d.get('logs')
     version = d.get('version')
     pid = d.get('pid')
@@ -245,20 +244,20 @@ def do_info(show_logs):
     
     # Now DNS part
     print_info_title('DNS')
-    if dns is None:
+    if not dns:
         cprint('No dns configured')
     else:
-        w = dns
+        w = dns['dns_configuration']
         e = [('enabled', w['enabled']), ('port', w['port']), ('domain', w['domain'])]
         print_2tab(e)
     
     # Now websocket part
     print_info_title('Websocket')
-    if websocket is None:
+    if not websocket:
         cprint('No websocket configured')
     else:
-        w = websocket
-        st = d.get('websocket_info', None)
+        w = websocket['websocket_configuration']
+        st = websocket.get('websocket_info', None)
         e = [('enabled', w['enabled']), ('port', w['port'])]
         if st:
             e.append(('Nb connexions', st.get('nb_connexions')))

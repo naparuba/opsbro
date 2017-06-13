@@ -28,12 +28,12 @@ class WebSocketModule(Module):
         self.listening_addr = self.daemon.listening_addr
 
 
-    def get_infos(self):
+    def get_info(self):
         r = {}
         if self.websocket is None:
-            r['websocket']
+            r['websocket_configuration']
         else:
-            r['websocket'] = self.websocket
+            r['websocket_configuration'] = self.websocket
         if not self.webso:
             r['websocket_info'] = None
         else:

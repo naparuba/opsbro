@@ -15,7 +15,7 @@ def is_tty():
 if is_tty():
     # Try to load the terminal color. Won't work under python 2.4
     try:
-        from kunai.termcolor import cprint
+        from kunai.misc.termcolor import cprint
         
         # init the colorama hook, for windows print
         # will do nothing for other than windows

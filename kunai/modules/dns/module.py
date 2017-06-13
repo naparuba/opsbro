@@ -46,8 +46,8 @@ class DNSModule(Module):
                 logger.info('DNS is not enabled, skipping it')
     
     
-    def get_infos(self):
-        return {'dns': self.dns, 'dns_info': None}
+    def get_info(self):
+        return {'dns_configuration': self.dns, 'dns_info': None}
     
     
     def launch(self):
