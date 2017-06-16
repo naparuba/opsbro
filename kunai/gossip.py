@@ -17,7 +17,6 @@ from kunai.httpdaemon import route, response, abort
 from kunai.encrypter import encrypter
 from kunai.httpclient import HTTP_EXCEPTIONS
 
-
 KGOSSIP = 10
 
 
@@ -27,7 +26,7 @@ class Gossip(object):
         pass
     
     
-    def init(self, nodes, nodes_lock, addr, port, name, incarnation, uuid, tags, seeds, bootstrap, zone):
+    def init(self, nodes, nodes_lock, addr, port, name, incarnation, uuid, tags, seeds, bootstrap, zone, is_proxy):
         self.nodes = nodes
         self.nodes_lock = nodes_lock
         self.addr = addr
@@ -40,6 +39,7 @@ class Gossip(object):
         self.seeds = seeds
         self.bootstrap = bootstrap
         self.zone = zone
+        self.is_proxy = is_proxy
         
         self.interrupted = False
         
@@ -50,6 +50,7 @@ class Gossip(object):
         self.export_http()
         
         self.ping_another_in_progress = False
+        
         # create my own object, but do not export it to other nodes
         self.register_myself()
     
@@ -155,7 +156,7 @@ class Gossip(object):
     def get_boostrap_node(self):
         node = {'addr'       : self.addr, 'port': self.port, 'name': self.name,
                 'incarnation': self.incarnation, 'uuid': self.uuid, 'state': 'alive', 'tags': self.tags,
-                'services'   : {}, 'checks': {}, 'zone': self.zone}
+                'services'   : {}, 'checks': {}, 'zone': self.zone, 'is_proxy': self.is_proxy}
         return node
     
     
@@ -211,9 +212,17 @@ class Gossip(object):
         #    print "ALL NODES", self.nodes
         #    fuck
         
-        # Maybe it's me? if so skip it
+        # Maybe it's me? we must look for a specilal case:
+        # maybe we did clean all our local data, and the others did remember us (we did keep
+        # our uuid). But then we will never update our information. so we must increase our
+        # incarnation to be the new master on our own information
         if not bootstrap:
             if node['uuid'] == self.uuid:
+                if incarnation > self.incarnation:
+                    # set as must as them
+                    self.incarnation = incarnation
+                    # and increase it to be the new master
+                    self.increase_incarnation_and_broadcast(broadcast_type='alive')
                 return
         
         # Maybe it's a new node that just enter the cluster?
@@ -738,8 +747,7 @@ class Gossip(object):
                     continue
                 stime = node.get('suspect_time', now)
                 if stime < (now - suspect_timeout):
-                    logger.log("SUSPECT: NODE", node['name'], node['incarnation'], node['state'], "is NOW DEAD",
-                               part='gossip')
+                    logger.log("SUSPECT: NODE", node['name'], node['incarnation'], node['state'], "is NOW DEAD", part='gossip')
                     node['state'] = 'dead'
                     self.stack_dead_broadcast(node)
         
@@ -761,12 +769,21 @@ class Gossip(object):
             self.delete_node(uuid)
     
     
+    def __get_node_basic_msg(self, node):
+        return {
+            'name'       : node['name'], 'addr': node['addr'], 'port': node['port'], 'uuid': node['uuid'],
+            'incarnation': node['incarnation'], 'tags': node['tags'],
+            'services'   : node['services'], 'checks': node['checks'],
+            'zone'       : node.get('zone', ''), 'is_proxy': node.get('is_proxy', False),
+        }
+    
+    
     ########## Message managment
     def create_alive_msg(self, node):
-        return {'type'       : 'alive', 'name': node['name'], 'addr': node['addr'], 'port': node['port'],
-                'uuid'       : node['uuid'],
-                'incarnation': node['incarnation'], 'state': 'alive', 'tags': node['tags'],
-                'services'   : node['services'], 'checks': node['checks']}
+        r = self.__get_node_basic_msg(node)
+        r['type'] = 'alive'
+        r['state'] = 'alive'
+        return r
     
     
     def create_event_msg(self, payload):
@@ -775,23 +792,24 @@ class Gossip(object):
     
     
     def create_suspect_msg(self, node):
-        return {'type'       : 'suspect', 'name': node['name'], 'addr': node['addr'], 'port': node['port'],
-                'uuid'       : node['uuid'],
-                'incarnation': node['incarnation'], 'state': 'suspect', 'tags': node['tags'],
-                'services'   : node['services'], 'checks': node['checks']}
+        r = self.__get_node_basic_msg(node)
+        r['type'] = 'suspect'
+        r['state'] = 'suspect'
+        return r
     
     
     def create_dead_msg(self, node):
-        return {'type'       : 'dead', 'name': node['name'], 'addr': node['addr'], 'port': node['port'],
-                'uuid'       : node['uuid'],
-                'incarnation': node['incarnation'], 'state': 'dead', 'tags': node['tags'], 'services': node['services'], 'checks': node['checks']}
+        r = self.__get_node_basic_msg(node)
+        r['type'] = 'dead'
+        r['state'] = 'dead'
+        return r
     
     
     def create_leave_msg(self, node):
-        return {'type'       : 'leave', 'name': node['name'], 'addr': node['addr'], 'port': node['port'],
-                'uuid'       : node['uuid'],
-                'incarnation': node['incarnation'], 'state': 'leave', 'tags': node['tags'],
-                'services'   : node['services'], 'checks': node['checks']}
+        r = self.__get_node_basic_msg(node)
+        r['type'] = 'leave'
+        r['state'] = 'leave'
+        return r
     
     
     def create_new_ts_msg(self, key):
@@ -864,13 +882,16 @@ class Gossip(object):
             return self.nodes[self.uuid]['name']
         
         
-        @route('/agent/leave/:nname')
-        def set_node_leave(nname):
+        @route('/agent/uuid')
+        def get_name():
+            return self.uuid
+        
+        
+        @route('/agent/leave/:nuuid')
+        def set_node_leave(nuuid):
             node = None
             with self.nodes_lock:
-                for n in self.nodes.values():
-                    if n['name'] == nname:
-                        node = n
+                node = self.nodes.get(nuuid, None)
             if node is None:
                 return abort(404, 'This node is not found')
             logger.log('PUTTING LEAVE the node %s' % node, part='http')

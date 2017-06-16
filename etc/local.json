@@ -4,23 +4,24 @@
     "datacenters"    : ["dc1"],
     "bootstrap"      : false,
     "seeds"          : [],
-    
+
     "port"           : 6768,
-    
+
     "data"           : "/var/lib/kunai",
     "libexec"        : "/var/lib/kunai/libexec/",
     "log"            : "/var/log/kunai",
     "lock"           : "/var/run/kunai.lock",
-    
+
     "socket"         : "/var/lib/kunai/kunai.sock",
 
     "log_level"      : "INFO",
-    
+
     "encryption_key" : "",
     "master_key_priv": "",
     "master_key_pub" : "",
-    
-    
+    "node-zone"           : "internet",
+    "proxy-node"           : false,
+
     "load":{"warning":1, "critical":2}
-    
+
 }

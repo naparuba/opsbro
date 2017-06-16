@@ -14,6 +14,7 @@ import time
 import json
 import socket
 import os
+import pprint
 
 try:
     import requests as rq
@@ -51,13 +52,14 @@ NO_ZONE_DEFAULT = '(no zone)'
 
 ############# ********************        MEMBERS management          ****************###########
 
-def do_members():
+def do_members(detail=False):
     try:
         members = get_kunai_json('/agent/members').values()
     except request_errors, exp:
         logger.error('Cannot join kunai agent: %s' % exp)
         sys.exit(1)
     members = sorted(members, key=lambda e: e['name'])
+    logger.debug('Raw members: %s' % (pprint.pformat(members)))
     max_name_size = max([len(m['name']) for m in members])
     max_addr_size = max([len(m['addr']) + len(str(m['port'])) + 1 for m in members])
     zones = set()
@@ -86,35 +88,43 @@ def do_members():
             port = m['port']
             addr = m['addr']
             state = m['state']
-            cprint('\t%s  ' % name.ljust(max_name_size), end='')
+            is_proxy = m.get('is_proxy', False)
+            if not detail:
+                cprint('\t%s  ' % name.ljust(max_name_size), end='')
+            else:
+                cprint(' %s  %s  ' % (m['uuid'], name.ljust(max_name_size)), end='')
             c = {'alive': 'green', 'dead': 'red', 'suspect': 'yellow', 'leave': 'cyan'}.get(state, 'cyan')
             cprint(state.ljust(7), color=c, end='')  # 7 for the maximum state string
             s = ' %s:%s ' % (addr, port)
             s = s.ljust(max_addr_size + 2)  # +2 for the spaces
             cprint(s, end='')
+            if is_proxy:
+                cprint('proxy ', end='')
+            else:
+                cprint('      ', end='')
             cprint(' %s ' % ','.join(tags))
 
 
-def do_leave(name=''):
+def do_leave(nuuid=''):
     # Lookup at the localhost name first
-    if not name:
+    if not nuuid:
         try:
-            (code, r) = get_kunai_local('/agent/name')
+            (code, r) = get_kunai_local('/agent/uuid')
         except request_errors, exp:
             logger.error(exp)
             return
-        name = r
+        nuuid = r
     try:
-        (code, r) = get_kunai_local('/agent/leave/%s' % name)
+        (code, r) = get_kunai_local('/agent/leave/%s' % nuuid)
     except request_errors, exp:
         logger.error(exp)
         return
     
     if code != 200:
-        logger.error('Node %s is missing' % name)
+        logger.error('Node %s is missing' % nuuid)
         print r
         return
-    cprint('Node %s is set to leave state' % name, end='')
+    cprint('Node %s is set to leave state' % nuuid, end='')
     cprint(': OK', color='green')
 
 
@@ -173,6 +183,8 @@ def do_version():
 def __call_service_handler():
     def __ctrlHandler(ctrlType):
         return True
+    
+    
     win32api.SetConsoleCtrlHandler(__ctrlHandler, True)
     win32serviceutil.HandleCommandLine(Service)
 
@@ -244,7 +256,7 @@ def do_info(show_logs):
     
     # Now DNS part
     print_info_title('DNS')
-    if not dns:
+    if not dns or 'dns_configuration' not in dns:
         cprint('No dns configured')
     else:
         w = dns['dns_configuration']
@@ -253,7 +265,7 @@ def do_info(show_logs):
     
     # Now websocket part
     print_info_title('Websocket')
-    if not websocket:
+    if not websocket or not 'websocekt_configuration' in websocket:
         cprint('No websocket configured')
     else:
         w = websocket['websocket_configuration']
@@ -474,7 +486,9 @@ def do_detect_nodes():
 exports = {
     do_members        : {
         'keywords'   : ['members'],
-        'args'       : [],
+        'args'       : [
+            {'name': '--detail', 'type': 'bool', 'default': False, 'description': 'Show detail mode for the cluster members'},
+        ],
         'description': 'List the cluster members'
     },
     
@@ -499,7 +513,7 @@ exports = {
         'description': 'Install windows service'
     },
     
-    do_service_remove: {
+    do_service_remove : {
         'keywords'   : ['agent', 'service-remove'],
         'args'       : [],
         'description': 'Remove windows service'
@@ -547,7 +561,7 @@ exports = {
         'description': 'Put in leave a cluster node',
         'args'       : [
             {'name'       : 'name', 'default': '',
-             'description': 'Name of the node to force leave. If void, leave our local node'},
+             'description': 'UUID of the node to force leave. If void, leave our local node'},
         ],
     },
     

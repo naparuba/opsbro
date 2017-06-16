@@ -84,6 +84,7 @@ from kunai.packer import packer
 from kunai.ts import tsmgr
 from kunai.jsonmgr import jsoner
 from kunai.modulemanager import modulemanager
+from kunai.zonemanager import zonemgr
 from kunai.defaultpaths import DEFAULT_LIBEXEC_DIR, DEFAULT_LOCK_PATH, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR, DEFAULT_CFG_DIR
 
 REPLICATS = 1
@@ -109,6 +110,8 @@ class Cluster(object):
         'encryption_key' : {'type': 'string', 'mapto': 'encryption_key'},
         'master_key_priv': {'type': 'string', 'mapto': 'master_key_priv'},
         'master_key_pub' : {'type': 'string', 'mapto': 'master_key_pub'},
+        'node-zone'      : {'type': 'string', 'mapto': 'zone'},
+        'proxy-node'     : {'type': 'bool', 'mapto': 'is_proxy'},
     }
     
     
@@ -174,7 +177,7 @@ class Cluster(object):
         modulemanager.set_daemon(self)
         
         # save the known types for the configuration
-        self.known_types = ['check', 'service', 'handler', 'generator', 'graphite', 'statsd']
+        self.known_types = ['check', 'service', 'handler', 'generator', 'graphite', 'statsd', 'zone']
         # and extend with the ones from the modules
         self.modules_known_types = modulemanager.get_managed_configuration_types()
         self.known_types.extend(self.modules_known_types)
@@ -225,6 +228,10 @@ class Cluster(object):
                 mapto = d['mapto']
                 v = getattr(self, mapto).replace('$data$', self.data_dir)
                 setattr(self, mapto, v)
+        
+        # Default some parameters, like is_proxy
+        if not hasattr(self, 'is_proxy'):
+            self.is_proxy = False
         
         # open the log file
         logger.load(self.log_dir, self.name)
@@ -313,7 +320,9 @@ class Cluster(object):
                     self.uuid = f.read()
                 logger.log("KEY: %s loaded from previous key file %s" % (self.uuid, self.server_key_file))
             else:
-                self.uuid = hashlib.sha1(libuuid.uuid1().get_hex()).hexdigest()
+                # Ok no way to get from past, so try to guess the more stable possible, and if not ok, give me random stuff
+                self.uuid = self.guess_server_const_uuid()
+                
         # now save the key
         with open(self.server_key_file, 'w') as f:
             f.write(self.uuid)
@@ -333,10 +342,14 @@ class Cluster(object):
         self.service_retention = os.path.join(self.agent_instance_dir, 'services.dat')
         self.collector_retention = os.path.join(self.agent_instance_dir, 'collectors.dat')
         
-        # Now load nodes to do not start from zero
+        # Now load nodes to do not start from zero, but not ourselves (we will regenerate it with a new incarnation number and
+        # up to date info)
         if os.path.exists(self.nodes_file):
             with open(self.nodes_file, 'r') as f:
                 self.nodes = json.loads(f.read())
+                # If we were in nodes, remove it, we will refresh it
+                if self.uuid in self.nodes:
+                    del self.nodes[self.uuid]
         else:
             self.nodes = {}
         # We must protect the nodes with a lock
@@ -349,6 +362,7 @@ class Cluster(object):
                 self.incarnation += 1
         else:
             self.incarnation = 0
+        print "INCARNATION", self.incarnation
         
         # Load check and service retention as they are filled
         # collectors will wait a bit
@@ -427,7 +441,7 @@ class Cluster(object):
         
         # Our main object for gossip managment
         gossiper.init(self.nodes, self.nodes_lock, self.addr, self.port, self.name, self.incarnation, self.uuid,
-                      self.tags, self.seeds, self.bootstrap, self.zone)
+                      self.tags, self.seeds, self.bootstrap, self.zone, self.is_proxy)
         
         # About detecting tags and such things
         detecter.load(self)
@@ -441,23 +455,41 @@ class Cluster(object):
         pubsub.sub('manage-message', self.manage_message_pub)
     
     
-    # Try to guess uuid, but only if a constant one is here
+    # Try to GET (fixed) uuid, but only if a constant one is here
     # * linux: get hardware uuid from dmi
-    # * aws:   get instance uuid from url
+    # * aws:   get instance uuid from url (TODO)
     # * windows: TODO
     @classmethod
     def get_server_const_uuid(cls):
-        # First DMI
+        # First DMI, if there is a UUID, use it
         product_uuid_p = '/sys/class/dmi/id/product_uuid'
         if os.path.exists(product_uuid_p):
             with open(product_uuid_p, 'r') as f:
                 buf = f.read()
+            logger.info('[SERVER-UUID] using the DMI (bios) uuid as server unique UUID: %s' % buf.lower())
             return hashlib.sha1(buf.lower()).hexdigest()
         # TODO:
         # aws
         # windows
         return ''
     
+    # Try to guess uuid, but can be just a guess, so TRY to have a constant
+    # * openvz: take the local server ID + hostname as base
+    @classmethod
+    def guess_server_const_uuid(cls):
+        # For OpenVZ: there is an ID that is unique but for a hardware host,
+        # so to avoid have 2 different host with the same id, mix this id and the hostname
+        openvz_info_p = '/proc/vz/veinfo'
+        if os.path.exists(openvz_info_p):
+            with open(openvz_info_p, 'r') as f:
+                buf = f.read()
+                # File:    ID    MORE-STUFF
+                openvz_id = int(buf.strip().split(' ')[0])
+                servr_uniq_id = '%s-%d' % (socket.gethostname().lower(), openvz_id)
+                logger.info('[SERVER-UUID] OpenVZ: using the hostname & openvz local id as server unique UUID: %s' % servr_uniq_id)
+                return hashlib.sha1(servr_uniq_id).hexdigest()
+        # No merly fixed stuff? ok, pure randomness
+        return hashlib.sha1(libuuid.uuid1().get_hex()).hexdigest()
     
     def load_cfg_dir(self, cfg_dir):
         if not os.path.exists(cfg_dir):
@@ -594,6 +626,13 @@ class Cluster(object):
                 logger.log('ERROR: the statsd from the file %s is not a valid dict' % fp)
                 sys.exit(2)
             self.statsd = statsd
+        
+        if 'zone' in o:
+            zone = o['zone']
+            if not isinstance(zone, dict):
+                logger.log('ERROR: the zone from the file %s is not a valid dict' % fp)
+                sys.exit(2)
+            zonemgr.add(zone)
         
         # grok all others data so we can use them in our checks
         parameters = self.__class__.parameters
@@ -1285,7 +1324,6 @@ class Cluster(object):
                  'port'      : self.port, 'addr': self.addr, 'socket': self.socket_path, 'zone': self.zone,
                  'uuid'      : self.uuid, 'graphite': self.graphite,
                  'statsd'    : self.statsd,
-                 #                 'dns'       : self.dns,
                  'threads'   : threader.get_info(),
                  'version'   : VERSION, 'tags': self.tags,
                  'docker'    : dockermgr.get_info(),
@@ -3036,6 +3074,11 @@ Subject: %s
             threader.check_alives()
             
             time.sleep(1)
+            
+            print "ZONES", zonemgr.__dict__
+            print "SUB INTERNET", zonemgr.get_sub_zones_from('internet')
+            print "TOP FROM GABES-HOME", zonemgr.get_top_zones_from('gabes-home')
+            print "IS PROXY?", self.is_proxy
             
             # if i % 30 == 0:
             #    from meliae import scanner
