@@ -10,6 +10,11 @@ try:
 except ImportError:
     fcntl = None
 
+try:
+    import requests as rq
+except ImportError:
+    rq = None
+
 from kunai.misc.windows import windowser
 
 
@@ -112,8 +117,31 @@ def _is_valid_local_addr(addr):
     return True
 
 
+# On EC2 need to get public IP from http://169.254.169.254/latest/meta-data/public-ipv4
+def _get_ec2_public_ip():
+    uri = 'http://169.254.169.254/latest/meta-data/public-ipv4'
+    if rq is None:
+        logger.error('Cannot load the python-requests lib. It is need to get public IP on your EC2 server. Exiting')
+        sys.exit(2)
+    try:
+        r = rq.get(uri)
+        addr = r.text
+    except HTTP_EXCEPTIONS, exp:
+        logger.error('Cannot get pubic IP for your EC2 instance from %s. Error: %s.Exiting' % (uri, exp))
+        sys.exit(2)
+    return addr
+    
+
 # Only works in linux
 def get_public_address():
+    # Special case: EC2, local public IP is useless, need public IP
+    if os.path.exists('/sys/hypervisor/version/extra'):
+        with open('/sys/hypervisor/version/extra') as f:
+            buf = f.read().strip()
+            if buf == '.amazon':
+                # EC2 case: need to get from special IP
+                addr = _get_ec2_public_ip()
+                return addr
     # If I am in the DNS or in my /etc/hosts, I win
     try:
         addr = socket.gethostbyname(socket.gethostname())

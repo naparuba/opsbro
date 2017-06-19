@@ -114,19 +114,20 @@ def grep_file(string, path, regexp=False):
     s = string
     p = path
     if not os.path.exists(p):
+        logger.debug('[evaluater::grep_file] no such fle %s' % p)
         return False
     try:
         f = open(p, 'r')
         lines = f.readlines()
     except Exception, exp:
-        logger.debug('Trying to grep file %s but cannot open/read it: %s' % (p, exp))
+        logger.error('[evaluater::grep_file] Trying to grep file %s but cannot open/read it: %s' % (p, exp))
         return False
     pat = None
     if regexp:
         try:
             pat = re.compile(s, re.I)
         except Exception, exp:
-            logger.debug('Cannot compile regexp expression: %s')
+            logger.error('[evaluater::grep_file]Cannot compile regexp expression: %s')
         return False
     if regexp:
         for line in lines:
@@ -137,6 +138,7 @@ def grep_file(string, path, regexp=False):
         for line in lines:
             if s in line.lower():
                 return True
+    logger.debug('[evaluater::grep_file] GREP FILE FAIL: no such line %s %s' % (p, s))
     return False
 
 
