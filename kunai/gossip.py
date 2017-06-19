@@ -202,19 +202,10 @@ class Gossip(object):
     # * It can be us if we allow the bootstrap node (only at startup).
     # * If strong it means we did the check, so we believe us :)
     def set_alive(self, node, bootstrap=False, strong=False):
-        addr = node['addr']
-        port = node['port']
         name = node['name']
         incarnation = node['incarnation']
         uuid = node['uuid']
         state = node['state'] = 'alive'
-        tags = node.get('tags', [])
-        services = node.get('services', {})
-        checks = node.get('checks', {})
-        
-        # if bootstrap:
-        #    print "ALL NODES", self.nodes
-        #    fuck
         
         # Maybe it's me? we must look for a specilal case:
         # maybe we did clean all our local data, and the others did remember us (we did keep
@@ -244,21 +235,16 @@ class Gossip(object):
         if not strong and incarnation <= prev['incarnation']:
             return
         
-        logger.debug('ALIVENODE', name, prev['state'], state, strong, change, incarnation, prev['incarnation'],
-                     (strong and change), (incarnation > prev['incarnation']))
+        logger.debug('ALIVENODE', name, prev['state'], state, strong, change, incarnation, prev['incarnation'], (strong and change), (incarnation > prev['incarnation']), part='gossip')
         # only react to the new data if they are really new :)
         if strong or incarnation > prev['incarnation']:
-            # Update our last data with new ones
-            node['services'] = services
-            node['checks'] = checks
-            
             # protect the nodes access with the lock so others threads are happy :)
             with self.nodes_lock:
                 self.nodes[uuid] = node
             
             # Only broadcast if it's a new data from somewhere else
             if (strong and change) or incarnation > prev['incarnation']:
-                logger.debug("Updating alive a node", prev, 'with', node)
+                logger.debug("Updating alive a node", prev, 'with', node, part='gossip')
                 # warn internal elements
                 self.node_did_change(uuid)
                 # and external ones
@@ -267,18 +253,12 @@ class Gossip(object):
     
     # Someone suspect a node, so believe it
     def set_suspect(self, suspect):
-        addr = suspect['addr']
-        port = suspect['port']
-        name = suspect['name']
         incarnation = suspect['incarnation']
         uuid = suspect['uuid']
-        tags = suspect.get('tags', [])
-        services = suspect.get('services', {})
-        checks = suspect.get('checks', {})
         state = 'suspect'
         
         # Maybe we didn't even have this nodes in our list?
-        if not uuid in self.nodes:
+        if uuid not in self.nodes:
             return
         
         node = self.nodes.get(uuid, None)
@@ -299,9 +279,6 @@ class Gossip(object):
         if uuid == self.uuid:
             logger.warning('SUSPECT: SOMEONE THINK I AM SUSPECT, BUT I AM ALIVE', part='gossip')
             self.increase_incarnation_and_broadcast(broadcast_type='alive')
-            # self.incarnation += 1
-            # node['incarnation'] = self.incarnation
-            # self.stack_alive_broadcast(node)
             return
         
         logger.info('SUSPECTING: I suspect node %s' % node['name'], part='gossip')
@@ -309,9 +286,6 @@ class Gossip(object):
         node['incarnation'] = incarnation
         node['state'] = state
         node['suspect_time'] = int(time.time())
-        node['tags'] = tags
-        node['services'] = services
-        node['checks'] = checks
         
         # warn internal elements
         self.node_did_change(uuid)
@@ -323,20 +297,14 @@ class Gossip(object):
     # Leave node are about all states, so we don't filter by current state
     # if the incarnation is ok, we believe it
     def set_leave(self, leaved):
-        addr = leaved['addr']
-        port = leaved['port']
-        name = leaved['name']
         incarnation = leaved['incarnation']
         uuid = leaved['uuid']
-        tags = leaved.get('tags', [])
-        services = leaved.get('services', {})
-        checks = leaved.get('checks', {})
         state = 'leave'
         
-        print "SET_LEAVE::", leaved
+        logger.debug('SET_LEAVE::', uuid, leaved['name'], part='gossip')
         
         # Maybe we didn't even have this nodes in our list?
-        if not uuid in self.nodes:
+        if uuid not in self.nodes:
             return
         
         node = self.nodes.get(uuid, None)
@@ -348,51 +316,42 @@ class Gossip(object):
         if node['state'] == 'leave':
             return
         
-        print "SET LEAVE %s and inner node %s" % (leaved, node)
-        
         # If for me it must be with my own incarnation number so we are sure it's really us that should leave
         # and not 
         if uuid == self.uuid:
             if incarnation != node['incarnation']:
-                print "LEAVE INCARNATION NOT THE SAME FOR MYSELF"
+                logger.debug('Someone is beliving that we did leave. It is not our own incarnation, we dont care about it', part='gossip')
                 return
         else:
             # If not for me, use the classic 'not already known' rule
             if incarnation < node['incarnation']:
-                print "LEAVE, NOT FOR ME, THE INCARNATION NUMBER IS TOO OLD"
+                logger.debug('Dropping old information (leave) about a node', part='gossip')
                 return
         
         print "SET LEAVE UUID and SELF.UUID", uuid, self.uuid
         # Maybe it's us?? If so we must send our broadcast and exit in few seconds
         if uuid == self.uuid:
-            logger.log('LEAVE: someone is asking me for leaving.', part='gossip')
+            logger.info('LEAVE: someone is asking me for leaving.', part='gossip')
             self.increase_incarnation_and_broadcast(broadcast_type='leave')
             
-            
-            # self.incarnation += 1
-            # node['incarnation'] = self.incarnation
-            # self.stack_leave_broadcast(node)
-            
-            
+            # Define a function that will wait 10s to let the others nodes know that we did leave
+            # and then ask for a clean stop of the daemon
             def bailout_after_leave(self):
                 logger.log('Bailing out in few seconds. I was put in leave state')
                 time.sleep(10)
                 logger.log('Exiting from a self leave message')
-                # Will set self.interrupted = True to eavery thread that loop                                
+                # Will set self.interrupted = True to every thread that loop
                 pubsub.pub('interrupt')
             
             
             threader.create_and_launch(bailout_after_leave, args=(self,))
             return
         
-        logger.log('LEAVING: The node %s is leaving' % node['name'], part='gossip')
+        logger.info('LEAVING: The node %s is leaving' % node['name'], part='gossip')
         # Ok it's definitivly someone else that is now suspected, update this, and update it :)
         node['incarnation'] = incarnation
         node['state'] = state
         node['leave_time'] = int(time.time())
-        node['tags'] = tags
-        node['services'] = services
-        node['checks'] = checks
         
         # warn internal elements
         self.node_did_change(uuid)
@@ -402,18 +361,12 @@ class Gossip(object):
     
     # Someone suspect a node, so believe it
     def set_dead(self, suspect):
-        addr = suspect['addr']
-        port = suspect['port']
-        name = suspect['name']
         incarnation = suspect['incarnation']
         uuid = suspect['uuid']
-        tags = suspect.get('tags', [])
-        services = suspect.get('services', {})
-        checks = suspect.get('checks', {})
         state = 'dead'
         
         # Maybe we didn't even have this nodes in our list?
-        if not uuid in self.nodes:
+        if uuid not in self.nodes:
             return
         
         node = self.nodes.get(uuid, None)
@@ -425,8 +378,10 @@ class Gossip(object):
         if incarnation < node['incarnation']:
             return
         
-        # We only case about into about alive nodes, dead and suspect
-        # are not interesting :)
+        # We only case about into about alive nodes
+        # * dead : we already know it
+        # * suspect : we already did receive it
+        # * leave : it is already out in a way
         if node['state'] != 'alive':
             return
         
@@ -434,19 +389,13 @@ class Gossip(object):
         if uuid == self.uuid:
             logger.warning('SUSPECT: SOMEONE THINK I AM SUSPECT, BUT I AM ALIVE', part='gossip')
             self.increase_incarnation_and_broadcast(broadcast_type='alive')
-            # self.incarnation += 1
-            # node['incarnation'] = self.incarnation
-            # self.stack_alive_broadcast(node)
             return
         
-        logger.log('DEAD: I put in dead node %s' % node['name'], part='gossip')
+        logger.info('DEAD: I put in dead node %s' % node['name'], part='gossip')
         # Ok it's definitivly someone else that is now suspected, update this, and update it :)
         node['incarnation'] = incarnation
         node['state'] = state
         node['suspect_time'] = int(time.time())
-        node['tags'] = tags
-        node['services'] = services
-        node['checks'] = checks
         
         # warn internal elements
         self.node_did_change(uuid)
@@ -456,32 +405,20 @@ class Gossip(object):
     
     # Someone send us it's nodes, we are merging it with ours
     def merge_nodes(self, nodes):
-        to_del = []
-        # Get a copy of self.nodes so we won't lock too much here
-        with self.nodes_lock:
-            mynodes = copy.copy(self.nodes)
         for (k, node) in nodes.iteritems():
             # Maybe it's me? bail out
             # if node['addr'] == self.addr and node['port'] == self.port:
             if node['uuid'] == self.uuid:
                 logger.debug('SKIPPING myself node entry in merge nodes')
                 continue
-            
-            # Look if we got some duplicates, that got the same addr, but different
-            # FIX: we should not have no more duplicate as we have uniq uuid now
-            # for (otherk, othern) in mynodes.iteritems():
-            #    if node['addr'] == othern['addr'] and node['port'] == othern['port'] and otherk != k:
-            #        # we keep the newest incarnation
-            #        if node['incarnation'] < othern['incarnation']:
-            #            to_del.append(k)
-            #        else:
-            #            to_del.append(otherk)
-            
+                
             state = node['state']
             
             # Try to incorporate it
             if state == 'alive':
                 self.set_alive(node)
+            # note: for dead, we never believe others for dead, we set suspect
+            # and wait for timeout to finish
             elif state == 'dead' or state == 'suspect':
                 self.set_suspect(node)
             elif state == 'leave':
@@ -492,7 +429,6 @@ class Gossip(object):
     # sync with it
     def launch_full_sync(self):
         logger.debug("Launch_full_sync:: all nodes %d" % len(self.nodes), part='gossip')
-        nodes = {}
         with self.nodes_lock:
             nodes = copy.copy(self.nodes)
         others = [(n['addr'], n['port']) for n in nodes.values() if n['state'] == 'alive' and n['uuid'] != self.uuid]
@@ -512,7 +448,6 @@ class Gossip(object):
             return
         
         ns = self.nodes.values()
-        # ns.sort()
         logger.debug("launch_gossip:: all nodes %d" % len(self.nodes), part='gossip')
         others = [n for n in ns if n['uuid'] != self.uuid]
         # Maybe every one is dead, if o bail out
@@ -534,8 +469,6 @@ class Gossip(object):
         if self.ping_another_in_progress:
             return
         self.ping_another_in_progress = True
-        # print "PING ANOTHER"
-        nodes = {}
         with self.nodes_lock:
             nodes = copy.copy(self.nodes)
         others = [n for n in nodes.values() if n['uuid'] != self.uuid and n['state'] != 'leave']
@@ -563,7 +496,6 @@ class Gossip(object):
         enc_message = encrypter.encrypt(message)
         addr = other['addr']
         port = other['port']
-        _t = time.time()
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
             sock.sendto(enc_message, (addr, port))
@@ -725,7 +657,6 @@ class Gossip(object):
                 logger.error('ERROR CONNECTING TO %s:%s' % other, exp, part='gossip')
                 return False
             pubsub.pub('manage-message', msg=back)
-            # self.manage_message(back)
             return True
         except HTTP_EXCEPTIONS, exp:  # Exception, exp:
             logger.error('[push-pull] ERROR CONNECTING TO %s:%s' % other, exp, part='gossip')
@@ -765,8 +696,7 @@ class Gossip(object):
                 ltime = node.get('leave_time', now)
                 logger.debug("LEAVE TIME for node %s %s %s %s" % (node['name'], ltime, now - leave_timeout, (now - leave_timeout) - ltime), part='gossip')
                 if ltime < (now - leave_timeout):
-                    logger.log("LEAVE: NODE", node['name'], node['incarnation'], node['state'],
-                               "is now definitivly leaved. We remove it from our nodes", part='gossip')
+                    logger.log("LEAVE: NODE", node['name'], node['incarnation'], node['state'], "is now definitivly leaved. We remove it from our nodes", part='gossip')
                     to_del.append(node['uuid'])
         # now really remove them from our list :)
         for uuid in to_del:
@@ -822,9 +752,6 @@ class Gossip(object):
     
     
     def stack_alive_broadcast(self, node):
-        # if True or node['uuid'] != self.uuid:
-        #    print "FUCK NODE", node
-        #    fuck
         msg = self.create_alive_msg(node)
         b = {'send': 0, 'msg': msg}
         broadcaster.broadcasts.append(b)
