@@ -938,10 +938,7 @@ class Cluster(object):
         self.link_services()
         
         # We maybe got a new service, so export this data to every one in the gossip way :)
-        node = self.nodes[self.uuid]
-        gossiper.incarnation += 1
-        node['incarnation'] = gossiper.incarnation
-        gossiper.stack_alive_broadcast(node)
+        gossiper.increase_incarnation_and_broadcast('alive')
         
         # Now we can save the received entry, but first clean unless props
         to_remove = ['from', 'last_check', 'modification_time', 'state', 'output', 'state_id', 'id']
@@ -975,10 +972,7 @@ class Cluster(object):
             del self.services[sname]
         self.link_services()
         # We maybe got a less service, so export this data to every one in the gossip way :)
-        node = self.nodes[self.uuid]
-        gossiper.incarnation += 1
-        node['incarnation'] = gossiper.incarnation
-        gossiper.stack_alive_broadcast(node)
+        gossiper.increase_incarnation_and_broadcast('alive')
     
     
     # Look at our services dict and link the one we are apply_on

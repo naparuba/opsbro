@@ -7,9 +7,10 @@ import math
 import requests as rq
 import copy
 import sys
+
+# some singleton :)
 from kunai.log import logger
 from kunai.threadmgr import threader
-# some singleton :)
 from kunai.broadcast import broadcaster
 from kunai.websocketmanager import websocketmgr
 from kunai.pubsub import pubsub
