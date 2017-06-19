@@ -93,7 +93,7 @@ class Gossip(object):
         return tag in self.tags
     
     
-    # Anotehr module/part did give a new tag, take it and warn others node about this
+    # Another module/part did give a new tag, take it and warn others node about this
     # change if there is really a change
     def update_detected_tags(self, detected_tags):
         # if no change, we finish, job done
@@ -152,6 +152,8 @@ class Gossip(object):
     def change_zone(self, zname):
         self.zone = zname
         self.nodes[self.uuid]['zone'] = zname
+        # let the others nodes know it
+        self.increase_incarnation_and_broadcast('alive')
     
     
     # get my own node entry
