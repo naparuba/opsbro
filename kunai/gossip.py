@@ -26,12 +26,13 @@ class Gossip(object):
         pass
     
     
-    def init(self, nodes, nodes_lock, addr, port, name, incarnation, uuid, tags, seeds, bootstrap, zone, is_proxy):
+    def init(self, nodes, nodes_lock, addr, port, name, display_name, incarnation, uuid, tags, seeds, bootstrap, zone, is_proxy):
         self.nodes = nodes
         self.nodes_lock = nodes_lock
         self.addr = addr
         self.port = port
         self.name = name
+        self.display_name = display_name
         self.incarnation = incarnation
         self.uuid = uuid
         self.tags = tags  # finally computed tags
@@ -154,7 +155,7 @@ class Gossip(object):
     
     # get my own node entry
     def get_boostrap_node(self):
-        node = {'addr'       : self.addr, 'port': self.port, 'name': self.name,
+        node = {'addr'       : self.addr, 'port': self.port, 'name': self.name, 'display_name': self.display_name,
                 'incarnation': self.incarnation, 'uuid': self.uuid, 'state': 'alive', 'tags': self.tags,
                 'services'   : {}, 'checks': {}, 'zone': self.zone, 'is_proxy': self.is_proxy}
         return node
@@ -771,7 +772,8 @@ class Gossip(object):
     
     def __get_node_basic_msg(self, node):
         return {
-            'name'       : node['name'], 'addr': node['addr'], 'port': node['port'], 'uuid': node['uuid'],
+            'name'       : node['name'], 'display_name': node.get('display_name', ''),
+            'addr'       : node['addr'], 'port': node['port'], 'uuid': node['uuid'],
             'incarnation': node['incarnation'], 'tags': node['tags'],
             'services'   : node['services'], 'checks': node['checks'],
             'zone'       : node.get('zone', ''), 'is_proxy': node.get('is_proxy', False),

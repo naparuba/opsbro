@@ -96,6 +96,7 @@ REPLICATS = 1
 
 class Cluster(object):
     parameters = {
+        'display_name'   : {'type': 'string', 'mapto': 'display_name'},
         'port'           : {'type': 'int', 'mapto': 'port'},
         'datacenters'    : {'type': 'list', 'mapto': 'datacenters'},
         'data'           : {'type': 'path', 'mapto': 'data_dir'},
@@ -151,6 +152,7 @@ class Cluster(object):
         
         self.port = port
         self.name = name
+        self.display_name = ''
         self.hostname = socket.gethostname()
         if not self.name:
             self.name = '%s' % self.hostname
@@ -322,7 +324,7 @@ class Cluster(object):
             else:
                 # Ok no way to get from past, so try to guess the more stable possible, and if not ok, give me random stuff
                 self.uuid = self.guess_server_const_uuid()
-                
+        
         # now save the key
         with open(self.server_key_file, 'w') as f:
             f.write(self.uuid)
@@ -440,7 +442,7 @@ class Cluster(object):
         dockermgr.launch()
         
         # Our main object for gossip managment
-        gossiper.init(self.nodes, self.nodes_lock, self.addr, self.port, self.name, self.incarnation, self.uuid,
+        gossiper.init(self.nodes, self.nodes_lock, self.addr, self.port, self.name, self.display_name, self.incarnation, self.uuid,
                       self.tags, self.seeds, self.bootstrap, self.zone, self.is_proxy)
         
         # About detecting tags and such things
@@ -473,6 +475,7 @@ class Cluster(object):
         # windows
         return ''
     
+    
     # Try to guess uuid, but can be just a guess, so TRY to have a constant
     # * openvz: take the local server ID + hostname as base
     @classmethod
@@ -490,6 +493,7 @@ class Cluster(object):
                 return hashlib.sha1(servr_uniq_id).hexdigest()
         # No merly fixed stuff? ok, pure randomness
         return hashlib.sha1(libuuid.uuid1().get_hex()).hexdigest()
+    
     
     def load_cfg_dir(self, cfg_dir):
         if not os.path.exists(cfg_dir):
@@ -1320,7 +1324,7 @@ class Cluster(object):
         @route('/agent/info')
         def get_info():
             response.content_type = 'application/json'
-            r = {'logs'      : logger.get_errors(), 'pid': os.getpid(), 'name': self.name,
+            r = {'logs'      : logger.get_errors(), 'pid': os.getpid(), 'name': self.name, 'display_name':self.display_name,
                  'port'      : self.port, 'addr': self.addr, 'socket': self.socket_path, 'zone': self.zone,
                  'uuid'      : self.uuid, 'graphite': self.graphite,
                  'statsd'    : self.statsd,

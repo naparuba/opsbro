@@ -60,7 +60,8 @@ def do_members(detail=False):
         sys.exit(1)
     members = sorted(members, key=lambda e: e['name'])
     logger.debug('Raw members: %s' % (pprint.pformat(members)))
-    max_name_size = max([len(m['name']) for m in members])
+    # If there is a display_name, use it
+    max_name_size = max([max(len(m['name']), len(m.get('display_name', '')) + 4) for m in members])
     max_addr_size = max([len(m['addr']) + len(str(m['port'])) + 1 for m in members])
     zones = set()
     for m in members:
@@ -84,6 +85,8 @@ def do_members(detail=False):
             if zone != z:
                 continue
             name = m['name']
+            if m.get('display_name', ''):
+                name = '[ ' + m.get('display_name') + ' ]'
             tags = m['tags']
             port = m['port']
             addr = m['addr']
@@ -102,6 +105,8 @@ def do_members(detail=False):
                 cprint('proxy ', end='')
             else:
                 cprint('      ', end='')
+            if detail:
+                cprint('%5d' % m['incarnation'])
             cprint(' %s ' % ','.join(tags))
 
 
@@ -211,6 +216,12 @@ def do_info(show_logs):
     version = d.get('version')
     pid = d.get('pid')
     name = d.get('name')
+    display_name = d.get('display_name', '')
+    # A failback to display name is the name (hostname)
+    if not display_name:
+        display_name = name
+    else:  # show it's a display name
+        display_name = '[ ' + display_name + ' ]'
     port = d.get('port')
     addr = d.get('addr')
     zone = d.get('zone')
@@ -231,7 +242,7 @@ def do_info(show_logs):
     _docker = d.get('docker')
     collectors = d.get('collectors')
     
-    e = [('name', name), ('uuid', _uuid), ('tags', tags), ('version', version), ('pid', pid), ('port', port), ('addr', addr),
+    e = [('name', name), ('display name', display_name), ('uuid', _uuid), ('tags', tags), ('version', version), ('pid', pid), ('port', port), ('addr', addr),
          ('zone', zone_value), ('socket', socket_path), ('threads', nb_threads)]
     
     # Normal agent information

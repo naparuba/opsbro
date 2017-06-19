@@ -15,6 +15,7 @@ class ModuleManager(object):
         self.modules = []
         self.modules_configuration_types = {}
     
+    
     # Raw import module source code. So they will be available in the Modules class as Class.
     def load_module_sources(self):
         modules_dirs = []
@@ -56,11 +57,11 @@ class ModuleManager(object):
         for cls in modules_clss:
             try:
                 mod = cls()
-                logger.info('[module] %s did load' % mod)
+                logger.debug('[module] %s did load' % mod)
                 self.modules.append(mod)
                 for configuration_type in mod.manage_configuration_objects:
                     if configuration_type not in self.modules_configuration_types:
-                        logger.info('Adding %s to manage configuration objects type %s' % (mod, configuration_type))
+                        logger.debug('Adding %s to manage configuration objects type %s' % (mod, configuration_type))
                         self.modules_configuration_types[configuration_type] = mod
             except Exception:
                 logger.error('The module %s did fail to create: %s' % (cls, str(traceback.print_exc())))
@@ -102,22 +103,24 @@ class ModuleManager(object):
             except Exception:
                 logger.error('Cannot launch module %s: %s' % (mod, str(traceback.print_exc())))
                 sys.exit(2)
-
-   
+    
+    
     def get_managed_configuration_types(self):
         return self.modules_configuration_types.keys()
-
-
+    
+    
     def import_managed_configuration_object(self, object_type, obj, mod_time, fname, short_name):
         logger.debug("IMPORT managed configuration object", object_type, obj, mod_time, fname, short_name)
         mod = self.modules_configuration_types[object_type]
         mod.import_configuration_object(object_type, obj, mod_time, fname, short_name)
-
+    
+    
     def get_infos(self):
         r = {}
         for mod in self.modules:
             mod_info = mod.get_info()
             r[mod.implement] = mod_info
         return r
+
 
 modulemanager = ModuleManager()

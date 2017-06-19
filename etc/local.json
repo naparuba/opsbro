@@ -1,6 +1,6 @@
 {
-
     "tags"           : [],
+    "display_name"   : "",
     "datacenters"    : ["dc1"],
     "bootstrap"      : false,
     "seeds"          : [],
