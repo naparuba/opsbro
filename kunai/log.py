@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import datetime
 import logging
 from kunai.misc.colorama import init as init_colorama
 
@@ -56,6 +57,9 @@ class Logger(object):
         # We will keep last 20 errors
         self.last_errors_stack_size = 20
         self.last_errors_stack = {'DEBUG': [], 'WARNING': [], 'INFO': [], 'ERROR': []}
+        
+        self.last_date_print_time = 0
+        self.last_date_print_value = ''
     
     
     # A code module register it's
@@ -101,12 +105,22 @@ class Logger(object):
         return self.last_errors_stack
     
     
-    def log(self, *args, **kwargs):
-        name = self.name
+    def __get_time_display(self):
         now = int(time.time())
+        # Cache hit or not?
+        if now == self.last_date_print_time:
+            return self.last_date_print_value
+        # save it
+        # NOTE: I know there is a small chance of thread race issue, but he, I don't fucking care about a 1s issue delay, deal with it.
+        self.last_date_print_value = datetime.datetime.fromtimestamp(now).strftime('%Y-%m-%d %H:%M:%S')
+        return self.last_date_print_value
+        
+    
+    def log(self, *args, **kwargs):
         part = kwargs.get('part', '')
         s_part = '' if not part else '[%s]' % part.upper()
-        s = '%s [%d]%s: %s' % (name, now, s_part, ' '.join([get_unicode_string(s) for s in args]))
+        d_display = self.__get_time_display()
+        s = '%s [%s]%s: %s' % (self.name, d_display, s_part, ' '.join([get_unicode_string(s) for s in args]))
         if 'color' in kwargs:
             cprint(s, color=kwargs['color'])
         else:
