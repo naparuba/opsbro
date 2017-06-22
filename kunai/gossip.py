@@ -824,7 +824,10 @@ class Gossip(object):
                 logger.error('ERROR CONNECTING TO %s:%s' % other, exp, part='gossip')
                 return False
             logger.debug('do_push_pull: get return from %s:%s' % (other[0], back), part='gossip')
-            pubsub.pub('manage-message', msg=back)
+            if 'nodes' not in back:
+                logger.error('do_push_pull: back message do not have nodes entry: %s' % back)
+                return False
+            self.merge_nodes(back['nodes'])
             return True
         except HTTP_EXCEPTIONS, exp:
             logger.error('[push-pull] ERROR CONNECTING TO %s:%s' % other, exp, part='gossip')
@@ -1070,7 +1073,6 @@ class Gossip(object):
             if t is None or t != 'push-pull-msg':  # bad message, skip it
                 return
             self.merge_nodes(msg['nodes'])
-            # self.manage_message(msg)
             
             # And look where does the message came from: if it's the same
             # zone: we can give all, but it it's a lower zone, only give our proxy nodes informations
