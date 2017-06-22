@@ -12,7 +12,7 @@ from kunai.log import logger
 from kunai.threadmgr import threader
 from kunai.now import NOW
 from kunai.dbwrapper import dbwrapper
-from kunai.httpdaemon import response, route
+from kunai.httpdaemon import response, route, abort
 from kunai.gossip import gossiper
 
 
@@ -319,6 +319,38 @@ class KVBackend:
             except HTTP_EXCEPTIONS, exp:
                 logger.debug('KV: DELETE error asking to %s: %s' % (n['name'], str(exp)), part='kv')
                 return None
+
+
+    # Get a key from whatever me or another node
+    def get_key(self, ukey):
+        # we have to compute our internal key mapping. For user key it's: /data/KEY
+        key = ukey
+        hkey = hashlib.sha1(key).hexdigest()
+        nuuid = gossiper.find_tag_node('kv', hkey)
+        logger.info('KV: key %s is managed by %s' % (ukey, nuuid), part='kv')
+        # that's me :)
+        if nuuid == gossiper.uuid:
+            logger.info('KV: (get) My job to find %s' % key, part='kv')
+            v = self.get(key)
+            return v
+        else:
+            logger.info('KV: another node is managing %s' % ukey)
+            n = gossiper.get(nuuid)
+            # Maybe the node disapears, if so bailout and say we got no luck
+            if n is None:
+                return None
+            uri = 'http://%s:%s/kv/%s' % (n['addr'], n['port'], ukey)
+            try:
+                logger.info('KV: (get) relaying to %s: %s' % (n['name'], uri), part='kv')
+                r = rq.get(uri)
+                if r.status_code == 404:
+                    logger.info("GET KEY %s return a 404" % ukey, part='kv')
+                    return None
+                logger.info('KV: get founded (%d)' % len(r.text), part='kv')
+                return r.text
+            except HTTP_EXCEPTIONS, exp:
+                logger.error('KV: error asking to %s: %s' % (n['name'], str(exp)), part='kv')
+                return None
     
     
     # main method to export http interface. Must be in a method that got
@@ -337,6 +369,18 @@ class KVBackend:
             response.content_type = 'application/json'
             t = int(t)
             return json.dumps(self.changed_since(t))
+        
+        
+        @route('/kv/:ukey#.+#', method='GET')
+        def interface_GET_key(ukey):
+            t0 = time.time()
+            logger.debug("GET KEY %s" % ukey, part='kv')
+            v = self.get_key(ukey)
+            if v is None:
+                logger.debug("GET KEY %s return a 404" % ukey, part='kv')
+                abort(404, '')
+            logger.debug("GET: get time %s" % (time.time() - t0), part='kv')
+            return v
         
         
         @route('/kv/:ukey#.+#', method='DELETE')

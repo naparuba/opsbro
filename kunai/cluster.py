@@ -1297,14 +1297,14 @@ class Cluster(object):
                 # Services are easy, we already got them
                 r['services'] = node['services']
                 # checks are harder, we must find them in the kv nodes
-                v = self.get_key('__health/%s' % node['uuid'])
+                v = kvmgr.get_key('__health/%s' % node['uuid'])
                 if v is None or v == '':
                     logger.error('Cannot access to the checks list for', nuuid, part='http')
                     return r
                 
                 lst = json.loads(v)
                 for cid in lst:
-                    v = self.get_key('__health/%s/%s' % (node['uuid'], cid))
+                    v = kvmgr.get_key('__health/%s/%s' % (node['uuid'], cid))
                     if v is None:  # missing check entry? not a real problem
                         continue
                     check = json.loads(v)
@@ -1495,18 +1495,6 @@ class Cluster(object):
             if gname not in self.generators:
                 return abort(404, 'generator not found')
             return self.generators[gname]
-        
-        
-        @route('/kv/:ukey#.+#', method='GET')
-        def interface_GET_key(ukey):
-            t0 = time.time()
-            logger.debug("GET KEY %s" % ukey, part='kv')
-            v = self.get_key(ukey)
-            if v is None:
-                logger.debug("GET KEY %s return a 404" % ukey, part='kv')
-                abort(404, '')
-            logger.debug("GET: get time %s" % (time.time() - t0), part='kv')
-            return v
         
         
         @route('/kv/:ukey#.+#', method='PUT')
@@ -1852,7 +1840,7 @@ class Cluster(object):
                                                  part='ts')
                         else:  # no memory match, got look in the KS part
                             ukey = '%s::h%d' % (target, t)
-                            raw64 = self.get_key(ukey)
+                            raw64 = kvmgr.get_key(ukey)
                             if raw64 is None:
                                 for i in xrange(60):
                                     # Get the value and the time
@@ -1925,7 +1913,7 @@ class Cluster(object):
         @route('/exec-get/:exec_id')
         def get_exec(exec_id):
             response.content_type = 'application/json'
-            v = self.get_key('__exec/%s' % exec_id)
+            v = kvmgr.get_key('__exec/%s' % exec_id)
             return v  # can be None
         
         
@@ -2065,7 +2053,7 @@ class Cluster(object):
                 logger.error('EXEC bad return from node %s : no cid' % node['name'], part='exec')
                 d['state'] = 'error'
                 continue
-            v = self.get_key('__exec/%s' % exec_id)
+            v = kvmgr.get_key('__exec/%s' % exec_id)
             if v is None:
                 logger.error('EXEC void KV entry from return from %s and cid %s' % (node['name'], exec_id), part='exec')
                 d['state'] = 'error'
@@ -2083,38 +2071,6 @@ class Cluster(object):
             d['output'] = t['output']
             d['err'] = t['err']
             d['rc'] = t['rc']
-    
-    
-    # Get a key from whatever me or another node
-    def get_key(self, ukey):
-        # we have to compute our internal key mapping. For user key it's: /data/KEY
-        key = ukey
-        hkey = hashlib.sha1(key).hexdigest()
-        nuuid = gossiper.find_tag_node('kv', hkey)
-        logger.info('KV: key %s is managed by %s' % (ukey, nuuid), part='kv')
-        # that's me :)
-        if nuuid == self.uuid:
-            logger.info('KV: (get) My job to find %s' % key, part='kv')
-            v = kvmgr.get(key)
-            return v
-        else:
-            logger.info('KV: another node is managing %s' % ukey)
-            n = gossiper.get(nuuid)
-            # Maybe the node disapears, if so bailout and say we got no luck
-            if n is None:
-                return None
-            uri = 'http://%s:%s/kv/%s' % (n['addr'], n['port'], ukey)
-            try:
-                logger.info('KV: (get) relaying to %s: %s' % (n['name'], uri), part='kv')
-                r = rq.get(uri)
-                if r.status_code == 404:
-                    logger.info("GET KEY %s return a 404" % ukey, part='kv')
-                    return None
-                logger.info('KV: get founded (%d)' % len(r.text), part='kv')
-                return r.text
-            except HTTP_EXCEPTIONS, exp:
-                logger.error('KV: error asking to %s: %s' % (n['name'], str(exp)), part='kv')
-                return None
     
     
     def put_key(self, ukey, value, force=False, meta=None, allow_udp=False, ttl=0, fw=False):
@@ -2763,7 +2719,7 @@ Subject: %s
                                          part='propagate')
                             continue
                     # ok here we need to load the KV value (a base64 tarfile)
-                    v64 = self.get_key('__libexec/%s' % p)
+                    v64 = kvmgr.get_key('__libexec/%s' % p)
                     if v64 is None:
                         logger.log('WARNING: cannot load the libexec script from kv %s' % p, part='propagate')
                         continue
@@ -2829,7 +2785,7 @@ Subject: %s
                                 part='propagate')
                             continue
                     # ok here we need to load the KV value (a base64 tarfile)
-                    v64 = self.get_key('__configuration/%s' % p)
+                    v64 = kvmgr.get_key('__configuration/%s' % p)
                     if v64 is None:
                         logger.log('WARNING: cannot load the configuration script from kv %s' % p, part='propagate')
                         continue
@@ -3058,7 +3014,7 @@ Subject: %s
     # and clean old files into the configuration directory that is not in this list
     # but not the local.json that is out of global conf
     def do_configuration_cleanup(self):
-        zj64 = self.get_key('__configuration')
+        zj64 = kvmgr.get_key('__configuration')
         if zj64 is None:
             logger.log('WARNING cannot grok kv/__configuration entry', part='propagate')
             return
