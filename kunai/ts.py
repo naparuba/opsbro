@@ -18,6 +18,8 @@ from kunai.util import to_best_int_float
 from kunai.now import NOW
 from kunai.dbwrapper import dbwrapper
 from kunai.gossip import gossiper
+from kunai.stop import stopper
+
 
 # DO NOT FORGEET:
 # sysctl -w net.core.rmem_max=26214400
@@ -491,7 +493,7 @@ class TSListener(object):
         self.udp_sock.bind((self.addr, self.statsd_port))
         logger.info("TS UDP port open", self.statsd_port, part='ts')
         logger.debug("UDP RCVBUF", self.udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF), part='ts')
-        while True:  # not self.interrupted:
+        while not stopper.interrupted:
             try:
                 data, addr = self.udp_sock.recvfrom(65535)  # buffer size is 1024 bytes
             except socket.timeout:  # loop until we got something
@@ -619,7 +621,7 @@ class TSListener(object):
         self.graphite_udp_sock.bind((self.addr, self.graphite_port))
         logger.info("TS Graphite UDP port open", self.graphite_port, part='ts')
         logger.debug("UDP RCVBUF", self.graphite_udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF), part='ts')
-        while True:  # not self.interrupted:
+        while not stopper.interrupted:
             try:
                 data, addr = self.graphite_udp_sock.recvfrom(65535)
             except socket.timeout:  # loop until we got some data

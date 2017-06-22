@@ -36,7 +36,6 @@ def get_collectors(self):
 class CollectorManager:
     def __init__(self):
         self.collectors = {}
-        self.interrupted = False
         self.cfg_data = {}
         
         self.did_run = False  # did our data are all ok or we did not launch all?

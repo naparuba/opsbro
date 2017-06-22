@@ -1,6 +1,8 @@
 import time
 import json
+
 from kunai.log import logger
+from kunai.stop import stopper
 from kunai.httpdaemon import route, response
 from kunai.evaluater import evaluater
 from kunai.collectormanager import collectormgr
@@ -25,7 +27,7 @@ class DetectorMgr(object):
             time.sleep(1)
         # Ok we can use collector data :)
         logger.log('DETECTOR thread launched', part='detector')
-        while not self.clust.interrupted:
+        while not stopper.interrupted:
             matching_tags = set()
             for (gname, gen) in self.clust.detectors.iteritems():
                 interval = int(gen['interval'].split('s')[0])  # todo manage like it should

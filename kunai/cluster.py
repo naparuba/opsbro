@@ -11,7 +11,6 @@ import hashlib
 import signal
 import traceback
 import cStringIO
-import bisect
 import requests as rq
 import subprocess
 import tempfile
@@ -60,7 +59,6 @@ except ImportError:
 
 
 from kunai.log import logger
-from kunai.kv import KVBackend
 from kunai.util import copy_dir, get_public_address
 from kunai.threadmgr import threader
 from kunai.perfdata import PerfDatas
@@ -70,6 +68,7 @@ from kunai.httpclient import HTTP_EXCEPTIONS
 from kunai.generator import Generator
 # now singleton objects
 from kunai.gossip import gossiper
+from kunai.kv import kvmgr
 from kunai.broadcast import broadcaster
 from kunai.httpdaemon import httpdaemon, route, response, request, abort, gserver
 from kunai.pubsub import pubsub
@@ -157,7 +156,7 @@ class Cluster(object):
         if not self.name:
             self.name = '%s' % self.hostname
         self.tags = [s.strip() for s in tags.split(',') if s.strip()]
-        self.interrupted = False
+        
         self.bootstrap = bootstrap
         self.seeds = [s.strip() for s in seeds.split(',')]
         self.zone = ''
@@ -370,8 +369,8 @@ class Cluster(object):
         self.load_check_retention()
         self.load_service_retention()
         
-        # Now the kv backend
-        self.kv = KVBackend(self.data_dir)
+        # Now init the kv backend and allow it to load its database
+        kvmgr.init(self.data_dir)
         
         self.replication_backlog_lock = threading.RLock()
         self.replication_backlog = {}
@@ -1035,7 +1034,6 @@ class Cluster(object):
     
     # Callback for objects that want us to stop in a clean way
     def set_interrupted(self):
-        self.interrupted = True
         # and the global object too
         stopper.interrupted = True
     
@@ -1102,7 +1100,7 @@ class Cluster(object):
         logger.info("OPENING UDP", self.addr)
         self.udp_sock.bind((self.listening_addr, self.port))
         logger.log("UDP port open", self.port, part='udp')
-        while not self.interrupted:
+        while not stopper.interrupted:
             try:
                 data, addr = self.udp_sock.recvfrom(65535)  # buffer size is 1024 bytes
             except socket.timeout:
@@ -1522,26 +1520,6 @@ class Cluster(object):
             ttl = int(request.GET.get('ttl', '0'))
             self.put_key(ukey, value, force=force, meta=meta, ttl=ttl)
             return
-        
-        
-        @route('/kv/:ukey#.+#', method='DELETE')
-        def interface_DELETE_key(ukey):
-            logger.debug("KV: DELETE KEY %s" % ukey, part='kv')
-            self.delete_key(ukey)
-        
-        
-        @route('/kv/')
-        def list_keys():
-            response.content_type = 'application/json'
-            l = list(self.kv.db.RangeIter(include_value=False))
-            return json.dumps(l)
-        
-        
-        @route('/kv-meta/changed/:t', method='GET')
-        def changed_since(t):
-            response.content_type = 'application/json'
-            t = int(t)
-            return json.dumps(self.kv.changed_since(t))
         
         
         @route('/agent/propagate/libexec', method='GET')
@@ -2117,7 +2095,7 @@ class Cluster(object):
         # that's me :)
         if nuuid == self.uuid:
             logger.info('KV: (get) My job to find %s' % key, part='kv')
-            v = self.kv.get(key)
+            v = kvmgr.get(key)
             return v
         else:
             logger.info('KV: another node is managing %s' % ukey)
@@ -2156,11 +2134,11 @@ class Cluster(object):
         # that's me if it's really for me, or it's a force one, or it's already a forward one
         if nuuid == self.uuid or force or fw:
             logger.debug('KV: (put) I shoukd managed the key %s (force:%s) (fw:%s)' % (key, force, fw))
-            self.kv.put(key, value, ttl=ttl)
+            kvmgr.put(key, value, ttl=ttl)
             
             # We also replicate the meta data from the master node
             if meta:
-                self.kv.put_meta(key, meta)
+                kvmgr.put_meta(key, meta)
             
             # If we are in a force mode, so we do not launch a repl, we are not
             # the master node
@@ -2168,7 +2146,7 @@ class Cluster(object):
                 return None
             
             # remember to save the replication back log entry too
-            meta = self.kv.get_meta(ukey)
+            meta = kvmgr.get_meta(ukey)
             bl = {'value': (ukey, value), 'repl': [], 'hkey': hkey, 'meta': meta}
             logger.debug('REPLICATION adding backlog entry %s' % bl, part='kv')
             self.replication_backlog[ukey] = bl
@@ -2204,34 +2182,6 @@ class Cluster(object):
                 return None
     
     
-    def delete_key(self, ukey):
-        # we have to compute our internal key mapping. For user key it's: /data/KEY
-        key = ukey
-        
-        hkey = hashlib.sha1(key).hexdigest()
-        nuuid = gossiper.find_tag_node('kv', hkey)
-        logger.debug('KV: DELETE node that manage the key %s' % nuuid, part='kv')
-        # that's me :)
-        if nuuid == self.uuid:
-            logger.debug('KV: DELETE My job to manage %s' % key, part='kv')
-            self.kv.delete(key)
-            return None
-        else:
-            n = gossiper.get(nuuid)
-            # Maybe someone delete my node, it's not fair :)
-            if n is None:
-                return None
-            uri = 'http://%s:%s/kv/%s' % (n['addr'], n['port'], ukey)
-            try:
-                logger.debug('KV: DELETE relaying to %s: %s' % (n['name'], uri), part='kv')
-                r = rq.delete(uri)
-                logger.debug('KV: DELETE return %s' % r.status_code, part='kv')
-                return None
-            except HTTP_EXCEPTIONS, exp:
-                logger.debug('KV: DELETE error asking to %s: %s' % (n['name'], str(exp)), part='kv')
-                return None
-    
-    
     def stack_put_key(self, k, v, ttl=0):
         self.put_key_buffer.append((k, v, ttl))
     
@@ -2239,7 +2189,7 @@ class Cluster(object):
     # put from udp should be clean quick from the thread so it can listen to udp again and
     # not lost any udp message
     def put_key_reaper(self):
-        while not self.interrupted:
+        while not stopper.interrupted:
             put_key_buffer = self.put_key_buffer
             self.put_key_buffer = []
             _t = time.time()
@@ -2297,7 +2247,7 @@ class Cluster(object):
     
     def do_replication_backlog_thread(self):
         logger.log('REPLICATION thread launched', part='kv')
-        while not self.interrupted:
+        while not stopper.interrupted:
             # Standard switch
             replication_backlog = self.replication_backlog
             self.replication_backlog = {}
@@ -2356,7 +2306,7 @@ class Cluster(object):
                     except (ValueError, TypeError), exp:
                         logger.debug('SYNC : error asking to %s: %s' % (repl['name'], str(exp)), part='kv')
                         continue
-                    self.kv.do_merge(to_merge)
+                    kvmgr.do_merge(to_merge)
                     logger.debug("SYNC thread done, bailing out", part='kv')
                     return
                 except HTTP_EXCEPTIONS, exp:
@@ -2369,7 +2319,7 @@ class Cluster(object):
     def do_check_thread(self):
         logger.log('CHECK thread launched', part='check')
         cur_launchs = {}
-        while not self.interrupted:
+        while not stopper.interrupted:
             now = int(time.time())
             for (cid, check) in self.checks.iteritems():
                 # maybe this chck is not a activated one for us, if so, bail out
@@ -2405,7 +2355,7 @@ class Cluster(object):
     # Main thread for launching generators
     def do_generator_thread(self):
         logger.log('GENERATOR thread launched', part='generator')
-        while not self.interrupted:
+        while not stopper.interrupted:
             logger.debug('Looking for %d generators' % len(self.generators), part='generator')
             for (gname, gen) in self.generators.iteritems():
                 logger.debug('LOOK AT GENERATOR', gen, 'to be apply on', gen['apply_on'], 'with our tags', self.tags, part='generator')
@@ -2782,7 +2732,7 @@ Subject: %s
     # will get the newest value in the KV and dump the files
     def launch_update_libexec_cfg_thread(self):
         def do_update_libexec_cfg_thread(self):
-            while not self.interrupted:
+            while not stopper.interrupted:
                 # work on a clean list
                 libexec_to_update = self.libexec_to_update
                 self.libexec_to_update = []
@@ -2918,7 +2868,7 @@ Subject: %s
         
         # Go launch it
         threader.create_and_launch(do_update_libexec_cfg_thread, args=(self,))
-        
+    
     
     def retention_nodes(self, force=False):
         # Ok we got no nodes? something is strange, we don't save this :)
@@ -2964,7 +2914,6 @@ Subject: %s
             self.last_retention_write = now
     
     
-    
     # Guess what? yes, it is the main function
     def main(self):
         # be sure the check list are really updated now our litners are ok
@@ -2972,7 +2921,7 @@ Subject: %s
         
         logger.log('Go go run!')
         i = -1
-        while not self.interrupted:
+        while not stopper.interrupted:
             i += 1
             if i % 10 == 0:
                 logger.debug('KNOWN NODES: %d, alive:%d, suspect:%d, dead:%d, leave:%d' % (

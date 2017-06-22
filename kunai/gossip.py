@@ -19,6 +19,7 @@ from kunai.httpdaemon import route, response, abort, request
 from kunai.encrypter import encrypter
 from kunai.httpclient import HTTP_EXCEPTIONS
 from kunai.zonemanager import zonemgr
+from kunai.stop import stopper
 
 KGOSSIP = 10
 
@@ -45,9 +46,7 @@ class Gossip(object):
         self.zone = zone
         self.is_proxy = is_proxy
         
-        self.interrupted = False
-        
-        # list of uuid to ping back because we though they were dead        
+        # list of uuid to ping back because we though they were dead
         self.to_ping_back = []
         
         # We update our nodes list based on our current zone. We keep our zone, only proxy from top zone
@@ -820,7 +819,7 @@ class Gossip(object):
                 if nb > KGOSSIP:
                     continue
             # If we got enough nodes, we exit
-            if len(self.nodes) != 1 or self.interrupted or self.bootstrap:
+            if len(self.nodes) != 1 or stopper.interrupted or self.bootstrap:
                 return
             # Do not hummer the cpu....
             time.sleep(0.1)

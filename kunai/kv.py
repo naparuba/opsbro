@@ -3,22 +3,27 @@ import json
 import time
 import threading
 import shutil
+import hashlib
+import requests as rq
+
+from kunai.httpclient import HTTP_EXCEPTIONS
 from kunai.stats import STATS
 from kunai.log import logger
 from kunai.threadmgr import threader
 from kunai.now import NOW
 from kunai.dbwrapper import dbwrapper
+from kunai.httpdaemon import response, route
+from kunai.gossip import gossiper
 
 
-# This class manage the ttl entries for each key with a ttl. Each is with a 1hour precisionidx key that we saved
+# This class manage the ttl entries for each key with a ttl. Each is with a 1hour precision idx key that we saved
 # in the master db
 # but with keeping a database by hour about the key for the housekeeping
 class TTLDatabase(object):
-    def __init__(self, kv, ttldb_dir):
+    def __init__(self, ttldb_dir):
         self.lock = threading.RLock()
         self.dbs = {}
         self.db_cache_size = 100
-        self.kv = kv
         self.ttldb_dir = ttldb_dir
         if not os.path.exists(self.ttldb_dir):
             os.mkdir(self.ttldb_dir)
@@ -101,7 +106,7 @@ class TTLDatabase(object):
                 to_del = cdb.RangeIter()
                 # Now ask the cluster to delete the key, whatever it is
                 for (k, v) in to_del:
-                    self.kv.delete(k)
+                    kvmgr.delete(k)
                 
                 # now we clean all old entries, remove the idx database
                 self.drop_db(bhour)
@@ -118,15 +123,26 @@ class TTLDatabase(object):
 # cluster to know if we should manage a key or not, if someone give us it,
 # we save it :)
 class KVBackend:
-    def __init__(self, data_dir):
-        self.data_dir = data_dir
-        self.db_dir = os.path.join(data_dir, 'kv')
-        self.db = dbwrapper.get_db(self.db_dir)  # leveldb.LevelDB(self.db_dir)
-        self.ttldb = TTLDatabase(self, os.path.join(data_dir, 'ttl'))
+    def __init__(self):
+        self.data_dir = ''
+        self.db_dir = ''
+        self.db = None
+        self.ttldb = None
         
         self.update_db_time = 0
         self.update_db = None
         self.lock = threading.RLock()
+    
+    
+    # Really load data dir and so open database
+    def init(self, data_dir):
+        self.data_dir = data_dir
+        self.db_dir = os.path.join(data_dir, 'kv')
+        self.db = dbwrapper.get_db(self.db_dir)  # leveldb.LevelDB(self.db_dir)
+        self.ttldb = TTLDatabase(os.path.join(data_dir, 'ttl'))
+        
+        # We can now export our http interface
+        self.export_http()
     
     
     # We will open a file with the keys writen during a minute
@@ -275,3 +291,58 @@ class KVBackend:
                 self.db.Put(ukey, v)
             else:
                 pass
+    
+    
+    def delete_key(self, ukey):
+        # we have to compute our internal key mapping. For user key it's: /data/KEY
+        key = ukey
+        
+        hkey = hashlib.sha1(key).hexdigest()
+        nuuid = gossiper.find_tag_node('kv', hkey)
+        logger.debug('KV: DELETE node that manage the key %s' % nuuid, part='kv')
+        # that's me :)
+        if nuuid == gossiper.uuid:
+            logger.debug('KV: DELETE My job to manage %s' % key, part='kv')
+            kvmgr.delete(key)
+            return None
+        else:
+            n = gossiper.get(nuuid)
+            # Maybe someone delete my node, it's not fair :)
+            if n is None:
+                return None
+            uri = 'http://%s:%s/kv/%s' % (n['addr'], n['port'], ukey)
+            try:
+                logger.debug('KV: DELETE relaying to %s: %s' % (n['name'], uri), part='kv')
+                r = rq.delete(uri)
+                logger.debug('KV: DELETE return %s' % r.status_code, part='kv')
+                return None
+            except HTTP_EXCEPTIONS, exp:
+                logger.debug('KV: DELETE error asking to %s: %s' % (n['name'], str(exp)), part='kv')
+                return None
+    
+    
+    # main method to export http interface. Must be in a method that got
+    # a self entry
+    def export_http(self):
+        @route('/kv/')
+        @route('/kv')
+        def list_keys():
+            response.content_type = 'application/json'
+            l = list(self.db.RangeIter(include_value=False))
+            return json.dumps(l)
+        
+        
+        @route('/kv-meta/changed/:t', method='GET')
+        def changed_since(t):
+            response.content_type = 'application/json'
+            t = int(t)
+            return json.dumps(self.changed_since(t))
+        
+        
+        @route('/kv/:ukey#.+#', method='DELETE')
+        def interface_DELETE_key(ukey):
+            logger.debug("KV: DELETE KEY %s" % ukey, part='kv')
+            self.delete_key(ukey)
+
+
+kvmgr = KVBackend()

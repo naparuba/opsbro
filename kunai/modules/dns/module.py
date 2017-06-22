@@ -3,6 +3,7 @@ import socket
 from kunai.log import logger
 from kunai.threadmgr import threader
 from kunai.module import Module
+from kunai.stop import stopper
 
 from dnsquery import DNSQuery
 
@@ -60,7 +61,7 @@ class DNSModule(Module):
             logger.error('No dns object defined in the configuration or not enabled, skipping it')
             return
         
-        while not self.daemon.interrupted:
+        while not stopper.interrupted:
             logger.debug('DNS MODULE LOOP', part='dns')
             try:
                 data, addr = self.sock.recvfrom(1024)
