@@ -86,8 +86,6 @@ from kunai.modulemanager import modulemanager
 from kunai.zonemanager import zonemgr
 from kunai.defaultpaths import DEFAULT_LIBEXEC_DIR, DEFAULT_LOCK_PATH, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR, DEFAULT_CFG_DIR
 
-REPLICATS = 1
-
 
 # LIMIT= 4 * math.ceil(math.log10(float(2 + 1)))
 
@@ -371,9 +369,6 @@ class Cluster(object):
         
         # Now init the kv backend and allow it to load its database
         kvmgr.init(self.data_dir)
-        
-        self.replication_backlog_lock = threading.RLock()
-        self.replication_backlog = {}
         
         self.last_retention_write = time.time()
         
@@ -1078,13 +1073,11 @@ class Cluster(object):
     
     
     def launch_replication_backlog_thread(self):
-        self.replication_backlog_thread = threader.create_and_launch(self.do_replication_backlog_thread,
-                                                                     name='replication-backlog-thread', essential=True)
+        self.replication_backlog_thread = threader.create_and_launch(kvmgr.do_replication_backlog_thread, name='replication-backlog-thread', essential=True)
     
     
     def launch_replication_first_sync_thread(self):
-        self.replication_first_sync_thread = threader.create_and_launch(self.do_replication_first_sync_thread,
-                                                                        name='replication-first-sync-thread', essential=True)
+        self.replication_first_sync_thread = threader.create_and_launch(self.do_replication_first_sync_thread, name='replication-first-sync-thread', essential=True)
     
     
     def launch_listeners(self):
@@ -1202,7 +1195,7 @@ class Cluster(object):
                     v = m['v']
                     fw = m.get('fw', False)
                     # For perf data we allow the udp send
-                    self.put_key(k, v, allow_udp=True, fw=fw)
+                    kvmgr.put_key(k, v, allow_udp=True, fw=fw)
                 elif t == '/ts/new':
                     key = m.get('key', '')
                     # Skip this message for classic nodes
@@ -1323,6 +1316,7 @@ class Cluster(object):
                  'version'   : VERSION, 'tags': self.tags,
                  'docker'    : dockermgr.get_info(),
                  'collectors': collectormgr.get_info(),
+                 'kv'        : kvmgr.get_info(),
                  }
             
             # Update the infos with modules ones
@@ -1497,19 +1491,6 @@ class Cluster(object):
             return self.generators[gname]
         
         
-        @route('/kv/:ukey#.+#', method='PUT')
-        def interface_PUT_key(ukey):
-            value = request.body.getvalue()
-            logger.debug("KV: PUT KEY %s (len:%d)" % (ukey, len(value)), part='kv')
-            force = request.GET.get('force', 'False') == 'True'
-            meta = request.GET.get('meta', None)
-            if meta:
-                meta = json.loads(meta)
-            ttl = int(request.GET.get('ttl', '0'))
-            self.put_key(ukey, value, force=force, meta=meta, ttl=ttl)
-            return
-        
-        
         @route('/agent/propagate/libexec', method='GET')
         def propage_libexec():
             logger.debug("Call to propagate-configuraion", part='http')
@@ -1538,7 +1519,7 @@ class Cluster(object):
                     part='http')
                 key = '__libexec/%s' % path
                 
-                self.put_key(key, buf64)
+                kvmgr.put_key(key, buf64)
                 
                 payload = {'type': 'libexec', 'path': path, 'hash': _hash}
                 self.stack_event_broadcast(payload)
@@ -1579,7 +1560,7 @@ class Cluster(object):
                 print "READ A %d file %s and compressed into a %d one..." % (len(zbuf), path, len(buf64))
                 key = '__configuration/%s' % path
                 print "READ PUT KEY", key
-                self.put_key(key, buf64)
+                kvmgr.put_key(key, buf64)
                 
                 payload = {'type': 'configuration', 'path': path, 'hash': _hash}
                 self.stack_event_broadcast(payload)
@@ -1589,13 +1570,13 @@ class Cluster(object):
             j = json.dumps(ok_files)
             zj = zlib.compress(j, 9)
             zj64 = base64.b64encode(zj)
-            self.put_key('__configuration', zj64)
+            kvmgr.put_key('__configuration', zj64)
             payload = {'type': 'configuration-cleanup'}
             self.stack_event_broadcast(payload)
         
         
         @route('/configuration/update', method='PUT')
-        def protected():
+        def update_configuration():
             value = request.body.getvalue()
             logger.debug("HTTP: configuration update put %s" % (value), part='http')
             try:
@@ -1790,7 +1771,6 @@ class Cluster(object):
                 m = re.match(r'(\d*)', _from, re.M | re.I)
                 if m:
                     found = True
-                    print "GOT ABS TIME", m.group(1)
                     past = divmod(int(m.group(1)), 3600)[0] * 3600
             
             if not found:
@@ -2073,71 +2053,6 @@ class Cluster(object):
             d['rc'] = t['rc']
     
     
-    def put_key(self, ukey, value, force=False, meta=None, allow_udp=False, ttl=0, fw=False):
-        # we have to compute our internal key mapping. For user key it's: /data/KEY
-        key = ukey
-        
-        hkey = hashlib.sha1(key).hexdigest()
-        
-        nuuid = gossiper.find_tag_node('kv', hkey)
-        
-        _node = gossiper.get(nuuid)
-        _name = ''
-        # The node can disapear with another thread
-        if _node is not None:
-            _name = _node['name']
-        logger.debug('KV: key should be managed by %s(%s) for %s' % (_name, nuuid, ukey), 'kv')
-        # that's me if it's really for me, or it's a force one, or it's already a forward one
-        if nuuid == self.uuid or force or fw:
-            logger.debug('KV: (put) I shoukd managed the key %s (force:%s) (fw:%s)' % (key, force, fw))
-            kvmgr.put(key, value, ttl=ttl)
-            
-            # We also replicate the meta data from the master node
-            if meta:
-                kvmgr.put_meta(key, meta)
-            
-            # If we are in a force mode, so we do not launch a repl, we are not
-            # the master node
-            if force:
-                return None
-            
-            # remember to save the replication back log entry too
-            meta = kvmgr.get_meta(ukey)
-            bl = {'value': (ukey, value), 'repl': [], 'hkey': hkey, 'meta': meta}
-            logger.debug('REPLICATION adding backlog entry %s' % bl, part='kv')
-            self.replication_backlog[ukey] = bl
-            return None
-        else:
-            n = gossiper.get(nuuid)
-            if n is None:  # oups, someone is playing iwth my nodes and delete it...
-                return None
-            # Maybe the user did allow weak consistency, so we can use udp (like metrics)
-            if allow_udp:
-                try:
-                    payload = {'type': '/kv/put', 'k': ukey, 'v': value, 'ttl': ttl, 'fw': True}
-                    packet = json.dumps(payload)
-                    enc_packet = encrypter.encrypt(packet)
-                    logger.debug('KV: PUT(udp) asking %s: %s:%s' % (n['name'], n['addr'], n['port']), part='kv')
-                    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                    sock.sendto(enc_packet, (n['addr'], n['port']))
-                    sock.close()
-                    return None
-                except Exception, exp:
-                    logger.debug('KV: PUT (udp) error asking to %s: %s' % (n['name'], str(exp)), part='kv')
-                    return None
-            # ok no allow udp here, so we switch to a classic HTTP mode :)
-            uri = 'http://%s:%s/kv/%s?ttl=%s' % (n['addr'], n['port'], ukey, ttl)
-            try:
-                logger.debug('KV: PUT asking %s: %s' % (n['name'], uri), part='kv')
-                params = {'ttl': str(ttl)}
-                r = rq.put(uri, data=value, params=params)
-                logger.debug('KV: PUT return %s' % r.status_code, part='kv')
-                return None
-            except HTTP_EXCEPTIONS, exp:
-                logger.debug('KV: PUT error asking to %s: %s' % (n['name'], str(exp)), part='kv')
-                return None
-    
-    
     def stack_put_key(self, k, v, ttl=0):
         self.put_key_buffer.append((k, v, ttl))
     
@@ -2152,7 +2067,7 @@ class Cluster(object):
             if len(put_key_buffer) != 0:
                 logger.debug("PUT KEY BUFFER LEN", len(put_key_buffer))
             for (k, v, ttl) in put_key_buffer:
-                self.put_key(k, v, ttl=ttl, allow_udp=True)
+                kvmgr.put_key(k, v, ttl=ttl, allow_udp=True)
             if len(put_key_buffer) != 0:
                 logger.debug("PUT KEY BUFFER IN", time.time() - _t)
             
@@ -2167,73 +2082,7 @@ class Cluster(object):
         self.ts.load_clust(self)
         self.ts.start_threads()
     
-    
-    # I try to get the nodes before myself in the nodes list
-    def get_my_replicats(self):
-        kv_nodes = gossiper.find_tag_nodes('kv')
-        kv_nodes.sort()
         
-        # Maybe soneone ask us a put but we are not totally joined
-        # if so do not replicate this
-        if self.uuid not in kv_nodes:
-            logger.log('WARNING: too early put, myself %s is not a kv nodes currently' % self.uuid, part='kv')
-            return []
-        
-        # You can't have more replicats that you got of kv nodes
-        nb_rep = min(REPLICATS, len(kv_nodes))
-        
-        idx = kv_nodes.index(self.uuid)
-        replicats = []
-        for i in range(idx - nb_rep, idx):
-            nuuid = kv_nodes[i]
-            # we can't be a replicat of ourselve
-            if nuuid == self.uuid:
-                continue
-            replicats.append(nuuid)
-        rnames = []
-        for uuid in replicats:
-            # Maybe someone delete the nodes just here, so we must care about it
-            n = gossiper.get(uuid)
-            if n:
-                rnames.append(n['name'])
-        
-        logger.debug('REPLICATS: myself %s replicats are %s' % (self.name, rnames), part='kv')
-        return replicats
-    
-    
-    def do_replication_backlog_thread(self):
-        logger.log('REPLICATION thread launched', part='kv')
-        while not stopper.interrupted:
-            # Standard switch
-            replication_backlog = self.replication_backlog
-            self.replication_backlog = {}
-            
-            replicats = self.get_my_replicats()
-            if len(replicats) == 0:
-                time.sleep(1)
-            for (ukey, bl) in replication_backlog.iteritems():
-                # REF: bl = {'value':(ukey, value), 'repl':[], 'hkey':hkey, 'meta':meta}
-                _, value = bl['value']
-                for uuid in replicats:
-                    _node = gossiper.get(uuid)
-                    # Someone just delete my node, not fair :)
-                    if _node is None:
-                        continue
-                    logger.debug('REPLICATION thread manage entry to %s(%s) : %s' % (_node['name'], uuid, bl),
-                                 part='kv')
-                    
-                    # Now send it :)
-                    n = _node
-                    uri = 'http://%s:%s/kv/%s?force=True' % (n['addr'], n['port'], ukey)
-                    try:
-                        logger.debug('KV: PUT(force) asking %s: %s' % (n['name'], uri), part='kv')
-                        params = {'force': True, 'meta': json.dumps(bl['meta'])}
-                        r = rq.put(uri, data=value, params=params)
-                        logger.debug('KV: PUT(force) return %s' % r, part='kv')
-                    except HTTP_EXCEPTIONS, exp:
-                        logger.debug('KV: PUT(force) error asking to %s: %s' % (n['name'], str(exp)), part='kv')
-            time.sleep(1)
-    
     
     # The first sync thread will ask to our replicats for their lately changed value
     # and we will get the key/value from it
@@ -2244,7 +2093,7 @@ class Cluster(object):
         logger.log('SYNC thread launched', part='kv')
         # We will look until we found a repl that answer us :)
         while True:
-            repls = self.get_my_replicats()
+            repls = kvmgr.get_my_replicats()
             for repluuid in repls:
                 repl = gossiper.get(repluuid)
                 # Maybe someone just delete my node, if so skip it
@@ -2486,7 +2335,7 @@ class Cluster(object):
         value = json.dumps(check)
         key = '__health/%s/%s' % (self.uuid, check['name'])
         logger.debug('CHECK SAVING %s:%s(len=%d)' % (key, value, len(value)), part='check')
-        self.put_key(key, value, allow_udp=True)
+        kvmgr.put_key(key, value, allow_udp=True)
         
         # Now groking metrics from check
         elts = check['output'].split('|', 1)
@@ -2648,7 +2497,7 @@ Subject: %s
                     self.put_check(check)
             all_checks = json.dumps(names)
             key = '__health/%s' % self.uuid
-            self.put_key(key, all_checks)
+            kvmgr.put_key(key, all_checks)
         
         
         # Ok go launch it :)
@@ -2668,7 +2517,7 @@ Subject: %s
         j = json.dumps(o)
         # Save the return and put it in the KV space
         key = '__exec/%s' % exec_id
-        self.put_key(key, j, ttl=3600)  # only one hour live is good :)
+        kvmgr.put_key(key, j, ttl=3600)  # only one hour live is good :)
         
         # Now send a finish to the asker
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

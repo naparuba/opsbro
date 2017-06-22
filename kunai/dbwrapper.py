@@ -18,6 +18,10 @@ class FakeDB(object):
     def Put(self, key, value):
         logger.error('Fake call to KV store, please install leveldb')
         return
+    
+    
+    def GetStats(self):
+        return ''
 
 
 class DBWrapper():

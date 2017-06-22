@@ -5,6 +5,7 @@ import threading
 import shutil
 import hashlib
 import requests as rq
+import socket
 
 from kunai.httpclient import HTTP_EXCEPTIONS
 from kunai.stats import STATS
@@ -12,9 +13,13 @@ from kunai.log import logger
 from kunai.threadmgr import threader
 from kunai.now import NOW
 from kunai.dbwrapper import dbwrapper
-from kunai.httpdaemon import response, route, abort
+from kunai.httpdaemon import response, route, abort, request
 from kunai.gossip import gossiper
+from kunai.encrypter import encrypter
+from kunai.stop import stopper
 
+
+REPLICATS = 1
 
 # This class manage the ttl entries for each key with a ttl. Each is with a 1hour precision idx key that we saved
 # in the master db
@@ -132,6 +137,9 @@ class KVBackend:
         self.update_db_time = 0
         self.update_db = None
         self.lock = threading.RLock()
+        
+        # We have a backlog to manage our replication by threads
+        self.replication_backlog = {}
     
     
     # Really load data dir and so open database
@@ -143,6 +151,10 @@ class KVBackend:
         
         # We can now export our http interface
         self.export_http()
+    
+    
+    def get_info(self):
+        return {'stats': self.db.GetStats()}
     
     
     # We will open a file with the keys writen during a minute
@@ -319,8 +331,8 @@ class KVBackend:
             except HTTP_EXCEPTIONS, exp:
                 logger.debug('KV: DELETE error asking to %s: %s' % (n['name'], str(exp)), part='kv')
                 return None
-
-
+    
+    
     # Get a key from whatever me or another node
     def get_key(self, ukey):
         # we have to compute our internal key mapping. For user key it's: /data/KEY
@@ -353,6 +365,137 @@ class KVBackend:
                 return None
     
     
+    def put_key(self, ukey, value, force=False, meta=None, allow_udp=False, ttl=0, fw=False):
+        # we have to compute our internal key mapping. For user key it's: /data/KEY
+        key = ukey
+        
+        hkey = hashlib.sha1(key).hexdigest()
+        
+        nuuid = gossiper.find_tag_node('kv', hkey)
+        
+        _node = gossiper.get(nuuid)
+        _name = ''
+        # The node can disapear with another thread
+        if _node is not None:
+            _name = _node['name']
+        logger.debug('KV: key should be managed by %s(%s) for %s' % (_name, nuuid, ukey), 'kv')
+        # that's me if it's really for me, or it's a force one, or it's already a forward one
+        if nuuid == gossiper.uuid or force or fw:
+            logger.debug('KV: (put) I shoukd managed the key %s (force:%s) (fw:%s)' % (key, force, fw))
+            self.put(key, value, ttl=ttl)
+            
+            # We also replicate the meta data from the master node
+            if meta:
+                self.put_meta(key, meta)
+            
+            # If we are in a force mode, so we do not launch a repl, we are not
+            # the master node
+            if force:
+                return None
+            
+            # remember to save the replication back log entry too
+            meta = self.get_meta(ukey)
+            bl = {'value': (ukey, value), 'repl': [], 'hkey': hkey, 'meta': meta}
+            logger.debug('REPLICATION adding backlog entry %s' % bl, part='kv')
+            self.replication_backlog[ukey] = bl
+            return None
+        else:
+            n = gossiper.get(nuuid)
+            if n is None:  # oups, someone is playing iwth my nodes and delete it...
+                return None
+            # Maybe the user did allow weak consistency, so we can use udp (like metrics)
+            if allow_udp:
+                try:
+                    payload = {'type': '/kv/put', 'k': ukey, 'v': value, 'ttl': ttl, 'fw': True}
+                    packet = json.dumps(payload)
+                    enc_packet = encrypter.encrypt(packet)
+                    logger.debug('KV: PUT(udp) asking %s: %s:%s' % (n['name'], n['addr'], n['port']), part='kv')
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    sock.sendto(enc_packet, (n['addr'], n['port']))
+                    sock.close()
+                    return None
+                except Exception, exp:
+                    logger.debug('KV: PUT (udp) error asking to %s: %s' % (n['name'], str(exp)), part='kv')
+                    return None
+            # ok no allow udp here, so we switch to a classic HTTP mode :)
+            uri = 'http://%s:%s/kv/%s?ttl=%s' % (n['addr'], n['port'], ukey, ttl)
+            try:
+                logger.debug('KV: PUT asking %s: %s' % (n['name'], uri), part='kv')
+                params = {'ttl': str(ttl)}
+                r = rq.put(uri, data=value, params=params)
+                logger.debug('KV: PUT return %s' % r.status_code, part='kv')
+                return None
+            except HTTP_EXCEPTIONS, exp:
+                logger.debug('KV: PUT error asking to %s: %s' % (n['name'], str(exp)), part='kv')
+                return None
+
+
+    # I try to get the nodes before myself in the nodes list
+    def get_my_replicats(self):
+        kv_nodes = gossiper.find_tag_nodes('kv')
+        kv_nodes.sort()
+
+        # Maybe soneone ask us a put but we are not totally joined
+        # if so do not replicate this
+        if gossiper.uuid not in kv_nodes:
+            logger.log('WARNING: too early put, myself %s is not a kv nodes currently' % self.uuid, part='kv')
+            return []
+
+        # You can't have more replicats that you got of kv nodes
+        nb_rep = min(REPLICATS, len(kv_nodes))
+
+        idx = kv_nodes.index(gossiper.uuid)
+        replicats = []
+        for i in range(idx - nb_rep, idx):
+            nuuid = kv_nodes[i]
+            # we can't be a replicat of ourselve
+            if nuuid == gossiper.uuid:
+                continue
+            replicats.append(nuuid)
+        rnames = []
+        for uuid in replicats:
+            # Maybe someone delete the nodes just here, so we must care about it
+            n = gossiper.get(uuid)
+            if n:
+                rnames.append(n['name'])
+
+        logger.debug('REPLICATS: myself %s replicats are %s' % (gossiper.name, rnames), part='kv')
+        return replicats
+
+
+    def do_replication_backlog_thread(self):
+        logger.log('REPLICATION thread launched', part='kv')
+        while not stopper.interrupted:
+            # Standard switch
+            replication_backlog = self.replication_backlog
+            self.replication_backlog = {}
+        
+            replicats = self.get_my_replicats()
+            if len(replicats) == 0:
+                time.sleep(1)
+            for (ukey, bl) in replication_backlog.iteritems():
+                # REF: bl = {'value':(ukey, value), 'repl':[], 'hkey':hkey, 'meta':meta}
+                _, value = bl['value']
+                for uuid in replicats:
+                    _node = gossiper.get(uuid)
+                    # Someone just delete my node, not fair :)
+                    if _node is None:
+                        continue
+                    logger.debug('REPLICATION thread manage entry to %s(%s) : %s' % (_node['name'], uuid, bl), part='kv')
+                
+                    # Now send it :)
+                    n = _node
+                    uri = 'http://%s:%s/kv/%s?force=True' % (n['addr'], n['port'], ukey)
+                    try:
+                        logger.debug('KV: PUT(force) asking %s: %s' % (n['name'], uri), part='kv')
+                        params = {'force': True, 'meta': json.dumps(bl['meta'])}
+                        r = rq.put(uri, data=value, params=params)
+                        logger.debug('KV: PUT(force) return %s' % r, part='kv')
+                    except HTTP_EXCEPTIONS, exp:
+                        logger.debug('KV: PUT(force) error asking to %s: %s' % (n['name'], str(exp)), part='kv')
+            time.sleep(1)
+
+
     # main method to export http interface. Must be in a method that got
     # a self entry
     def export_http(self):
@@ -387,6 +530,19 @@ class KVBackend:
         def interface_DELETE_key(ukey):
             logger.debug("KV: DELETE KEY %s" % ukey, part='kv')
             self.delete_key(ukey)
+        
+        
+        @route('/kv/:ukey#.+#', method='PUT')
+        def interface_PUT_key(ukey):
+            value = request.body.getvalue()
+            logger.debug("KV: PUT KEY %s (len:%d)" % (ukey, len(value)), part='kv')
+            force = request.GET.get('force', 'False') == 'True'
+            meta = request.GET.get('meta', None)
+            if meta:
+                meta = json.loads(meta)
+            ttl = int(request.GET.get('ttl', '0'))
+            self.put_key(ukey, value, force=force, meta=meta, ttl=ttl)
+            return
 
 
 kvmgr = KVBackend()
