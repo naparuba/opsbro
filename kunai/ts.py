@@ -523,10 +523,10 @@ class TSListener(object):
                 
                 # Two cases: it's for me or not
                 hkey = hashlib.sha1(mname).hexdigest()
-                ts_node_manager = self.clust.find_ts_node(hkey)
+                ts_node_manager = gossiper.find_tag_node('ts', hkey)
                 # if it's me that manage this key, I add it in my backend
-                if ts_node_manager != self.clust.uuid:
-                    node = self.clust.nodes.get(ts_node_manager, None)
+                if ts_node_manager != gossiper.uuid:
+                    node = gossiper.get(ts_node_manager)
                     # threads are dangerous things...
                     if node is None:
                         continue
@@ -696,9 +696,9 @@ class TSListener(object):
                 return
             mname, value, timestamp = elts[0], elts[1], elts[2]
             hkey = hashlib.sha1(mname).hexdigest()
-            ts_node_manager = self.clust.find_ts_node(hkey)
+            ts_node_manager = gossiper.find_tag_node('ts', hkey)
             # if it's me that manage this key, I add it in my backend
-            if ts_node_manager == self.clust.uuid:
+            if ts_node_manager == gossiper.uuid:
                 logger.debug("I am the TS node manager", part='ts')
                 try:
                     timestamp = int(timestamp)
@@ -716,7 +716,7 @@ class TSListener(object):
                 forwards[ts_node_manager] = l
         
         for (uuid, lst) in forwards.iteritems():
-            node = self.clust.nodes.get(uuid, None)
+            node = gossiper.get(uuid, None)
             # maybe the node disapear? bail out, we are not lucky
             if node is None:
                 continue

@@ -241,13 +241,12 @@ class ShinkenExporter(object):
             # First look at all nodes in the cluster and regerate them
             node_keys = gossiper.nodes.keys()
             for nid in node_keys:
-                n = gossiper.nodes.get(nid, None)
+                n = gossiper.get(nid)
                 if n is None:
                     continue
                 self.generate_node_file(n)
         
         while not stopper.interrupted:
-            logger.error('SHINKEN LOOP')
             logger.debug('Shinken loop, regenerate [%s]' % self.regenerate_flag, part='shinken')
             
             time.sleep(1)
@@ -263,7 +262,7 @@ class ShinkenExporter(object):
             node_ids = self.node_changes
             self.node_changes = []
             for (evt, nid) in node_ids:
-                n = gossiper.nodes.get(nid, None)
+                n = gossiper.get(nid)
                 if evt == 'new-node':
                     if n is None:  # maybe someone just delete the node?
                         continue

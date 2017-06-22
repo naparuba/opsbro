@@ -348,14 +348,14 @@ class Cluster(object):
         # up to date info)
         if os.path.exists(self.nodes_file):
             with open(self.nodes_file, 'r') as f:
-                self.nodes = json.loads(f.read())
+                nodes = json.loads(f.read())
                 # If we were in nodes, remove it, we will refresh it
-                if self.uuid in self.nodes:
-                    del self.nodes[self.uuid]
+                if self.uuid in nodes:
+                    del nodes[self.uuid]
         else:
-            self.nodes = {}
+            nodes = {}
         # We must protect the nodes with a lock
-        self.nodes_lock = threading.RLock()
+        nodes_lock = threading.RLock()
         
         # Load some files, like the old incarnation file
         if os.path.exists(self.incarnation_file):
@@ -364,7 +364,6 @@ class Cluster(object):
                 self.incarnation += 1
         else:
             self.incarnation = 0
-        print "INCARNATION", self.incarnation
         
         # Load check and service retention as they are filled
         # collectors will wait a bit
@@ -442,7 +441,7 @@ class Cluster(object):
         dockermgr.launch()
         
         # Our main object for gossip managment
-        gossiper.init(self.nodes, self.nodes_lock, self.addr, self.port, self.name, self.display_name, self.incarnation, self.uuid,
+        gossiper.init(nodes, nodes_lock, self.addr, self.port, self.name, self.display_name, self.incarnation, self.uuid,
                       self.tags, self.seeds, self.bootstrap, self.zone, self.is_proxy)
         
         # About detecting tags and such things
@@ -979,7 +978,7 @@ class Cluster(object):
     # so the other nodes are aware about our tags/service
     def link_services(self):
         logger.debug('LINK my services and my node entry')
-        node = self.nodes[self.uuid]
+        node = gossiper.get(self.uuid)
         tags = node['tags']
         for (sname, service) in self.services.iteritems():
             apply_on = service.get('apply_on', '')
@@ -991,7 +990,7 @@ class Cluster(object):
     # with the name of the checks we are apply_on about
     def link_checks(self):
         logger.debug('LOOKING FOR our checks that match our tags')
-        node = self.nodes[self.uuid]
+        node = gossiper.get(self.uuid)
         tags = node['tags']
         active_checks = []
         for (cname, check) in self.checks.iteritems():
@@ -1151,7 +1150,7 @@ class Cluster(object):
                     # now maybe the source was a suspect that just ping me? if so
                     # ask for a future ping
                     fr_uuid = m['from']
-                    node = self.nodes.get(fr_uuid, None)
+                    node = gossiper.get(fr_uuid)
                     if node and node['state'] != 'alive':
                         logger.debug('PINGBACK +ing node', node['name'], part='gossip')
                         gossiper.to_ping_back.append(fr_uuid)
@@ -1166,8 +1165,8 @@ class Cluster(object):
                     # _from, do this in a thread so we don't lock here
                     def do_indirect_ping(self, tgt, _from, addr):
                         logger.debug('do_indirect_ping', tgt, _from, part='gossip')
-                        ntgt = self.nodes.get(tgt, None)
-                        nfrom = self.nodes.get(_from, None)
+                        ntgt = gossiper.get(tgt, None)
+                        nfrom = gossiper.get(_from, None)
                         # If the dest or the from node are now unknown, exit this thread
                         if not ntgt or not nfrom:
                             return
@@ -1291,10 +1290,10 @@ class Cluster(object):
                     if cid not in self.active_checks:
                         continue
                     r['checks'][cid] = check
-                r['services'] = self.nodes[self.uuid]['services']
+                r['services'] = gossiper.get(self.uuid)['services']
                 return r
             else:  # find the elements
-                node = self.nodes.get(nuuid, None)
+                node = gossiper.get(nuuid)
                 if node is None:
                     return abort(404, 'This node is not found')
                 # Services are easy, we already got them
@@ -1361,8 +1360,8 @@ class Cluster(object):
                 service['passing'] = 0
                 service['failing-members'] = []
                 service['failing'] = 0
-            with self.nodes_lock:
-                for (uuid, node) in self.nodes.iteritems():
+            with gossiper.nodes_lock:
+                for (uuid, node) in gossiper.nodes.iteritems():
                     for (sname, service) in node['services'].iteritems():
                         if sname not in services:
                             continue
@@ -1393,8 +1392,8 @@ class Cluster(object):
             service['failing-members'] = []
             service['failing'] = 0
             sname = service.get('name')
-            with self.nodes_lock:
-                for (uuid, node) in self.nodes.iteritems():
+            with gossiper.nodes_lock:
+                for (uuid, node) in gossiper.nodes.iteritems():
                     if sname not in node['services']:
                         continue
                     service['members'].append(node['name'])
@@ -1835,10 +1834,10 @@ class Cluster(object):
             res = []
             for target in targets:
                 
-                nuuid = self.find_ts_node(target)
+                nuuid = gossiper.find_tag_node('ts', target)
                 n = None
                 if nuuid:
-                    n = self.nodes.get(nuuid, None)
+                    n = gossiper.get(nuuid)
                 nname = ''
                 if n:
                     nname = n['name']
@@ -1970,8 +1969,8 @@ class Cluster(object):
         uid = libuuid.uuid1().get_hex()
         logger.debug('EXEC ask for launching command', cmd, part='exec')
         all_uuids = []
-        with self.nodes_lock:  # get the nodes that follow the tag (or all in *)
-            for (uuid, n) in self.nodes.iteritems():
+        with gossiper.nodes_lock:  # get the nodes that follow the tag (or all in *)
+            for (uuid, n) in gossiper.nodes.iteritems():
                 if (tag == '*' or tag in n['tags']) and n['state'] == 'alive':
                     exec_id = libuuid.uuid1().get_hex()  # to get back execution id
                     all_uuids.append((uuid, exec_id))
@@ -1991,7 +1990,7 @@ class Cluster(object):
         all_uuids = e['nodes']
         logger.debug('WILL EXEC command for %s' % all_uuids, part='exec')
         for (nuid, exec_id) in all_uuids:
-            node = self.nodes.get(nuid, None)
+            node = gossiper.get(nuid)
             logger.debug('WILL EXEC A NODE? %s' % node, part='exec')
             if node is None:  # was removed, don't play lotery today...
                 continue
@@ -2113,7 +2112,7 @@ class Cluster(object):
         # we have to compute our internal key mapping. For user key it's: /data/KEY
         key = ukey
         hkey = hashlib.sha1(key).hexdigest()
-        nuuid = self.find_kv_node(hkey)
+        nuuid = gossiper.find_tag_node('kv', hkey)
         logger.info('KV: key %s is managed by %s' % (ukey, nuuid), part='kv')
         # that's me :)
         if nuuid == self.uuid:
@@ -2122,7 +2121,7 @@ class Cluster(object):
             return v
         else:
             logger.info('KV: another node is managing %s' % ukey)
-            n = self.nodes.get(nuuid, None)
+            n = gossiper.get(nuuid)
             # Maybe the node disapears, if so bailout and say we got no luck
             if n is None:
                 return None
@@ -2146,9 +2145,9 @@ class Cluster(object):
         
         hkey = hashlib.sha1(key).hexdigest()
         
-        nuuid = self.find_kv_node(hkey)
+        nuuid = gossiper.find_tag_node('kv', hkey)
         
-        _node = self.nodes.get(nuuid, None)
+        _node = gossiper.get(nuuid)
         _name = ''
         # The node can disapear with another thread
         if _node is not None:
@@ -2175,7 +2174,7 @@ class Cluster(object):
             self.replication_backlog[ukey] = bl
             return None
         else:
-            n = self.nodes.get(nuuid, None)
+            n = gossiper.get(nuuid)
             if n is None:  # oups, someone is playing iwth my nodes and delete it...
                 return None
             # Maybe the user did allow weak consistency, so we can use udp (like metrics)
@@ -2210,7 +2209,7 @@ class Cluster(object):
         key = ukey
         
         hkey = hashlib.sha1(key).hexdigest()
-        nuuid = self.find_kv_node(hkey)
+        nuuid = gossiper.find_tag_node('kv', hkey)
         logger.debug('KV: DELETE node that manage the key %s' % nuuid, part='kv')
         # that's me :)
         if nuuid == self.uuid:
@@ -2218,7 +2217,7 @@ class Cluster(object):
             self.kv.delete(key)
             return None
         else:
-            n = self.nodes.get(nuuid, None)
+            n = gossiper.get(nuuid)
             # Maybe someone delete my node, it's not fair :)
             if n is None:
                 return None
@@ -2265,7 +2264,7 @@ class Cluster(object):
     
     # I try to get the nodes before myself in the nodes list
     def get_my_replicats(self):
-        kv_nodes = self.find_kv_nodes()
+        kv_nodes = gossiper.find_tag_nodes('kv')
         kv_nodes.sort()
         
         # Maybe soneone ask us a put but we are not totally joined
@@ -2288,7 +2287,7 @@ class Cluster(object):
         rnames = []
         for uuid in replicats:
             # Maybe someone delete the nodes just here, so we must care about it
-            n = self.nodes.get(uuid, None)
+            n = gossiper.get(uuid)
             if n:
                 rnames.append(n['name'])
         
@@ -2310,7 +2309,7 @@ class Cluster(object):
                 # REF: bl = {'value':(ukey, value), 'repl':[], 'hkey':hkey, 'meta':meta}
                 _, value = bl['value']
                 for uuid in replicats:
-                    _node = self.nodes.get(uuid, None)
+                    _node = gossiper.get(uuid)
                     # Someone just delete my node, not fair :)
                     if _node is None:
                         continue
@@ -2341,7 +2340,7 @@ class Cluster(object):
         while True:
             repls = self.get_my_replicats()
             for repluuid in repls:
-                repl = self.nodes.get(repluuid, None)
+                repl = gossiper.get(repluuid)
                 # Maybe someone just delete my node, if so skip it
                 if repl is None:
                     continue
@@ -2691,7 +2690,7 @@ Subject: %s
         for e in datas:
             mname, value, timestamp = e['mname'], e['value'], e['timestamp']
             hkey = hashlib.sha1(mname).hexdigest()
-            ts_node_manager = self.find_ts_node(hkey)
+            ts_node_manager = gossiper.find_tag_node('ts', hkey)
             # if it's me that manage this key, I add it in my backend
             if ts_node_manager == self.uuid:
                 logger.debug("I am the TS node manager")
@@ -2708,7 +2707,7 @@ Subject: %s
                 forwards[ts_node_manager] = l
         
         for (uuid, lst) in forwards.iteritems():
-            node = self.nodes.get(uuid, None)
+            node = gossiper.get(uuid)
             # maybe the node disapear? bail out, we are not lucky
             if node is None:
                 continue
@@ -2919,63 +2918,18 @@ Subject: %s
         
         # Go launch it
         threader.create_and_launch(do_update_libexec_cfg_thread, args=(self,))
-    
-    
-    # find all nearly alive nodes with a specific tag
-    def find_tag_nodes(self, tag):
-        nodes = []
-        with self.nodes_lock:
-            for (uuid, node) in self.nodes.iteritems():
-                if node['state'] in ['dead', 'leave']:
-                    continue
-                tags = node['tags']
-                if tag in tags:
-                    nodes.append(uuid)
-        return nodes
-    
-    
-    # find the good ring node for a tag and for a key
-    def find_tag_node(self, tag, hkey):
-        kv_nodes = self.find_tag_nodes(tag)
         
-        # No kv nodes? oups, set myself so
-        if len(kv_nodes) == 0:
-            return self.uuid
-        
-        kv_nodes.sort()
-        
-        idx = bisect.bisect_right(kv_nodes, hkey) - 1
-        # logger.debug("IDX %d" % idx, hkey, kv_nodes, len(kv_nodes))
-        nuuid = kv_nodes[idx]
-        return nuuid
-    
-    
-    def find_kv_nodes(self):
-        return self.find_tag_nodes('kv')
-    
-    
-    def find_kv_node(self, hkey):
-        return self.find_tag_node('kv', hkey)
-    
-    
-    def find_ts_nodes(self, hkey):
-        return self.find_tag_nodes('ts')
-    
-    
-    def find_ts_node(self, hkey):
-        return self.find_tag_node('ts', hkey)
-    
     
     def retention_nodes(self, force=False):
         # Ok we got no nodes? something is strange, we don't save this :)
-        if len(self.nodes) == 0:
+        if len(gossiper.nodes) == 0:
             return
         
         now = int(time.time())
         if force or (now - 60 > self.last_retention_write):
             with open(self.nodes_file + '.tmp', 'w') as f:
-                with self.nodes_lock:
-                    nodes = copy.copy(self.nodes)
+                with gossiper.nodes_lock:
+                    nodes = copy.copy(gossiper.nodes)
                 f.write(jsoner.dumps(nodes))
             # now more the tmp file into the real one
             shutil.move(self.nodes_file + '.tmp', self.nodes_file)
@@ -3010,11 +2964,6 @@ Subject: %s
             self.last_retention_write = now
     
     
-    def count(self, state):
-        with self.nodes_lock:
-            nodes = copy.copy(self.nodes)
-        return len([n for n in nodes.values() if n['state'] == state])
-    
     
     # Guess what? yes, it is the main function
     def main(self):
@@ -3026,15 +2975,9 @@ Subject: %s
         while not self.interrupted:
             i += 1
             if i % 10 == 0:
-                # logger.debug('KNOWN NODES: %s' % ','.join([ n['name'] for n in self.nodes.values()] ) )
-                nodes = self.nodes.copy()
                 logger.debug('KNOWN NODES: %d, alive:%d, suspect:%d, dead:%d, leave:%d' % (
-                    len(self.nodes), self.count('alive'), self.count('suspect'), self.count('dead'),
-                    self.count('leave')),
-                             part='gossip')
-                if self.count('dead') > 0:
-                    logger.debug('DEADS: %s' % ','.join([n['name'] for n in nodes.values() if n['state'] == 'dead']),
-                                 part='gossip')
+                    gossiper.count(), gossiper.count('alive'), gossiper.count('suspect'), gossiper.count('dead'),
+                    gossiper.count('leave')), part='gossip')
             
             if i % 15 == 0:
                 threader.create_and_launch(gossiper.launch_full_sync, name='launch-full-sync', essential=True)

@@ -3,6 +3,7 @@ import socket
 from kunai.log import logger
 from kunai.threadmgr import threader
 from kunai.module import Module
+
 from dnsquery import DNSQuery
 
 
@@ -68,7 +69,7 @@ class DNSModule(Module):
             
             try:
                 p = DNSQuery(data)
-                r = p.lookup_for_nodes(self.daemon.nodes, self.domain)
+                r = p.lookup_for_nodes(self.domain)
                 logger.debug("DNS lookup nodes response:", r, part='dns')
                 self.sock.sendto(p.response(r), addr)
             except Exception, exp:

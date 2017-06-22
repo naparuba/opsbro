@@ -1,7 +1,9 @@
 import re
 import socket
+import copy
 
 from kunai.log import logger
+from kunai.gossip import gossiper
 
 pattern = r"((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)([ (\[]?(\.|dot)[ )\]]?(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3})"
 ipv4pattern = re.compile(pattern)
@@ -30,7 +32,9 @@ class DNSQuery:
     
     
     # We look in the nodes for the good tag
-    def lookup_for_nodes(self, nodes, dom):
+    def lookup_for_nodes(self, dom):
+        with gossiper.nodes_lock:
+            nodes = copy.copy(gossiper.nodes)
         logger.debug('Querying %s for managed domaine: %s' % (dom, self.domain), part='dns')
         if not self.domain.endswith(dom):
             logger.debug('Domain %s is not matching managed domain: %s' % (dom, self.domain), part='dns')

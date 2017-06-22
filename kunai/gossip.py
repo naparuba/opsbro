@@ -7,6 +7,7 @@ import math
 import requests as rq
 import copy
 import sys
+import bisect
 
 # some singleton :)
 from kunai.log import logger
@@ -136,7 +137,44 @@ class Gossip(object):
     
     def have_tag(self, tag):
         return tag in self.tags
+
+
+    # find all nearly alive nodes with a specific tag
+    def find_tag_nodes(self, tag):
+        nodes = []
+        with self.nodes_lock:
+            for (uuid, node) in self.nodes.iteritems():
+                if node['state'] in ['dead', 'leave']:
+                    continue
+                tags = node['tags']
+                if tag in tags:
+                    nodes.append(uuid)
+        return nodes
+
+
+    # find the good ring node for a tag and for a key
+    def find_tag_node(self, tag, hkey):
+        tag_nodes = self.find_tag_nodes(tag)
     
+        # No kv nodes? oups, set myself so
+        if len(tag_nodes) == 0:
+            return self.uuid
+    
+        tag_nodes.sort()
+    
+        idx = bisect.bisect_right(tag_nodes, hkey) - 1
+        # logger.debug("IDX %d" % idx, hkey, kv_nodes, len(kv_nodes))
+        nuuid = tag_nodes[idx]
+        return nuuid
+    
+    
+    def count(self, state=''):
+        with self.nodes_lock:
+            if state:
+                return len([n for n in self.nodes.values() if n['state'] == state])
+            else:  # no filter, take all
+                return len(self.nodes)
+        
     
     # Another module/part did give a new tag, take it and warn others node about this
     # change if there is really a change
