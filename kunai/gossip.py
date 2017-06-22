@@ -734,6 +734,28 @@ class Gossip(object):
             logger.log("PING: cannot join the other node %s:%s : %s" % (addr, port, exp), part='gossip')
     
     
+    def manage_ping_message(self, m, addr):
+        # if it me that the other is pinging? because it can think to
+        # thing another but in my addr, like it I did change my name
+        did_want_to_ping = m.get('node', None)
+        if did_want_to_ping != self.uuid:  # not me? skip this
+            return
+        ack = {'type': 'ack', 'seqno': m['seqno']}
+        ret_msg = json.dumps(ack)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
+        enc_ret_msg = encrypter.encrypt(ret_msg)
+        sock.sendto(enc_ret_msg, addr)
+        sock.close()
+        logger.debug("PING RETURN ACK MESSAGE", ret_msg, part='gossip')
+        # now maybe the source was a suspect that just ping me? if so
+        # ask for a future ping
+        fr_uuid = m['from']
+        node = self.get(fr_uuid)
+        if node and node['state'] != 'alive':
+            logger.debug('PINGBACK +ing node', node['name'], part='gossip')
+            self.to_ping_back.append(fr_uuid)
+    
+    
     # Randomly push some gossip broadcast messages and send them to
     # KGOSSIP others nodes
     # consume: if True (default) then a message will be decremented

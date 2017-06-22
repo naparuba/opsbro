@@ -1126,32 +1126,13 @@ class Cluster(object):
                 if t is None:
                     continue
                 if t == 'ping':
-                    # if it me that the other is pinging? because it can think to
-                    # thing another but in my addr, like it I did change my name
-                    did_want_to_ping = m.get('node', None)
-                    if did_want_to_ping != self.uuid:  # not me? skip this
-                        continue
-                    ack = {'type': 'ack', 'seqno': m['seqno']}
-                    ret_msg = json.dumps(ack)
-                    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
-                    enc_ret_msg = encrypter.encrypt(ret_msg)
-                    sock.sendto(enc_ret_msg, addr)
-                    sock.close()
-                    logger.debug("PING RETURN ACK MESSAGE", ret_msg, part='gossip')
-                    # now maybe the source was a suspect that just ping me? if so
-                    # ask for a future ping
-                    fr_uuid = m['from']
-                    node = gossiper.get(fr_uuid)
-                    if node and node['state'] != 'alive':
-                        logger.debug('PINGBACK +ing node', node['name'], part='gossip')
-                        gossiper.to_ping_back.append(fr_uuid)
+                    gossiper.manage_ping_message(m, addr)
                 elif t == 'ping-relay':
                     tgt = m.get('tgt')
                     _from = m.get('from', '')
                     if not tgt or not _from:
                         continue
-                    
-                    
+                        
                     # We are ask to do a indirect ping to tgt and return the ack to
                     # _from, do this in a thread so we don't lock here
                     def do_indirect_ping(self, tgt, _from, addr):
