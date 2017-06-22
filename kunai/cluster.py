@@ -1318,7 +1318,7 @@ class Cluster(object):
         @route('/agent/info')
         def get_info():
             response.content_type = 'application/json'
-            r = {'logs'      : logger.get_errors(), 'pid': os.getpid(), 'name': self.name, 'display_name':self.display_name,
+            r = {'logs'      : logger.get_errors(), 'pid': os.getpid(), 'name': self.name, 'display_name': self.display_name,
                  'port'      : self.port, 'addr': self.addr, 'socket': self.socket_path, 'zone': self.zone,
                  'uuid'      : self.uuid, 'graphite': self.graphite,
                  'statsd'    : self.statsd,
@@ -1346,24 +1346,6 @@ class Cluster(object):
                 r['httpservers'][k] = {'nb_threads': nb_threads, 'idle_threads': idle_threads, 'queue': q}
             
             return r
-        
-        
-        @route('/push-pull')
-        def interface_push_pull():
-            response.content_type = 'application/json'
-            logger.debug("PUSH-PULL called by HTTP", part='gossip')
-            data = request.GET.get('msg')
-            
-            msg = json.loads(data)
-            
-            self.manage_message(msg)
-            
-            with self.nodes_lock:
-                nodes = copy.copy(self.nodes)
-            m = {'type': 'push-pull-msg', 'nodes': nodes}
-            
-            logger.debug("PUSH-PULL returning my own nodes", part='gossip')
-            return json.dumps(m)
         
         
         # We want a state of all our services, with the members
@@ -3073,11 +3055,6 @@ Subject: %s
             
             time.sleep(1)
             
-            print "ZONES", zonemgr.__dict__
-            print "SUB INTERNET", zonemgr.get_sub_zones_from('internet')
-            print "TOP FROM GABES-HOME", zonemgr.get_top_zones_from('gabes-home')
-            print "IS PROXY?", self.is_proxy
-            
             # if i % 30 == 0:
             #    from meliae import scanner
             #    scanner.dump_all_objects( '/tmp/memory-%s' % self.name)
@@ -3119,9 +3096,7 @@ Subject: %s
         t = m.get('type', None)
         if t is None:  # bad message, skip it
             return
-        if t == 'push-pull-msg':
-            gossiper.merge_nodes(m['nodes'])
-        elif t == 'ack':
+        if t == 'ack':
             logger.debug("GOT AN ACK?")
         elif t == 'alive':
             gossiper.set_alive(m)

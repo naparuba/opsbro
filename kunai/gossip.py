@@ -14,7 +14,7 @@ from kunai.threadmgr import threader
 from kunai.broadcast import broadcaster
 from kunai.websocketmanager import websocketmgr
 from kunai.pubsub import pubsub
-from kunai.httpdaemon import route, response, abort
+from kunai.httpdaemon import route, response, abort, request
 from kunai.encrypter import encrypter
 from kunai.httpclient import HTTP_EXCEPTIONS
 from kunai.zonemanager import zonemgr
@@ -49,6 +49,10 @@ class Gossip(object):
         # list of uuid to ping back because we though they were dead        
         self.to_ping_back = []
         
+        # We update our nodes list based on our current zone. We keep our zone, only proxy from top zone
+        # and all the sub zones
+        self.clean_nodes_from_zone()
+        
         # export my http uri now I got a real self
         self.export_http()
         
@@ -60,6 +64,46 @@ class Gossip(object):
     
     def __getitem__(self, uuid):
         return self.nodes[uuid]
+    
+    
+    # We should clean nodes that are not from our zone or direct top/sub one
+    # and for:
+    # * our zone: all nodes
+    # * top zone: only proxy nodes
+    # * sub zones: all nodes
+    def clean_nodes_from_zone(self):
+        if not self.zone:
+            return
+        
+        to_del = []
+        # direct top and sub zones are interesting
+        top_zones = zonemgr.get_top_zones_from(self.zone)
+        sub_zones = zonemgr.get_sub_zones_from(self.zone)
+        with self.nodes_lock:
+            for (nuuid, node) in self.nodes.iteritems():
+                nzone = node['zone']
+                # My zone, we keep
+                if nzone == self.zone:
+                    continue
+                # Sub zones: keep all
+                elif nzone in sub_zones:
+                    continue
+                # Top zones: keep only proxy nodes
+                elif nzone in top_zones:
+                    if node['is_proxy']:
+                        continue  # you are saved
+                    # you are not saved ^^
+                    to_del.append(nuuid)
+                # TODO: manage multi zone layer
+                # Other zone, or unknown
+                else:
+                    to_del.append(nuuid)
+            if len(to_del) > 0:
+                logger.info("We have %d dirty nodes to remove because their zone is not valid from our own zone (%s)" % (len(to_del), self.zone))
+            for nuuid in to_del:
+                node = self.nodes[nuuid]
+                logger.info('CLEANING dirty zone node: %s/%s (was in zone %s)' % (nuuid, node['name'], node['zone']))
+                del self.nodes[nuuid]
     
     
     def get(self, uuid, default=None):
@@ -155,6 +199,8 @@ class Gossip(object):
         self.nodes[self.uuid]['zone'] = zname
         # let the others nodes know it
         self.increase_incarnation_and_broadcast('alive')
+        # As we did change, we need to update our own node list to keep only what we should
+        self.clean_nodes_from_zone()
     
     
     # get my own node entry
@@ -432,12 +478,12 @@ class Gossip(object):
     # * not ourselve ^^
     # * all of our own zone
     # * top zone: only proxy node
-    # * lower zone: only proxy node
+    # * lower zone: NO: we don't initialize sync to lower zone, they will do it themselve
     def __get_valid_nodes_to_full_sync(self):
         with self.nodes_lock:
             nodes = copy.copy(self.nodes)
         top_zones = zonemgr.get_top_zones_from(self.zone)
-        sub_zones = zonemgr.get_sub_zones_from(self.zone)
+        
         possible_nodes = []
         for n in nodes.values():
             # skip ourselve
@@ -452,7 +498,7 @@ class Gossip(object):
                 # if not, must be a relay and in directly top or sub zone
                 if not n['is_proxy']:
                     continue
-                if nzone not in top_zones and nzone not in sub_zones:
+                if nzone not in top_zones:
                     continue
             # Ok you match dear node ^^
             possible_nodes.append((n['addr'], n['port']))
@@ -473,23 +519,93 @@ class Gossip(object):
             #    print "NO OTHER ALIVE NODES !"
     
     
-    # We will choose some K random nodes and gossip them the broadcast messages to them
+    # We will choose some node and send them gossip messages to propagate the data
+    # because if they didnt already receive it, they will also gossip it
+    # There are two cases:
+    # * we are NOT a proxy node, we choose K (~10) nodes of our zone to send message, and that's all
+    # * we ARE a proxy node:
+    #   * we still choose K random nodes of our zone
+    #   * and for each other TOP zone, we choose K nodes from the other zone to send them
+    # NOTE/SECURITY: we DON'T send messages to bottom zones, because they don't need to know about the internal
+    #       data/state of the upper zone, they only need to know about the public states, so the proxy nodes
     def launch_gossip(self):
         # There is no broadcast message to sent so bail out :)
         if len(broadcaster.broadcasts) == 0:
             return
         
-        ns = self.nodes.values()
-        logger.debug("launch_gossip:: all nodes %d" % len(self.nodes), part='gossip')
-        others = [n for n in ns if n['uuid'] != self.uuid]
+        with self.nodes_lock:
+            nodes = copy.copy(self.nodes)
+        
+        # First we need to send all message to the others TOP zone, and do not 'consume' messages
+        # only our zone will consume them so we are sure they will disapear
+        if self.is_proxy:
+            top_zones = zonemgr.get_top_zones_from(self.zone)
+            for zname in top_zones:
+                # we don't care about leave node, but we need others to be proxy
+                others = [n for n in nodes.values() if n['zone'] == zname and n['state'] != 'leave' and n['is_proxy'] == True]
+                # Maybe there is no valid nodes for this zone, skip it
+                if len(others) == 0:
+                    continue
+                # Limit the broadcast
+                nb_dest = min(len(others), KGOSSIP)
+                dests = random.sample(others, nb_dest)
+                for dest in dests:
+                    logger.info("launch_gossip:: topzone::%s  node::" % zname, dest['name'], part='gossip')
+                    self.__do_gossip_push(dest, consume=False)
+        
+        # always send to our zone, but not for leave nodes
+        others = [n for n in nodes.values() if n['uuid'] != self.uuid and n['zone'] == self.zone and n['state'] != 'leave']
+        logger.debug("launch_gossip:: our zone nodes %d" % len(others), part='gossip')
+        
         # Maybe every one is dead, if o bail out
         if len(others) == 0:
             return
         nb_dest = min(len(others), KGOSSIP)
         dests = random.sample(others, nb_dest)
         for dest in dests:
-            logger.debug("launch_gossip::", dest['name'], part='gossip')
-            self.__do_gossip_push(dest)
+            logger.info("launch_gossip::  our own zone::%s" % self.zone, dest['name'], part='gossip')
+            self.__do_gossip_push(dest, consume=True)
+    
+    
+    # We cannot ping with all nodes:
+    # * must be not leave, we can ping dead/suspect, to check if they are still not OK
+    # * not ourselve ^^
+    # * all of our own zone
+    # * top zone: only proxy node and if we are a proxy node
+    # * lower zone: only proxy node and if we are a proxy node
+    def __get_valid_nodes_to_ping(self):
+        with self.nodes_lock:
+            nodes = copy.copy(self.nodes)
+        # If we are a proxy, we are allowed to talk to other zone
+        if self.is_proxy:
+            top_zones = zonemgr.get_top_zones_from(self.zone)
+            sub_zones = zonemgr.get_sub_zones_from(self.zone)
+        else:
+            top_zones = sub_zones = []
+        possible_nodes = []
+        for n in nodes.values():
+            # skip ourselve
+            if n['uuid'] == self.uuid:
+                continue
+            # for ping, only leave nodes are not available, we can try to ping dead/suspect
+            # to know if they are still bad
+            if n['state'] == 'leave':
+                continue
+            # if our zone, will be OK
+            nzone = n['zone']
+            if nzone != self.zone:
+                # if not, must be a relay and in directly top or sub zone
+                if not n['is_proxy']:
+                    continue
+                # only proxy nodes can be allowed to talk to others
+                if not self.is_proxy:
+                    continue
+                if nzone not in top_zones and nzone not in sub_zones:
+                    continue
+            # Ok you match dear node ^^
+            possible_nodes.append(n)
+            logger.info('VALID node to ping %s' % n['name'], part='gossip')
+        return possible_nodes
     
     
     # we ping some K random nodes, but in priority some nodes that we thouugh were deads
@@ -501,20 +617,21 @@ class Gossip(object):
         if self.ping_another_in_progress:
             return
         self.ping_another_in_progress = True
-        with self.nodes_lock:
-            nodes = copy.copy(self.nodes)
-        others = [n for n in nodes.values() if n['uuid'] != self.uuid and n['state'] != 'leave']
+        
+        possible_nodes = self.__get_valid_nodes_to_ping()
         
         # first previously deads
         for uuid in self.to_ping_back:
-            if uuid in nodes:
-                self.__do_ping(nodes[uuid])
+            node = self.nodes.get(uuid, None)
+            if node is None:
+                continue
+            self.__do_ping(node)
         # now reset it
         self.to_ping_back = []
         
         # Now we take one in all the others
-        if len(others) >= 1:
-            other = random.choice(others)
+        if len(possible_nodes) >= 1:
+            other = random.choice(possible_nodes)
             self.__do_ping(other)
         # Ok we did finish to ping another
         self.ping_another_in_progress = False
@@ -582,7 +699,8 @@ class Gossip(object):
     
     # Randomly push some gossip broadcast messages and send them to
     # KGOSSIP others nodes
-    def __do_gossip_push(self, dest):
+    # consume: if True (default) then a message will be decremented
+    def __do_gossip_push(self, dest, consume=True):
         message = ''
         to_del = []
         stack = []
@@ -592,9 +710,11 @@ class Gossip(object):
             if 'tag' in b and b['tag'] not in tags:
                 continue
             old_message = message
-            send = b['send']
-            if send >= KGOSSIP:
-                to_del.append(b)
+            # only delete message if we consume it (our zone)
+            if consume:
+                send = b['send']
+                if send >= KGOSSIP:
+                    to_del.append(b)
             bmsg = b['msg']
             stack.append(bmsg)
             message = json.dumps(stack)
@@ -605,8 +725,10 @@ class Gossip(object):
                 message = old_message
                 stack = stack[:-1]
                 break
-            # stack a sent to this broadcast message
-            b['send'] += 1
+            # Increase message send number but only if we need to consume it (our zone send)
+            if consume:
+                # stack a sent to this broadcast message
+                b['send'] += 1
         
         # Clean too much broadcasted messages
         for b in to_del:
@@ -669,15 +791,29 @@ class Gossip(object):
     # Go launch a push-pull to another node. We will sync all our nodes
     # entries, and each other will be able to learn new nodes and so
     # launch gossip broadcasts if need
+    # We push pull:
+    # * our own zone
+    # * the upper zone
+    # * NEVER lower zone. They will connect to us
     def do_push_pull(self, other):
         with self.nodes_lock:
             nodes = copy.deepcopy(self.nodes)
-        m = {'type': 'push-pull-msg', 'nodes': nodes}
+        sub_zones = zonemgr.get_sub_zones_from(self.zone)
+        nodes_to_send = {}
+        for (nuuid, node) in nodes.iteritems():
+            nzone = node['zone']
+            if nzone != self.zone and nzone not in sub_zones:
+                # skip this node
+                continue
+            # ok in the good zone (our or sub)
+            nodes_to_send[nuuid] = node
+        logger.debug('do_push_pull:: giving %s informations about nodes: %s' % (other[0], [n['name'] for n in nodes_to_send.values()]), part='gossip')
+        m = {'type': 'push-pull-msg', 'ask-from-zone': self.zone, 'nodes': nodes_to_send}
         message = json.dumps(m)
         
         (addr, port) = other
         
-        uri = 'http://%s:%s/push-pull' % (addr, port)
+        uri = 'http://%s:%s/agent/push-pull' % (addr, port)
         payload = {'msg': message}
         try:
             r = rq.get(uri, params=payload)
@@ -687,11 +823,46 @@ class Gossip(object):
             except ValueError, exp:
                 logger.error('ERROR CONNECTING TO %s:%s' % other, exp, part='gossip')
                 return False
+            logger.debug('do_push_pull: get return from %s:%s' % (other[0], back), part='gossip')
             pubsub.pub('manage-message', msg=back)
             return True
         except HTTP_EXCEPTIONS, exp:
             logger.error('[push-pull] ERROR CONNECTING TO %s:%s' % other, exp, part='gossip')
             return False
+    
+    
+    # An other node did push-pull us, and we did load it's nodes,
+    # but now we should give back only nodes that the other zone
+    # have the right:
+    # * same zone as us: give all we know about
+    # * top zone: CANNOT  be the case, because only lower zone ask upper zones
+    # * sub zones: give only our zone proxy nodes
+    #   * no the other nodes of my zones, they don't have to know my zone detail
+    #   * not my top zones of course, same reason, even proxy nodes, they need to talk to me only
+    #   * not the other sub zones of my, because they don't have to see which who I am linked (can be an other customer for example)
+    def get_nodes_for_push_pull_response(self, other_node_zone):
+        logger.debug('PUSH-PULL: get a push pull from a node zone: %s' % other_node_zone, part='gossip')
+        # Same zone: give all we know about
+        if other_node_zone == self.zone:
+            logger.debug('PUSH-PULL same zone ask us, give back all we know about', part='gossip')
+            with self.nodes_lock:
+                nodes = copy.copy(self.nodes)
+            return nodes
+        
+        # Ok look if in sub zones: if found, all they need to know is
+        # my realm proxy nodes,
+        sub_zones = zonemgr.get_sub_zones_from(self.zone)
+        if other_node_zone in sub_zones:
+            only_my_zone_proxies = {}
+            with self.nodes_lock:
+                for (nuuid, node) in self.nodes.iteritems():
+                    if node['is_proxy'] and node['zone'] == self.zone:
+                        only_my_zone_proxies[nuuid] = node
+                        logger.debug('PUSH-PULL: give back data about proxy node: %s' % node['name'], part='gossip')
+            return only_my_zone_proxies
+        
+        logger.warning('SECURITY: a node from an unallowed zone %s did ask us push_pull' % other_node_zone)
+        return {}
     
     
     # suspect nodes are set with a suspect_time entry. If it's too old,
@@ -885,6 +1056,29 @@ class Gossip(object):
             r = self.do_push_pull(tgt)
             logger.info("HTTP: agent join for %s:%s result:%s" % (addr, port, r), part='http')
             return json.dumps(r)
+        
+        
+        @route('/agent/push-pull')
+        def interface_push_pull():
+            response.content_type = 'application/json'
+            logger.debug("PUSH-PULL called by HTTP", part='gossip')
+            data = request.GET.get('msg')
+            
+            msg = json.loads(data)
+            # First: load nodes from the distant node
+            t = msg.get('type', None)
+            if t is None or t != 'push-pull-msg':  # bad message, skip it
+                return
+            self.merge_nodes(msg['nodes'])
+            # self.manage_message(msg)
+            
+            # And look where does the message came from: if it's the same
+            # zone: we can give all, but it it's a lower zone, only give our proxy nodes informations
+            nodes = self.get_nodes_for_push_pull_response(msg['ask-from-zone'])
+            m = {'type': 'push-pull-msg', 'nodes': nodes}
+            
+            logger.debug("PUSH-PULL returning my own nodes", part='gossip')
+            return json.dumps(m)
 
 
 gossiper = Gossip()
