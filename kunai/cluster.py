@@ -158,7 +158,7 @@ class Cluster(object):
         
         self.bootstrap = bootstrap
         self.seeds = [s.strip() for s in seeds.split(',')]
-        self.zone = ''
+        zone = ''
         
         # By default, we are alive :)
         self.state = 'alive'
@@ -383,7 +383,7 @@ class Cluster(object):
         # Load previous zone if available
         if os.path.exists(self.zone_file):
             with open(self.zone_file, 'r') as f:
-                self.zone = f.read().strip()
+                zone = f.read().strip()
         
         # Try to clean libexec and configuration directories
         self.libexec_dir = libexec_dir
@@ -435,7 +435,7 @@ class Cluster(object):
         
         # Our main object for gossip managment
         gossiper.init(nodes, nodes_lock, self.addr, self.port, self.name, self.display_name, self.incarnation, self.uuid,
-                      self.tags, self.seeds, self.bootstrap, self.zone, self.is_proxy)
+                      self.tags, self.seeds, self.bootstrap, zone, self.is_proxy)
         
         # About detecting tags and such things
         detecter.load(self)
@@ -1194,7 +1194,7 @@ class Cluster(object):
         def get_info():
             response.content_type = 'application/json'
             r = {'logs'      : logger.get_errors(), 'pid': os.getpid(), 'name': self.name, 'display_name': self.display_name,
-                 'port'      : self.port, 'addr': self.addr, 'socket': self.socket_path, 'zone': self.zone,
+                 'port'      : self.port, 'addr': self.addr, 'socket': self.socket_path, 'zone': gossiper.zone,
                  'uuid'      : self.uuid, 'graphite': self.graphite,
                  'statsd'    : self.statsd,
                  'threads'   : threader.get_info(),
@@ -1501,7 +1501,6 @@ class Cluster(object):
             
             nzone = request.body.getvalue()
             logger.debug("HTTP: /agent/zone put %s" % (nzone), part='http')
-            self.zone = nzone
             gossiper.change_zone(nzone)
             with open(self.zone_file, 'w') as f:
                 f.write(nzone)
