@@ -20,7 +20,6 @@ import shutil
 import zlib
 import re
 import copy
-import cPickle
 # for mail handler
 import smtplib
 import datetime
@@ -115,9 +114,6 @@ class Cluster(object):
         # keep a list of the checks names that match our tags
         self.active_checks = []
         
-        # graphite
-        self.graphite = None
-        
         # Some default value that can be erased by the
         # main configuration file
         # By default no encryption
@@ -155,7 +151,7 @@ class Cluster(object):
         modulemanager.set_daemon(self)
         
         # save the known types for the configuration
-        self.known_types = ['check', 'service', 'handler', 'generator', 'graphite', 'zone']
+        self.known_types = ['check', 'service', 'handler', 'generator', 'zone']
         # and extend with the ones from the modules
         self.modules_known_types = modulemanager.get_managed_configuration_types()
         self.known_types.extend(self.modules_known_types)
@@ -217,8 +213,7 @@ class Cluster(object):
         # Look if our encryption key is valid or not
         if self.encryption_key:
             if AES is None:
-                logger.error(
-                    'You set an encryption key but cannot import python-crypto module, please install it. Exiting.')
+                logger.error('You set an encryption key but cannot import python-crypto module, please install it. Exiting.')
                 sys.exit(2)
             try:
                 self.encryption_key = base64.b64decode(self.encryption_key)
@@ -236,8 +231,7 @@ class Cluster(object):
                 logger.error('Cannot find the master key private file at %s' % self.master_key_priv)
             else:
                 if RSA is None:
-                    logger.error(
-                        'You set a master private key but but cannot import python-rsa module, please install it. Exiting.')
+                    logger.error('You set a master private key but but cannot import python-rsa module, please install it. Exiting.')
                     sys.exit(2)
                 
                 with open(self.master_key_priv, 'r') as f:
@@ -257,8 +251,7 @@ class Cluster(object):
                 logger.error('Cannot find the master key public file at %s' % self.master_key_pub)
             else:
                 if RSA is None:
-                    logger.error(
-                        'You set a master public key but but cannot import python-crypto module, please install it. Exiting.')
+                    logger.error('You set a master public key but but cannot import python-crypto module, please install it. Exiting.')
                     sys.exit(2)
                 # let's try to open the key so :)
                 with open(self.master_key_pub, 'r') as f:
@@ -279,7 +272,7 @@ class Cluster(object):
         
         # Our cluster need a unique uuid, so try to guess a unique one from Hardware
         # To get a UUID that will be unique to this instance:
-        # * If there is a hardware one, use it, whatevet the hostname is or the local
+        # * If there is a hardware one, use it, whatever the hostname is or the local
         #   file are saying
         # * If there is not, then try to look at local file, and take if :
         #     * we have the same hostname than before
@@ -520,7 +513,6 @@ class Cluster(object):
     
     
     def open_cfg_file(self, fp):
-        o = {}
         with open(fp, 'r') as f:
             buf = f.read()
             try:
@@ -556,7 +548,6 @@ class Cluster(object):
             sname = os.path.splitext(fname)[0]
             self.import_service(service, 'file:%s' % fname, sname, mod_time=mod_time)
         
-        # HEHEHEHE
         if 'handler' in o:
             handler = o['handler']
             if not isinstance(handler, dict):
@@ -588,13 +579,6 @@ class Cluster(object):
             fname = fp[len(self.cfg_dir) + 1:]
             gname = os.path.splitext(fname)[0]
             self.import_detector(detector, 'file:%s' % fname, gname, mod_time=mod_time)
-        
-        if 'graphite' in o:
-            graphite = o['graphite']
-            if not isinstance(graphite, dict):
-                logger.log('ERROR: the graphite from the file %s is not a valid dict' % fp)
-                sys.exit(2)
-            self.graphite = graphite
             
         if 'zone' in o:
             zone = o['zone']
@@ -709,7 +693,7 @@ class Cluster(object):
         check['state'] = 'pending'
         check['state_id'] = 3
         check['output'] = ''
-        if not 'handlers' in check:
+        if 'handlers' not in check:
             check['handlers'] = ['default']
         self.checks[check['id']] = check
     
@@ -1022,11 +1006,7 @@ class Cluster(object):
         else:
             for sig in (signal.SIGTERM, signal.SIGINT, signal.SIGUSR1, signal.SIGUSR2):
                 signal.signal(sig, func)
-    
-    
-    def log(self, *args):
-        logger.log(args)
-    
+
     
     def launch_check_thread(self):
         self.check_thread = threader.create_and_launch(self.do_check_thread, name='check-thread', essential=True)
@@ -1168,7 +1148,7 @@ class Cluster(object):
             response.content_type = 'application/json'
             r = {'logs'      : logger.get_errors(), 'pid': os.getpid(), 'name': self.name, 'display_name': self.display_name,
                  'port'      : self.port, 'addr': self.addr, 'socket': self.socket_path, 'zone': gossiper.zone,
-                 'uuid'      : self.uuid, 'graphite': self.graphite,
+                 'uuid'      : self.uuid,
                  'threads'   : threader.get_info(),
                  'version'   : VERSION, 'tags': self.tags,
                  'docker'    : dockermgr.get_info(),
@@ -1477,200 +1457,6 @@ class Cluster(object):
             with open(self.zone_file, 'w') as f:
                 f.write(nzone)
             return json.dumps(True)
-        
-        
-        @route('/metrics/find/')
-        def get_graphite_metrics_find():
-            response.content_type = 'application/json'
-            key = request.GET.get('query', '*')
-            print "LIST GET TS FOR KEY", key
-            
-            recursive = False
-            if key.endswith('.*'):
-                recursive = True
-                key = key[:-2]
-                print "LIST RECURSVIE FOR", key
-            
-            # Maybe ask all, if so recursive is On
-            if key == '*':
-                key = ''
-                recursive = True
-            
-            r = []
-            keys = tsmgr.list_keys(key)
-            l = len(key)
-            added = {}
-            for k in keys:
-                print "LIST KEY", k
-                title = k[l:]
-                # maybe we got a key that do not belong to us
-                # like srv-linux10 when we ask for linux1
-                # so if we don't got a . here, it's an invalid
-                # dir
-                print "LIST TITLE", title
-                if key and not title.startswith('.'):
-                    print "LIST SKIPPING KEY", key
-                    continue
-                
-                # Ok here got sons, but maybe we are not asking for recursive ones, if so exit with
-                # just the key as valid tree
-                if not recursive:
-                    print "NO RECURSIVE AND EARLY EXIT for KEY", key
-                    return json.dumps(
-                        [{"leaf": 0, "context": {}, 'text': key, 'id': key, "expandable": 1, "allowChildren": 1}])
-                
-                if title.startswith('.'):
-                    title = title[1:]
-                print "LIST TITLE CLEAN", title
-                # if there is a . in it, it's a dir we need to have
-                dname = title.split('.', 1)[0]
-                # If the dnmae was not added, do it
-                if dname not in added and title.count('.') != 0:
-                    added[dname] = True
-                    r.append({"leaf"         : 0, "context": {}, 'text': dname, 'id': k[:l] + dname, 'expandable': 1,
-                              'allowChildren': 1})
-                    print "LIST ADD DIR", dname, k[:l] + dname
-                
-                print "LIST DNAME KEY", dname, key, title.count('.')
-                if title.count('.') == 0:
-                    # not a directory, add it directly but only if the
-                    # key asked was our directory                    
-                    r.append({"leaf": 1, "context": {}, 'text': title, 'id': k, "expandable": 0, "allowChildren": 0})
-                    print "LIST ADD FILE", title
-            print "LIST FINALLY RETURN", r
-            return json.dumps(r)
-        
-        
-        # really manage the render call, with real return, call by a get and
-        # a post function
-        def do_render(targets, _from):
-            response.content_type = 'application/json'
-            print "TARGETS", targets
-            if not targets:
-                return abort(400, 'Invalid target')
-            # Default past values, round at an hour
-            now = int(time.time())
-            pastraw = int(time.time()) - 86400
-            past = divmod(pastraw, 3600)[0] * 3600
-            
-            found = False
-            m = re.match(r'-(\d*)h', _from, re.M | re.I)
-            if m:
-                found = True
-                nbhours = int(m.group(1))
-                pastraw = int(time.time()) - (nbhours * 3600)
-                past = divmod(pastraw, 3600)[0] * 3600
-            if not found:
-                m = re.match(r'-(\d*)hours', _from, re.M | re.I)
-                if m:
-                    found = True
-                    nbhours = int(m.group(1))
-                    pastraw = int(time.time()) - (nbhours * 3600)
-                    past = divmod(pastraw, 3600)[0] * 3600
-            if not found:  # absolute value maybe?
-                m = re.match(r'(\d*)', _from, re.M | re.I)
-                if m:
-                    found = True
-                    past = divmod(int(m.group(1)), 3600)[0] * 3600
-            
-            if not found:
-                return abort(400, 'Invalid range')
-            
-            # Ok now got the good values
-            res = []
-            for target in targets:
-                
-                nuuid = gossiper.find_tag_node('ts', target)
-                n = None
-                if nuuid:
-                    n = gossiper.get(nuuid)
-                nname = ''
-                if n:
-                    nname = n['name']
-                logger.debug('HTTP ts: target %s is managed by %s(%s)' % (target, nname, nuuid), part='ts')
-                # that's me or the other is no more there?
-                if nuuid == self.uuid or n is None:
-                    logger.debug('HTTP ts: /render, my job to manage %s' % target, part='ts')
-                    
-                    # Maybe I am also the TS manager of these data? if so, get the TS backend data for this                    
-                    min_e = hour_e = day_e = None
-                    
-                    logger.debug('HTTP RENDER founded TS %s' % tsmgr.tsb.data)
-                    min_e = tsmgr.tsb.data.get('min::%s' % target, None)
-                    hour_e = tsmgr.tsb.data.get('hour::%s' % target, None)
-                    day_e = tsmgr.tsb.data.get('day::%s' % target, None)
-                    logger.debug('HTTP TS RENDER, FOUNDED TS data %s %s %s' % (min_e, hour_e, day_e))
-                    
-                    # Get from the past, but start at the good hours offset
-                    t = past
-                    r = []
-                    
-                    while t < now:
-                        # Maybe the time match a hour we got in memory, if so take there
-                        if hour_e and hour_e['hour'] == t:
-                            logger.debug('HTTP TS RENDER match memory HOUR, take this value instead', part='ts')
-                            raw_values = hour_e['values'][:]  # copy instead of cherrypick, because it can move/append
-                            for i in xrange(60):
-                                # Get teh value and the time
-                                e = raw_values[i]
-                                tt = t + 60 * i
-                                r.append((e, tt))
-                                if e:
-                                    logger.debug('GOT NOT NULL VALUE from RENDER MEMORY cache %s:%s' % (e, tt),
-                                                 part='ts')
-                        else:  # no memory match, got look in the KS part
-                            ukey = '%s::h%d' % (target, t)
-                            raw64 = kvmgr.get_key(ukey)
-                            if raw64 is None:
-                                for i in xrange(60):
-                                    # Get the value and the time
-                                    tt = t + 60 * i
-                                    r.append((None, tt))
-                            else:
-                                raw = base64.b64decode(raw64)
-                                v = cPickle.loads(raw)
-                                raw_values = v['values']
-                                for i in xrange(60):
-                                    # Get teh value and the time
-                                    e = raw_values[i]
-                                    tt = t + 60 * i
-                                    r.append((e, tt))
-                        # Ok now the new hour :)
-                        t += 3600
-                    # Now build the final thing
-                    res.append({"target": target, "datapoints": r})
-                else:  # someone else job, rely the question
-                    uri = 'http://%s:%s/render/?target=%s&from=%s' % (n['addr'], n['port'], target, _from)
-                    try:
-                        logger.debug('TS: (get /render) relaying to %s: %s' % (n['name'], uri), part='ts')
-                        r = rq.get(uri)
-                        logger.debug('TS: get /render founded (%d)' % len(r.text), part='ts')
-                        v = json.loads(r.text)
-                        logger.debug("TS /render relay GOT RETURN", v, "AND RES", res)
-                        res.extend(v)
-                        logger.debug("TS /render res is now", res)
-                    except HTTP_EXCEPTIONS, exp:
-                        logger.debug('TS: /render relay error asking to %s: %s' % (n['name'], str(exp)), part='ts')
-                        continue
-            
-            logger.debug('TS RENDER FINALLY RETURN', res)
-            return json.dumps(res)
-        
-        
-        @route('/render')
-        @route('/render/')
-        def get_ts_values():
-            targets = request.GET.getall('target')
-            _from = request.GET.get('from', '-24hours')
-            return do_render(targets, _from)
-        
-        
-        @route('/render', method='POST')
-        @route('/render/', method='POST')
-        def get_ts_values():
-            targets = request.POST.getall('target')
-            _from = request.POST.get('from', '-24hours')
-            return do_render(targets, _from)
         
         
         # TODO: only in the local socket http webserver

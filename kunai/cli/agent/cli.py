@@ -288,10 +288,10 @@ def do_info(show_logs):
     
     # Now graphite part
     print_info_title('Graphite')
-    if graphite is None:
+    if not graphite or 'graphite_configuration' not in graphite:
         cprint('No graphite configured')
     else:
-        g = graphite
+        g = graphite['graphite_configuration']
         e = [('enabled', g['enabled']), ('port', g['port']), ('udp', g['udp']), ('tcp', g['tcp'])]
         print_2tab(e)
     

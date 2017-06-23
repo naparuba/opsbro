@@ -365,26 +365,13 @@ class TSBackend(object):
 # that are using TsBackend
 class TSListener(object):
     def __init__(self):
-        self.addr = '0.0.0.0'
-        self.graphite_port = 2003
         # Our real database manager
         self.tsb = TSBackend()
-        
-        # Graphite reaping queue
-        self.graphite_queue = []
+
     
     
     def start_threads(self):
-        # our helper objects
-        # self.its = IdxTSDatabase()
-        
-        
-        # Now start our threads
-        # GRAPHITE
-        threader.create_and_launch(self.launch_graphite_udp_listener, name='TSL_graphite_udp_thread', essential=True)
-        threader.create_and_launch(self.launch_graphite_tcp_listener, name='TSL_graphite_tcp_thread', essential=True)
-        
-        threader.create_and_launch(self.graphite_reaper, name='graphite-reaper-thread', essential=True)
+        pass
     
     
     # push a name but return if the name was already there or not
@@ -395,144 +382,6 @@ class TSListener(object):
     # list all keys that start with key
     def list_keys(self, key):
         return self.tsb.list_keys(key)
-    
-    
-    # Thread for listening to the graphite port in UDP (2003)
-    def launch_graphite_udp_listener(self):
-        self.graphite_udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
-        self.graphite_udp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.graphite_udp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 1048576)
-        logger.log(self.graphite_udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF))
-        self.graphite_udp_sock.bind((self.addr, self.graphite_port))
-        logger.info("TS Graphite UDP port open", self.graphite_port, part='ts')
-        logger.debug("UDP RCVBUF", self.graphite_udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF), part='ts')
-        while not stopper.interrupted:
-            try:
-                data, addr = self.graphite_udp_sock.recvfrom(65535)
-            except socket.timeout:  # loop until we got some data
-                continue
-            logger.debug("UDP Graphite: received message:", len(data), addr, part='ts')
-            STATS.incr('ts.graphite.udp.receive', 1)
-            self.graphite_queue.append(data)
-    
-    
-    # Same but for the TCP connections
-    # TODO: use a real daemon part for this, this is not ok for fast receive
-    def launch_graphite_tcp_listener(self):
-        self.graphite_tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.graphite_tcp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.graphite_tcp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 1048576)
-        self.graphite_tcp_sock.bind((self.addr, self.graphite_port))
-        self.graphite_tcp_sock.listen(5)
-        logger.info("TS Graphite TCP port open", self.graphite_port, part='ts')
-        while not stopper.interrupted:
-            try:
-                conn, addr = self.graphite_tcp_sock.accept()
-            except socket.timeout:  # loop until we got some connect
-                continue
-            conn.settimeout(5.0)
-            logger.debug('TCP Graphite Connection address:', addr)
-            data = ''
-            while 1:
-                try:
-                    ldata = conn.recv(1024)
-                except Exception, exp:
-                    print "TIMEOUT", exp
-                    break
-                if not ldata:
-                    break
-                # Look at only full lines, and not the last part
-                # So we look at the position of the last \n
-                lst_nidx = ldata.rfind('\n')
-                # take all finished lines
-                data += ldata[:lst_nidx + 1]
-                STATS.incr('ts.graphite.tcp.receive', 1)
-                self.graphite_queue.append(data)
-                # stack the data with the garbage so we will continue it
-                # on the next turn
-                data = ldata[lst_nidx + 1:]
-            conn.close()
-            # Also stack what the last send
-            self.graphite_queue.append(data)
-    
-    
-    # Main graphite reaper thread, that will get data from both tcp and udp flow
-    # and dispatch it to the others daemons if need
-    def graphite_reaper(self):
-        while not stopper.interrupted:
-            graphite_queue = self.graphite_queue
-            self.graphite_queue = []
-            if len(graphite_queue) > 0:
-                logger.info("Graphite queue", len(graphite_queue))
-            for data in graphite_queue:
-                T0 = time.time()
-                self.grok_graphite_data(data)
-                STATS.timer('ts.graphite.grok-graphite-data', (time.time() - T0) * 1000)
-            time.sleep(0.1)
-    
-    
-    # Lookup at the graphite lines compat,  run in the graphite-reaper thread
-    def grok_graphite_data(self, data):
-        STATS.incr('ts.graphite.grok.data', 1)
-        forwards = {}
-        for line in data.splitlines():
-            elts = line.split(' ')
-            elts = [s.strip() for s in elts if s.strip()]
-            
-            if len(elts) != 3:
-                return
-            mname, value, timestamp = elts[0], elts[1], elts[2]
-            hkey = hashlib.sha1(mname).hexdigest()
-            ts_node_manager = gossiper.find_tag_node('ts', hkey)
-            # if it's me that manage this key, I add it in my backend
-            if ts_node_manager == gossiper.uuid:
-                logger.debug("I am the TS node manager", part='ts')
-                try:
-                    timestamp = int(timestamp)
-                except ValueError:
-                    return
-                value = to_best_int_float(value)
-                if value is None:
-                    continue
-                self.tsb.add_value(timestamp, mname, value)
-            # not me? stack a forwarder
-            else:
-                logger.debug("The node manager for this Ts is ", ts_node_manager, part='ts')
-                l = forwards.get(ts_node_manager, [])
-                l.append(line)
-                forwards[ts_node_manager] = l
-        
-        for (uuid, lst) in forwards.iteritems():
-            node = gossiper.get(uuid)
-            # maybe the node disapear? bail out, we are not lucky
-            if node is None:
-                continue
-            packets = []
-            # first compute the packets
-            buf = ''
-            for line in lst:
-                buf += line + '\n'
-                if len(buf) > 1024:
-                    packets.append(buf)
-                    buf = ''
-            if buf != '':
-                packets.append(buf)
-            
-            # UDP
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            for packet in packets:
-                # do NOT use the node['port'], it's the internal communication, not the graphite one!
-                sock.sendto(packet, (node['addr'], self.graphite_port))
-            sock.close()
-            
-            '''
-            # TCP mode
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.connect( (node['addr'], self.graphite_port) )
-            for packet in packets:
-               sock.sendall(packet)
-            sock.close()
-            '''
 
 
 tsmgr = TSListener()
