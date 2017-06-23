@@ -9,13 +9,10 @@ class ShinkenModule(Module):
     implement = 'shinken'
     manage_configuration_objects = ['shinken']
     
+    
     def __init__(self):
         Module.__init__(self)
         self.shinken = None
-    
-    
-    def set_daemon(self, daemon):
-        self.daemon = daemon
     
     
     def import_configuration_object(self, object_type, o, mod_time, fname, short_name):
@@ -28,16 +25,14 @@ class ShinkenModule(Module):
         # and path must be a abs path
         o['cfg_path'] = os.path.abspath(cfg_path)
         self.shinken = o
-
-
+    
     
     # Prepare to open the UDP port
     def prepare(self):
-        logger.info('SHINKEN: prepare phase : %s' % self.daemon.shinken)
-        if self.daemon.shinken:
-            shinkenexporter.load_cfg_path(self.daemon.shinken['cfg_path'])
-            shinkenexporter.load_reload_command(self.daemon.shinken['reload_command'])
-        shinkenexporter.load_cluster(self.daemon)
+        logger.info('SHINKEN: prepare phase : %s' % self.shinken)
+        if self.shinken:
+            shinkenexporter.load_cfg_path(self.shinken['cfg_path'])
+            shinkenexporter.load_reload_command(self.shinken['reload_command'])
     
     
     def launch(self):

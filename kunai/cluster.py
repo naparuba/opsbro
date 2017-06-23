@@ -35,23 +35,6 @@ try:
 except ImportError:
     AES = None
 
-# Cannot take RSA from Crypto because on centos6 the version
-# is just toooooo old :(
-try:
-    import rsa as RSA
-except ImportError:
-    # NOTE: rsa lib import itself as RSA, so we must hook the sys.path to be happy with this...
-    _internal_rsa_dir = os.path.join(os.path.dirname(__file__), 'misc', 'internalrsa')
-    sys.path.insert(0, _internal_rsa_dir)
-    # ok so try the mist one
-    try:
-        import kunai.misc.internalrsa.rsa as RSA
-    except ImportError:
-        # even local one fail? arg!
-        RSA = None
-        # so now we did import it, refix sys.path to do not have misc inside
-        # sys.path.pop(0)
-
 # DO NOT FORGET:
 # sysctl -w net.core.rmem_max=26214400
 
@@ -73,7 +56,7 @@ from kunai.broadcast import broadcaster
 from kunai.httpdaemon import httpdaemon, route, response, request, abort, gserver
 from kunai.pubsub import pubsub
 from kunai.dockermanager import dockermgr
-from kunai.encrypter import encrypter
+from kunai.encrypter import encrypter, RSA
 from kunai.collectormanager import collectormgr
 from kunai.version import VERSION
 from kunai.stop import stopper
@@ -135,8 +118,6 @@ class Cluster(object):
         # graphite and statsd objects
         self.graphite = None
         self.statsd = None
-        self.dns = None
-        self.shinken = None
         
         # Some default value that can be erased by the
         # main configuration file
@@ -158,10 +139,8 @@ class Cluster(object):
         
         self.bootstrap = bootstrap
         self.seeds = [s.strip() for s in seeds.split(',')]
-        zone = ''
+        self.zone = ''
         
-        # By default, we are alive :)
-        self.state = 'alive'
         self.addr = get_public_address()
         self.listening_addr = '0.0.0.0'
         
@@ -383,7 +362,7 @@ class Cluster(object):
         # Load previous zone if available
         if os.path.exists(self.zone_file):
             with open(self.zone_file, 'r') as f:
-                zone = f.read().strip()
+                self.zone = f.read().strip()
         
         # Try to clean libexec and configuration directories
         self.libexec_dir = libexec_dir
@@ -405,15 +384,13 @@ class Cluster(object):
         self.configuration_to_update = []
         self.launch_update_libexec_cfg_thread()
         
-        # by defualt do not launch timeserie listeners
-        self.ts = None
+        # by default do not launch timeserie listeners
         
         # Compile the macro pattern once
         self.macro_pat = re.compile(r'(\$ *(.*?) *\$)+')
         
-        self.put_key_buffer = []
         # Launch a thread that will reap all put key asked by the udp
-        self.put_key_reaper_thread = threader.create_and_launch(self.put_key_reaper, name='put-key-reaper', essential=True)
+        threader.create_and_launch(kvmgr.put_key_reaper, name='put-key-reaper', essential=True)
         
         # Load all collectors globaly
         collectormgr.load_collectors(self.cfg_data)
@@ -423,8 +400,13 @@ class Cluster(object):
         # and their last data
         self.load_collector_retention()
         
+        # Open our TimeSerie manager and open the database in data_dir/ts
+        tsmgr.tsb.load(self.data_dir)
+        tsmgr.tsb.export_http()
+        
         # Load key into the executor
         executer.load(self.mfkey_pub, self.mfkey_priv)
+        executer.export_http()
         
         # the evaluater need us to grok into our cfg_data and such things
         evaluater.load(self.cfg_data, self.services)
@@ -434,8 +416,7 @@ class Cluster(object):
         dockermgr.launch()
         
         # Our main object for gossip managment
-        gossiper.init(nodes, nodes_lock, self.addr, self.port, self.name, self.display_name, self.incarnation, self.uuid,
-                      self.tags, self.seeds, self.bootstrap, zone, self.is_proxy)
+        gossiper.init(nodes, nodes_lock, self.addr, self.port, self.name, self.display_name, self.incarnation, self.uuid, self.tags, self.seeds, self.bootstrap, self.zone, self.is_proxy)
         
         # About detecting tags and such things
         detecter.load(self)
@@ -1137,10 +1118,10 @@ class Cluster(object):
                 elif t == '/ts/new':
                     key = m.get('key', '')
                     # Skip this message for classic nodes
-                    if self.ts is None or key == '':
+                    if key == '':
                         continue
                     # if TS do not have it, it will propagate it
-                    self.ts.set_name_if_unset(key)
+                    tsmgr.set_name_if_unset(key)
                 # Someone is asking us a challenge, ok do it
                 elif t == '/exec/challenge/ask':
                     executer.manage_exec_challenge_ask_message(m, addr)
@@ -1507,67 +1488,11 @@ class Cluster(object):
             return json.dumps(True)
         
         
-        @route('/list/')
-        @route('/list/:key')
-        def get_ts_keys(key=''):
-            response.content_type = 'application/json'
-            if self.ts is None:
-                return json.dumps([])
-            return json.dumps(self.ts.list_keys(key))
-        
-        
-        @route('/_ui_list/')
-        @route('/_ui_list/:key')
-        def get_ts_keys(key=''):
-            response.content_type = 'application/json'
-            print "LIST GET TS FOR KEY", key
-            response.content_type = 'application/json'
-            if self.ts is None:
-                return json.dumps([])
-            r = []
-            keys = self.ts.list_keys(key)
-            l = len(key)
-            added = {}
-            for k in keys:
-                print "LIST KEY", k
-                title = k[l:]
-                # maybe we got a key that do not belong to us
-                # like srv-linux10 when we ask for linux1
-                # so if we don't got a . here, it's an invalid
-                # dir
-                print "LIST TITLE", title
-                if key and not title.startswith('.'):
-                    print "LIST SKIPPING KEY", key
-                    continue
-                if title.startswith('.'):
-                    title = title[1:]
-                print "LIST TITLE CLEAN", title
-                # if there is a . in it, it's a dir we need to have
-                dname = title.split('.', 1)[0]
-                # If the dname was not added, do it
-                if dname not in added and title.count('.') != 0:
-                    added[dname] = True
-                    r.append({'title': dname, 'key': k[:l] + dname, 'folder': True, 'lazy': True})
-                    print "LIST ADD DIR", dname, k[:l] + dname
-                
-                print "LIST DNAME KEY", dname, key, title.count('.')
-                if title.count('.') == 0:
-                    # not a directory, add it directly but only if the
-                    # key asked was our directory                    
-                    r.append({'title': title, 'key': k, 'folder': False, 'lazy': False})
-                    print "LIST ADD FILE", title
-            print "LIST FINALLY RETURN", r
-            return json.dumps(r)
-        
-        
         @route('/metrics/find/')
         def get_graphite_metrics_find():
             response.content_type = 'application/json'
             key = request.GET.get('query', '*')
             print "LIST GET TS FOR KEY", key
-            
-            if self.ts is None:
-                return json.dumps([])
             
             recursive = False
             if key.endswith('.*'):
@@ -1581,7 +1506,7 @@ class Cluster(object):
                 recursive = True
             
             r = []
-            keys = self.ts.list_keys(key)
+            keys = tsmgr.list_keys(key)
             l = len(key)
             added = {}
             for k in keys:
@@ -1678,11 +1603,11 @@ class Cluster(object):
                     
                     # Maybe I am also the TS manager of these data? if so, get the TS backend data for this                    
                     min_e = hour_e = day_e = None
-                    if self.ts:
-                        logger.debug('HTTP RENDER founded TS %s' % self.ts.tsb.data)
-                        min_e = self.ts.tsb.data.get('min::%s' % target, None)
-                        hour_e = self.ts.tsb.data.get('hour::%s' % target, None)
-                        day_e = self.ts.tsb.data.get('day::%s' % target, None)
+                    
+                    logger.debug('HTTP RENDER founded TS %s' % tsmgr.tsb.data)
+                    min_e = tsmgr.tsb.data.get('min::%s' % target, None)
+                    hour_e = tsmgr.tsb.data.get('hour::%s' % target, None)
+                    day_e = tsmgr.tsb.data.get('day::%s' % target, None)
                     logger.debug('HTTP TS RENDER, FOUNDED TS data %s %s %s' % (min_e, hour_e, day_e))
                     
                     # Get from the past, but start at the good hours offset
@@ -1775,34 +1700,10 @@ class Cluster(object):
             self.internal_http_thread = threader.create_and_launch(httpdaemon.run, name='internal-http-thread', args=('127.0.0.1', 6770, '',), essential=True)
     
     
-    def stack_put_key(self, k, v, ttl=0):
-        self.put_key_buffer.append((k, v, ttl))
-    
-    
-    # put from udp should be clean quick from the thread so it can listen to udp again and
-    # not lost any udp message
-    def put_key_reaper(self):
-        while not stopper.interrupted:
-            put_key_buffer = self.put_key_buffer
-            self.put_key_buffer = []
-            _t = time.time()
-            if len(put_key_buffer) != 0:
-                logger.debug("PUT KEY BUFFER LEN", len(put_key_buffer))
-            for (k, v, ttl) in put_key_buffer:
-                kvmgr.put_key(k, v, ttl=ttl, allow_udp=True)
-            if len(put_key_buffer) != 0:
-                logger.debug("PUT KEY BUFFER IN", time.time() - _t)
-            
-            # only sleep if we didn't work at all (busy moment)
-            if len(put_key_buffer) == 0:
-                time.sleep(0.1)
-    
-    
+    # launch metric based listeners and backend
     def start_ts_listener(self):
-        # launch metric based listeners and backend
-        self.ts = tsmgr
-        self.ts.load_clust(self)
-        self.ts.start_threads()
+        
+        tsmgr.start_threads()
     
     
     # The first sync thread will ask to our replicats for their lately changed value
@@ -2171,8 +2072,7 @@ Subject: %s
             if ts_node_manager == self.uuid:
                 logger.debug("I am the TS node manager")
                 print "HOW ADDING", timestamp, mname, value, type(timestamp), type(mname), type(value)
-                if self.ts:
-                    self.ts.tsb.add_value(timestamp, mname, value)
+                tsmgr.tsb.add_value(timestamp, mname, value)
             # not me? stack a forwarder
             else:
                 logger.debug("The node manager for this Ts is ", ts_node_manager)

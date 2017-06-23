@@ -1,9 +1,27 @@
+import sys
+import os
+
 try:
     from Crypto.Cipher import AES
-    from Crypto.PublicKey import RSA
 except ImportError:
     AES = None
-    RSA = None
+
+# Cannot take RSA from Crypto because on centos6 the version
+# is just toooooo old :(
+try:
+    import rsa as RSA
+except ImportError:
+    # NOTE: rsa lib import itself as RSA, so we must hook the sys.path to be happy with this...
+    _internal_rsa_dir = os.path.join(os.path.dirname(__file__), 'misc', 'internalrsa')
+    sys.path.insert(0, _internal_rsa_dir)
+    # ok so try the mist one
+    try:
+        import kunai.misc.internalrsa.rsa as RSA
+    except ImportError:
+        # even local one fail? arg!
+        RSA = None
+        # so now we did import it, refix sys.path to do not have misc inside
+        # sys.path.pop(0)
 
 from kunai.log import logger
 

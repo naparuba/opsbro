@@ -2,30 +2,11 @@ import json
 import socket
 import uuid as libuuid
 import base64
-import sys
 import os
 import time
 import subprocess
 
-# TODO: factorize with cluster code
-# Cannot take RSA from Crypto because on centos6 the version
-# is just toooooo old :(
-try:
-    import rsa as RSA
-except ImportError:
-    # NOTE: rsa lib import itself as RSA, so we must hook the sys.path to be happy with this...
-    _internal_rsa_dir = os.path.join(os.path.dirname(__file__), 'misc', 'internalrsa')
-    sys.path.insert(0, _internal_rsa_dir)
-    # ok so try the mist one
-    try:
-        import kunai.misc.internalrsa.rsa as RSA
-    except ImportError:
-        # even local one fail? arg!
-        RSA = None
-        # so now we did import it, refix sys.path to do not have misc inside
-        # sys.path.pop(0)
-
-from kunai.encrypter import encrypter
+from kunai.encrypter import encrypter, RSA
 from kunai.log import logger
 from kunai.threadmgr import threader
 from kunai.gossip import gossiper
@@ -39,7 +20,6 @@ class Executer(object):
         self.execs = {}
         # Challenge send so we can match the response when we will get them
         self.challenges = {}
-        self.export_http()
     
     
     def load(self, mfkey_pub, mfkey_priv):
@@ -64,8 +44,7 @@ class Executer(object):
         # TOCLEAN:: _c = self.mfkey_pub.encrypt(challenge, 0)[0] # encrypt 0=dummy param not used
         _c = RSA.encrypt(challenge, self.mfkey_pub)  # encrypt 0=dummy param not used
         echallenge = base64.b64encode(_c)
-        ping_payload = {'type': '/exec/challenge/proposal', 'fr': gossiper.uuid, 'challenge': echallenge,
-                        'cid' : cid}
+        ping_payload = {'type': '/exec/challenge/proposal', 'fr': gossiper.uuid, 'challenge': echallenge, 'cid': cid}
         message = json.dumps(ping_payload)
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
         enc_message = encrypter.encrypt(message)

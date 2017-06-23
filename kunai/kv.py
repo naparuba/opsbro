@@ -18,8 +18,8 @@ from kunai.gossip import gossiper
 from kunai.encrypter import encrypter
 from kunai.stop import stopper
 
-
 REPLICATS = 1
+
 
 # This class manage the ttl entries for each key with a ttl. Each is with a 1hour precision idx key that we saved
 # in the master db
@@ -140,6 +140,9 @@ class KVBackend:
         
         # We have a backlog to manage our replication by threads
         self.replication_backlog = {}
+        
+        # Massif send KV
+        self.put_key_buffer = []
     
     
     # Really load data dir and so open database
@@ -288,6 +291,29 @@ class KVBackend:
         return r
     
     
+    def stack_put_key(self, k, v, ttl=0):
+        self.put_key_buffer.append((k, v, ttl))
+    
+    
+    # put from udp should be clean quick from the thread so it can listen to udp again and
+    # not lost any udp message
+    def put_key_reaper(self):
+        while not stopper.interrupted:
+            put_key_buffer = self.put_key_buffer
+            self.put_key_buffer = []
+            _t = time.time()
+            if len(put_key_buffer) != 0:
+                logger.debug("PUT KEY BUFFER LEN", len(put_key_buffer), part='kv')
+            for (k, v, ttl) in put_key_buffer:
+                kvmgr.put_key(k, v, ttl=ttl, allow_udp=True)
+            if len(put_key_buffer) != 0:
+                logger.debug("PUT KEY BUFFER DONE IN", time.time() - _t, part='kv')
+            
+            # only sleep if we didn't work at all (busy moment)
+            if len(put_key_buffer) == 0:
+                time.sleep(0.1)
+    
+    
     # Try to merge distant data from others with meta entries
     # and only take the data that are the newest
     def do_merge(self, to_merge):
@@ -428,22 +454,22 @@ class KVBackend:
             except HTTP_EXCEPTIONS, exp:
                 logger.debug('KV: PUT error asking to %s: %s' % (n['name'], str(exp)), part='kv')
                 return None
-
-
+    
+    
     # I try to get the nodes before myself in the nodes list
     def get_my_replicats(self):
         kv_nodes = gossiper.find_tag_nodes('kv')
         kv_nodes.sort()
-
+        
         # Maybe soneone ask us a put but we are not totally joined
         # if so do not replicate this
         if gossiper.uuid not in kv_nodes:
             logger.log('WARNING: too early put, myself %s is not a kv nodes currently' % self.uuid, part='kv')
             return []
-
+        
         # You can't have more replicats that you got of kv nodes
         nb_rep = min(REPLICATS, len(kv_nodes))
-
+        
         idx = kv_nodes.index(gossiper.uuid)
         replicats = []
         for i in range(idx - nb_rep, idx):
@@ -458,18 +484,18 @@ class KVBackend:
             n = gossiper.get(uuid)
             if n:
                 rnames.append(n['name'])
-
+        
         logger.debug('REPLICATS: myself %s replicats are %s' % (gossiper.name, rnames), part='kv')
         return replicats
-
-
+    
+    
     def do_replication_backlog_thread(self):
         logger.log('REPLICATION thread launched', part='kv')
         while not stopper.interrupted:
             # Standard switch
             replication_backlog = self.replication_backlog
             self.replication_backlog = {}
-        
+            
             replicats = self.get_my_replicats()
             if len(replicats) == 0:
                 time.sleep(1)
@@ -482,7 +508,7 @@ class KVBackend:
                     if _node is None:
                         continue
                     logger.debug('REPLICATION thread manage entry to %s(%s) : %s' % (_node['name'], uuid, bl), part='kv')
-                
+                    
                     # Now send it :)
                     n = _node
                     uri = 'http://%s:%s/kv/%s?force=True' % (n['addr'], n['port'], ukey)
@@ -494,8 +520,8 @@ class KVBackend:
                     except HTTP_EXCEPTIONS, exp:
                         logger.debug('KV: PUT(force) error asking to %s: %s' % (n['name'], str(exp)), part='kv')
             time.sleep(1)
-
-
+    
+    
     # main method to export http interface. Must be in a method that got
     # a self entry
     def export_http(self):

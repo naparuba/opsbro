@@ -5,6 +5,7 @@ import socket
 import base64
 import cPickle
 import hashlib
+import json
 
 try:
     import numpy as np
@@ -19,7 +20,8 @@ from kunai.now import NOW
 from kunai.dbwrapper import dbwrapper
 from kunai.gossip import gossiper
 from kunai.stop import stopper
-
+from kunai.kv import kvmgr
+from kunai.httpdaemon import route, response
 
 # DO NOT FORGEET:
 # sysctl -w net.core.rmem_max=26214400
@@ -27,10 +29,21 @@ from kunai.stop import stopper
 SERIALIZER = cPickle
 
 
-# Will have to forward to graphit intead
-class UDPSender(object):
-    def __init__(self, clust):
-        self.clust = clust
+class TSBackend(object):
+    def __init__(self):
+        self.data = {}
+        self.data_lock = threading.RLock()
+        self.max_data_age = 5
+    
+    
+    # When we load, really open our database
+    def load(self, data_dir):
+        # Get a db with all our metrics listed
+        # We will save all the metrics we have
+        self.db_dir = os.path.join(data_dir, 'ts')
+        self.db = dbwrapper.get_db(self.db_dir)
+        # Ok start our inner thread
+        self.launch_reaper_thread()
     
     
     def push_key(self, k, v, ttl=0):
@@ -38,26 +51,10 @@ class UDPSender(object):
         STATS.incr('ts.graphite.push-key', 1)
         v64 = base64.b64encode(v)
         logger.debug("PUSH KEY", k, "and value", len(v64), part='ts')
-        # self.clust.put_key(k, v64, allow_udp=True, ttl=ttl)
-        self.clust.stack_put_key(k, v64, ttl=ttl)
+        # TODO: set allow_udp=True or not?
+        kvmgr.stack_put_key(k, v64, ttl=ttl)
         STATS.timer('ts.graphite.push-key', (time.time() - T0) * 1000)
         return
-
-
-class TSBackend(object):
-    def __init__(self, usender, clust):
-        # self.its = its
-        self.usender = usender
-        self.data = {}
-        self.data_lock = threading.RLock()
-        self.max_data_age = 5
-        # Get a db with all our metrics listed
-        # We will save all the metrics we have
-        self.clust = clust
-        self.db_dir = os.path.join(clust.data_dir, 'ts')
-        self.db = dbwrapper.get_db(self.db_dir)
-        # Ok start our inner thread
-        self.launch_reaper_thread()
     
     
     # push a name but return if the name was already there or not
@@ -164,7 +161,7 @@ class TSBackend(object):
         STATS.incr('serializer', time.time() - _t)
         # We keep minutes for 1 day
         _t = time.time()
-        self.usender.push_key(key, ser, ttl=86400)
+        self.push_key(key, ser, ttl=86400)
         STATS.incr('put-key', time.time() - _t)
         
         # Also insert the key in a time switching database
@@ -198,7 +195,7 @@ class TSBackend(object):
                 
                 # Keep hour thing for 1 month
                 _t = time.time()
-                self.usender.push_key(key, ser, ttl=86400 * 31)
+                self.push_key(key, ser, ttl=86400 * 31)
                 STATS.incr('put-hour', time.time() - _t)
             
             # Now new one with the good hour of t :)
@@ -243,7 +240,7 @@ class TSBackend(object):
             
             _t = time.time()
             # And keep day object for 1 year
-            self.usender.push_key(hkey, ser, ttl=86400 * 366)
+            self.push_key(hkey, ser, ttl=86400 * 366)
             STATS.incr('put-day', time.time() - _t)
             
             # Now new one :)
@@ -315,17 +312,73 @@ class TSBackend(object):
                         self.data[name] = e
                         '''
             time.sleep(10)
+    
+    
+    # Export end points to get/list TimeSeries
+    def export_http(self):
+        @route('/list/')
+        @route('/list/:key')
+        def get_ts_keys(key=''):
+            response.content_type = 'application/json'
+            return json.dumps(tsmgr.list_keys(key))
+        
+        
+        @route('/_ui_list/')
+        @route('/_ui_list/:key')
+        def get_ts_keys(key=''):
+            response.content_type = 'application/json'
+            print "LIST GET TS FOR KEY", key
+            response.content_type = 'application/json'
+            
+            r = []
+            keys = tsmgr.list_keys(key)
+            l = len(key)
+            added = {}
+            for k in keys:
+                print "LIST KEY", k
+                title = k[l:]
+                # maybe we got a key that do not belong to us
+                # like srv-linux10 when we ask for linux1
+                # so if we don't got a . here, it's an invalid
+                # dir
+                print "LIST TITLE", title
+                if key and not title.startswith('.'):
+                    print "LIST SKIPPING KEY", key
+                    continue
+                if title.startswith('.'):
+                    title = title[1:]
+                print "LIST TITLE CLEAN", title
+                # if there is a . in it, it's a dir we need to have
+                dname = title.split('.', 1)[0]
+                # If the dname was not added, do it
+                if dname not in added and title.count('.') != 0:
+                    added[dname] = True
+                    r.append({'title': dname, 'key': k[:l] + dname, 'folder': True, 'lazy': True})
+                    print "LIST ADD DIR", dname, k[:l] + dname
+                
+                print "LIST DNAME KEY", dname, key, title.count('.')
+                if title.count('.') == 0:
+                    # not a directory, add it directly but only if the
+                    # key asked was our directory
+                    r.append({'title': title, 'key': k, 'folder': False, 'lazy': False})
+                    print "LIST ADD FILE", title
+            print "LIST FINALLY RETURN", r
+            return json.dumps(r)
 
 
+# TODO: this class is useless, we need to remove it and put statsd/graphite into their own modules
+# that are using TsBackend
 class TSListener(object):
     def __init__(self):
-        self.clust = None
         self.addr = '0.0.0.0'
         self.statsd_port = 8125
         self.graphite_port = 2003
         self.last_write = time.time()
         self.nb_data = 0
         self.stats_interval = 10
+        
+        # Our real database manager
+        self.tsb = TSBackend()
         
         # Do not step on your own foot...
         self.stats_lock = threading.RLock()
@@ -340,21 +393,10 @@ class TSListener(object):
         self.graphite_queue = []
     
     
-    def get_name(self):
-        if self.clust:
-            return self.clust.name
-        return 'ts-listener-unknown'
-    
-    
-    def load_clust(self, clust):
-        self.clust = clust
-    
-    
     def start_threads(self):
         # our helper objects
-        # self.its = IdxTSDatabase(self.clust)
-        self.usender = UDPSender(self.clust)
-        self.tsb = TSBackend(self.usender, self.clust)
+        # self.its = IdxTSDatabase()
+        
         
         # Now start our threads
         # STATSD
@@ -365,10 +407,6 @@ class TSListener(object):
         threader.create_and_launch(self.launch_graphite_tcp_listener, name='TSL_graphite_tcp_thread', essential=True)
         
         threader.create_and_launch(self.graphite_reaper, name='graphite-reaper-thread', essential=True)
-    
-    
-    def log(self, *args):
-        logger.log(*args)
     
     
     # push a name but return if the name was already there or not
@@ -507,7 +545,7 @@ class TSListener(object):
             
             for line in data.splitlines():
                 # avoid invalid lines
-                if not '|' in line:
+                if '|' not in line:
                     continue
                 elts = line.split('|', 1)
                 # invalid, no type in the right part
@@ -516,7 +554,7 @@ class TSListener(object):
                 
                 _name_value = elts[0].strip()
                 # maybe it's an invalid name...
-                if not ':' in _name_value:
+                if ':' not in _name_value:
                     continue
                 _nvs = _name_value.split(':')
                 if len(_nvs) != 2:
@@ -553,7 +591,7 @@ class TSListener(object):
                 ## Gauge: <metric name>:<value>|g
                 elif _type == 'g':
                     self.nb_data += 1
-                    self.log('GAUGE', mname, value)
+                    logger.log('GAUGE', mname, value)
                     with self.stats_lock:
                         gentry = self.gauges.get(mname, None)
                         if gentry is None:
@@ -574,7 +612,7 @@ class TSListener(object):
                 ## Histograms: <metric name>:<value>|h
                 elif _type == 'ms' or _type == 'h':
                     logger.debug('timers', mname, value, part='ts')
-                    # TODO: avoit the SET each time
+                    # TODO: avoid the SET each time
                     timer = self.timers.get(mname, [])
                     timer.append(value)
                     self.timers[mname] = timer
@@ -617,7 +655,7 @@ class TSListener(object):
         self.graphite_udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
         self.graphite_udp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.graphite_udp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 1048576)
-        self.log(self.graphite_udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF))
+        logger.log(self.graphite_udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF))
         self.graphite_udp_sock.bind((self.addr, self.graphite_port))
         logger.info("TS Graphite UDP port open", self.graphite_port, part='ts')
         logger.debug("UDP RCVBUF", self.graphite_udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF), part='ts')
@@ -640,7 +678,7 @@ class TSListener(object):
         self.graphite_tcp_sock.bind((self.addr, self.graphite_port))
         self.graphite_tcp_sock.listen(5)
         logger.info("TS Graphite TCP port open", self.graphite_port, part='ts')
-        while True:
+        while not stopper.interrupted:
             try:
                 conn, addr = self.graphite_tcp_sock.accept()
             except socket.timeout:  # loop until we got some connect
@@ -674,7 +712,7 @@ class TSListener(object):
     # Main graphite reaper thread, that will get data from both tcp and udp flow
     # and dispatch it to the others daemons if need
     def graphite_reaper(self):
-        while True:
+        while not stopper.interrupted:
             graphite_queue = self.graphite_queue
             self.graphite_queue = []
             if len(graphite_queue) > 0:
@@ -718,7 +756,7 @@ class TSListener(object):
                 forwards[ts_node_manager] = l
         
         for (uuid, lst) in forwards.iteritems():
-            node = gossiper.get(uuid, None)
+            node = gossiper.get(uuid)
             # maybe the node disapear? bail out, we are not lucky
             if node is None:
                 continue

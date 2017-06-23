@@ -164,8 +164,8 @@ class Launcher(object):
         else:
             if os.name != 'nt':
                 self.write_pid()
-            
-            # Here only the son-son reach this part :)
+                
+                # Here only the son-son reach this part :)
     
     
     # Main locking function, will LOCK here until the daemon is dead/killed/whatever
@@ -187,7 +187,6 @@ class Launcher(object):
         if 'kv' in c.tags:
             c.launch_replication_backlog_thread()
             c.launch_replication_first_sync_thread()
-        # if 'ts' in c.tags:
         c.start_ts_listener()
         
         # Blocking function here

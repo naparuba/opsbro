@@ -5,12 +5,14 @@ import shutil
 import hashlib
 import subprocess
 import json
+
 from kunai.log import logger
 from kunai.pubsub import pubsub
 from kunai.threadmgr import threader
 from kunai.stop import stopper
 from kunai.detectormgr import detecter
 from kunai.gossip import gossiper
+from kunai.kv import kvmgr
 
 
 class ShinkenExporter(object):
@@ -19,7 +21,6 @@ class ShinkenExporter(object):
         self.reload_flag = False
         self.cfg_path = None
         self.node_changes = []
-        self.clust = None
         self.reload_command = ''
         # register to node events
         pubsub.sub('new-node', self.new_node_callback)
@@ -33,10 +34,6 @@ class ShinkenExporter(object):
     
     def load_reload_command(self, reload_command):
         self.reload_command = reload_command
-    
-    
-    def load_cluster(self, clust):
-        self.clust = clust
     
     
     def launch_thread(self):
@@ -69,14 +66,14 @@ class ShinkenExporter(object):
             logger.error('Shinken command file is missing, skipping node information export')
             return
         
-        v = self.clust.get_key('__health/%s' % nuuid)
+        v = kvmgr.get_key('__health/%s' % nuuid)
         if v is None or v == '':
             logger.error('Cannot access to the checks list for', nuuid, part='shinken')
             return
         
         lst = json.loads(v)
         for cname in lst:
-            v = self.clust.get_key('__health/%s/%s' % (nuuid, cname))
+            v = kvmgr.get_key('__health/%s/%s' % (nuuid, cname))
             if v is None:  # missing check entry? not a real problem
                 continue
             check = json.loads(v)
@@ -238,7 +235,7 @@ class ShinkenExporter(object):
         
         if self.cfg_path is not None:
             self.clean_cfg_dir()
-            # First look at all nodes in the cluster and regerate them
+            # First look at all nodes in the gossip ring and regerate them
             node_keys = gossiper.nodes.keys()
             for nid in node_keys:
                 n = gossiper.get(nid)
