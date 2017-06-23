@@ -115,9 +115,8 @@ class Cluster(object):
         # keep a list of the checks names that match our tags
         self.active_checks = []
         
-        # graphite and statsd objects
+        # graphite
         self.graphite = None
-        self.statsd = None
         
         # Some default value that can be erased by the
         # main configuration file
@@ -156,7 +155,7 @@ class Cluster(object):
         modulemanager.set_daemon(self)
         
         # save the known types for the configuration
-        self.known_types = ['check', 'service', 'handler', 'generator', 'graphite', 'statsd', 'zone']
+        self.known_types = ['check', 'service', 'handler', 'generator', 'graphite', 'zone']
         # and extend with the ones from the modules
         self.modules_known_types = modulemanager.get_managed_configuration_types()
         self.known_types.extend(self.modules_known_types)
@@ -596,14 +595,7 @@ class Cluster(object):
                 logger.log('ERROR: the graphite from the file %s is not a valid dict' % fp)
                 sys.exit(2)
             self.graphite = graphite
-        
-        if 'statsd' in o:
-            statsd = o['statsd']
-            if not isinstance(statsd, dict):
-                logger.log('ERROR: the statsd from the file %s is not a valid dict' % fp)
-                sys.exit(2)
-            self.statsd = statsd
-        
+            
         if 'zone' in o:
             zone = o['zone']
             if not isinstance(zone, dict):
@@ -1177,7 +1169,6 @@ class Cluster(object):
             r = {'logs'      : logger.get_errors(), 'pid': os.getpid(), 'name': self.name, 'display_name': self.display_name,
                  'port'      : self.port, 'addr': self.addr, 'socket': self.socket_path, 'zone': gossiper.zone,
                  'uuid'      : self.uuid, 'graphite': self.graphite,
-                 'statsd'    : self.statsd,
                  'threads'   : threader.get_info(),
                  'version'   : VERSION, 'tags': self.tags,
                  'docker'    : dockermgr.get_info(),

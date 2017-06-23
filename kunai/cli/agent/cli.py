@@ -276,7 +276,7 @@ def do_info(show_logs):
     
     # Now websocket part
     print_info_title('Websocket')
-    if not websocket or not 'websocekt_configuration' in websocket:
+    if not websocket or 'websocekt_configuration' not in websocket:
         cprint('No websocket configured')
     else:
         w = websocket['websocket_configuration']
@@ -297,10 +297,10 @@ def do_info(show_logs):
     
     # Now statsd part
     print_info_title('Statsd')
-    if statsd is None:
+    if not statsd or 'statsd_configuration' not in statsd:
         cprint('No statsd configured')
     else:
-        s = statsd
+        s = statsd['statsd_configuration']
         e = [('enabled', s['enabled']), ('port', s['port']), ('interval', s['interval'])]
         print_2tab(e)
     
