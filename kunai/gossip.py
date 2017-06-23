@@ -136,8 +136,8 @@ class Gossip(object):
     
     def have_tag(self, tag):
         return tag in self.tags
-
-
+    
+    
     # find all nearly alive nodes with a specific tag
     def find_tag_nodes(self, tag):
         nodes = []
@@ -149,18 +149,18 @@ class Gossip(object):
                 if tag in tags:
                     nodes.append(uuid)
         return nodes
-
-
+    
+    
     # find the good ring node for a tag and for a key
     def find_tag_node(self, tag, hkey):
         tag_nodes = self.find_tag_nodes(tag)
-    
+        
         # No kv nodes? oups, set myself so
         if len(tag_nodes) == 0:
             return self.uuid
-    
+        
         tag_nodes.sort()
-    
+        
         idx = bisect.bisect_right(tag_nodes, hkey) - 1
         # logger.debug("IDX %d" % idx, hkey, kv_nodes, len(kv_nodes))
         nuuid = tag_nodes[idx]
@@ -173,7 +173,7 @@ class Gossip(object):
                 return len([n for n in self.nodes.values() if n['state'] == state])
             else:  # no filter, take all
                 return len(self.nodes)
-        
+    
     
     # Another module/part did give a new tag, take it and warn others node about this
     # change if there is really a change
@@ -754,6 +754,51 @@ class Gossip(object):
         if node and node['state'] != 'alive':
             logger.debug('PINGBACK +ing node', node['name'], part='gossip')
             self.to_ping_back.append(fr_uuid)
+    
+    
+    # We are ask to do a indirect ping to tgt and return the ack to
+    # _from, do this in a thread so we don't lock here
+    def do_indirect_ping(self, tgt, _from, addr):
+        logger.debug('do_indirect_ping', tgt, _from, part='gossip')
+        ntgt = self.get(tgt, None)
+        nfrom = self.get(_from, None)
+        # If the dest or the from node are now unknown, exit this thread
+        if not ntgt or not nfrom:
+            return
+        # Now do the real ping
+        ping_payload = {'type': 'ping', 'seqno': 0, 'node': ntgt['name'], 'from': self.uuid}
+        message = json.dumps(ping_payload)
+        tgtaddr = ntgt['addr']
+        tgtport = ntgt['port']
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
+            enc_message = encrypter.encrypt(message)
+            sock.sendto(enc_message, (tgtaddr, tgtport))
+            logger.debug('PING waiting %s ack message from a ping-relay' % ntgt['name'], part='gossip')
+            # Allow 3s to get an answer
+            sock.settimeout(3)
+            ret = sock.recv(65535)
+            logger.debug('PING (relay) got a return from %s' % ntgt['name'], ret, part='gossip')
+            # An aswer? great it is alive! Let it know our _from node
+            ack = {'type': 'ack', 'seqno': 0}
+            ret_msg = json.dumps(ack)
+            enc_ret_msg = encrypter.encrypt(ret_msg)
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
+            sock.sendto(enc_ret_msg, addr)
+            sock.close()
+        except (socket.timeout, socket.gaierror):
+            # cannot reach even us? so it's really dead, let the timeout do its job on _from
+            pass
+    
+    
+    def manage_ping_relay_message(self, m, addr):
+        tgt = m.get('tgt')
+        _from = m.get('from', '')
+        if not tgt or not _from:
+            return
+        
+        # Do the indirect ping as a sub-thread
+        threader.create_and_launch(self.do_indirect_ping, name='indirect-ping-%s-%s' % (tgt, _from), args=(tgt, _from, addr))
     
     
     # Randomly push some gossip broadcast messages and send them to
