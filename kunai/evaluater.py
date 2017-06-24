@@ -29,27 +29,27 @@ from kunai.gossip import gossiper
 
 # supported operators
 operators = {
-    ast.Add      : op.add,  # A + B
-    ast.Sub      : op.sub,  # A - B
-    ast.Mult     : op.mul,  # A * B
-    ast.Div      : op.truediv,  # A / B
-    ast.Pow      : op.pow,  # ???
-    ast.BitXor   : op.xor,  # ???
-    ast.USub     : op.neg,  # ???
-    ast.Eq       : op.eq,  # A == B
-    ast.NotEq    : op.ne,  # A != B
-    ast.Gt       : op.gt,  # A > B
-    ast.Lt       : op.lt,  # A < B
-    ast.GtE      : op.ge,  # A >= B
-    ast.LtE      : op.le,  # A <= B
-    ast.Mod      : op.mod,  # A % B
-    ast.Or       : op.or_, _ast.Or: op.or_,  # A or B
-    ast.And      : op.and_, _ast.And: op.and_,  # A and B
-    ast.BitOr    : op.or_,  # A | B
-    ast.BitAnd   : op.and_,  # A & B
-    ast.Not      : op.not_, _ast.Not: op.not_,  # not A
-    ast.In       : op.contains,  # A in L
-    #NOTMANAGE ast.Subscript: op.getitem, _ast.Subscript: op.getitem,  # d[k]
+    ast.Add   : op.add,  # A + B
+    ast.Sub   : op.sub,  # A - B
+    ast.Mult  : op.mul,  # A * B
+    ast.Div   : op.truediv,  # A / B
+    ast.Pow   : op.pow,  # ???
+    ast.BitXor: op.xor,  # ???
+    ast.USub  : op.neg,  # ???
+    ast.Eq    : op.eq,  # A == B
+    ast.NotEq : op.ne,  # A != B
+    ast.Gt    : op.gt,  # A > B
+    ast.Lt    : op.lt,  # A < B
+    ast.GtE   : op.ge,  # A >= B
+    ast.LtE   : op.le,  # A <= B
+    ast.Mod   : op.mod,  # A % B
+    ast.Or    : op.or_, _ast.Or: op.or_,  # A or B
+    ast.And   : op.and_, _ast.And: op.and_,  # A and B
+    ast.BitOr : op.or_,  # A | B
+    ast.BitAnd: op.and_,  # A & B
+    ast.Not   : op.not_, _ast.Not: op.not_,  # not A
+    ast.In    : op.contains,  # A in L
+    # NOTMANAGE ast.Subscript: op.getitem, _ast.Subscript: op.getitem,  # d[k]
 }
 
 functions = {
@@ -255,12 +255,10 @@ names = {'True': True, 'False': False}
 class Evaluater(object):
     def __init__(self):
         self.cfg_data = {}
-        self.services = {}
     
     
-    def load(self, cfg_data, services):
+    def load(self, cfg_data):
         self.cfg_data = cfg_data
-        self.services = services
     
     
     def compile(self, expr, check=None):
@@ -368,6 +366,8 @@ class Evaluater(object):
     # * service
     # * main configuration
     def _found_params(self, m, check):
+        # only import it now because if not will do an import loop
+        from kunai.monitoring import monitoringmgr
         parts = [m]
         # if we got a |, we got a default value somewhere
         if '|' in m:
@@ -392,8 +392,8 @@ class Evaluater(object):
                 # but skip serviec if it's not related with the check
                 sname = check.get('service', '')
                 find_into = [check, self.cfg_data]
-                if sname and sname in self.services:
-                    service = self.services.get(sname)
+                if sname and sname in monitoringmgr.services:
+                    service = monitoringmgr.services.get(sname)
                     find_into = [check, service, self.cfg_data]
             # if not, just the global configuration will be ok :)
             else:

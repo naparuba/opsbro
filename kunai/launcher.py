@@ -172,8 +172,6 @@ class Launcher(object):
     def main(self):
         c = Cluster(cfg_dir=self.cfg_dir)
         cprint('Linking services and checks', color='green')
-        c.link_services()
-        c.link_checks()
         cprint('Launching listeners', color='green')
         c.launch_listeners()
         cprint('Joining seeds nodes', color='green')

@@ -7,6 +7,7 @@ from kunai.httpdaemon import route, response
 from kunai.evaluater import evaluater
 from kunai.collectormanager import collectormgr
 from kunai.gossip import gossiper
+from kunai.monitoring import monitoringmgr
 
 
 class DetectorMgr(object):
@@ -63,7 +64,7 @@ class DetectorMgr(object):
             did_changed = gossiper.update_detected_tags(matching_tags)
             # if tags did change, recompute checks
             if did_changed:
-                self.clust.link_checks()
+                monitoringmgr.link_checks()
             
             self.did_run = True  # ok we did detect our tags, we can be sure about us
             time.sleep(1)
