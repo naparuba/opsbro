@@ -801,6 +801,57 @@ class Gossip(object):
         threader.create_and_launch(self.do_indirect_ping, name='indirect-ping-%s-%s' % (tgt, _from), args=(tgt, _from, addr))
     
     
+    # A node did send us a discovery message but with the valid network key of course.
+    # If so, give back our node informations
+    def manage_detect_ping_message(self, m, addr):
+        my_self = self.nodes[self.uuid]
+        my_node_data = self.create_alive_msg(my_self)
+        
+        r = {'type': 'detect-pong', 'node': my_node_data}
+        ret_msg = json.dumps(r)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
+        enc_ret_msg = encrypter.encrypt(ret_msg)
+        sock.sendto(enc_ret_msg, addr)
+        sock.close()
+        logger.debug("Detect back: return back message", ret_msg, part='gossip')
+    
+    
+    # launch a broadcast (UDP) and wait 3s for returns, and give all answers from others daemons
+    def launch_gossip_detect_ping(self):
+        r = []
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        s.settimeout(3)
+        p = '{"type":"detect-ping"}'
+        enc_p = encrypter.encrypt(p)
+        s.sendto(enc_p, ('<broadcast>', 6768))
+        try:
+            while True:
+                data, addr = s.recvfrom(65507)
+                try:
+                    d_str = encrypter.decrypt(data)
+                    d = json.loads(d_str)
+                # If bad json, skip it
+                except ValueError:
+                    continue
+                # if not a detect-pong package, I don't want it
+                _type = d.get('type', '')
+                if _type != 'detect-pong':
+                    continue
+                # Skip if not node in it
+                if 'node' not in d:
+                    continue
+                # Maybe it's me, if so skip it
+                n = d['node']
+                nuuid = n.get('uuid', self.uuid)
+                if nuuid == self.uuid:
+                    continue
+                r.append(n)
+        except socket.timeout:
+            pass
+        return r
+    
+    
     # Randomly push some gossip broadcast messages and send them to
     # KGOSSIP others nodes
     # consume: if True (default) then a message will be decremented
@@ -1185,6 +1236,13 @@ class Gossip(object):
             
             logger.debug("PUSH-PULL returning my own nodes", part='gossip')
             return json.dumps(m)
+        
+        
+        @route('/agent/detect')
+        def agent_members():
+            response.content_type = 'application/json'
+            nodes = self.launch_gossip_detect_ping()
+            return json.dumps(nodes)
 
 
 gossiper = Gossip()

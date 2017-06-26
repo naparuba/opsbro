@@ -481,21 +481,21 @@ def do_zone_change(name=''):
 
 
 def do_detect_nodes():
-    # Send UDP broadcast packets
-    
-    MYPORT = 6768
-    
-    # s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    # s.bind(('', 0))
-    # s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    # s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-    
-    # data = repr(time.time()) + '\n'
-    # s.sendto(data, ('255.255.255.255', MYPORT))
-    msg = 'BLABLA'
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-    s.settimeout(10)
-    s.sendto(msg, ('239.255.255.250', MYPORT))
+    print "Trying to detect other nodes on the network thanks to a UDP broadcast. Will last 3s."
+    # Send UDP broadcast packets from the daemon
+    try:
+        network_nodes = get_kunai_json('/agent/detect')
+    except request_errors, exp:
+        logger.error('Cannot join kunai agent: %s' % exp)
+        sys.exit(1)
+    print "Detection is DONE.\nDetection result:"
+    if len(network_nodes) == 0:
+        print "Cannot detect (broadcast UDP) other nodes."
+        return
+    print "Other network nodes detected on this network:"
+    print '  Name                                 Zone        Address:port          Proxy    Tags'
+    for node in network_nodes:
+        print '  %-35s  %-10s  %s:%d  %5s     %s' % (node['name'], node['zone'], node['addr'], node['port'], node['is_proxy'], ','.join(node['tags']))
 
 
 # Sort threads by user time, if same, sort by name

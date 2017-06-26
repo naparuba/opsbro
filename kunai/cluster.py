@@ -759,6 +759,7 @@ class Cluster(object):
     
     def launch_udp_listener(self):
         self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
+        self.udp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)  # Allow Broadcast (useful for node discovery)
         logger.info("OPENING UDP", self.addr)
         self.udp_sock.bind((self.listening_addr, self.port))
         logger.log("UDP port open", self.port, part='udp')
@@ -798,6 +799,8 @@ class Cluster(object):
                     gossiper.manage_ping_message(m, addr)
                 elif t == 'ping-relay':
                     gossiper.manage_ping_relay_message(m, addr)
+                elif t == 'detect-ping':
+                    gossiper.manage_detect_ping_message(m, addr)
                 elif t == '/kv/put':
                     k = m['k']
                     v = m['v']
@@ -1341,8 +1344,7 @@ class Cluster(object):
             _hash = payload.get('hash', '')
             if not path or not _hash:
                 return
-            logger.debug('LIBEXEC UPDATE asking update for the path %s wit the hash %s' % (path, _hash),
-                         part='propagate')
+            logger.debug('LIBEXEC UPDATE asking update for the path %s wit the hash %s' % (path, _hash), part='propagate')
             self.libexec_to_update.append((path, _hash))
         # Ok but for the configuration part this time
         elif _type == 'configuration':
