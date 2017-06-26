@@ -485,13 +485,48 @@ def do_detect_nodes():
     
     MYPORT = 6768
     
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.bind(('', 0))
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    # s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    # s.bind(('', 0))
+    # s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    # s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     
-    data = repr(time.time()) + '\n'
-    s.sendto(data, ('255.255.255.255', MYPORT))
+    # data = repr(time.time()) + '\n'
+    # s.sendto(data, ('255.255.255.255', MYPORT))
+    msg = 'BLABLA'
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+    s.settimeout(10)
+    s.sendto(msg, ('239.255.255.250', MYPORT))
+
+
+# Sort threads by user time, if same, sort by name
+def _sort_threads(t1, t2):
+    t1_cpu = t1['user_time']
+    t2_cpu = t2['user_time']
+    t1_name = t1['name']
+    t2_name = t2['name']
+    if t1_cpu == t2_cpu:
+        return cmp(t1_name, t2_name)
+    else:  # bigger first
+        return -cmp(t1_cpu, t2_cpu)
+
+
+def do_show_threads():
+    try:
+        threads = get_kunai_json('/threads/')
+    except request_errors, exp:
+        logger.error('Cannot join kunai agent: %s' % exp)
+        sys.exit(1)
+    # Cut the threads into 2 lists: always here, and the others
+    daemon_threads = [t for t in threads if t['essential']]
+    not_daemon_threads = [t for t in threads if not t['essential']]
+    daemon_threads.sort(_sort_threads)
+    not_daemon_threads.sort(_sort_threads)
+    print "Daemon threads (persistent):"
+    for t in daemon_threads:
+        print '   Name:%-35s  id:%d   cpu(user):%.3f   cpu(system):%.3f' % (t['name'], t['tid'], t['user_time'], t['system_time'])
+    print "Temporary threads:"
+    for t in not_daemon_threads:
+        print '   Name:%-35s  id:%d   cpu(user):%.3f   cpu(system):%.3f' % (t['name'], t['tid'], t['user_time'], t['system_time'])
 
 
 exports = {
@@ -597,6 +632,12 @@ exports = {
         'keywords'   : ['agent', 'detect'],
         'args'       : [],
         'description': 'Try to detect (broadcast) others nodes in the network'
+    },
+    
+    do_show_threads   : {
+        'keywords'   : ['agent', 'show-threads'],
+        'args'       : [],
+        'description': 'List all internal threads of the agent.'
     },
     
 }

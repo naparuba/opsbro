@@ -1,5 +1,6 @@
 import threading
 import ctypes
+import os
 import traceback
 import cStringIO
 import json
@@ -12,6 +13,11 @@ try:
     libc = ctypes.CDLL('libc.so.6')
 except Exception:
     libc = None
+
+try:
+    import psutil
+except ImportError:
+    psutil = None
 
 
 # The f() wrapper
@@ -61,7 +67,7 @@ class ThreadMgr(object):
     
     
     def create_and_launch(self, f, args=(), name='unamed-thread', essential=False):
-        d = {'thread': None, 'tid': 0, 'name': name, 'essential': essential}
+        d = {'thread': None, 'tid': 0, 'name': name, 'essential': essential, 'user_time': -1, 'system_time': -1}
         
         # and exception catchs
         t = threading.Thread(None, target=w, name=name, args=(d, f, name, essential, args))
@@ -81,14 +87,29 @@ class ThreadMgr(object):
         # @protected()
         def GET_threads():
             response.content_type = 'application/json'
-            
+            # Look at CPU usage for threads if we have access to this
+            perfs = {}
+            if psutil:
+                # NOTE: os.getpid() need by old psutil versions
+                our_process = psutil.Process(os.getpid())
+                our_threads = our_process.get_threads()
+                for thr in our_threads:
+                    t_id = thr.id
+                    user_time = thr.user_time
+                    system_time = thr.system_time
+                    perfs[t_id] = {'user_time': user_time, 'system_time': system_time}
             res = []
-            props = ['name', 'tid', 'essential']  # only copy jsonifiable objects
+            props = ['name', 'tid', 'essential', 'user_time', 'system_time']  # only copy jsonifiable objects
             for d in self.all_threads:
-                
                 nd = {}
                 for prop in props:
                     nd[prop] = d[prop]
+                # Try to set perf into it
+                t_id = d['tid']
+                if t_id in perfs:
+                    _perf = perfs[t_id]
+                    nd['user_time'] = _perf['user_time']
+                    nd['system_time'] = _perf['system_time']
                 res.append(nd)
             
             return json.dumps(res)
