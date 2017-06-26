@@ -2,7 +2,6 @@ import os
 import sys
 import socket
 import json
-import uuid as libuuid
 import imp
 import threading
 import time
@@ -31,7 +30,7 @@ except ImportError:
 
 
 from kunai.log import logger
-from kunai.util import copy_dir, get_public_address
+from kunai.util import copy_dir, get_public_address, get_server_const_uuid, guess_server_const_uuid
 from kunai.threadmgr import threader
 from kunai.now import NOW
 from kunai.httpclient import HTTP_EXCEPTIONS
@@ -262,7 +261,7 @@ class Cluster(object):
         # * If there is not, then try to look at local file, and take if :
         #     * we have the same hostname than before
         #     * if we did change the hostname then recreate one
-        self.uuid = self.get_server_const_uuid()
+        self.uuid = get_server_const_uuid()
         if not self.uuid:  # if the hardware one is not valid, try to look at previous
             # first look if previous hostname was the same as before,
             # because maybe we are a VM that just did change/clone
@@ -277,7 +276,7 @@ class Cluster(object):
                 logger.log("KEY: %s loaded from previous key file %s" % (self.uuid, self.server_key_file))
             else:
                 # Ok no way to get from past, so try to guess the more stable possible, and if not ok, give me random stuff
-                self.uuid = self.guess_server_const_uuid()
+                self.uuid = guess_server_const_uuid()
         
         # now save the key
         with open(self.server_key_file, 'w') as f:
@@ -411,44 +410,6 @@ class Cluster(object):
         
         # get the message in a pub-sub way
         pubsub.sub('manage-message', self.manage_message_pub)
-    
-    
-    # Try to GET (fixed) uuid, but only if a constant one is here
-    # * linux: get hardware uuid from dmi
-    # * aws:   get instance uuid from url (TODO)
-    # * windows: TODO
-    @classmethod
-    def get_server_const_uuid(cls):
-        # First DMI, if there is a UUID, use it
-        product_uuid_p = '/sys/class/dmi/id/product_uuid'
-        if os.path.exists(product_uuid_p):
-            with open(product_uuid_p, 'r') as f:
-                buf = f.read()
-            logger.info('[SERVER-UUID] using the DMI (bios) uuid as server unique UUID: %s' % buf.lower())
-            return hashlib.sha1(buf.lower()).hexdigest()
-        # TODO:
-        # aws
-        # windows
-        return ''
-    
-    
-    # Try to guess uuid, but can be just a guess, so TRY to have a constant
-    # * openvz: take the local server ID + hostname as base
-    @classmethod
-    def guess_server_const_uuid(cls):
-        # For OpenVZ: there is an ID that is unique but for a hardware host,
-        # so to avoid have 2 different host with the same id, mix this id and the hostname
-        openvz_info_p = '/proc/vz/veinfo'
-        if os.path.exists(openvz_info_p):
-            with open(openvz_info_p, 'r') as f:
-                buf = f.read()
-                # File:    ID    MORE-STUFF
-                openvz_id = int(buf.strip().split(' ')[0])
-                servr_uniq_id = '%s-%d' % (socket.gethostname().lower(), openvz_id)
-                logger.info('[SERVER-UUID] OpenVZ: using the hostname & openvz local id as server unique UUID: %s' % servr_uniq_id)
-                return hashlib.sha1(servr_uniq_id).hexdigest()
-        # No merly fixed stuff? ok, pure randomness
-        return hashlib.sha1(libuuid.uuid1().get_hex()).hexdigest()
     
     
     def load_cfg_dir(self, cfg_dir):

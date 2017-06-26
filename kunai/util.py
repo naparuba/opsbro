@@ -4,6 +4,8 @@ import shutil
 import glob
 import socket
 import struct
+import hashlib
+import uuid as libuuid
 
 try:
     import fcntl
@@ -132,7 +134,7 @@ def _get_ec2_public_ip():
         logger.error('Cannot get pubic IP for your EC2 instance from %s. Error: %s.Exiting' % (uri, exp))
         sys.exit(2)
     return addr
-    
+
 
 # Only works in linux
 def get_public_address():
@@ -187,6 +189,42 @@ def get_ip_address(ifname):
         0x8915,  # SIOCGIFADDR
         struct.pack('256s', ifname[:15])
     )[20:24])
+
+
+# Try to GET (fixed) uuid, but only if a constant one is here
+# * linux: get hardware uuid from dmi
+# * aws:   get instance uuid from url (TODO)
+# * windows: TODO
+def get_server_const_uuid():
+    # First DMI, if there is a UUID, use it
+    product_uuid_p = '/sys/class/dmi/id/product_uuid'
+    if os.path.exists(product_uuid_p):
+        with open(product_uuid_p, 'r') as f:
+            buf = f.read()
+        logger.info('[SERVER-UUID] using the DMI (bios) uuid as server unique UUID: %s' % buf.lower())
+        return hashlib.sha1(buf.lower()).hexdigest()
+    # TODO:
+    # aws
+    # windows
+    return ''
+
+
+# Try to guess uuid, but can be just a guess, so TRY to have a constant
+# * openvz: take the local server ID + hostname as base
+def guess_server_const_uuid():
+    # For OpenVZ: there is an ID that is unique but for a hardware host,
+    # so to avoid have 2 different host with the same id, mix this id and the hostname
+    openvz_info_p = '/proc/vz/veinfo'
+    if os.path.exists(openvz_info_p):
+        with open(openvz_info_p, 'r') as f:
+            buf = f.read()
+            # File:    ID    MORE-STUFF
+            openvz_id = int(buf.strip().split(' ')[0])
+            servr_uniq_id = '%s-%d' % (socket.gethostname().lower(), openvz_id)
+            logger.info('[SERVER-UUID] OpenVZ: using the hostname & openvz local id as server unique UUID: %s' % servr_uniq_id)
+            return hashlib.sha1(servr_uniq_id).hexdigest()
+    # No merly fixed stuff? ok, pure randomness
+    return hashlib.sha1(libuuid.uuid1().get_hex()).hexdigest()
 
 
 # recursivly change a dict with pure bytes
