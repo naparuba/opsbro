@@ -16,6 +16,7 @@ try:
     import pygments.formatters
 except ImportError:
     pygments = None
+import pprint
 
 from kunai.log import cprint, logger
 from kunai.unixclient import get_json, get_local, request_errors
@@ -28,27 +29,47 @@ def do_evaluator_list():
     except request_errors, exp:
         logger.error(exp)
         return
-
+    
     try:
         d = json.loads(r)
     except ValueError, exp:  # bad json
         logger.error('Bad return from the server %s' % exp)
         return
-
+    
     print_info_title('Functions')
-    for fname in d:
-        print fname
+    for f in d:
+        cprint('*'*80, color='magenta')
+        name = f['name']
+        prototype = f['prototype']
+        doc = f['doc']
+        cprint(name, color='magenta', end='')
+        cprint('(', end='')
+        if prototype:
+            _s_args = []
+            for arg in prototype:
+                kname = arg[0]
+                def_value = arg[1]
+                if def_value != '__NO_DEFAULT__':
+                    _s_args.append('%s=%s' % (kname, def_value))
+                else:
+                    _s_args.append('%s' % kname)
+            cprint(', '.join(_s_args), color='yellow', end='')
+        cprint(')')
+        cprint("Documentation:", color='green')
+        print doc
+        print ''
+        
 
 
 def do_evaluator_eval(expr):
     print expr
     expr_64 = base64.b64encode(expr)
     try:
-        r = post_kunai_json('/agent/evaluator/eval', {'expr':expr_64})
+        r = post_kunai_json('/agent/evaluator/eval', {'expr': expr_64})
     except request_errors, exp:
         logger.error(exp)
         return
-
+    
     print_info_title('Result')
     print r
 
@@ -67,5 +88,5 @@ exports = {
         ],
         'description': 'Evaluate an expression'
     },
-
+    
 }

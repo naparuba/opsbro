@@ -524,7 +524,7 @@ class MonitoringManager(object):
             hkey = hashlib.sha1(mname).hexdigest()
             ts_node_manager = gossiper.find_tag_node('ts', hkey)
             # if it's me that manage this key, I add it in my backend
-            if ts_node_manager == self.uuid:
+            if ts_node_manager == gossiper.uuid:
                 logger.debug("I am the TS node manager")
                 print "HOW ADDING", timestamp, mname, value, type(timestamp), type(mname), type(value)
                 tsmgr.tsb.add_value(timestamp, mname, value)

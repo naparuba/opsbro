@@ -8,7 +8,7 @@ import shutil
 
 try:
     import jinja2
-except Exception, exp:
+except Exception:
     jinja2 = None
 
 from kunai.log import logger

@@ -69,7 +69,7 @@ class DockerManager(object):
         if not self.con:
             try:
                 self.con = get_json('/version', local_socket='/var/run/docker.sock')
-            except request_errors, exp:  # cannot connect
+            except request_errors:  # cannot connect
                 self.con = None
                 logger.debug('Cannot connect to docker')
                 return
@@ -101,7 +101,7 @@ class DockerManager(object):
             return
         try:
             conts = get_json('/containers/json', local_socket='/var/run/docker.sock')
-        except request_errors, exp:
+        except request_errors:
             self.connect()
             return
         
@@ -117,7 +117,7 @@ class DockerManager(object):
             return
         try:
             self.images = get_json('/images/json', local_socket='/var/run/docker.sock')
-        except request_errors, exp:
+        except request_errors:
             self.connect()
             return
     

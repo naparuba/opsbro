@@ -1,31 +1,16 @@
-import os
 import re
 import ast
 import _ast
 import operator as op
-import socket
 import json
 import base64
-import time
 import inspect
 import types
 import itertools
 
-try:
-    import apt
-except ImportError:
-    apt = None
-
-try:
-    import yum
-except ImportError:
-    yum = None
-
 from kunai.collectormanager import collectormgr
 from kunai.log import logger
-from kunai.misc.IPy import IP
 from kunai.httpdaemon import route, response, request
-from kunai.gossip import gossiper
 
 # supported operators
 operators = {
@@ -57,196 +42,12 @@ functions = {
 }
 
 
-def export(f):
+def export_evaluater_function(f):
     # Export the function to the allowed functions
     fname = f.__name__
     functions[fname] = f
     logger.debug('Evaluater: exporting function %s' % fname)
     return f
-
-
-@export
-def file_exists(path):
-    """**file_exists(path)** -> return True if a path exist on the system, False otherwise.
-
- * path: (string) path to check.
-    
-<code>
-    Example: file_exists('/etc/mongodb.conf')
-    Returns: True
-</code>
-    
-"""
-    return os.path.exists(path)
-
-
-@export
-def ip_is_in_range(ip, range):
-    """**ip_is_in_range(ip, range)** -> return True if the ip is in the ip range, False otherwise.
-    
- * ip:     (string) ip (v4 or v6) to check
- * range:  (string) ip range that the ip must be in
-    
-    
-<code>
-    Example:  ip_is_in_range('172.16.0.30', '172.16.0.0/24')
-    Returns: True
-</code>
-    """
-    
-    ip_range = IP(range)
-    return ip in ip_range
-
-
-@export
-def grep_file(string, path, regexp=False):
-    """**file_exists(path)** -> return True if a string or a regexp match the content of a file, False otherwise.
-    
- * string: (string)  string (or regexp expression) to check
- * path: (string) path of the file to look inside.
- * regexp: (boolean) is the string a regexp or not.
-    
-<code>
-    Example: grep_file('centos', '/etc/redhat-release')
-    Returns: True
-</code>
-    """
-    s = string
-    p = path
-    if not os.path.exists(p):
-        logger.debug('[evaluater::grep_file] no such fle %s' % p)
-        return False
-    try:
-        f = open(p, 'r')
-        lines = f.readlines()
-    except Exception, exp:
-        logger.error('[evaluater::grep_file] Trying to grep file %s but cannot open/read it: %s' % (p, exp))
-        return False
-    pat = None
-    if regexp:
-        try:
-            pat = re.compile(s, re.I)
-        except Exception, exp:
-            logger.error('[evaluater::grep_file]Cannot compile regexp expression: %s')
-        return False
-    if regexp:
-        for line in lines:
-            if pat.search(line):
-                return True
-    else:
-        s = s.lower()
-        for line in lines:
-            if s in line.lower():
-                return True
-    logger.debug('[evaluater::grep_file] GREP FILE FAIL: no such line %s %s' % (p, s))
-    return False
-
-
-deb_cache = None
-deb_cache_update_time = 0
-DEB_CACHE_MAX_AGE = 60  # if we cannot look at dpkg data age, allow a max cache of 60s to get a new apt update from disk
-DPKG_CACHE_PATH = '/var/cache/apt/pkgcache.bin'
-dpkg_cache_last_modification_epoch = 0.0
-
-yumbase = None
-
-
-@export
-def has_package(package):
-    """**has_package(package)** -> return True if the package is installed on the system, False otherwise.
-    
- * package: (string) name of the package to check for.
-
-<code>
-    Example: has_package('postfix')
-    Returns: False
-</code>
-    """
-    global deb_cache, deb_cache_update_time, dpkg_cache_last_modification_epoch
-    global yumbase
-    
-    if apt:
-        t0 = time.time()
-        if not deb_cache:
-            deb_cache = apt.Cache()
-            deb_cache_update_time = int(time.time())
-        else:  # ok already existing, look if we should update it
-            # because if there was a package installed, it's no more in cache
-            need_reload = False
-            if os.path.exists(DPKG_CACHE_PATH):
-                last_change = os.stat(DPKG_CACHE_PATH).st_mtime
-                if last_change != dpkg_cache_last_modification_epoch:
-                    need_reload = True
-                    dpkg_cache_last_modification_epoch = last_change
-            else:  # ok we cannot look at the dpkg file age, must limit by time
-                # the cache is just a memory view, so if too old, need to udpate it
-                if deb_cache_update_time < time.time() - DEB_CACHE_MAX_AGE:
-                    need_reload = True
-            if need_reload:
-                deb_cache.open(None)
-                deb_cache_update_time = int(time.time())
-        b = (package in deb_cache and deb_cache[package].is_installed)
-        logger.debug('TIME TO QUERY APT: %.3f' % (time.time() - t0), part='evaluator')
-        return b
-    if yum:
-        if not yumbase:
-            yumbase = yum.YumBase()
-            yumbase.conf.cache = 1
-        return package in (pkg.name for pkg in yumbase.rpmdb.returnPackages())
-
-
-@export
-def check_tcp(host, port, timeout=10):
-    """**check_tcp(host, port, timeout=10)** -> return True if the TCP connection can be established, False otherwise.
-    
- * host: (string) ip/fqdn of the host to connect to.
- * port: (integer) TCP port to connect to
- * timeout [optionnal] (integer) timeout to use for the connection test.
-
-<code>
- Example: check_tcp('www.google.com', 80)
- Returns: True
-</code>
-
-    """
-    
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(timeout)
-    try:
-        sock.connect((host, port))
-        sock.close()
-        return True
-    except socket.error:
-        sock.close()
-        return False
-
-
-@export
-def get_os():
-    """**get_os()** -> return a string about the os.
-
-<code>
-    Example: get_os()
-    Returns:  'linux'
-</code>
-    """
-    import platform
-    return platform.system().lower()
-
-
-@export
-def have_tag(tag):
-    """**have_tag(tag)** -> return True if the node have the tag, False otherwise.
-    
- * tag: (string) tag to check.
-
-
-<code>
-    Example: have_tag('linux')
-    Returns: True
-</code>
-    """
-    return gossiper.have_tag(tag)
 
 
 names = {'True': True, 'False': False}
@@ -255,6 +56,7 @@ names = {'True': True, 'False': False}
 class Evaluater(object):
     def __init__(self):
         self.cfg_data = {}
+        self.pat = re.compile('{{.*?}}')
     
     
     def load(self, cfg_data):
@@ -263,7 +65,7 @@ class Evaluater(object):
     
     def compile(self, expr, check=None):
         # first manage {} thing and look at them
-        all_parts = re.findall('{{.*?}}', expr)
+        all_parts = self.pat.findall(expr)
         
         changes = []
         

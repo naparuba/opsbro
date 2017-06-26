@@ -16,6 +16,8 @@ except ImportError:
     rq = None
 
 from kunai.misc.windows import windowser
+from kunai.log import logger
+from kunai.httpclient import HTTP_EXCEPTIONS
 
 
 def make_dir(path):

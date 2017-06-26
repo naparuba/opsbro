@@ -276,7 +276,7 @@ def do_info(show_logs):
     
     # Now websocket part
     print_info_title('Websocket')
-    if not websocket or 'websocekt_configuration' not in websocket:
+    if not websocket or 'websocket_configuration' not in websocket:
         cprint('No websocket configured')
     else:
         w = websocket['websocket_configuration']

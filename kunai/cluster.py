@@ -19,8 +19,6 @@ import shutil
 import zlib
 import copy
 
-
-
 try:
     from Crypto.Cipher import AES
 except ImportError:
@@ -101,7 +99,6 @@ class Cluster(object):
         self.detectors = {}
         self.handlers = {}
         
-        
         # Some default value that can be erased by the
         # main configuration file
         # By default no encryption
@@ -153,7 +150,7 @@ class Cluster(object):
         if not os.path.exists(self.cfg_dir):
             logger.error('Configuration directory [%s] is missing' % self.cfg_dir)
             sys.exit(2)
-            
+        
         # We need the main cfg_directory
         self.load_cfg_dir(self.cfg_dir)
         
@@ -405,13 +402,13 @@ class Cluster(object):
         # Let the modules preapre themselve
         modulemanager.prepare()
         modulemanager.export_http()
-
+        
         # We can now link checks/services based on what we have
         monitoringmgr.link_checks()
         monitoringmgr.link_services()
         # Export checks/services http interface
         monitoringmgr.export_http()
-
+        
         # get the message in a pub-sub way
         pubsub.sub('manage-message', self.manage_message_pub)
     
@@ -572,7 +569,7 @@ class Cluster(object):
             fname = fp[len(self.cfg_dir) + 1:]
             gname = os.path.splitext(fname)[0]
             self.import_detector(detector, 'file:%s' % fname, gname, mod_time=mod_time)
-            
+        
         if 'zone' in o:
             zone = o['zone']
             if not isinstance(zone, dict):
@@ -628,7 +625,6 @@ class Cluster(object):
                     return
                 # It's valid, I set it :)
                 setattr(self, mapto, v)
-    
     
     
     def import_handler(self, handler, fr, hname, mod_time=0):
@@ -719,8 +715,6 @@ class Cluster(object):
         self.detectors[detector['id']] = detector
     
     
-    
-    
     # Load raw results of collectors, and give them to the
     # collectormgr that will know how to load them :)
     def load_collector_retention(self):
@@ -768,7 +762,7 @@ class Cluster(object):
         else:
             for sig in (signal.SIGTERM, signal.SIGINT, signal.SIGUSR1, signal.SIGUSR2):
                 signal.signal(sig, func)
-
+    
     
     def launch_check_thread(self):
         self.check_thread = threader.create_and_launch(monitoringmgr.do_check_thread, name='check-thread', essential=True)
@@ -1107,8 +1101,6 @@ class Cluster(object):
             time.sleep(1)
     
     
-    
-    
     # Main thread for launching generators
     def do_generator_thread(self):
         logger.log('GENERATOR thread launched', part='generator')
@@ -1129,8 +1121,8 @@ class Cluster(object):
                 if should_launch:
                     g.launch_command()
             time.sleep(1)
-
-
+    
+    
     # Thread that will look for libexec/configuration change events,
     # will get the newest value in the KV and dump the files
     def launch_update_libexec_cfg_thread(self):
@@ -1317,51 +1309,6 @@ class Cluster(object):
             self.last_retention_write = now
     
     
-    # Guess what? yes, it is the main function
-    def main(self):
-        # be sure the check list are really updated now our litners are ok
-        monitoringmgr.update_checks_kv()
-        
-        logger.log('Go go run!')
-        i = -1
-        while not stopper.interrupted:
-            i += 1
-            if i % 10 == 0:
-                logger.debug('KNOWN NODES: %d, alive:%d, suspect:%d, dead:%d, leave:%d' % (
-                    gossiper.count(), gossiper.count('alive'), gossiper.count('suspect'), gossiper.count('dead'),
-                    gossiper.count('leave')), part='gossip')
-            
-            if i % 15 == 0:
-                threader.create_and_launch(gossiper.launch_full_sync, name='launch-full-sync', essential=True)
-            
-            if i % 2 == 1:
-                threader.create_and_launch(gossiper.ping_another, name='ping-another')
-            
-            gossiper.launch_gossip()
-            
-            gossiper.look_at_deads()
-            
-            self.retention_nodes()
-            
-            self.clean_old_events()
-            
-            # Look if we lost some threads or not
-            threader.check_alives()
-            
-            time.sleep(1)
-            
-            # if i % 30 == 0:
-            #    from meliae import scanner
-            #    scanner.dump_all_objects( '/tmp/memory-%s' % self.name)
-        
-        self.retention_nodes(force=True)
-        
-        # Clean lock file so daemon after us will be happy
-        self.clean_lock()
-        
-        logger.info('Exiting')
-    
-    
     def clean_lock(self):
         if os.path.exists(self.lock_path):
             logger.info('Cleaning lock file at %s' % self.lock_path)
@@ -1510,3 +1457,55 @@ class Cluster(object):
                     del self.events[cid]
                 except IndexError:  # if already delete, we don't care
                     pass
+    
+    
+    # Guess what? yes, it is the main function
+    def main(self):
+        # be sure the check list are really updated now our litners are ok
+        monitoringmgr.update_checks_kv()
+        
+        logger.log('Go go run!')
+        i = -1
+        while not stopper.interrupted:
+            i += 1
+            if i % 10 == 0:
+                logger.debug('KNOWN NODES: %d, alive:%d, suspect:%d, dead:%d, leave:%d' % (
+                    gossiper.count(), gossiper.count('alive'), gossiper.count('suspect'), gossiper.count('dead'),
+                    gossiper.count('leave')), part='gossip')
+            
+            if i % 15 == 0:
+                threader.create_and_launch(gossiper.launch_full_sync, name='launch-full-sync', essential=True)
+            
+            if i % 2 == 1:
+                threader.create_and_launch(gossiper.ping_another, name='ping-another')
+            
+            gossiper.launch_gossip()
+            
+            gossiper.look_at_deads()
+            
+            self.retention_nodes()
+            
+            self.clean_old_events()
+            
+            # Look if we lost some threads or not
+            threader.check_alives()
+            
+            time.sleep(1)
+            
+            # if i % 30 == 0:
+            #    from meliae import scanner
+            #    scanner.dump_all_objects( '/tmp/memory-%s' % self.name)
+            
+            import ctypes
+            try:
+                libc6 = ctypes.CDLL('libc.so.6')
+                libc6.malloc_trim(0)
+            except Exception as exp:
+                logger.warning("malloc_trim unsupport by this OS.")
+        
+        self.retention_nodes(force=True)
+        
+        # Clean lock file so daemon after us will be happy
+        self.clean_lock()
+        
+        logger.info('Exiting')

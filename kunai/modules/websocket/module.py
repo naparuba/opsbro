@@ -31,7 +31,7 @@ class WebSocketModule(Module):
     def get_info(self):
         r = {}
         if self.websocket is None:
-            r['websocket_configuration']
+            r['websocket_configuration'] = None
         else:
             r['websocket_configuration'] = self.websocket
         if not self.webso:
