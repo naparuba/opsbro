@@ -196,12 +196,12 @@ class Gossip(object):
             if tag not in self.tags:
                 did_change = True
                 self.tags.append(tag)
-                logger.info("New tag detected from detector for this node: %s" % tag, part='detector')
+                logger.info("New tag detected from detector for this node: %s" % tag)
         for tag in deleted_tags:
             if tag in self.tags:
                 did_change = True
                 self.tags.remove(tag)
-                logger.info("Tag was lost from the previous detection for this node: %s" % tag, part='detector')
+                logger.info("Tag was lost from the previous detection for this node: %s" % tag)
         # warn other parts only if need
         if did_change:
             self.node_did_change(self.uuid)  # a node did change: ourselve
@@ -1189,7 +1189,6 @@ class Gossip(object):
                 node = self.nodes.get(nuuid, None)
             if node is None:
                 return abort(404, 'This node is not found')
-            logger.log('PUTTING LEAVE the node %s' % node, part='http')
             self.set_leave(node)
             return
         
@@ -1197,7 +1196,6 @@ class Gossip(object):
         @route('/agent/members')
         def agent_members():
             response.content_type = 'application/json'
-            logger.debug("/agent/members is called", part='http')
             with self.nodes_lock:
                 nodes = copy.copy(self.nodes)
             return nodes
@@ -1213,16 +1211,14 @@ class Gossip(object):
                 addr = parts[0]
                 port = int(parts[1])
             tgt = (addr, port)
-            logger.info("HTTP: agent join for %s:%s " % (addr, port), part='http')
             r = self.do_push_pull(tgt)
-            logger.info("HTTP: agent join for %s:%s result:%s" % (addr, port, r), part='http')
             return json.dumps(r)
         
         
         @route('/agent/push-pull')
         def interface_push_pull():
             response.content_type = 'application/json'
-            logger.debug("PUSH-PULL called by HTTP")
+
             data = request.GET.get('msg')
             
             msg = json.loads(data)
@@ -1237,7 +1233,6 @@ class Gossip(object):
             nodes = self.get_nodes_for_push_pull_response(msg['ask-from-zone'])
             m = {'type': 'push-pull-msg', 'nodes': nodes}
             
-            logger.debug("PUSH-PULL returning my own nodes")
             return json.dumps(m)
         
         

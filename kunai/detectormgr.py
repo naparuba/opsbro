@@ -61,7 +61,7 @@ class DetectorMgr(object):
             for tags in self.detected_tags.values():
                 for tag in tags:
                     matching_tags.add(tag)
-            logger.debug('Detector loop generated tags: %s' % matching_tags, part='gossip')
+            logger.debug('Detector loop generated tags: %s' % matching_tags)
             
             # Merge with gossip part
             did_changed = gossiper.update_detected_tags(matching_tags)

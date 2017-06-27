@@ -23,7 +23,10 @@ except ImportError:
         # so now we did import it, refix sys.path to do not have misc inside
         # sys.path.pop(0)
 
-from kunai.log import logger
+from kunai.log import LoggerFactory
+
+# Global logger for this part
+logger = LoggerFactory.create_logger('security')
 
 
 class Encrypter(object):
@@ -48,7 +51,7 @@ class Encrypter(object):
             ndata = cyph.decrypt(data).strip()
             return ndata
         except Exception, exp:
-            logger.error('Decryption fail:', exp, part='gossip')
+            logger.error('Decryption fail:', exp)
             return ''
     
     
@@ -64,7 +67,7 @@ class Encrypter(object):
             ndata = cyph.encrypt(data)
             return ndata
         except Exception, exp:
-            logger.error('Encryption fail:', exp, part='gossip')
+            logger.error('Encryption fail:', exp)
             return ''
 
 

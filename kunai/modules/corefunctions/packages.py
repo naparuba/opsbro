@@ -60,7 +60,7 @@ def has_package(package):
                 deb_cache.open(None)
                 deb_cache_update_time = int(time.time())
         b = (package in deb_cache and deb_cache[package].is_installed)
-        logger.debug('TIME TO QUERY APT: %.3f' % (time.time() - t0), part='evaluator')
+        logger.debug('TIME TO QUERY APT: %.3f' % (time.time() - t0))
         return b
     if yum:
         if not yumbase:

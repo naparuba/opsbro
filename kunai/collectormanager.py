@@ -6,19 +6,21 @@ import threading
 import glob
 import imp
 import copy
-from kunai.log import logger
+
+from kunai.log import LoggerFactory
 from kunai.threadmgr import threader
 from kunai.stop import stopper
 from kunai.httpdaemon import route, response
 from kunai.collector import Collector
-
 from jsonmgr import jsoner
 
+# Global logger for this part
+logger = LoggerFactory.create_logger('collector')
 
 def get_collectors(self):
     collector_dir = os.path.dirname(__file__)
     p = collector_dir + '/collectors/*py'
-    logger.debug('Loading collectors from path:', p, part='collector')
+    logger.debug('Loading collectors from path:', p)
     collector_files = glob.glob(p)
     for f in collector_files:
         fname = os.path.splitext(os.path.basename(f))[0]
@@ -110,7 +112,7 @@ class CollectorManager:
     
     def load_collectors(self, cfg_data):
         self.cfg_data = cfg_data
-        logger.debug('Cfg data:%s' % cfg_data, part='collector')
+        logger.debug('Cfg data:%s' % cfg_data)
         get_collectors(self)
     
     
@@ -169,7 +171,7 @@ class CollectorManager:
         col = self.collectors[cname]
         col['log'] = log
         
-        # Only set results and metrics if availables
+        # Only set results and metrics if available
         if not results:
             col['active'] = False
             return
@@ -190,7 +192,7 @@ class CollectorManager:
     
     # Main thread for launching collectors
     def do_collector_thread(self):
-        logger.log('COLLECTOR thread launched', part='collector')
+        logger.log('COLLECTOR thread launched')
         cur_launchs = {}
         while not stopper.interrupted:
             now = int(time.time())
@@ -201,7 +203,7 @@ class CollectorManager:
                 if colname in cur_launchs:
                     continue
                 if now >= e['next_check']:
-                    logger.debug('COLLECTOR: launching collector %s' % colname, part='collector')
+                    logger.debug('COLLECTOR: launching collector %s' % colname)
                     t = threader.create_and_launch(inst.main, name='collector-%s' % colname)
                     cur_launchs[colname] = t
                     e['next_check'] += 10
@@ -242,7 +244,7 @@ class CollectorManager:
         
         
         @route('/collectors/:_id')
-        def GET_container(_id):
+        def GET_collector(_id):
             response.content_type = 'application/json'
             e = self.collectors.get(_id, None)
             if e is None:

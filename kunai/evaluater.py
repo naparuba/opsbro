@@ -9,8 +9,11 @@ import types
 import itertools
 
 from kunai.collectormanager import collectormgr
-from kunai.log import logger
+from kunai.log import LoggerFactory
 from kunai.httpdaemon import route, response, request
+
+# Global logger for this part
+logger = LoggerFactory.create_logger('evaluater')
 
 # supported operators
 operators = {
@@ -92,22 +95,22 @@ class Evaluater(object):
     
     
     def eval_expr(self, expr, check=None):
-        logger.debug('EVAL: expression: %s' % expr, part='evaluator')
+        logger.debug('EVAL: expression: %s' % expr)
         expr = self.compile(expr, check=check)
-        logger.debug('EVAL: exp changed: %s' % expr, part='evaluator')
+        logger.debug('EVAL: exp changed: %s' % expr)
         # final tree
         tree = ast.parse(expr, mode='eval').body
         try:
             r = self.eval_(tree)
         except Exception, exp:
-            logger.debug('EVAL: fail to eval expr: %s : %s' % (expr, exp), part='evaluator')
+            logger.debug('EVAL: fail to eval expr: %s : %s' % (expr, exp))
             raise
-        logger.debug('EVAL: result: %s' % r, part='evaluator')
+        logger.debug('EVAL: result: %s' % r)
         return r
     
     
     def eval_(self, node):
-        logger.debug('eval_ node: %s => type=%s' % (node, type(node)), part='evaluator')
+        logger.debug('eval_ node: %s => type=%s' % (node, type(node)))
         if isinstance(node, ast.Num):  # <number>
             return node.n
         elif isinstance(node, ast.Str):  # <string>
@@ -149,17 +152,17 @@ class Evaluater(object):
                 fname = node.func.id
                 f = functions.get(fname, None)
             elif isinstance(node.func, ast.Attribute):
-                logger.error('Eval UNMANAGED (ast.aTTribute) CALL: %s %s %s is refused' % (node.func, node.func.__dict__, node.func.value.__dict__), part='evaluator')
+                logger.error('Eval UNMANAGED (ast.aTTribute) CALL: %s %s %s is refused' % (node.func, node.func.__dict__, node.func.value.__dict__))
             
             else:
-                logger.error('Eval UNMANAGED (othercall) CALL: %s %s %s is refused' % (node.func, node.func.__dict__, node.func.value.__dict__), part='evaluator')
+                logger.error('Eval UNMANAGED (othercall) CALL: %s %s %s is refused' % (node.func, node.func.__dict__, node.func.value.__dict__))
                 raise TypeError(node)
             
             if f:
                 v = f(*args)
                 return v
         else:
-            logger.error('Eval UNMANAGED node: %s %s and so is  refused' % (node, type(node)), part='evaluator')
+            logger.error('Eval UNMANAGED node: %s %s and so is  refused' % (node, type(node)))
             raise TypeError(node)
     
     

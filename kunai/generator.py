@@ -11,8 +11,11 @@ try:
 except Exception:
     jinja2 = None
 
-from kunai.log import logger
+from kunai.log import LoggerFactory
 from kunai.gossip import gossiper
+
+# Global logger for this part
+logger = LoggerFactory.create_logger('generator')
 
 
 # Get all nodes that are defining a service sname and where the service is OK
@@ -42,14 +45,14 @@ class Generator(object):
     def generate(self):
         # If not jinja2, bailing out
         if jinja2 is None:
-            logger.debug('Generator: Error, no jinja2 librairy defined, please install it', part='generator')
+            logger.debug('Generator: Error, no jinja2 librairy defined, please install it')
             return
         try:
             f = open(self.g['template'], 'r')
             self.buf = f.read().decode('utf8', 'ignore')
             f.close()
         except IOError, exp:
-            logger.error('Cannot open template file %s : %s' % (self.g['template'], exp), part='generator')
+            logger.error('Cannot open template file %s : %s' % (self.g['template'], exp))
             self.buf = None
             self.template = None
         
@@ -68,7 +71,7 @@ class Generator(object):
         try:
             self.template = env.from_string(self.buf)
         except Exception, exp:
-            logger.error('Template file %s did raise an error with jinja2 : %s' % (self.g['template'], exp), part='generator')
+            logger.error('Template file %s did raise an error with jinja2 : %s' % (self.g['template'], exp))
             self.buf = None
             self.template = None
         
@@ -77,7 +80,7 @@ class Generator(object):
             self.output = self.template.render(nodes=nodes, node=node, ok_nodes=ok_nodes)
         except Exception:
             logger.error('Template rendering %s did raise an error with jinja2 : %s' % (
-                self.g['template'], traceback.format_exc()), part='generator')
+                self.g['template'], traceback.format_exc()))
             self.output = None
             self.template = None
             self.buf = None
@@ -85,7 +88,7 @@ class Generator(object):
         # if we have a partial generator prepare the output we must check for
         if self.output is not None and self.g['partial_start'] and self.g['partial_end']:
             self.output = '%s\n%s\n%s' % (self.g['partial_start'], self.output, self.g['partial_end'])
-        logger.debug('Generator %s did generate output:\n%s' % (self.g['name'], self.output), part='generator')
+        logger.debug('Generator %s did generate output:\n%s' % (self.g['name'], self.output))
     
     
     # If we did generate, try to see if we must write the file, and if so we will have to
@@ -103,7 +106,7 @@ class Generator(object):
                 self.cur_value = f.read()
                 f.close()
             except IOError, exp:
-                logger.error('Cannot open path file %s : %s' % (self.g['path'], exp), part='generator')
+                logger.error('Cannot open path file %s : %s' % (self.g['path'], exp))
                 self.output = None
                 self.template = ''
                 self.buf = ''
@@ -124,15 +127,15 @@ class Generator(object):
         
         # If not exists or the value did change, regenerate it :)
         if need_regenerate_full:
-            logger.debug('Generator %s generate a new value, writing it to %s' % (self.g['name'], self.g['path']), part='generator')
+            logger.debug('Generator %s generate a new value, writing it to %s' % (self.g['name'], self.g['path']))
             try:
                 f = codecs.open(self.g['path'], "w", "utf-8")
                 f.write(self.output)
                 f.close()
-                logger.log('Generator %s did generate a new file at %s' % (self.g['name'], self.g['path']), part='generator')
+                logger.log('Generator %s did generate a new file at %s' % (self.g['name'], self.g['path']))
                 return True
             except IOError, exp:
-                logger.error('Cannot write path file %s : %s' % (self.g['path'], exp), part='generator')
+                logger.error('Cannot write path file %s : %s' % (self.g['path'], exp))
                 self.output = None
                 self.template = ''
                 self.buf = ''
@@ -140,14 +143,14 @@ class Generator(object):
         
         # If not exists or the value did change, regenerate it :)
         if need_regenerate_partial:
-            logger.debug('Generator %s generate partial file writing it to %s' % (self.g['name'], self.g['path']), part='generator')
+            logger.debug('Generator %s generate partial file writing it to %s' % (self.g['name'], self.g['path']))
             try:
                 f = codecs.open(self.g['path'], "r", "utf-8")
                 orig_content = f.read()
                 # As we will pslit lines and so lost the \n we should look if the last one was ending with one or not
                 orig_content_finish_with_new_line = (orig_content[-1] == '\n')
                 lines = orig_content.splitlines()
-                logger.debug('ORIGIANL CONTENT: %s' % orig_content, part='generator')
+                logger.debug('ORIGIANL CONTENT: %s' % orig_content)
                 del orig_content
                 f.close()
                 # find the part to remove between start and end of the partial
@@ -165,17 +168,17 @@ class Generator(object):
                     if self.g['if_partial_missing'] == 'append':
                         part_before = lines
                         part_after = []
-                        logger.debug('APPEND MODE: force a return line? %s' % orig_content_finish_with_new_line, part='generator')
+                        logger.debug('APPEND MODE: force a return line? %s' % orig_content_finish_with_new_line)
                         # if the file did not finish with \n, force one
                         if not orig_content_finish_with_new_line:
                             part_before.append('\n')
                     else:
-                        logger.error('The generator %s do not have a valid if_partial_missing property' % (self.g['name']), part='generator')
+                        logger.error('The generator %s do not have a valid if_partial_missing property' % (self.g['name']))
                         return False
                 else:  # partial found, look at part before/after
                     # Maybe there is a bad order in the index?
                     if idx_start > idx_end:
-                        logger.error('The partial_start "%s" and partial_end "%s" in the file "%s" for the generator %s are not in the good order' % (self.g['partial_start'], self.g['partial_end'], self.g['path'], self.g['name']), part='generator')
+                        logger.error('The partial_start "%s" and partial_end "%s" in the file "%s" for the generator %s are not in the good order' % (self.g['partial_start'], self.g['partial_end'], self.g['path'], self.g['name']))
                         self.output = None
                         self.template = ''
                         self.buf = ''
@@ -184,8 +187,8 @@ class Generator(object):
                     part_after = lines[idx_end + 1:]
                 last_char = '' if not orig_content_finish_with_new_line else '\n'
                 new_content = '%s\n%s%s%s' % ('\n'.join(part_before), self.output, '\n'.join(part_after), last_char)
-                logger.debug('Temporary file for partial replacement: %s and %s %s=>%s' % (part_before, part_after, idx_start, idx_end), part='generator')
-                logger.debug('New content: %s' % new_content, part='generator')
+                logger.debug('Temporary file for partial replacement: %s and %s %s=>%s' % (part_before, part_after, idx_start, idx_end))
+                logger.debug('New content: %s' % new_content)
                 tmp_path = '%s.temporary-generator' % self.g['path']
                 f2 = codecs.open(tmp_path, 'w', 'utf-8')
                 f2.write(new_content)
@@ -199,13 +202,13 @@ class Generator(object):
                 prev_gid = prev_stats.st_gid
                 os.chown(tmp_path, prev_uid, prev_gid)
                 prev_permissions = prev_stats[stat.ST_MODE]
-                logger.debug('PREV UID GID PERMISSIONS: %s %s %s' % (prev_uid, prev_gid, prev_permissions), part='generator')
+                logger.debug('PREV UID GID PERMISSIONS: %s %s %s' % (prev_uid, prev_gid, prev_permissions))
                 os.chmod(tmp_path, prev_permissions)
-                logger.log('Generator %s did generate a new file at %s' % (self.g['name'], self.g['path']), part='generator')
+                logger.log('Generator %s did generate a new file at %s' % (self.g['name'], self.g['path']))
                 shutil.move(tmp_path, self.g['path'])
                 return True
             except IOError, exp:
-                logger.error('Cannot write path file %s : %s' % (self.g['path'], exp), part='generator')
+                logger.error('Cannot write path file %s : %s' % (self.g['path'], exp))
                 self.output = None
                 self.template = ''
                 self.buf = ''
@@ -222,11 +225,11 @@ class Generator(object):
             p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True,
                                  preexec_fn=os.setsid)
         except Exception, exp:
-            logger.error('Generator %s command launch (%s) fail : %s' % (self.g['name'], cmd, exp), part='generator')
+            logger.error('Generator %s command launch (%s) fail : %s' % (self.g['name'], cmd, exp))
             return
         output, err = p.communicate()
         rc = p.returncode
         if rc != 0:
-            logger.error('Generator %s command launch (%s) error (rc=%s): %s' % (self.g['name'], cmd, rc, '\n'.join([output, err])), part='generator')
+            logger.error('Generator %s command launch (%s) error (rc=%s): %s' % (self.g['name'], cmd, rc, '\n'.join([output, err])))
             return
-        logger.debug("Generator %s command succeded" % self.g['name'], part='generator')
+        logger.debug("Generator %s command succeded" % self.g['name'])

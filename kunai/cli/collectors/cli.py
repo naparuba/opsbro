@@ -84,7 +84,7 @@ def do_collectors_run(name):
             continue
         logger.debug('Launching collector', name)
         inst = e['inst']
-        logger.debug('COLLECTOR: launching collector %s' % colname, part='check')
+        logger.debug('COLLECTOR: launching collector %s' % colname)
         inst.main()
         pretty_print(e['results'])
 

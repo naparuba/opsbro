@@ -181,7 +181,6 @@ class MonitoringManager(object):
                     to_load = ['state_id', 'incarnation']
                     for prop in to_load:
                         service[prop] = c[prop]
-                        # logger.debug('Services loaded %s' % self.services, part='services')
     
     
     # We have a new service from the HTTP, save it where it need to be
@@ -500,7 +499,7 @@ class MonitoringManager(object):
     
     
     def do_update_checks_kv(self):
-        logger.info("CHECK UPDATING KV checks", part='kv')
+        logger.info("CHECK UPDATING KV checks")
         names = []
         for (cid, check) in self.checks.iteritems():
             # Only the checks that we are really managing
@@ -588,7 +587,7 @@ class MonitoringManager(object):
                 # checks are harder, we must find them in the kv nodes
                 v = kvmgr.get_key('__health/%s' % node['uuid'])
                 if v is None or v == '':
-                    logger.error('Cannot access to the checks list for', nuuid, part='http')
+                    logger.error('Cannot access to the checks list for', nuuid)
                     return r
                 
                 lst = json.loads(v)
@@ -604,14 +603,12 @@ class MonitoringManager(object):
         @route('/agent/checks')
         def agent_checks():
             response.content_type = 'application/json'
-            logger.debug("/agent/checks is called", part='http')
             return self.checks
         
         
         @route('/agent/checks/:cname#.+#')
         def agent_check(cname):
             response.content_type = 'application/json'
-            logger.debug("/agent/checks is called for %s" % cname, part='http')
             if cname not in self.checks:
                 return abort(404, 'check not found')
             return self.checks[cname]
@@ -619,7 +616,6 @@ class MonitoringManager(object):
         
         @route('/agent/checks/:cname#.+#', method='DELETE')
         def agent_DELETE_check(cname):
-            logger.debug("/agent/checks DELETE is called for %s" % cname, part='http')
             if cname not in self.checks:
                 return
             self.delete_check(cname)
@@ -629,12 +625,10 @@ class MonitoringManager(object):
         @route('/agent/checks/:cname#.+#', method='PUT')
         def interface_PUT_agent_check(cname):
             value = request.body.getvalue()
-            logger.debug("HTTP: PUT a new/change check %s (value:%s)" % (cname, value), part='http')
             try:
                 check = json.loads(value)
             except ValueError:  # bad json
                 return abort(400, 'Bad json entry')
-            logger.debug("HTTP: PUT a new/change check %s (value:%s)" % (cname, check), part='http')
             self.save_check(cname, check)
             return
         
@@ -642,14 +636,12 @@ class MonitoringManager(object):
         @route('/agent/services')
         def agent_services():
             response.content_type = 'application/json'
-            logger.debug("/agent/services is called", part='http')
             return self.services
         
         
         @route('/agent/services/:sname#.+#')
         def agent_service(sname):
             response.content_type = 'application/json'
-            logger.debug("/agent/service is called for %s" % sname, part='http')
             if sname not in self.services:
                 return abort(404, 'service not found')
             return self.services[sname]
@@ -658,19 +650,16 @@ class MonitoringManager(object):
         @route('/agent/services/:sname#.+#', method='PUT')
         def interface_PUT_agent_service(sname):
             value = request.body.getvalue()
-            logger.debug("HTTP: PUT a new/change service %s (value:%s)" % (sname, value), part='http')
             try:
                 service = json.loads(value)
             except ValueError:  # bad json
                 return abort(400, 'Bad json entry')
-            logger.debug("HTTP: PUT a new/change check %s (value:%s)" % (sname, service), part='http')
             self.save_service(sname, service)
             return
         
         
         @route('/agent/services/:sname#.+#', method='DELETE')
         def agent_DELETE_service(sname):
-            logger.debug("/agent/service DELETE is called for %s" % sname, part='http')
             if sname not in self.services:
                 return
             self.delete_service(sname)
@@ -681,7 +670,6 @@ class MonitoringManager(object):
         @route('/state/services')
         def state_services():
             response.content_type = 'application/json'
-            logger.debug("/state/services is called", part='http')
             # We don't want to modify our services objects
             services = copy.deepcopy(self.services)
             for service in services.values():
@@ -710,7 +698,6 @@ class MonitoringManager(object):
         @route('/state/services/:sname')
         def state_service(sname):
             response.content_type = 'application/json'
-            logger.debug("/state/services/%s is called" % sname, part='http')
             # We don't want to modify our services objects
             services = copy.deepcopy(self.services)
             service = services.get(sname, {})

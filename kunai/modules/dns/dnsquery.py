@@ -2,8 +2,11 @@ import re
 import socket
 import copy
 
-from kunai.log import logger
+from kunai.log import LoggerFactory
 from kunai.gossip import gossiper
+
+# Global logger for this part
+logger = LoggerFactory.create_logger('dns')
 
 pattern = r"((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)([ (\[]?(\.|dot)[ )\]]?(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3})"
 ipv4pattern = re.compile(pattern)
@@ -35,21 +38,21 @@ class DNSQuery:
     def lookup_for_nodes(self, dom):
         with gossiper.nodes_lock:
             nodes = copy.copy(gossiper.nodes)
-        logger.debug('Querying %s for managed domaine: %s' % (dom, self.domain), part='dns')
+        logger.debug('Querying %s for managed domaine: %s' % (dom, self.domain))
         if not self.domain.endswith(dom):
-            logger.debug('Domain %s is not matching managed domain: %s' % (dom, self.domain), part='dns')
+            logger.debug('Domain %s is not matching managed domain: %s' % (dom, self.domain))
             return []
         search = self.domain[:-len(dom)]
         # split into sname.service.datacenter
-        logger.debug("Lookup for search %s" % search, part='dns')
+        logger.debug("Lookup for search %s" % search)
         elts = search.split('.', 2)
         if len(elts) != 3:
-            logger.debug('Bad query, not 3 dots in %s' % search, part='dns')
+            logger.debug('Bad query, not 3 dots in %s' % search)
             return []
         dc = elts[2]
         _type = elts[1]
         tag = elts[0]
-        logger.debug('Looking in %s nodes' % len(nodes), part='dns')
+        logger.debug('Looking in %s nodes' % len(nodes))
         r = []
         for n in nodes.values():
             # skip non alive nodes
@@ -62,7 +65,7 @@ class DNSQuery:
                 if tag in services:
                     service = services[tag]
                     state_id = service.get('state_id')
-                logger.debug('current state id : %s' % state_id, part='dns')
+                logger.debug('current state id : %s' % state_id)
                 # Skip bad nodes
                 if state_id != 0:
                     logger.debug('Skipping node %s' % n['name'])

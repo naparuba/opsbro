@@ -281,7 +281,7 @@ class Cluster(object):
         # now save the key
         with open(self.server_key_file, 'w') as f:
             f.write(self.uuid)
-        logger.log("KEY: %s saved to the key file %s" % (self.uuid, self.server_key_file), part='gossip')
+        logger.log("KEY: %s saved to the key file %s" % (self.uuid, self.server_key_file))
         
         # we can save the current hostname
         with open(self.hostname_file, 'w') as f:
@@ -638,7 +638,7 @@ class Cluster(object):
         
         generator['if_partial_missing'] = generator.get('if_partial_missing', '')
         if generator['if_partial_missing'] and generator['if_partial_missing'] not in ['append']:
-            logger.error('Generator %s if_partial_missing property is not valid: %s' % (generator['name'], generator['if_partial_missing']), part='generator')
+            logger.error('Generator %s if_partial_missing property is not valid: %s' % (generator['name'], generator['if_partial_missing']))
             return
         
         # Add it into the generators list
@@ -762,7 +762,7 @@ class Cluster(object):
         self.udp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)  # Allow Broadcast (useful for node discovery)
         logger.info("OPENING UDP", self.addr)
         self.udp_sock.bind((self.listening_addr, self.port))
-        logger.log("UDP port open", self.port, part='udp')
+        logger.log("UDP port open", self.port)
         while not stopper.interrupted:
             try:
                 data, addr = self.udp_sock.recvfrom(65535)  # buffer size is 1024 bytes
@@ -778,7 +778,7 @@ class Cluster(object):
             # Maybe the decryption failed?
             if data == '':
                 continue
-            logger.debug("UDP: received message:", data, addr, part='udp')
+            logger.debug("UDP: received message:", data, addr)
             # Ok now we should have a json to parse :)
             try:
                 raw = json.loads(data)
@@ -862,14 +862,14 @@ class Cluster(object):
         @route('/agent/generators')
         def agent_generators():
             response.content_type = 'application/json'
-            logger.debug("/agent/generators is called", part='http')
+            logger.debug("/agent/generators is called")
             return self.generators
         
         
         @route('/agent/generators/:gname#.+#')
         def agent_generator(gname):
             response.content_type = 'application/json'
-            logger.debug("/agent/generator is called for %s" % gname, part='http')
+            logger.debug("/agent/generator is called for %s" % gname)
             if gname not in self.generators:
                 return abort(404, 'generator not found')
             return self.generators[gname]
@@ -877,7 +877,7 @@ class Cluster(object):
         
         @route('/agent/propagate/libexec', method='GET')
         def propage_libexec():
-            logger.debug("Call to propagate-configuraion", part='http')
+            logger.debug("Call to propagate-configuraion")
             if not os.path.exists(self.libexec_dir):
                 abort(400, 'Libexec directory is not existing')
             all_files = [os.path.join(dp, f) for dp, dn, filenames in os.walk(os.path.abspath(self.libexec_dir)) for f
@@ -888,7 +888,7 @@ class Cluster(object):
                 f = open(fname, 'rb')
                 _hash = hashlib.sha1(f.read()).hexdigest()
                 f.close()
-                logger.debug("propagate saving FILE %s into the KV space" % fname, part='http')
+                logger.debug("propagate saving FILE %s into the KV space" % fname)
                 f = tempfile.TemporaryFile()
                 
                 with tarfile.open(fileobj=f, mode="w:gz") as tar:
@@ -898,9 +898,7 @@ class Cluster(object):
                 f.close()
                 buf64 = base64.b64encode(zbuf)
                 
-                logger.debug(
-                    "propagate READ A %d file %s and compressed into a %d one..." % (len(zbuf), path, len(buf64)),
-                    part='http')
+                logger.debug("propagate READ A %d file %s and compressed into a %d one..." % (len(zbuf), path, len(buf64)))
                 key = '__libexec/%s' % path
                 
                 kvmgr.put_key(key, buf64)
@@ -911,7 +909,7 @@ class Cluster(object):
         
         @route('/agent/propagate/configuration', method='GET')
         def propage_configuration():
-            logger.debug("propagate conf call TO PROPAGATE CONFIGURATION", part='http')
+            logger.debug("propagate conf call TO PROPAGATE CONFIGURATION")
             if not os.path.exists(self.configuration_dir):
                 abort(400, 'Configuration directory is not existing')
             all_files = [os.path.join(dp, f) for dp, dn, filenames in os.walk(os.path.abspath(self.configuration_dir))
@@ -931,7 +929,7 @@ class Cluster(object):
                 # save this entry
                 ok_files.append((path, _hash))
                 
-                logger.debug("propagate conf SAVING FILE %s into the KV space" % fname, part='http')
+                logger.debug("propagate conf SAVING FILE %s into the KV space" % fname)
                 # get a tar for this file, and base64 it
                 f = tempfile.TemporaryFile()
                 with tarfile.open(fileobj=f, mode="w:gz") as tar:
@@ -950,7 +948,7 @@ class Cluster(object):
                 self.stack_event_broadcast(payload)
             
             ok_files = [fname[len(os.path.abspath(self.configuration_dir)) + 1:] for fname in all_files]
-            logger.debug("propagate configuration All files", ok_files, part='http')
+            logger.debug("propagate configuration All files", ok_files)
             j = json.dumps(ok_files)
             zj = zlib.compress(j, 9)
             zj64 = base64.b64encode(zj)
@@ -962,7 +960,7 @@ class Cluster(object):
         @route('/configuration/update', method='PUT')
         def update_configuration():
             value = request.body.getvalue()
-            logger.debug("HTTP: configuration update put %s" % (value), part='http')
+            logger.debug("HTTP: configuration update put %s" % (value))
             try:
                 update = json.loads(value)
             except ValueError:  # bad json...
@@ -978,14 +976,14 @@ class Cluster(object):
                 f.write(json.dumps(j, sort_keys=True, indent=4))
             # Load the data we can
             self.open_cfg_file(local_file)
-            logger.debug('HTTP configuration update, now got %s' % j, part='http')
+            logger.debug('HTTP configuration update, now got %s' % j)
             return
         
         
         @route('/configuration', method='GET')
         def get_configuration():
             response.content_type = 'application/json'
-            logger.debug("HTTP: configuration get ", part='http')
+            logger.debug("HTTP: configuration get ")
             local_file = os.path.join(self.configuration_dir, 'local.json')
             
             with open(local_file, 'r') as f:
@@ -999,7 +997,7 @@ class Cluster(object):
             response.content_type = 'application/json'
             
             nzone = request.body.getvalue()
-            logger.debug("HTTP: /agent/zone put %s" % (nzone), part='http')
+            logger.debug("HTTP: /agent/zone put %s" % (nzone))
             gossiper.change_zone(nzone)
             with open(self.zone_file, 'w') as f:
                 f.write(nzone)
@@ -1031,9 +1029,9 @@ class Cluster(object):
     # and we will get the key/value from it
     def do_replication_first_sync_thread(self):
         if 'kv' not in self.tags:
-            logger.log('SYNC no need, I am not a KV node', part='kv')
+            logger.log('SYNC no need, I am not a KV node')
             return
-        logger.log('SYNC thread launched', part='kv')
+        logger.log('SYNC thread launched')
         # We will look until we found a repl that answer us :)
         while True:
             repls = kvmgr.get_my_replicats()
@@ -1044,41 +1042,41 @@ class Cluster(object):
                     continue
                 addr = repl['addr']
                 port = repl['port']
-                logger.log('SYNC try to sync from %s since the time %s' % (repl['name'], self.last_alive), part='kv')
+                logger.log('SYNC try to sync from %s since the time %s' % (repl['name'], self.last_alive))
                 uri = 'http://%s:%s/kv-meta/changed/%d' % (addr, port, self.last_alive)
                 try:
                     r = rq.get(uri)
-                    logger.debug("SYNC kv-changed response from %s " % repl['name'], r, part='kv')
+                    logger.debug("SYNC kv-changed response from %s " % repl['name'], r)
                     try:
                         to_merge = json.loads(r.text)
                     except (ValueError, TypeError), exp:
-                        logger.debug('SYNC : error asking to %s: %s' % (repl['name'], str(exp)), part='kv')
+                        logger.debug('SYNC : error asking to %s: %s' % (repl['name'], str(exp)))
                         continue
                     kvmgr.do_merge(to_merge)
-                    logger.debug("SYNC thread done, bailing out", part='kv')
+                    logger.debug("SYNC thread done, bailing out")
                     return
                 except HTTP_EXCEPTIONS, exp:
-                    logger.debug('SYNC : error asking to %s: %s' % (repl['name'], str(exp)), part='kv')
+                    logger.debug('SYNC : error asking to %s: %s' % (repl['name'], str(exp)))
                     continue
             time.sleep(1)
     
     
     # Main thread for launching generators
     def do_generator_thread(self):
-        logger.log('GENERATOR thread launched', part='generator')
+        logger.log('GENERATOR thread launched')
         while not stopper.interrupted:
-            logger.debug('Looking for %d generators' % len(self.generators), part='generator')
+            logger.debug('Looking for %d generators' % len(self.generators))
             for (gname, gen) in self.generators.iteritems():
-                logger.debug('LOOK AT GENERATOR', gen, 'to be apply on', gen['apply_on'], 'with our tags', self.tags, part='generator')
+                logger.debug('LOOK AT GENERATOR', gen, 'to be apply on', gen['apply_on'], 'with our tags', self.tags)
                 apply_on = gen['apply_on']
                 # Maybe this generator is not for us...
                 if apply_on != '*' and apply_on not in self.tags:
                     continue
-                logger.debug('Generator %s will runs' % gname, part='generator')
+                logger.debug('Generator %s will runs' % gname)
                 g = Generator(gen)
-                logger.debug('Generator %s will generate' % str(g.__dict__), part='generator')
+                logger.debug('Generator %s will generate' % str(g.__dict__))
                 g.generate()
-                logger.debug('Generator %s is generated' % str(g.__dict__), part='generator')
+                logger.debug('Generator %s is generated' % str(g.__dict__))
                 should_launch = g.write_if_need()
                 if should_launch:
                     g.launch_command()
@@ -1094,16 +1092,14 @@ class Cluster(object):
                 libexec_to_update = self.libexec_to_update
                 self.libexec_to_update = []
                 for (p, _hash) in libexec_to_update:
-                    logger.debug("LIBEXEC WE NEED TO UPDATE THE LIBEXEC PATH", p, "with the hash", _hash,
-                                 part='propagate')
+                    logger.debug("LIBEXEC WE NEED TO UPDATE THE LIBEXEC PATH", p, "with the hash", _hash)
                     fname = os.path.normpath(os.path.join(self.libexec_dir, p))
                     
                     # check if we are still in the libexec dir and not higer, somewhere
                     # like in a ~/.ssh or an /etc...
                     if not fname.startswith(self.libexec_dir):
                         logger.log(
-                            'WARNING (SECURITY): trying to update the path %s that is not in libexec dir, bailing out' % fname,
-                            part='propagate')
+                            'WARNING (SECURITY): trying to update the path %s that is not in libexec dir, bailing out' % fname)
                         continue
                     # If it exists, try to look at the _hash so maybe we don't have to load it again
                     if os.path.exists(fname):
@@ -1112,32 +1108,28 @@ class Cluster(object):
                             _lhash = hashlib.sha1(f.read()).hexdigest()
                             f.close()
                         except Exception, exp:
-                            logger.log('do_update_libexec_cfg_thread:: error in opening the %s file: %s' % (fname, exp),
-                                       part='propagate')
+                            logger.log('do_update_libexec_cfg_thread:: error in opening the %s file: %s' % (fname, exp))
                             _lhash = ''
                         if _lhash == _hash:
-                            logger.debug('LIBEXEC update, not need for the local file %s, hash are the same' % fname,
-                                         part='propagate')
+                            logger.debug('LIBEXEC update, not need for the local file %s, hash are the same' % fname)
                             continue
                     # ok here we need to load the KV value (a base64 tarfile)
                     v64 = kvmgr.get_key('__libexec/%s' % p)
                     if v64 is None:
-                        logger.log('WARNING: cannot load the libexec script from kv %s' % p, part='propagate')
+                        logger.log('WARNING: cannot load the libexec script from kv %s' % p)
                         continue
                     vtar = base64.b64decode(v64)
                     f = cStringIO.StringIO(vtar)
                     with tarfile.open(fileobj=f, mode="r:gz") as tar:
                         files = tar.getmembers()
                         if len(files) != 1:
-                            logger.log('WARNING: too much files in a libexec KV entry %d' % len(files),
-                                       part='propagate')
+                            logger.log('WARNING: too much files in a libexec KV entry %d' % len(files))
                             continue
                         _f = files[0]
                         _fname = os.path.normpath(_f.name)
                         if not _f.isfile() or os.path.isabs(_fname):
                             logger.log(
-                                'WARNING: (security) invalid libexec KV entry (not a file or absolute path) for %s' % _fname,
-                                part='propagate')
+                                'WARNING: (security) invalid libexec KV entry (not a file or absolute path) for %s' % _fname)
                             continue
                         
                         # ok the file is good, we can extract it
@@ -1148,8 +1140,7 @@ class Cluster(object):
                         to_move = os.listdir(tempdir)
                         for e in to_move:
                             copy_dir(os.path.join(tempdir, e), self.libexec_dir)
-                            logger.debug('LIBEXEC: we just upadte the %s file with a new version' % _fname,
-                                         part='propagate')
+                            logger.debug('LIBEXEC: we just upadte the %s file with a new version' % _fname)
                         # we can clean the tempdir as we don't use it anymore
                         shutil.rmtree(tempdir)
                     f.close()
@@ -1158,16 +1149,14 @@ class Cluster(object):
                 configuration_to_update = self.configuration_to_update
                 self.configuration_to_update = []
                 for (p, _hash) in configuration_to_update:
-                    logger.debug("CONFIGURATION WE NEED TO UPDATE THE CONFIGURATION PATH", p, "with the hash", _hash,
-                                 part='propagate')
+                    logger.debug("CONFIGURATION WE NEED TO UPDATE THE CONFIGURATION PATH", p, "with the hash", _hash)
                     fname = os.path.normpath(os.path.join(self.configuration_dir, p))
                     
                     # check if we are still in the configuration dir and not higer, somewhere
                     # like in a ~/.ssh or an /etc...
                     if not fname.startswith(self.configuration_dir):
                         logger.log(
-                            'WARNING (SECURITY): trying to update the path %s that is not in configuration dir, bailing out' % fname,
-                            part='propagate')
+                            'WARNING (SECURITY): trying to update the path %s that is not in configuration dir, bailing out' % fname)
                         continue
                     # If it exists, try to look at the _hash so maybe we don't have to load it again
                     if os.path.exists(fname):
@@ -1177,33 +1166,29 @@ class Cluster(object):
                             f.close()
                         except Exception, exp:
                             logger.log(
-                                'do_update_configuration_cfg_thread:: error in opening the %s file: %s' % (fname, exp),
-                                part='propagate')
+                                'do_update_configuration_cfg_thread:: error in opening the %s file: %s' % (fname, exp))
                             _lhash = ''
                         if _lhash == _hash:
                             logger.debug(
-                                'CONFIGURATION update, not need for the local file %s, hash are the same' % fname,
-                                part='propagate')
+                                'CONFIGURATION update, not need for the local file %s, hash are the same' % fname)
                             continue
                     # ok here we need to load the KV value (a base64 tarfile)
                     v64 = kvmgr.get_key('__configuration/%s' % p)
                     if v64 is None:
-                        logger.log('WARNING: cannot load the configuration script from kv %s' % p, part='propagate')
+                        logger.log('WARNING: cannot load the configuration script from kv %s' % p)
                         continue
                     vtar = base64.b64decode(v64)
                     f = cStringIO.StringIO(vtar)
                     with tarfile.open(fileobj=f, mode="r:gz") as tar:
                         files = tar.getmembers()
                         if len(files) != 1:
-                            logger.log('WARNING: too much files in a configuration KV entry %d' % len(files),
-                                       part='propagate')
+                            logger.log('WARNING: too much files in a configuration KV entry %d' % len(files))
                             continue
                         _f = files[0]
                         _fname = os.path.normpath(_f.name)
                         if not _f.isfile() or os.path.isabs(_fname):
                             logger.log(
-                                'WARNING: (security) invalid configuration KV entry (not a file or absolute path) for %s' % _fname,
-                                part='propagate')
+                                'WARNING: (security) invalid configuration KV entry (not a file or absolute path) for %s' % _fname)
                             continue
                         # ok the file is good, we can extract it
                         tempdir = tempfile.mkdtemp()
@@ -1213,8 +1198,7 @@ class Cluster(object):
                         to_move = os.listdir(tempdir)
                         for e in to_move:
                             copy_dir(os.path.join(tempdir, e), self.configuration_dir)
-                            logger.debug('CONFIGURATION: we just upadte the %s file with a new version' % _fname,
-                                         part='propagate')
+                            logger.debug('CONFIGURATION: we just upadte the %s file with a new version' % _fname)
                         # we can clean the tempdir as we don't use it anymore
                         shutil.rmtree(tempdir)
                     f.close()
@@ -1342,7 +1326,7 @@ class Cluster(object):
             _hash = payload.get('hash', '')
             if not path or not _hash:
                 return
-            logger.debug('LIBEXEC UPDATE asking update for the path %s wit the hash %s' % (path, _hash), part='propagate')
+            logger.debug('LIBEXEC UPDATE asking update for the path %s wit the hash %s' % (path, _hash))
             self.libexec_to_update.append((path, _hash))
         # Ok but for the configuration part this time
         elif _type == 'configuration':
@@ -1353,8 +1337,7 @@ class Cluster(object):
             if 'path' == 'local.json':
                 # We DONT update our local.json file, it's purely local
                 return
-            logger.debug('CONFIGURATION UPDATE asking update for the path %s wit the hash %s' % (path, _hash),
-                         part='propagate')
+            logger.debug('CONFIGURATION UPDATE asking update for the path %s wit the hash %s' % (path, _hash))
             self.configuration_to_update.append((path, _hash))
         # Maybe we are ask to clean our configuration, if so launch a thread because we can't block this
         # thread while doing it
@@ -1371,12 +1354,12 @@ class Cluster(object):
     def do_configuration_cleanup(self):
         zj64 = kvmgr.get_key('__configuration')
         if zj64 is None:
-            logger.log('WARNING cannot grok kv/__configuration entry', part='propagate')
+            logger.log('WARNING cannot grok kv/__configuration entry')
             return
         zj = base64.b64decode(zj64)
         j = zlib.decompress(zj)
         lst = json.loads(j)
-        logger.debug("WE SHOULD CLEANUP all but not", lst, part='propagate')
+        logger.debug("WE SHOULD CLEANUP all but not", lst)
         local_files = [os.path.join(dp, f)
                        for dp, dn, filenames in os.walk(os.path.abspath(self.configuration_dir))
                        for f in filenames]
@@ -1387,12 +1370,11 @@ class Cluster(object):
                 continue
             if path not in lst:
                 full_path = os.path.join(self.configuration_dir, path)
-                logger.debug("CLEANUP we should clean the file", full_path, part='propagate')
+                logger.debug("CLEANUP we should clean the file", full_path)
                 try:
                     os.remove(full_path)
                 except OSError, exp:
-                    logger.log('WARNING: cannot cleanup the configuration file %s (%s)' % (full_path, exp),
-                               part='propagate')
+                    logger.log('WARNING: cannot cleanup the configuration file %s (%s)' % (full_path, exp))
     
     
     # We are joining the seed members and lock until we reach at least one
@@ -1432,7 +1414,7 @@ class Cluster(object):
             if i % 10 == 0:
                 logger.debug('KNOWN NODES: %d, alive:%d, suspect:%d, dead:%d, leave:%d' % (
                     gossiper.count(), gossiper.count('alive'), gossiper.count('suspect'), gossiper.count('dead'),
-                    gossiper.count('leave')), part='gossip')
+                    gossiper.count('leave')))
             
             if i % 15 == 0:
                 threader.create_and_launch(gossiper.launch_full_sync, name='[Gossip] Nodes full synchonization', essential=True)

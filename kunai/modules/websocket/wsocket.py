@@ -1,7 +1,9 @@
 import json
 from kunai.misc.websocketserver import WebSocket, SimpleWebSocketServer
-from kunai.log import logger
+from kunai.log import LoggerFactory
 
+# Global logger for this part
+logger = LoggerFactory.create_logger('websocket')
 
 class WebExporter(WebSocket):
     def handleMessage(self):
@@ -45,4 +47,4 @@ class WebSocketBackend(object):
             try:
                 client.sendMessage(msg)
             except Exception as exp:
-                logger.error('Cannot send websocket message: %s' % exp, part='websocket')
+                logger.error('Cannot send websocket message: %s' % exp)

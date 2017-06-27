@@ -178,35 +178,38 @@ class PartLogger(object):
     
     
     def debug(self, *args, **kwargs):
-        kwargs['part'] = self.part
+        kwargs['part'] = kwargs.get('part', self.part)
         logger.debug(*args, **kwargs)
     
     
     def info(self, *args, **kwargs):
-        kwargs['part'] = self.part
+        kwargs['part'] = kwargs.get('part', self.part)
         logger.info(*args, **kwargs)
     
     
     def warning(self, *args, **kwargs):
-        kwargs['part'] = self.part
+        kwargs['part'] = kwargs.get('part', self.part)
         logger.warning(*args, **kwargs)
     
     
     def error(self, *args, **kwargs):
-        kwargs['part'] = self.part
+        kwargs['part'] = kwargs.get('part', self.part)
         logger.error(*args, **kwargs)
     
     
     def log(self, *args, **kwargs):
-        kwargs['part'] = self.part
+        kwargs['part'] = kwargs.get('part', self.part)
         logger.log(*args, **kwargs)
 
 
+loggers = {}
+
+
+# Create logger for a specific part if not already exists
 class LoggerFactory(object):
-    def __init__(self):
-        pass
-    
-    
     @classmethod
     def create_logger(cls, part):
-        return PartLogger(part)
+        if part in loggers:
+            return loggers[part]
+        loggers[part] = PartLogger(part)
+        return loggers[part]
