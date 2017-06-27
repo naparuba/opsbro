@@ -1,15 +1,28 @@
-from kunai.misc.bottle import route, run, request, abort, error, redirect, response, gserver
+import json
+from kunai.misc.bottle import run, request, abort, error, redirect, response, gserver
+from kunai.misc.bottle import route as bottle_route
 import kunai.misc.bottle as bottle
 
 bottle.debug(True)
 
 from kunai.log import logger
 
+exported_functions = {}
 
-def protected():
+
+# propose a decorator to export http function, and so provide way to
+# list them, propose automatic handling (protection or json dump, etc)
+def http_export(_route, method='GET', protected=False):
     def decorator(f):
-        logger.debug('Protecting a function %s' % f)
-        f.protected = True
+        # Maybe it was already exported, just stack the route and exit
+        if f not in exported_functions:
+            exported_functions[f] = {'routes': [], 'method': method}
+        exported_functions[f]['routes'].append(_route)
+        logger.debug('Exporting a function %s as a HTTP route %s and method %s' % (f, _route, method))
+        bottle_route(_route, callback=f, method=[method, 'OPTIONS'])
+        # and protect it from external queries
+        if protected:
+            f.protected = True
         return f
     
     
@@ -90,7 +103,7 @@ class HttpDaemon(object):
             bapp.run(host=addr, port=port, server='cherrypy', numthreads=64)  # 256?
     
     
-    # Some default URI    
+    # Some default URI
     @error(404)
     def err404(error):
         return ''
@@ -102,9 +115,16 @@ class HttpDaemon(object):
         return ''
     
     
-    @route('/')
+    @http_export('/')
     def slash():
         return 'OK'
+    
+    
+    @http_export('/api')
+    @http_export('/api/')
+    def list_api():
+        response.content_type = 'application/json'
+        return json.dumps(exported_functions.values())
 
 
 httpdaemon = HttpDaemon()

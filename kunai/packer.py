@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import json
 from kunai.log import logger
-from kunai.httpdaemon import route, response
+from kunai.httpdaemon import http_export, response
 
 
 class PackManager(object):
@@ -25,8 +25,8 @@ class PackManager(object):
     # main method to export http interface. Must be in a method that got
     # a self entry
     def export_http(self):
-        @route('/packs/')
-        @route('/packs')
+        @http_export('/packs/')
+        @http_export('/packs')
         def get_packs():
             response.content_type = 'application/json'
             return json.dumps(self.packs.values())

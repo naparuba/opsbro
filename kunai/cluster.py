@@ -40,7 +40,7 @@ from kunai.generator import Generator
 from kunai.gossip import gossiper
 from kunai.kv import kvmgr
 from kunai.broadcast import broadcaster
-from kunai.httpdaemon import httpdaemon, route, response, request, abort, gserver
+from kunai.httpdaemon import httpdaemon, http_export, response, request, abort, gserver
 from kunai.pubsub import pubsub
 from kunai.dockermanager import dockermgr
 from kunai.encrypter import encrypter, RSA
@@ -826,7 +826,7 @@ class Cluster(object):
     # TODO: SPLIT into modules :)
     def launch_tcp_listener(self):
         
-        @route('/agent/info')
+        @http_export('/agent/info')
         def get_info():
             response.content_type = 'application/json'
             r = {'logs'      : logger.get_errors(), 'pid': os.getpid(), 'name': self.name, 'display_name': self.display_name,
@@ -859,14 +859,14 @@ class Cluster(object):
             return r
         
         
-        @route('/agent/generators')
+        @http_export('/agent/generators')
         def agent_generators():
             response.content_type = 'application/json'
             logger.debug("/agent/generators is called")
             return self.generators
         
         
-        @route('/agent/generators/:gname#.+#')
+        @http_export('/agent/generators/:gname#.+#')
         def agent_generator(gname):
             response.content_type = 'application/json'
             logger.debug("/agent/generator is called for %s" % gname)
@@ -875,7 +875,7 @@ class Cluster(object):
             return self.generators[gname]
         
         
-        @route('/agent/propagate/libexec', method='GET')
+        @http_export('/agent/propagate/libexec', method='GET')
         def propage_libexec():
             logger.debug("Call to propagate-configuraion")
             if not os.path.exists(self.libexec_dir):
@@ -907,7 +907,7 @@ class Cluster(object):
                 self.stack_event_broadcast(payload)
         
         
-        @route('/agent/propagate/configuration', method='GET')
+        @http_export('/agent/propagate/configuration', method='GET')
         def propage_configuration():
             logger.debug("propagate conf call TO PROPAGATE CONFIGURATION")
             if not os.path.exists(self.configuration_dir):
@@ -957,7 +957,7 @@ class Cluster(object):
             self.stack_event_broadcast(payload)
         
         
-        @route('/configuration/update', method='PUT')
+        @http_export('/configuration/update', method='PUT')
         def update_configuration():
             value = request.body.getvalue()
             logger.debug("HTTP: configuration update put %s" % (value))
@@ -980,7 +980,7 @@ class Cluster(object):
             return
         
         
-        @route('/configuration', method='GET')
+        @http_export('/configuration', method='GET')
         def get_configuration():
             response.content_type = 'application/json'
             logger.debug("HTTP: configuration get ")
@@ -992,7 +992,7 @@ class Cluster(object):
             return j
         
         
-        @route('/agent/zone', method='PUT')
+        @http_export('/agent/zone', method='PUT')
         def post_zone():
             response.content_type = 'application/json'
             
@@ -1005,7 +1005,7 @@ class Cluster(object):
         
         
         # TODO: only in the local socket http webserver
-        @route('/stop')
+        @http_export('/stop')
         def do_stop():
             pubsub.pub('interrupt')
             return 'OK'

@@ -5,7 +5,7 @@ import os
 
 from kunai.log import LoggerFactory
 from kunai.threadmgr import threader
-from kunai.httpdaemon import route, response
+from kunai.httpdaemon import http_export, response
 from kunai.misc.cgroups import cgroupmgr
 from kunai.unixclient import get_json, request_errors
 
@@ -287,29 +287,29 @@ class DockerManager(object):
     # main method to export http interface. Must be in a method that got
     # a self entry
     def export_http(self):
-        @route('/docker/')
-        @route('/docker')
+        @http_export('/docker/')
+        @http_export('/docker')
         def get_docker():
             response.content_type = 'application/json'
             return json.dumps(self.con is not None)
         
         
-        @route('/docker/containers')
-        @route('/docker/containers/')
+        @http_export('/docker/containers')
+        @http_export('/docker/containers/')
         def get_containers():
             response.content_type = 'application/json'
             return json.dumps(self.containers.values())
         
         
-        @route('/docker/containers/:_id')
+        @http_export('/docker/containers/:_id')
         def get_container(_id):
             response.content_type = 'application/json'
             cont = self.containers.get(_id, None)
             return json.dumps(cont)
         
         
-        @route('/docker/images')
-        @route('/docker/images/')
+        @http_export('/docker/images')
+        @http_export('/docker/images/')
         def get_images():
             response.content_type = 'application/json'
             if self.con is None:
@@ -319,7 +319,7 @@ class DockerManager(object):
             return json.dumps(r)
         
         
-        @route('/docker/images/:_id')
+        @http_export('/docker/images/:_id')
         def get_images(_id):
             response.content_type = 'application/json'
             if self.con is None:
@@ -331,8 +331,8 @@ class DockerManager(object):
             return json.dumps(None)
         
         
-        @route('/docker/stats')
-        @route('/docker/stats/')
+        @http_export('/docker/stats')
+        @http_export('/docker/stats/')
         def _stats():
             response.content_type = 'application/json'
             return self.get_stats()

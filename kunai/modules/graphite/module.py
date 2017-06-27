@@ -17,7 +17,7 @@ from kunai.module import Module
 from kunai.stop import stopper
 from kunai.ts import tsmgr
 from kunai.stats import STATS
-from kunai.httpdaemon import route, response, request, abort
+from kunai.httpdaemon import http_export, response, request, abort
 from kunai.util import to_best_int_float
 from kunai.gossip import gossiper
 from kunai.httpclient import HTTP_EXCEPTIONS
@@ -217,7 +217,7 @@ class GraphiteModule(Module):
     # Export end points to get/list TimeSeries
     def export_http(self):
         
-        @route('/metrics/find/')
+        @http_export('/metrics/find/')
         def get_graphite_metrics_find():
             response.content_type = 'application/json'
             key = request.GET.get('query', '*')
@@ -394,16 +394,16 @@ class GraphiteModule(Module):
             return json.dumps(res)
         
         
-        @route('/render')
-        @route('/render/')
+        @http_export('/render')
+        @http_export('/render/')
         def get_ts_values():
             targets = request.GET.getall('target')
             _from = request.GET.get('from', '-24hours')
             return do_render(targets, _from)
         
         
-        @route('/render', method='POST')
-        @route('/render/', method='POST')
+        @http_export('/render', method='POST')
+        @http_export('/render/', method='POST')
         def get_ts_values():
             targets = request.POST.getall('target')
             _from = request.POST.get('from', '-24hours')

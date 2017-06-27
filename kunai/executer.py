@@ -11,7 +11,7 @@ from kunai.log import LoggerFactory
 from kunai.threadmgr import threader
 from kunai.gossip import gossiper
 from kunai.kv import kvmgr
-from kunai.httpdaemon import route, response, abort, request
+from kunai.httpdaemon import http_export, response, abort, request
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('executer')
@@ -263,7 +263,7 @@ class Executer(object):
     # we must have the self object
     def export_http(self):
         
-        @route('/exec/:tag')
+        @http_export('/exec/:tag')
         def launch_exec(tag='*'):
             response.content_type = 'application/json'
             if self.mfkey_priv is None:
@@ -273,7 +273,7 @@ class Executer(object):
             return uid
         
         
-        @route('/exec-get/:exec_id')
+        @http_export('/exec-get/:exec_id')
         def get_exec(exec_id):
             response.content_type = 'application/json'
             v = kvmgr.get_key('__exec/%s' % exec_id)

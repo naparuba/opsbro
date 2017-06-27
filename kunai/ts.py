@@ -16,7 +16,7 @@ from kunai.dbwrapper import dbwrapper
 from kunai.gossip import gossiper
 from kunai.stop import stopper
 from kunai.kv import kvmgr
-from kunai.httpdaemon import route, response
+from kunai.httpdaemon import http_export, response
 
 # DO NOT FORGEET:
 # sysctl -w net.core.rmem_max=26214400
@@ -314,15 +314,15 @@ class TSBackend(object):
     
     # Export end points to get/list TimeSeries
     def export_http(self):
-        @route('/list/')
-        @route('/list/:key')
+        @http_export('/list/')
+        @http_export('/list/:key')
         def get_ts_keys(key=''):
             response.content_type = 'application/json'
             return json.dumps(tsmgr.list_keys(key))
         
         
-        @route('/_ui_list/')
-        @route('/_ui_list/:key')
+        @http_export('/_ui_list/')
+        @http_export('/_ui_list/:key')
         def get_ts_keys(key=''):
             response.content_type = 'application/json'
             print "LIST GET TS FOR KEY", key

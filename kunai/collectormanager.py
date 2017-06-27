@@ -10,7 +10,7 @@ import copy
 from kunai.log import LoggerFactory
 from kunai.threadmgr import threader
 from kunai.stop import stopper
-from kunai.httpdaemon import route, response
+from kunai.httpdaemon import http_export, response
 from kunai.collector import Collector
 from jsonmgr import jsoner
 from kunai.now import NOW
@@ -230,8 +230,8 @@ class CollectorManager:
             return (c['name'], c)
         
         
-        @route('/collectors/')
-        @route('/collectors')
+        @http_export('/collectors/')
+        @http_export('/collectors')
         #        @protected()
         def GET_collectors():
             response.content_type = 'application/json'
@@ -242,7 +242,7 @@ class CollectorManager:
             return jsoner.dumps(res)
         
         
-        @route('/collectors/:_id')
+        @http_export('/collectors/:_id')
         def GET_collector(_id):
             response.content_type = 'application/json'
             e = self.collectors.get(_id, None)

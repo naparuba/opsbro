@@ -13,7 +13,7 @@ from kunai.log import LoggerFactory
 from kunai.threadmgr import threader
 from kunai.now import NOW
 from kunai.dbwrapper import dbwrapper
-from kunai.httpdaemon import response, route, abort, request
+from kunai.httpdaemon import response, http_export, abort, request
 from kunai.gossip import gossiper
 from kunai.encrypter import encrypter
 from kunai.stop import stopper
@@ -528,22 +528,22 @@ class KVBackend:
     # main method to export http interface. Must be in a method that got
     # a self entry
     def export_http(self):
-        @route('/kv/')
-        @route('/kv')
+        @http_export('/kv/')
+        @http_export('/kv')
         def list_keys():
             response.content_type = 'application/json'
             l = list(self.db.RangeIter(include_value=False))
             return json.dumps(l)
         
         
-        @route('/kv-meta/changed/:t', method='GET')
+        @http_export('/kv-meta/changed/:t', method='GET')
         def changed_since(t):
             response.content_type = 'application/json'
             t = int(t)
             return json.dumps(self.changed_since(t))
         
         
-        @route('/kv/:ukey#.+#', method='GET')
+        @http_export('/kv/:ukey#.+#', method='GET')
         def interface_GET_key(ukey):
             t0 = time.time()
             logger.debug("GET KEY %s" % ukey)
@@ -555,13 +555,13 @@ class KVBackend:
             return v
         
         
-        @route('/kv/:ukey#.+#', method='DELETE')
+        @http_export('/kv/:ukey#.+#', method='DELETE')
         def interface_DELETE_key(ukey):
             logger.debug("KV: DELETE KEY %s" % ukey)
             self.delete_key(ukey)
         
         
-        @route('/kv/:ukey#.+#', method='PUT')
+        @http_export('/kv/:ukey#.+#', method='PUT')
         def interface_PUT_key(ukey):
             value = request.body.getvalue()
             logger.debug("KV: PUT KEY %s (len:%d)" % (ukey, len(value)))

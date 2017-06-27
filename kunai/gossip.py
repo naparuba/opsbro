@@ -15,7 +15,7 @@ from kunai.threadmgr import threader
 from kunai.broadcast import broadcaster
 from kunai.websocketmanager import websocketmgr
 from kunai.pubsub import pubsub
-from kunai.httpdaemon import route, response, abort, request
+from kunai.httpdaemon import http_export, response, abort, request
 from kunai.encrypter import encrypter
 from kunai.httpclient import HTTP_EXCEPTIONS
 from kunai.zonemanager import zonemgr
@@ -1172,17 +1172,17 @@ class Gossip(object):
     # we must have the self object
     def export_http(self):
         
-        @route('/agent/name')
+        @http_export('/agent/name')
         def get_name():
             return self.nodes[self.uuid]['name']
         
         
-        @route('/agent/uuid')
+        @http_export('/agent/uuid')
         def get_name():
             return self.uuid
         
         
-        @route('/agent/leave/:nuuid')
+        @http_export('/agent/leave/:nuuid')
         def set_node_leave(nuuid):
             node = None
             with self.nodes_lock:
@@ -1193,7 +1193,7 @@ class Gossip(object):
             return
         
         
-        @route('/agent/members')
+        @http_export('/agent/members')
         def agent_members():
             response.content_type = 'application/json'
             with self.nodes_lock:
@@ -1201,7 +1201,7 @@ class Gossip(object):
             return nodes
         
         
-        @route('/agent/join/:other')
+        @http_export('/agent/join/:other')
         def agent_join(other):
             response.content_type = 'application/json'
             addr = other
@@ -1215,7 +1215,7 @@ class Gossip(object):
             return json.dumps(r)
         
         
-        @route('/agent/push-pull')
+        @http_export('/agent/push-pull')
         def interface_push_pull():
             response.content_type = 'application/json'
             
@@ -1236,7 +1236,7 @@ class Gossip(object):
             return json.dumps(m)
         
         
-        @route('/agent/detect')
+        @http_export('/agent/detect')
         def agent_members():
             response.content_type = 'application/json'
             nodes = self.launch_gossip_detect_ping()

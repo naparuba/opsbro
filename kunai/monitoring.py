@@ -13,7 +13,7 @@ import hashlib
 from kunai.log import LoggerFactory
 from kunai.gossip import gossiper
 from kunai.kv import kvmgr
-from kunai.httpdaemon import route, response, request, abort
+from kunai.httpdaemon import http_export, response, request, abort
 from kunai.stop import stopper
 from kunai.threadmgr import threader
 from kunai.perfdata import PerfDatas
@@ -563,8 +563,8 @@ class MonitoringManager(object):
     
     
     def export_http(self):
-        @route('/agent/state/:nuuid')
-        @route('/agent/state')
+        @http_export('/agent/state/:nuuid')
+        @http_export('/agent/state')
         def get_state(nuuid=''):
             response.content_type = 'application/json'
             r = {'checks': {}, 'services': {}}
@@ -600,13 +600,13 @@ class MonitoringManager(object):
                 return r
         
         
-        @route('/agent/checks')
+        @http_export('/agent/checks')
         def agent_checks():
             response.content_type = 'application/json'
             return self.checks
         
         
-        @route('/agent/checks/:cname#.+#')
+        @http_export('/agent/checks/:cname#.+#')
         def agent_check(cname):
             response.content_type = 'application/json'
             if cname not in self.checks:
@@ -614,7 +614,7 @@ class MonitoringManager(object):
             return self.checks[cname]
         
         
-        @route('/agent/checks/:cname#.+#', method='DELETE')
+        @http_export('/agent/checks/:cname#.+#', method='DELETE')
         def agent_DELETE_check(cname):
             if cname not in self.checks:
                 return
@@ -622,7 +622,7 @@ class MonitoringManager(object):
             return
         
         
-        @route('/agent/checks/:cname#.+#', method='PUT')
+        @http_export('/agent/checks/:cname#.+#', method='PUT')
         def interface_PUT_agent_check(cname):
             value = request.body.getvalue()
             try:
@@ -633,13 +633,13 @@ class MonitoringManager(object):
             return
         
         
-        @route('/agent/services')
+        @http_export('/agent/services')
         def agent_services():
             response.content_type = 'application/json'
             return self.services
         
         
-        @route('/agent/services/:sname#.+#')
+        @http_export('/agent/services/:sname#.+#')
         def agent_service(sname):
             response.content_type = 'application/json'
             if sname not in self.services:
@@ -647,7 +647,7 @@ class MonitoringManager(object):
             return self.services[sname]
         
         
-        @route('/agent/services/:sname#.+#', method='PUT')
+        @http_export('/agent/services/:sname#.+#', method='PUT')
         def interface_PUT_agent_service(sname):
             value = request.body.getvalue()
             try:
@@ -658,7 +658,7 @@ class MonitoringManager(object):
             return
         
         
-        @route('/agent/services/:sname#.+#', method='DELETE')
+        @http_export('/agent/services/:sname#.+#', method='DELETE')
         def agent_DELETE_service(sname):
             if sname not in self.services:
                 return
@@ -667,7 +667,7 @@ class MonitoringManager(object):
         
         
         # We want a state of all our services, with the members
-        @route('/state/services')
+        @http_export('/state/services')
         def state_services():
             response.content_type = 'application/json'
             # We don't want to modify our services objects
@@ -695,7 +695,7 @@ class MonitoringManager(object):
         
         
         # We want a state of all our services, with the members
-        @route('/state/services/:sname')
+        @http_export('/state/services/:sname')
         def state_service(sname):
             response.content_type = 'application/json'
             # We don't want to modify our services objects

@@ -4,7 +4,7 @@ import os
 import traceback
 import cStringIO
 import json
-from kunai.httpdaemon import route, response, protected
+from kunai.httpdaemon import http_export, response
 from kunai.log import logger
 from kunai.pubsub import pubsub
 
@@ -36,7 +36,7 @@ def w(d, f, name, is_essential, args):
     d['tid'] = tid
     try:
         f(*args)
-    except Exception, exp:
+    except Exception:
         output = cStringIO.StringIO()
         traceback.print_exc(file=output)
         logger.error("Thread %s is exiting on error. Back trace of this error: %s" % (name, output.getvalue()))
@@ -45,10 +45,8 @@ def w(d, f, name, is_essential, args):
         if is_essential:
             # Maybe the thread WAS an essential one (like http thread or something like this), if so
             # catch it and close the whole daemon
-            logger.error(
-                'The thread %s was an essential one, we are stopping the daemon do not be in an invalid state' % name)
+            logger.error('The thread %s was an essential one, we are stopping the daemon do not be in an invalid state' % name)
             pubsub.pub('interrupt')
-            
             # Create a daemon thread with our wrapper function that will manage initial logging
 
 
@@ -82,9 +80,8 @@ class ThreadMgr(object):
     # main method to export http interface. Must be in a method that got
     # a self entry
     def export_http(self):
-        @route('/threads/')
-        @route('/threads')
-        # @protected()
+        @http_export('/threads/', protected=True)
+        @http_export('/threads', protected=True)
         def GET_threads():
             response.content_type = 'application/json'
             # Look at CPU usage for threads if we have access to this

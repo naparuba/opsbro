@@ -3,7 +3,7 @@ import json
 
 from kunai.log import LoggerFactory
 from kunai.stop import stopper
-from kunai.httpdaemon import route, response
+from kunai.httpdaemon import http_export, response
 from kunai.evaluater import evaluater
 from kunai.collectormanager import collectormgr
 from kunai.gossip import gossiper
@@ -61,7 +61,7 @@ class DetectorMgr(object):
             for tags in self.detected_tags.values():
                 for tag in tags:
                     matching_tags.add(tag)
-            logger.debug('Detector loop generated tags: %s' % matching_tags)
+            logger.debug('Detector loop generated tags: %s' % matching_tags, part='gossip')
             
             # Merge with gossip part
             did_changed = gossiper.update_detected_tags(matching_tags)
@@ -77,15 +77,15 @@ class DetectorMgr(object):
     # a self entry
     def export_http(self):
         
-        @route('/agent/detectors/')
-        @route('/agent/detectors')
+        @http_export('/agent/detectors/')
+        @http_export('/agent/detectors')
         def get_detectors():
             response.content_type = 'application/json'
             return json.dumps(self.clust.detectors.values())
         
         
-        @route('/agent/detectors/run')
-        @route('/agent/detectors/run/:dname')
+        @http_export('/agent/detectors/run')
+        @http_export('/agent/detectors/run/:dname')
         def _runrunrunr(dname=''):
             response.content_type = 'application/json'
             res = {}

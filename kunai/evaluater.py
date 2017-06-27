@@ -10,7 +10,7 @@ import itertools
 
 from kunai.collectormanager import collectormgr
 from kunai.log import LoggerFactory
-from kunai.httpdaemon import route, response, request
+from kunai.httpdaemon import http_export, response, request
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('evaluater')
@@ -236,7 +236,7 @@ class Evaluater(object):
     # a self entry
     def export_http(self):
         
-        @route('/agent/evaluator/list')
+        @http_export('/agent/evaluator/list')
         def get_exports():
             response.content_type = 'application/json'
             res = []
@@ -276,7 +276,7 @@ class Evaluater(object):
             return json.dumps(res)
         
         
-        @route('/agent/evaluator/eval', method='POST')
+        @http_export('/agent/evaluator/eval', method='POST')
         def agent_eval_check():
             response.content_type = 'application/json'
             expr64 = request.POST.get('expr')
