@@ -510,23 +510,43 @@ def _sort_threads(t1, t2):
         return -cmp(t1_cpu, t2_cpu)
 
 
+def __get_cpu_time_percent_display(t, age):
+    thread_user = t['user_time']
+    thread_system = t['system_time']
+    if thread_system == -1 or thread_user == -1:
+        return ('unknown', 'unknown')
+    if age == 0:
+        return ('unknown', 'unknown')
+    # ok we are good :)
+    return ('%.2f' % (100 * thread_user / age), '%.3f' % (100 * thread_system / age))
+
+
 def do_show_threads():
     try:
-        threads = get_kunai_json('/threads/')
+        data = get_kunai_json('/threads/')
     except request_errors, exp:
         logger.error('Cannot join kunai agent: %s' % exp)
         sys.exit(1)
+    threads = data['threads']
+    process = data['process']
+    age = data['age']
+    
     # Cut the threads into 2 lists: always here, and the others
     daemon_threads = [t for t in threads if t['essential']]
     not_daemon_threads = [t for t in threads if not t['essential']]
     daemon_threads.sort(_sort_threads)
     not_daemon_threads.sort(_sort_threads)
+    upercent, syspercent = __get_cpu_time_percent_display(process, age)
+    print "Total process CPU consumption: cpu(user):%s%%  cpu(system):%s%%\n" % (upercent, syspercent)
     print "Daemon threads (persistent):"
     for t in daemon_threads:
-        print '   Name:%-55s  id:%d   cpu(user):%.3f   cpu(system):%.3f' % (t['name'], t['tid'], t['user_time'], t['system_time'])
-    print "Temporary threads:"
-    for t in not_daemon_threads:
-        print '   Name:%-55s  id:%d   cpu(user):%.3f   cpu(system):%.3f' % (t['name'], t['tid'], t['user_time'], t['system_time'])
+        upercent, syspercent = __get_cpu_time_percent_display(t, age)
+        print '   Name:%-55s  id:%d   cpu(user):%s%%   cpu(system):%s%%' % (t['name'], t['tid'], upercent, syspercent)
+    if not_daemon_threads:
+        print "Temporary threads:"
+        for t in not_daemon_threads:
+            upercent, syspercent = __get_cpu_time_percent_display(t, age)
+            print '   Name:%-55s  id:%d   cpu(user):%s%%   cpu(system):%s%%' % (t['name'], t['tid'], upercent, syspercent)
 
 
 exports = {

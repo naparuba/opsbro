@@ -361,7 +361,7 @@ class Cluster(object):
         # in athread so the upd thread is not blocking
         self.libexec_to_update = []
         self.configuration_to_update = []
-        self.launch_update_libexec_cfg_thread()
+        threader.create_and_launch(self.do_update_libexec_cfg_thread, name='[Agent] Checks directory (libexec) updates', essential=True)
         
         # by default do not launch timeserie listeners
         
@@ -992,7 +992,7 @@ class Cluster(object):
             return j
         
         
-        @http_export('/agent/zone', method='PUT')
+        @http_export('/agent/zone', method='PUT', protected=True)
         def post_zone():
             response.content_type = 'application/json'
             
@@ -1004,11 +1004,19 @@ class Cluster(object):
             return json.dumps(True)
         
         
-        # TODO: only in the local socket http webserver
-        @http_export('/stop')
+        @http_export('/stop', protected=True)
         def do_stop():
             pubsub.pub('interrupt')
             return 'OK'
+        
+        
+        @http_export('/debug/memory')
+        def do_memory_dump():
+            response.content_type = 'application/json'
+            from meliae import scanner
+            p = '/tmp/memory-%s' % self.name
+            scanner.dump_all_objects(p)
+            return json.dumps(p)
         
         
         self.external_http_thread = threader.create_and_launch(httpdaemon.run, name='[Agent] External HTTP', args=(self.listening_addr, self.port, ''), essential=True)
@@ -1085,130 +1093,124 @@ class Cluster(object):
     
     # Thread that will look for libexec/configuration change events,
     # will get the newest value in the KV and dump the files
-    def launch_update_libexec_cfg_thread(self):
-        def do_update_libexec_cfg_thread(self):
-            while not stopper.interrupted:
-                # work on a clean list
-                libexec_to_update = self.libexec_to_update
-                self.libexec_to_update = []
-                for (p, _hash) in libexec_to_update:
-                    logger.debug("LIBEXEC WE NEED TO UPDATE THE LIBEXEC PATH", p, "with the hash", _hash)
-                    fname = os.path.normpath(os.path.join(self.libexec_dir, p))
-                    
-                    # check if we are still in the libexec dir and not higer, somewhere
-                    # like in a ~/.ssh or an /etc...
-                    if not fname.startswith(self.libexec_dir):
-                        logger.log(
-                            'WARNING (SECURITY): trying to update the path %s that is not in libexec dir, bailing out' % fname)
-                        continue
-                    # If it exists, try to look at the _hash so maybe we don't have to load it again
-                    if os.path.exists(fname):
-                        try:
-                            f = open(fname, 'rb')
-                            _lhash = hashlib.sha1(f.read()).hexdigest()
-                            f.close()
-                        except Exception, exp:
-                            logger.log('do_update_libexec_cfg_thread:: error in opening the %s file: %s' % (fname, exp))
-                            _lhash = ''
-                        if _lhash == _hash:
-                            logger.debug('LIBEXEC update, not need for the local file %s, hash are the same' % fname)
-                            continue
-                    # ok here we need to load the KV value (a base64 tarfile)
-                    v64 = kvmgr.get_key('__libexec/%s' % p)
-                    if v64 is None:
-                        logger.log('WARNING: cannot load the libexec script from kv %s' % p)
-                        continue
-                    vtar = base64.b64decode(v64)
-                    f = cStringIO.StringIO(vtar)
-                    with tarfile.open(fileobj=f, mode="r:gz") as tar:
-                        files = tar.getmembers()
-                        if len(files) != 1:
-                            logger.log('WARNING: too much files in a libexec KV entry %d' % len(files))
-                            continue
-                        _f = files[0]
-                        _fname = os.path.normpath(_f.name)
-                        if not _f.isfile() or os.path.isabs(_fname):
-                            logger.log(
-                                'WARNING: (security) invalid libexec KV entry (not a file or absolute path) for %s' % _fname)
-                            continue
-                        
-                        # ok the file is good, we can extract it
-                        tempdir = tempfile.mkdtemp()
-                        tar.extract(_f, path=tempdir)
-                        
-                        # now we can move all the tempdir content into the libexec dir
-                        to_move = os.listdir(tempdir)
-                        for e in to_move:
-                            copy_dir(os.path.join(tempdir, e), self.libexec_dir)
-                            logger.debug('LIBEXEC: we just upadte the %s file with a new version' % _fname)
-                        # we can clean the tempdir as we don't use it anymore
-                        shutil.rmtree(tempdir)
-                    f.close()
+    def do_update_libexec_cfg_thread(self):
+        while not stopper.interrupted:
+            # work on a clean list
+            libexec_to_update = self.libexec_to_update
+            self.libexec_to_update = []
+            for (p, _hash) in libexec_to_update:
+                logger.debug("LIBEXEC WE NEED TO UPDATE THE LIBEXEC PATH", p, "with the hash", _hash)
+                fname = os.path.normpath(os.path.join(self.libexec_dir, p))
                 
-                # Now the configuration part
-                configuration_to_update = self.configuration_to_update
-                self.configuration_to_update = []
-                for (p, _hash) in configuration_to_update:
-                    logger.debug("CONFIGURATION WE NEED TO UPDATE THE CONFIGURATION PATH", p, "with the hash", _hash)
-                    fname = os.path.normpath(os.path.join(self.configuration_dir, p))
-                    
-                    # check if we are still in the configuration dir and not higer, somewhere
-                    # like in a ~/.ssh or an /etc...
-                    if not fname.startswith(self.configuration_dir):
+                # check if we are still in the libexec dir and not higer, somewhere
+                # like in a ~/.ssh or an /etc...
+                if not fname.startswith(self.libexec_dir):
+                    logger.log('WARNING (SECURITY): trying to update the path %s that is not in libexec dir, bailing out' % fname)
+                    continue
+                # If it exists, try to look at the _hash so maybe we don't have to load it again
+                if os.path.exists(fname):
+                    try:
+                        f = open(fname, 'rb')
+                        _lhash = hashlib.sha1(f.read()).hexdigest()
+                        f.close()
+                    except Exception, exp:
+                        logger.log('do_update_libexec_cfg_thread:: error in opening the %s file: %s' % (fname, exp))
+                        _lhash = ''
+                    if _lhash == _hash:
+                        logger.debug('LIBEXEC update, not need for the local file %s, hash are the same' % fname)
+                        continue
+                # ok here we need to load the KV value (a base64 tarfile)
+                v64 = kvmgr.get_key('__libexec/%s' % p)
+                if v64 is None:
+                    logger.log('WARNING: cannot load the libexec script from kv %s' % p)
+                    continue
+                vtar = base64.b64decode(v64)
+                f = cStringIO.StringIO(vtar)
+                with tarfile.open(fileobj=f, mode="r:gz") as tar:
+                    files = tar.getmembers()
+                    if len(files) != 1:
+                        logger.log('WARNING: too much files in a libexec KV entry %d' % len(files))
+                        continue
+                    _f = files[0]
+                    _fname = os.path.normpath(_f.name)
+                    if not _f.isfile() or os.path.isabs(_fname):
                         logger.log(
-                            'WARNING (SECURITY): trying to update the path %s that is not in configuration dir, bailing out' % fname)
+                            'WARNING: (security) invalid libexec KV entry (not a file or absolute path) for %s' % _fname)
                         continue
-                    # If it exists, try to look at the _hash so maybe we don't have to load it again
-                    if os.path.exists(fname):
-                        try:
-                            f = open(fname, 'rb')
-                            _lhash = hashlib.sha1(f.read()).hexdigest()
-                            f.close()
-                        except Exception, exp:
-                            logger.log(
-                                'do_update_configuration_cfg_thread:: error in opening the %s file: %s' % (fname, exp))
-                            _lhash = ''
-                        if _lhash == _hash:
-                            logger.debug(
-                                'CONFIGURATION update, not need for the local file %s, hash are the same' % fname)
-                            continue
-                    # ok here we need to load the KV value (a base64 tarfile)
-                    v64 = kvmgr.get_key('__configuration/%s' % p)
-                    if v64 is None:
-                        logger.log('WARNING: cannot load the configuration script from kv %s' % p)
-                        continue
-                    vtar = base64.b64decode(v64)
-                    f = cStringIO.StringIO(vtar)
-                    with tarfile.open(fileobj=f, mode="r:gz") as tar:
-                        files = tar.getmembers()
-                        if len(files) != 1:
-                            logger.log('WARNING: too much files in a configuration KV entry %d' % len(files))
-                            continue
-                        _f = files[0]
-                        _fname = os.path.normpath(_f.name)
-                        if not _f.isfile() or os.path.isabs(_fname):
-                            logger.log(
-                                'WARNING: (security) invalid configuration KV entry (not a file or absolute path) for %s' % _fname)
-                            continue
-                        # ok the file is good, we can extract it
-                        tempdir = tempfile.mkdtemp()
-                        tar.extract(_f, path=tempdir)
-                        
-                        # now we can move all the tempdir content into the configuration dir
-                        to_move = os.listdir(tempdir)
-                        for e in to_move:
-                            copy_dir(os.path.join(tempdir, e), self.configuration_dir)
-                            logger.debug('CONFIGURATION: we just upadte the %s file with a new version' % _fname)
-                        # we can clean the tempdir as we don't use it anymore
-                        shutil.rmtree(tempdir)
-                    f.close()
+                    
+                    # ok the file is good, we can extract it
+                    tempdir = tempfile.mkdtemp()
+                    tar.extract(_f, path=tempdir)
+                    
+                    # now we can move all the tempdir content into the libexec dir
+                    to_move = os.listdir(tempdir)
+                    for e in to_move:
+                        copy_dir(os.path.join(tempdir, e), self.libexec_dir)
+                        logger.debug('LIBEXEC: we just upadte the %s file with a new version' % _fname)
+                    # we can clean the tempdir as we don't use it anymore
+                    shutil.rmtree(tempdir)
+                f.close()
+            
+            # Now the configuration part
+            configuration_to_update = self.configuration_to_update
+            self.configuration_to_update = []
+            for (p, _hash) in configuration_to_update:
+                logger.debug("CONFIGURATION WE NEED TO UPDATE THE CONFIGURATION PATH", p, "with the hash", _hash)
+                fname = os.path.normpath(os.path.join(self.configuration_dir, p))
                 
-                # We finish to load all, we take a bit sleep now...
-                time.sleep(1)
-        
-        
-        # Go launch it
-        threader.create_and_launch(do_update_libexec_cfg_thread, args=(self,))
+                # check if we are still in the configuration dir and not higer, somewhere
+                # like in a ~/.ssh or an /etc...
+                if not fname.startswith(self.configuration_dir):
+                    logger.log(
+                        'WARNING (SECURITY): trying to update the path %s that is not in configuration dir, bailing out' % fname)
+                    continue
+                # If it exists, try to look at the _hash so maybe we don't have to load it again
+                if os.path.exists(fname):
+                    try:
+                        f = open(fname, 'rb')
+                        _lhash = hashlib.sha1(f.read()).hexdigest()
+                        f.close()
+                    except Exception, exp:
+                        logger.log(
+                            'do_update_configuration_cfg_thread:: error in opening the %s file: %s' % (fname, exp))
+                        _lhash = ''
+                    if _lhash == _hash:
+                        logger.debug(
+                            'CONFIGURATION update, not need for the local file %s, hash are the same' % fname)
+                        continue
+                # ok here we need to load the KV value (a base64 tarfile)
+                v64 = kvmgr.get_key('__configuration/%s' % p)
+                if v64 is None:
+                    logger.log('WARNING: cannot load the configuration script from kv %s' % p)
+                    continue
+                vtar = base64.b64decode(v64)
+                f = cStringIO.StringIO(vtar)
+                with tarfile.open(fileobj=f, mode="r:gz") as tar:
+                    files = tar.getmembers()
+                    if len(files) != 1:
+                        logger.log('WARNING: too much files in a configuration KV entry %d' % len(files))
+                        continue
+                    _f = files[0]
+                    _fname = os.path.normpath(_f.name)
+                    if not _f.isfile() or os.path.isabs(_fname):
+                        logger.log(
+                            'WARNING: (security) invalid configuration KV entry (not a file or absolute path) for %s' % _fname)
+                        continue
+                    # ok the file is good, we can extract it
+                    tempdir = tempfile.mkdtemp()
+                    tar.extract(_f, path=tempdir)
+                    
+                    # now we can move all the tempdir content into the configuration dir
+                    to_move = os.listdir(tempdir)
+                    for e in to_move:
+                        copy_dir(os.path.join(tempdir, e), self.configuration_dir)
+                        logger.debug('CONFIGURATION: we just upadte the %s file with a new version' % _fname)
+                    # we can clean the tempdir as we don't use it anymore
+                    shutil.rmtree(tempdir)
+                f.close()
+            
+            # We finish to load all, we take a bit sleep now...
+            time.sleep(1)
     
     
     def retention_nodes(self, force=False):
@@ -1392,7 +1394,7 @@ class Cluster(object):
                 if ctime < now - self.max_event_age:
                     to_del.append(cid)
         # why sleep here? because I don't want to take the lock twice as quick is an udp thread
-        # is also waiting for it, it is prioritary, not me
+        # is also waiting for it, he is prioritary, not me
         time.sleep(0.01)
         with self.events_lock:
             for cid in to_del:
@@ -1402,10 +1404,49 @@ class Cluster(object):
                     pass
     
     
+    def do_memory_trim_thread(self):
+        import ctypes
+        import gc
+        
+        try:
+            libc6 = ctypes.CDLL('libc.so.6')
+        except Exception:
+            libc6 = None
+        
+        # Ok let's start the real business: we stop the garbage collector, and we will manage it by
+        # ourselve so we can trace this activity
+        gc.disable()
+        gen = 0
+        _i = 0
+        while not stopper.interrupted:
+            _i += 1
+            gen += 1
+            gen %= 2
+            before_collect = time.time()
+            if _i % 10 == 0:  # every 5min, do a huge collect
+                gen = 2
+            # Launch object collection
+            gc.collect(gen)
+            logger.debug('Memory collection (%d) executed in %.2f' % (gen, time.time() - before_collect))
+            
+            if libc6:
+                # Remove over allocated memory from glibc
+                libc6.malloc_trim(0)
+            time.sleep(30)
+    
+    
     # Guess what? yes, it is the main function
     def main(self):
         # be sure the check list are really updated now our litners are ok
         monitoringmgr.update_checks_kv()
+        
+        # We can now manage our memory by ourselves
+        threader.create_and_launch(self.do_memory_trim_thread, name='[Internal] Daemon memory cleaning', essential=True)
+        
+        # Launch gossip threads
+        threader.create_and_launch(gossiper.ping_another_nodes, name='[Gossip] Ping other nodes', essential=True)
+        threader.create_and_launch(gossiper.do_launch_gossip_loop, name='[Gossip] Cluster messages broadcasting', essential=True)
+        threader.create_and_launch(gossiper.launch_full_sync_loop, name='[Gossip] Nodes full synchronization', essential=True)
         
         logger.log('Go go run!')
         i = -1
@@ -1415,14 +1456,6 @@ class Cluster(object):
                 logger.debug('KNOWN NODES: %d, alive:%d, suspect:%d, dead:%d, leave:%d' % (
                     gossiper.count(), gossiper.count('alive'), gossiper.count('suspect'), gossiper.count('dead'),
                     gossiper.count('leave')))
-            
-            if i % 15 == 0:
-                threader.create_and_launch(gossiper.launch_full_sync, name='[Gossip] Nodes full synchonization', essential=True)
-            
-            if i % 2 == 1:
-                threader.create_and_launch(gossiper.ping_another, name='[Gossip] Ping other nodes')
-            
-            gossiper.launch_gossip()
             
             gossiper.look_at_deads()
             
@@ -1434,18 +1467,8 @@ class Cluster(object):
             threader.check_alives()
             
             time.sleep(1)
-            
-            # if i % 30 == 0:
-            #    from meliae import scanner
-            #    scanner.dump_all_objects( '/tmp/memory-%s' % self.name)
-            
-            import ctypes
-            try:
-                libc6 = ctypes.CDLL('libc.so.6')
-                libc6.malloc_trim(0)
-            except Exception as exp:
-                logger.warning("malloc_trim unsupport by this OS.")
         
+        # EXIT PATH
         self.retention_nodes(force=True)
         
         # Clean lock file so daemon after us will be happy

@@ -64,8 +64,8 @@ class DockerManager(object):
         # TODO: manage windows case
         if os.name == 'nt':
             return
-        threader.create_and_launch(self.do_loop, name='[Docker] Image/Containers data from docker daemon')
-        threader.create_and_launch(self.do_stats_loop, name='[Docker] containers stats computing')
+        threader.create_and_launch(self.do_loop, name='[Docker] Image/Containers data from docker daemon', essential=True)
+        threader.create_and_launch(self.do_stats_loop, name='[Docker] containers stats computing', essential=True)
     
     
     def connect(self):

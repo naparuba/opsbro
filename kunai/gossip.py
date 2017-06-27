@@ -59,7 +59,7 @@ class Gossip(object):
         # export my http uri now I got a real self
         self.export_http()
         
-        self.ping_another_in_progress = False
+        # self.ping_another_in_progress = False
         
         # create my own object, but do not export it to other nodes
         self.register_myself()
@@ -547,6 +547,12 @@ class Gossip(object):
     
     # We will choose a random guy in our nodes that is alive, and
     # sync with it
+    def launch_full_sync_loop(self):
+        while not stopper.interrupted:
+            self.launch_full_sync()
+            time.sleep(15)
+    
+    
     def launch_full_sync(self):
         logger.debug("Launch_full_sync:: all nodes %d" % len(self.nodes))
         possible_nodes = self.__get_valid_nodes_to_full_sync()
@@ -568,6 +574,12 @@ class Gossip(object):
     #   * and for each other TOP zone, we choose K nodes from the other zone to send them
     # NOTE/SECURITY: we DON'T send messages to bottom zones, because they don't need to know about the internal
     #       data/state of the upper zone, they only need to know about the public states, so the proxy nodes
+    def do_launch_gossip_loop(self):
+        while not stopper.interrupted:
+            self.launch_gossip()
+            time.sleep(1)
+    
+    
     def launch_gossip(self):
         # There is no broadcast message to sent so bail out :)
         if len(broadcaster.broadcasts) == 0:
@@ -648,15 +660,22 @@ class Gossip(object):
         return possible_nodes
     
     
+    # THREAD: every second send a Gossip UDP ping to another node, random choice
+    def ping_another_nodes(self):
+        while not stopper.interrupted:
+            self.ping_another()
+            time.sleep(1)
+    
+    
     # we ping some K random nodes, but in priority some nodes that we thouugh were deads
     # but talk to us
     # also exclude leave node, because thay said they are not here anymore ^^
     def ping_another(self):
         # Only launch one parallel ping in the same time, max2 if we have thread
         # that mess up with this flag :)
-        if self.ping_another_in_progress:
-            return
-        self.ping_another_in_progress = True
+        # if self.ping_another_in_progress:
+        #    return
+        # self.ping_another_in_progress = True
         
         possible_nodes = self.__get_valid_nodes_to_ping()
         
@@ -673,8 +692,8 @@ class Gossip(object):
         if len(possible_nodes) >= 1:
             other = random.choice(possible_nodes)
             self.__do_ping(other)
-        # Ok we did finish to ping another
-        self.ping_another_in_progress = False
+            # Ok we did finish to ping another
+            # self.ping_another_in_progress = False
     
     
     # Launch a ping to another node and if fail set it as suspect
