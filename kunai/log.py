@@ -114,7 +114,7 @@ class Logger(object):
         # NOTE: I know there is a small chance of thread race issue, but he, I don't fucking care about a 1s issue delay, deal with it.
         self.last_date_print_value = datetime.datetime.fromtimestamp(now).strftime('%Y-%m-%d %H:%M:%S')
         return self.last_date_print_value
-        
+    
     
     def log(self, *args, **kwargs):
         part = kwargs.get('part', '')
@@ -170,3 +170,43 @@ class Logger(object):
 
 
 logger = Logger()
+
+
+class PartLogger(object):
+    def __init__(self, part):
+        self.part = part
+    
+    
+    def debug(self, *args, **kwargs):
+        kwargs['part'] = self.part
+        logger.debug(*args, **kwargs)
+    
+    
+    def info(self, *args, **kwargs):
+        kwargs['part'] = self.part
+        logger.info(*args, **kwargs)
+    
+    
+    def warning(self, *args, **kwargs):
+        kwargs['part'] = self.part
+        logger.warning(*args, **kwargs)
+    
+    
+    def error(self, *args, **kwargs):
+        kwargs['part'] = self.part
+        logger.error(*args, **kwargs)
+    
+    
+    def log(self, *args, **kwargs):
+        kwargs['part'] = self.part
+        logger.log(*args, **kwargs)
+
+
+class LoggerFactory(object):
+    def __init__(self):
+        pass
+    
+    
+    @classmethod
+    def create_logger(cls, part):
+        return PartLogger(part)

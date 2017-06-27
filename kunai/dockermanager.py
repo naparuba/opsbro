@@ -3,11 +3,14 @@ import json
 import time
 import os
 
-from kunai.log import logger
+from kunai.log import LoggerFactory
 from kunai.threadmgr import threader
 from kunai.httpdaemon import route, response
 from kunai.misc.cgroups import cgroupmgr
 from kunai.unixclient import get_json, request_errors
+
+# Global logger for this part
+logger = LoggerFactory.create_logger('docker')
 
 
 def lower_dict(d):

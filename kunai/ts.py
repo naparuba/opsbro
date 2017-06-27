@@ -8,7 +8,7 @@ import hashlib
 import json
 
 from kunai.stats import STATS
-from kunai.log import logger
+from kunai.log import LoggerFactory
 from kunai.threadmgr import threader
 from kunai.util import to_best_int_float
 from kunai.now import NOW
@@ -22,6 +22,9 @@ from kunai.httpdaemon import route, response
 # sysctl -w net.core.rmem_max=26214400
 
 SERIALIZER = cPickle
+
+# Global logger for this part
+logger = LoggerFactory.create_logger('timeseries')
 
 
 class TSBackend(object):
@@ -45,7 +48,7 @@ class TSBackend(object):
         T0 = time.time()
         STATS.incr('ts.graphite.push-key', 1)
         v64 = base64.b64encode(v)
-        logger.debug("PUSH KEY", k, "and value", len(v64), part='ts')
+        logger.debug("PUSH KEY", k, "and value", len(v64))
         # TODO: set allow_udp=True or not?
         kvmgr.stack_put_key(k, v64, ttl=ttl)
         STATS.timer('ts.graphite.push-key', (time.time() - T0) * 1000)
@@ -58,7 +61,7 @@ class TSBackend(object):
             self.db.Get(key, fill_cache=False)
         except KeyError:
             self.db.Put(key, '')
-            logger.debug('TS propagating a new key', key, part='ts')
+            logger.debug('TS propagating a new key', key)
             # now propagate the key to the other ts nodes
             gossiper.stack_new_ts_broadcast(key)
         return False
@@ -276,7 +279,7 @@ class TSBackend(object):
             all_names = []
             with self.data_lock:
                 all_names = self.data.keys()
-            logger.debug("DOING reaper thread on %d elements" % len(all_names), part='ts')
+            logger.debug("DOING reaper thread on %d elements" % len(all_names))
             for name in all_names:
                 # Grok all minute entries
                 if name.startswith('min::'):
@@ -285,12 +288,12 @@ class TSBackend(object):
                     if e is None:
                         continue
                     ctime = e['ctime']
-                    logger.debug("REAPER old data for ", name, part='ts')
+                    logger.debug("REAPER old data for ", name)
                     # if the creation time of this structure is too old and
                     # really for data, force to save the entry in KV entry
                     if ctime < now - self.max_data_age and e['nb'] > 0:
                         STATS.incr('reaper-old-data', 1)
-                        logger.debug("REAPER TOO OLD DATA FOR", name, part='ts')
+                        logger.debug("REAPER TOO OLD DATA FOR", name)
                         # get the raw metric name
                         _id = name[5:]
                         self.archive_minute(e, _id)

@@ -10,7 +10,7 @@ import sys
 import bisect
 
 # some singleton :)
-from kunai.log import logger
+from kunai.log import LoggerFactory
 from kunai.threadmgr import threader
 from kunai.broadcast import broadcaster
 from kunai.websocketmanager import websocketmgr
@@ -22,6 +22,9 @@ from kunai.zonemanager import zonemgr
 from kunai.stop import stopper
 
 KGOSSIP = 10
+
+# Global logger for this part
+logger = LoggerFactory.create_logger('gossip')
 
 
 # Main class for a Gossip cluster
@@ -228,7 +231,7 @@ class Gossip(object):
         else:
             logger.error('Asking for an unknown broadcast type for node: %s => %s' % (node, broadcast_type))
             sys.exit(2)
-        logger.info('Did have to send a new incarnation node for myself. New incarnation=%d new-node=%s' % (self.incarnation, node), part='gossip')
+        logger.info('Did have to send a new incarnation node for myself. New incarnation=%d new-node=%s' % (self.incarnation, node))
     
     
     def change_zone(self, zname):
@@ -260,7 +263,7 @@ class Gossip(object):
     # Got a new node, great! Warn others about this
     # but if it's a bootstrap, only change memory, do not export to other nodes
     def add_new_node(self, node, bootstrap=False):
-        logger.info("New node detected", node, part='gossip')
+        logger.info("New node detected", node)
         nuuid = node['uuid']
         # Add the node but in a protected mode
         with self.nodes_lock:
@@ -319,7 +322,7 @@ class Gossip(object):
         if not strong and incarnation <= prev['incarnation']:
             return
         
-        logger.debug('ALIVENODE', name, prev['state'], state, strong, change, incarnation, prev['incarnation'], (strong and change), (incarnation > prev['incarnation']), part='gossip')
+        logger.debug('ALIVENODE', name, prev['state'], state, strong, change, incarnation, prev['incarnation'], (strong and change), (incarnation > prev['incarnation']))
         # only react to the new data if they are really new :)
         if strong or incarnation > prev['incarnation']:
             # protect the nodes access with the lock so others threads are happy :)
@@ -328,7 +331,7 @@ class Gossip(object):
             
             # Only broadcast if it's a new data from somewhere else
             if (strong and change) or incarnation > prev['incarnation']:
-                logger.debug("Updating alive a node", prev, 'with', node, part='gossip')
+                logger.debug("Updating alive a node", prev, 'with', node)
                 # warn internal elements
                 self.node_did_change(uuid)
                 # and external ones
@@ -361,11 +364,11 @@ class Gossip(object):
         
         # Maybe it's us?? We need to say FUCKING NO, I'm alive!!
         if uuid == self.uuid:
-            logger.warning('SUSPECT: SOMEONE THINK I AM SUSPECT, BUT I AM ALIVE', part='gossip')
+            logger.warning('SUSPECT: SOMEONE THINK I AM SUSPECT, BUT I AM ALIVE')
             self.increase_incarnation_and_broadcast(broadcast_type='alive')
             return
         
-        logger.info('SUSPECTING: I suspect node %s' % node['name'], part='gossip')
+        logger.info('SUSPECTING: I suspect node %s' % node['name'])
         # Ok it's definitivly someone else that is now suspected, update this, and update it :)
         node['incarnation'] = incarnation
         node['state'] = state
@@ -385,7 +388,7 @@ class Gossip(object):
         uuid = leaved['uuid']
         state = 'leave'
         
-        logger.debug('SET_LEAVE::', uuid, leaved['name'], part='gossip')
+        logger.debug('SET_LEAVE::', uuid, leaved['name'])
         
         # Maybe we didn't even have this nodes in our list?
         if uuid not in self.nodes:
@@ -404,18 +407,18 @@ class Gossip(object):
         # and not 
         if uuid == self.uuid:
             if incarnation != node['incarnation']:
-                logger.debug('Someone is beliving that we did leave. It is not our own incarnation, we dont care about it', part='gossip')
+                logger.debug('Someone is beliving that we did leave. It is not our own incarnation, we dont care about it')
                 return
         else:
             # If not for me, use the classic 'not already known' rule
             if incarnation < node['incarnation']:
-                logger.debug('Dropping old information (leave) about a node', part='gossip')
+                logger.debug('Dropping old information (leave) about a node')
                 return
         
         print "SET LEAVE UUID and SELF.UUID", uuid, self.uuid
         # Maybe it's us?? If so we must send our broadcast and exit in few seconds
         if uuid == self.uuid:
-            logger.info('LEAVE: someone is asking me for leaving.', part='gossip')
+            logger.info('LEAVE: someone is asking me for leaving.')
             self.increase_incarnation_and_broadcast(broadcast_type='leave')
             
             
@@ -432,7 +435,7 @@ class Gossip(object):
             threader.create_and_launch(bailout_after_leave, args=(self,))
             return
         
-        logger.info('LEAVING: The node %s is leaving' % node['name'], part='gossip')
+        logger.info('LEAVING: The node %s is leaving' % node['name'])
         # Ok it's definitivly someone else that is now suspected, update this, and update it :)
         node['incarnation'] = incarnation
         node['state'] = state
@@ -472,11 +475,11 @@ class Gossip(object):
         
         # Maybe it's us?? We need to say FUCKING NO, I'm alive!!
         if uuid == self.uuid:
-            logger.warning('SUSPECT: SOMEONE THINK I AM SUSPECT, BUT I AM ALIVE', part='gossip')
+            logger.warning('SUSPECT: SOMEONE THINK I AM SUSPECT, BUT I AM ALIVE')
             self.increase_incarnation_and_broadcast(broadcast_type='alive')
             return
         
-        logger.info('DEAD: I put in dead node %s' % node['name'], part='gossip')
+        logger.info('DEAD: I put in dead node %s' % node['name'])
         # Ok it's definitivly someone else that is now suspected, update this, and update it :)
         node['incarnation'] = incarnation
         node['state'] = state
@@ -545,12 +548,12 @@ class Gossip(object):
     # We will choose a random guy in our nodes that is alive, and
     # sync with it
     def launch_full_sync(self):
-        logger.debug("Launch_full_sync:: all nodes %d" % len(self.nodes), part='gossip')
+        logger.debug("Launch_full_sync:: all nodes %d" % len(self.nodes))
         possible_nodes = self.__get_valid_nodes_to_full_sync()
         
         if len(possible_nodes) >= 1:
             other = random.choice(possible_nodes)
-            logger.debug("launch_full_sync::", other, part='gossip')
+            logger.debug("launch_full_sync::", other)
             self.do_push_pull(other)
             # else:
             #    print "NO OTHER ALIVE NODES !"
@@ -587,12 +590,12 @@ class Gossip(object):
                 nb_dest = min(len(others), KGOSSIP)
                 dests = random.sample(others, nb_dest)
                 for dest in dests:
-                    logger.info("launch_gossip:: topzone::%s  node::" % zname, dest['name'], part='gossip')
+                    logger.info("launch_gossip:: topzone::%s  node::" % zname, dest['name'])
                     self.__do_gossip_push(dest, consume=False)
         
         # always send to our zone, but not for leave nodes
         others = [n for n in nodes.values() if n['uuid'] != self.uuid and n['zone'] == self.zone and n['state'] != 'leave']
-        logger.debug("launch_gossip:: our zone nodes %d" % len(others), part='gossip')
+        logger.debug("launch_gossip:: our zone nodes %d" % len(others))
         
         # Maybe every one is dead, if o bail out
         if len(others) == 0:
@@ -600,7 +603,7 @@ class Gossip(object):
         nb_dest = min(len(others), KGOSSIP)
         dests = random.sample(others, nb_dest)
         for dest in dests:
-            logger.info("launch_gossip::  our own zone::%s" % self.zone, dest['name'], part='gossip')
+            logger.info("launch_gossip::  our own zone::%s" % self.zone, dest['name'])
             self.__do_gossip_push(dest, consume=True)
     
     
@@ -641,7 +644,7 @@ class Gossip(object):
                     continue
             # Ok you match dear node ^^
             possible_nodes.append(n)
-            logger.info('VALID node to ping %s' % n['name'], part='gossip')
+            logger.info('VALID node to ping %s' % n['name'])
         return possible_nodes
     
     
@@ -685,22 +688,22 @@ class Gossip(object):
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
             sock.sendto(enc_message, (addr, port))
-            logger.debug('PING waiting %s ack message' % other['name'], part='gossip')
+            logger.debug('PING waiting %s ack message' % other['name'])
             # Allow 3s to get an answer
             sock.settimeout(3)
             ret = sock.recv(65535)
-            logger.debug('PING got a return from %s' % other['name'], len(ret), part='gossip')
+            logger.debug('PING got a return from %s' % other['name'], len(ret))
             # An aswer? great it is alive!
             self.set_alive(other, strong=True)
         except (socket.timeout, socket.gaierror), exp:
-            logger.debug("PING: error joining the other node %s:%s : %s" % (addr, port, exp), part='gossip')
-            logger.debug("PING: go indirect mode", part='gossip')
+            logger.debug("PING: error joining the other node %s:%s : %s" % (addr, port, exp))
+            logger.debug("PING: go indirect mode")
             with self.nodes_lock:
                 possible_relays = [n for n in self.nodes.values() if
                                    n['uuid'] != self.uuid and n != other and n['state'] == 'alive']
             
             if len(possible_relays) == 0:
-                logger.log("PING: no possible relays for ping", part='gossip')
+                logger.log("PING: no possible relays for ping")
                 self.set_suspect(other)
             # Take at least 3 relays to ask ping
             relays = random.sample(possible_relays, min(len(possible_relays), 3))
@@ -712,9 +715,9 @@ class Gossip(object):
             for r in relays:
                 try:
                     sock.sendto(enc_message, (r['addr'], r['port']))
-                    logger.debug('PING waiting ack message', part='gossip')
+                    logger.debug('PING waiting ack message')
                 except socket.error, exp:
-                    logger.error('Cannot send a ping relay to %s:%s' % (r['addr'], r['port']), part='gossip')
+                    logger.error('Cannot send a ping relay to %s:%s' % (r['addr'], r['port']))
             # Allow 3s to get an answer from whatever relays got it
             sock.settimeout(3 * 2)
             try:
@@ -726,12 +729,12 @@ class Gossip(object):
                 return
             msg = json.loads(ret)
             sock.close()
-            logger.debug('PING: got an answer from a relay', msg, part='gossip')
-            logger.debug('RELAY set alive', other['name'], part='gossip')
+            logger.debug('PING: got an answer from a relay', msg)
+            logger.debug('RELAY set alive', other['name'])
             # Ok it's no more suspected, great :)
             self.set_alive(other, strong=True)
         except socket.error, exp:
-            logger.log("PING: cannot join the other node %s:%s : %s" % (addr, port, exp), part='gossip')
+            logger.log("PING: cannot join the other node %s:%s : %s" % (addr, port, exp))
     
     
     def manage_ping_message(self, m, addr):
@@ -746,20 +749,20 @@ class Gossip(object):
         enc_ret_msg = encrypter.encrypt(ret_msg)
         sock.sendto(enc_ret_msg, addr)
         sock.close()
-        logger.debug("PING RETURN ACK MESSAGE", ret_msg, part='gossip')
+        logger.debug("PING RETURN ACK MESSAGE", ret_msg)
         # now maybe the source was a suspect that just ping me? if so
         # ask for a future ping
         fr_uuid = m['from']
         node = self.get(fr_uuid)
         if node and node['state'] != 'alive':
-            logger.debug('PINGBACK +ing node', node['name'], part='gossip')
+            logger.debug('PINGBACK +ing node', node['name'])
             self.to_ping_back.append(fr_uuid)
     
     
     # We are ask to do a indirect ping to tgt and return the ack to
     # _from, do this in a thread so we don't lock here
     def do_indirect_ping(self, tgt, _from, addr):
-        logger.debug('do_indirect_ping', tgt, _from, part='gossip')
+        logger.debug('do_indirect_ping', tgt, _from)
         ntgt = self.get(tgt, None)
         nfrom = self.get(_from, None)
         # If the dest or the from node are now unknown, exit this thread
@@ -774,11 +777,11 @@ class Gossip(object):
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
             enc_message = encrypter.encrypt(message)
             sock.sendto(enc_message, (tgtaddr, tgtport))
-            logger.debug('PING waiting %s ack message from a ping-relay' % ntgt['name'], part='gossip')
+            logger.debug('PING waiting %s ack message from a ping-relay' % ntgt['name'])
             # Allow 3s to get an answer
             sock.settimeout(3)
             ret = sock.recv(65535)
-            logger.debug('PING (relay) got a return from %s' % ntgt['name'], ret, part='gossip')
+            logger.debug('PING (relay) got a return from %s' % ntgt['name'], ret)
             # An aswer? great it is alive! Let it know our _from node
             ack = {'type': 'ack', 'seqno': 0}
             ret_msg = json.dumps(ack)
@@ -813,7 +816,7 @@ class Gossip(object):
         enc_ret_msg = encrypter.encrypt(ret_msg)
         sock.sendto(enc_ret_msg, addr)
         sock.close()
-        logger.debug("Detect back: return back message", ret_msg, part='gossip')
+        logger.debug("Detect back: return back message", ret_msg)
     
     
     # launch a broadcast (UDP) and wait 3s for returns, and give all answers from others daemons
@@ -900,9 +903,9 @@ class Gossip(object):
             enc_message = encrypter.encrypt(message)
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
             sock.sendto(enc_message, (addr, port))
-            logger.debug('BROADCAST: sent %d message (len=%d) to %s:%s' % (len(stack), len(enc_message), addr, port), part='gossip')
+            logger.debug('BROADCAST: sent %d message (len=%d) to %s:%s' % (len(stack), len(enc_message), addr, port))
         except (socket.timeout, socket.gaierror), exp:
-            logger.debug("ERROR: cannot sent the message %s" % exp, part='gossip')
+            logger.debug("ERROR: cannot sent the message %s" % exp)
         try:
             sock.close()
         except Exception:
@@ -911,7 +914,7 @@ class Gossip(object):
     
     # Will try to join a node cluster and do a push-pull with at least one of them
     def join(self):
-        logger.log("We will try to join our seeds members", self.seeds, part='gossip')
+        logger.log("We will try to join our seeds members", self.seeds)
         tmp = self.seeds
         others = []
         if not len(self.seeds):
@@ -927,7 +930,7 @@ class Gossip(object):
             others.append((addr, port))
         random.shuffle(others)
         while True:
-            logger.log('JOINING myself %s is joining %s nodes' % (self.name, others), part='gossip')
+            logger.log('JOINING myself %s is joining %s nodes' % (self.name, others))
             nb = 0
             for other in others:
                 nb += 1
@@ -962,7 +965,7 @@ class Gossip(object):
                 continue
             # ok in the good zone (our or sub)
             nodes_to_send[nuuid] = node
-        logger.debug('do_push_pull:: giving %s informations about nodes: %s' % (other[0], [n['name'] for n in nodes_to_send.values()]), part='gossip')
+        logger.debug('do_push_pull:: giving %s informations about nodes: %s' % (other[0], [n['name'] for n in nodes_to_send.values()]))
         m = {'type': 'push-pull-msg', 'ask-from-zone': self.zone, 'nodes': nodes_to_send}
         message = json.dumps(m)
         
@@ -972,20 +975,20 @@ class Gossip(object):
         payload = {'msg': message}
         try:
             r = rq.get(uri, params=payload)
-            logger.debug("push-pull response", r, part='gossip')
+            logger.debug("push-pull response", r)
             try:
                 back = json.loads(r.content)
             except ValueError, exp:
-                logger.error('ERROR CONNECTING TO %s:%s' % other, exp, part='gossip')
+                logger.error('ERROR CONNECTING TO %s:%s' % other, exp)
                 return False
-            logger.debug('do_push_pull: get return from %s:%s' % (other[0], back), part='gossip')
+            logger.debug('do_push_pull: get return from %s:%s' % (other[0], back))
             if 'nodes' not in back:
                 logger.error('do_push_pull: back message do not have nodes entry: %s' % back)
                 return False
             self.merge_nodes(back['nodes'])
             return True
         except HTTP_EXCEPTIONS, exp:
-            logger.error('[push-pull] ERROR CONNECTING TO %s:%s' % other, exp, part='gossip')
+            logger.error('[push-pull] ERROR CONNECTING TO %s:%s' % other, exp)
             return False
     
     
@@ -999,10 +1002,10 @@ class Gossip(object):
     #   * not my top zones of course, same reason, even proxy nodes, they need to talk to me only
     #   * not the other sub zones of my, because they don't have to see which who I am linked (can be an other customer for example)
     def get_nodes_for_push_pull_response(self, other_node_zone):
-        logger.debug('PUSH-PULL: get a push pull from a node zone: %s' % other_node_zone, part='gossip')
+        logger.debug('PUSH-PULL: get a push pull from a node zone: %s' % other_node_zone)
         # Same zone: give all we know about
         if other_node_zone == self.zone:
-            logger.debug('PUSH-PULL same zone ask us, give back all we know about', part='gossip')
+            logger.debug('PUSH-PULL same zone ask us, give back all we know about')
             with self.nodes_lock:
                 nodes = copy.copy(self.nodes)
             return nodes
@@ -1016,7 +1019,7 @@ class Gossip(object):
                 for (nuuid, node) in self.nodes.iteritems():
                     if node['is_proxy'] and node['zone'] == self.zone:
                         only_my_zone_proxies[nuuid] = node
-                        logger.debug('PUSH-PULL: give back data about proxy node: %s' % node['name'], part='gossip')
+                        logger.debug('PUSH-PULL: give back data about proxy node: %s' % node['name'])
             return only_my_zone_proxies
         
         logger.warning('SECURITY: a node from an unallowed zone %s did ask us push_pull' % other_node_zone)
@@ -1042,7 +1045,7 @@ class Gossip(object):
                     continue
                 stime = node.get('suspect_time', now)
                 if stime < (now - suspect_timeout):
-                    logger.info("SUSPECT: NODE", node['name'], node['incarnation'], node['state'], "is NOW DEAD", part='gossip')
+                    logger.info("SUSPECT: NODE", node['name'], node['incarnation'], node['state'], "is NOW DEAD")
                     node['state'] = 'dead'
                     self.stack_dead_broadcast(node)
         
@@ -1054,9 +1057,9 @@ class Gossip(object):
                 if node['state'] != 'leave':
                     continue
                 ltime = node.get('leave_time', now)
-                logger.debug("LEAVE TIME for node %s %s %s %s" % (node['name'], ltime, now - leave_timeout, (now - leave_timeout) - ltime), part='gossip')
+                logger.debug("LEAVE TIME for node %s %s %s %s" % (node['name'], ltime, now - leave_timeout, (now - leave_timeout) - ltime))
                 if ltime < (now - leave_timeout):
-                    logger.info("LEAVE: NODE", node['name'], node['incarnation'], node['state'], "is now definitivly leaved. We remove it from our nodes", part='gossip')
+                    logger.info("LEAVE: NODE", node['name'], node['incarnation'], node['state'], "is now definitivly leaved. We remove it from our nodes")
                     to_del.append(node['uuid'])
         # now really remove them from our list :)
         for uuid in to_del:
@@ -1219,7 +1222,7 @@ class Gossip(object):
         @route('/agent/push-pull')
         def interface_push_pull():
             response.content_type = 'application/json'
-            logger.debug("PUSH-PULL called by HTTP", part='gossip')
+            logger.debug("PUSH-PULL called by HTTP")
             data = request.GET.get('msg')
             
             msg = json.loads(data)
@@ -1234,7 +1237,7 @@ class Gossip(object):
             nodes = self.get_nodes_for_push_pull_response(msg['ask-from-zone'])
             m = {'type': 'push-pull-msg', 'nodes': nodes}
             
-            logger.debug("PUSH-PULL returning my own nodes", part='gossip')
+            logger.debug("PUSH-PULL returning my own nodes")
             return json.dumps(m)
         
         

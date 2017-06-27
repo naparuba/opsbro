@@ -1,13 +1,16 @@
 import time
 import json
 
-from kunai.log import logger
+from kunai.log import LoggerFactory
 from kunai.stop import stopper
 from kunai.httpdaemon import route, response
 from kunai.evaluater import evaluater
 from kunai.collectormanager import collectormgr
 from kunai.gossip import gossiper
 from kunai.monitoring import monitoringmgr
+
+# Global logger for this part
+logger = LoggerFactory.create_logger('detector')
 
 
 class DetectorMgr(object):
@@ -27,19 +30,19 @@ class DetectorMgr(object):
         while collectormgr.did_run == False:
             time.sleep(1)
         # Ok we can use collector data :)
-        logger.log('DETECTOR thread launched', part='detector')
+        logger.log('DETECTOR thread launched')
         while not stopper.interrupted:
             matching_tags = set()
             for (gname, gen) in self.clust.detectors.iteritems():
                 interval = int(gen['interval'].split('s')[0])  # todo manage like it should
                 should_be_launch = gen['last_launch'] < int(time.time()) - interval
                 if should_be_launch:
-                    logger.debug('Launching detector: %s rule: %s' % (gname, gen['apply_if']), part='detector')
+                    logger.debug('Launching detector: %s rule: %s' % (gname, gen['apply_if']))
                     gen['last_launch'] = int(time.time())
                     try:
                         do_apply = evaluater.eval_expr(gen['apply_if'])
                     except Exception, exp:
-                        logger.error('Cannot execute detector %s: %s' % (gname, exp), part='detector')
+                        logger.error('Cannot execute detector %s: %s' % (gname, exp))
                         do_apply = False
                     gen['do_apply'] = do_apply
                     if do_apply:
@@ -48,9 +51,9 @@ class DetectorMgr(object):
                             # Try to evaluate the tag if need (can be an expression {} )
                             tags = [evaluater.compile(t) for t in tags]
                         except Exception, exp:
-                            logger.error('Cannot execute detector tag %s: %s' % (gname, exp), part='detector')
+                            logger.error('Cannot execute detector tag %s: %s' % (gname, exp))
                             tags = []
-                        logger.debug('Tags %s are applying for the detector %s' % (tags, gname), part='detector')
+                        logger.debug('Tags %s are applying for the detector %s' % (tags, gname))
                         self.detected_tags[gname] = tags
                     else:
                         self.detected_tags[gname] = []
@@ -90,18 +93,18 @@ class DetectorMgr(object):
                 if dname and dname != gname:
                     continue
                 res[gname] = {'matched': False, 'tags': [], 'new_tags': []}
-                logger.info("LAUNCHING DETECTOR: %s" % gen, part='detector')
+                logger.info("LAUNCHING DETECTOR: %s" % gen)
                 try:
                     res[gname]['matched'] = evaluater.eval_expr(gen['apply_if'])
                 except Exception, exp:
-                    logger.error('Cannot execute detector %s: %s' % (gname, exp), part='detector')
+                    logger.error('Cannot execute detector %s: %s' % (gname, exp))
                     res[gname]['matched'] = False
                 if res[gname]['matched']:
                     res[gname]['tags'] = gen['tags']
                     for tag in res[gname]['tags']:
                         if tag not in self.clust.tags:
                             res[gname]['new_tags'].append(tag)
-                            logger.info("ADDING NEW TAGS: %s" % tag, part='detector')
+                            logger.info("ADDING NEW TAGS: %s" % tag)
             
             return json.dumps(res)
 

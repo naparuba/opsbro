@@ -10,7 +10,7 @@ import subprocess
 import socket
 import hashlib
 
-from kunai.log import logger
+from kunai.log import LoggerFactory
 from kunai.gossip import gossiper
 from kunai.kv import kvmgr
 from kunai.httpdaemon import route, response, request, abort
@@ -20,6 +20,9 @@ from kunai.perfdata import PerfDatas
 from kunai.evaluater import evaluater
 from kunai.ts import tsmgr
 from kunai.handlermgr import handlermgr
+
+# Global logger for this part
+logger = LoggerFactory.create_logger('monitoring')
 
 
 class MonitoringManager(object):
@@ -109,7 +112,7 @@ class MonitoringManager(object):
                 pass
         
         o = {'check': check}
-        logger.debug('HTTP check saving the object %s into the file %s' % (o, p), part='http')
+        logger.debug('HTTP check saving the object %s into the file %s' % (o, p))
         buf = json.dumps(o, sort_keys=True, indent=4)
         tempdir = tempfile.mkdtemp()
         f = open(os.path.join(tempdir, 'temp.json'), 'w')
@@ -211,7 +214,7 @@ class MonitoringManager(object):
                 pass
         
         o = {'service': service}
-        logger.debug('HTTP service saving the object %s into the file %s' % (o, p), part='http')
+        logger.debug('HTTP service saving the object %s into the file %s' % (o, p))
         buf = json.dumps(o, sort_keys=True, indent=4)
         tempdir = tempfile.mkdtemp()
         f = open(os.path.join(tempdir, 'temp.json'), 'w')
@@ -274,7 +277,7 @@ class MonitoringManager(object):
     
     # Main thread for launching checks (each with its own thread)
     def do_check_thread(self):
-        logger.log('CHECK thread launched', part='check')
+        logger.log('CHECK thread launched')
         cur_launchs = {}
         while not stopper.interrupted:
             now = int(time.time())
@@ -294,7 +297,7 @@ class MonitoringManager(object):
                 if last_check < now - interval:
                     # randomize a bit the checks
                     script = check['script']
-                    logger.debug('CHECK: launching check %s:%s' % (cid, script), part='check')
+                    logger.debug('CHECK: launching check %s:%s' % (cid, script))
                     t = threader.create_and_launch(self.launch_check, name='check-%s' % cid, args=(check,))
                     cur_launchs[cid] = t
             
@@ -392,7 +395,7 @@ class MonitoringManager(object):
                 output = evaluater.eval_expr(check.get('ok_output', ''))
         else:
             script = check['script']
-            logger.debug("CHECK start: MACRO launching %s" % script, part='check')
+            logger.debug("CHECK start: MACRO launching %s" % script)
             # First we need to change the script with good macros (between $$)
             it = self.macro_pat.finditer(script)
             macros = [m.groups() for m in it]
@@ -400,16 +403,15 @@ class MonitoringManager(object):
             for (to_repl, m) in macros:
                 change_to = self._found_params(m, check)
                 script = script.replace(to_repl, change_to)
-            logger.debug("MACRO finally computed", script, part='check')
+            logger.debug("MACRO finally computed", script)
             
-            p = subprocess.Popen(script, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True,
-                                 preexec_fn=os.setsid)
+            p = subprocess.Popen(script, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, preexec_fn=os.setsid)
             output, err = p.communicate()
             rc = p.returncode
             # not found error like (127) should be catch as unknown check
             if rc > 3:
                 rc = 3
-        logger.debug("CHECK RETURN %s : %s %s %s" % (check['id'], rc, output, err), part='check')
+        logger.debug("CHECK RETURN %s : %s %s %s" % (check['id'], rc, output, err))
         did_change = (check['state_id'] != rc)
         check['state'] = {0: 'ok', 1: 'warning', 2: 'critical', 3: 'unknown'}.get(rc, 'unknown')
         if 0 <= rc <= 3:
@@ -428,7 +430,7 @@ class MonitoringManager(object):
     # get a check return and look it it did change a service state. Also save
     # the result in the __health KV
     def analyse_check(self, check, did_change):
-        logger.debug('CHECK we got a check return, deal with it for %s' % check, part='check')
+        logger.debug('CHECK we got a check return, deal with it for %s' % check)
         
         # if did change, update the node check entry about it
         if did_change:
@@ -442,15 +444,15 @@ class MonitoringManager(object):
         sname = check.get('service', '')
         if sname and sname in self.services:
             service = self.services.get(sname)
-            logger.debug('CHECK is related to a service, deal with it! %s => %s' % (check, service), part='check')
+            logger.debug('CHECK is related to a service, deal with it! %s => %s' % (check, service))
             sstate_id = service.get('state_id')
             cstate_id = check.get('state_id')
             if cstate_id != sstate_id:
                 service['state_id'] = cstate_id
-                logger.log('CHECK: we got a service state change from %s to %s for %s' % (sstate_id, cstate_id, service['name']), part='check')
+                logger.log('CHECK: we got a service state change from %s to %s for %s' % (sstate_id, cstate_id, service['name']))
                 warn_about_our_change = True
             else:
-                logger.debug('CHECK: service %s did not change (%s)' % (service['name'], sstate_id), part='check')
+                logger.debug('CHECK: service %s did not change (%s)' % (service['name'], sstate_id))
         
         # If our check or service did change, warn thers nodes about it
         if warn_about_our_change:
@@ -464,7 +466,7 @@ class MonitoringManager(object):
     def put_check(self, check):
         value = json.dumps(check)
         key = '__health/%s/%s' % (gossiper.uuid, check['name'])
-        logger.debug('CHECK SAVING %s:%s(len=%d)' % (key, value, len(value)), part='check')
+        logger.debug('CHECK SAVING %s:%s(len=%d)' % (key, value, len(value)))
         kvmgr.put_key(key, value, allow_udp=True)
         
         # Now groking metrics from check
@@ -487,11 +489,11 @@ class MonitoringManager(object):
             if m.name is None or m.value is None:
                 continue  # skip this invalid perfdata
             
-            logger.debug('GOT PERFDATAS', m, part='check')
-            logger.debug('GOT PERFDATAS', m.name, part='check')
-            logger.debug('GOT PERFDATAS', m.value, part='check')
+            logger.debug('GOT PERFDATAS', m)
+            logger.debug('GOT PERFDATAS', m.name)
+            logger.debug('GOT PERFDATAS', m.value)
             e = {'mname': '.'.join([gossiper.name, cname, m.name]), 'timestamp': now, 'value': m.value}
-            logger.debug('PUT PERFDATA', e, part='check')
+            logger.debug('PUT PERFDATA', e)
             datas.append(e)
         
         self.put_graphite_datas(datas)

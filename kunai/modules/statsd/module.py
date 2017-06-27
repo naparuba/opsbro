@@ -16,11 +16,14 @@ from kunai.gossip import gossiper
 # sysctl -w net.core.rmem_max=26214400
 
 
-from kunai.log import logger
+from kunai.log import LoggerFactory
 from kunai.threadmgr import threader
 from kunai.module import Module
 from kunai.stop import stopper
 from kunai.ts import tsmgr
+
+# Global logger for this part
+logger = LoggerFactory.create_logger('statsd')
 
 
 class StatsdModule(Module):
@@ -64,10 +67,10 @@ class StatsdModule(Module):
             self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
             self.udp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 1048576)
             self.udp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            logger.debug(self.udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF), part='statsd')
+            logger.debug(self.udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF))
             self.udp_sock.bind((self.addr, self.statsd_port))
-            logger.info("TS UDP port open", self.statsd_port, part='ts')
-            logger.debug("UDP RCVBUF", self.udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF), part='statsd')
+            logger.info("TS UDP port open", self.statsd_port)
+            logger.debug("UDP RCVBUF", self.udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF))
         else:
             logger.info('STATSD is not enabled, skipping it')
     
@@ -94,7 +97,7 @@ class StatsdModule(Module):
     
     def compute_stats(self):
         now = int(time.time())
-        logger.debug("Computing stats", part='ts')
+        logger.debug("Computing stats")
         
         # First gauges, we take the data and put a void dict instead so the other thread can work now
         with self.stats_lock:
@@ -191,11 +194,11 @@ class StatsdModule(Module):
             except socket.timeout:  # loop until we got something
                 continue
             
-            logger.debug("UDP: received message:", data, addr, part='statsd')
+            logger.debug("UDP: received message:", data, addr)
             # No data? bail out :)
             if len(data) == 0:
                 continue
-            logger.debug("GETDATA", data, part='statsd')
+            logger.debug("GETDATA", data)
             
             for line in data.splitlines():
                 # avoid invalid lines
@@ -259,13 +262,13 @@ class StatsdModule(Module):
                         if _max is None or value > _max:
                             _max = value
                         self.gauges[mname] = (_sum, nb, _min, _max)
-                        logger.debug('NEW GAUGE', mname, self.gauges[mname], part='statsd')
+                        logger.debug('NEW GAUGE', mname, self.gauges[mname])
                 
                 ## Timers: <metric name>:<value>|ms
                 ## But also
                 ## Histograms: <metric name>:<value>|h
                 elif _type == 'ms' or _type == 'h':
-                    logger.debug('timers', mname, value, part='statsd')
+                    logger.debug('timers', mname, value)
                     # TODO: avoid the SET each time
                     timer = self.timers.get(mname, [])
                     timer.append(value)
@@ -273,14 +276,14 @@ class StatsdModule(Module):
                 ## Counters: <metric name>:<value>|c[|@<sample rate>]
                 elif _type == 'c':
                     self.nb_data += 1
-                    logger.info('COUNTER', mname, value, "rate", 1, part='statsd')
+                    logger.info('COUNTER', mname, value, "rate", 1)
                     with self.stats_lock:
                         cvalue, ccount = self.counters.get(mname, (0, 0))
                         self.counters[mname] = (cvalue + value, ccount + 1)
-                        logger.debug('NEW COUNTER', mname, self.counters[mname], part='statsd')
+                        logger.debug('NEW COUNTER', mname, self.counters[mname])
                         ## Meters: <metric name>:<value>|m
                 elif _type == 'm':
-                    logger.debug('METERs', mname, value, part='statsd')
+                    logger.debug('METERs', mname, value)
                 else:  # unknow type, maybe a c[|@<sample rate>]
                     if _type[0] == 'c':
                         self.nb_data += 1
@@ -296,9 +299,9 @@ class StatsdModule(Module):
                         # Invalid rate, 0.0 is invalid too ;)
                         if rate <= 0.0 or rate > 1.0:
                             continue
-                        logger.debug('COUNTER', mname, value, "rate", rate, part='statsd')
+                        logger.debug('COUNTER', mname, value, "rate", rate)
                         with self.stats_lock:
                             cvalue, ccount = self.counters.get(mname, (0, 0))
-                            logger.debug('INCR counter', (value / rate), part='ts')
+                            logger.debug('INCR counter', (value / rate))
                             self.counters[mname] = (cvalue + (value / rate), ccount + 1 / rate)
-                            logger.debug('NEW COUNTER', mname, self.counters[mname], part='statsd')
+                            logger.debug('NEW COUNTER', mname, self.counters[mname])

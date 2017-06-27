@@ -1,11 +1,14 @@
 import socket
 
-from kunai.log import logger
+from kunai.log import LoggerFactory
 from kunai.threadmgr import threader
 from kunai.module import Module
 from kunai.stop import stopper
 
 from dnsquery import DNSQuery
+
+# Global logger for this part
+logger = LoggerFactory.create_logger('dns')
 
 
 class DNSModule(Module):
@@ -42,7 +45,7 @@ class DNSModule(Module):
                 logger.info('DNS is enabled, opening UDP port')
                 # Prepare the socket in the prepare phase because it's mandatory
                 self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                logger.info('DNS launched server port %d' % self.port, part='dns')
+                logger.info('DNS launched server port %d' % self.port)
                 self.sock.bind(('', self.port))
             else:
                 logger.info('DNS is not enabled, skipping it')
@@ -62,7 +65,7 @@ class DNSModule(Module):
             return
         
         while not stopper.interrupted:
-            logger.debug('DNS MODULE LOOP', part='dns')
+            logger.debug('DNS MODULE LOOP')
             try:
                 data, addr = self.sock.recvfrom(1024)
             except socket.timeout:
@@ -71,7 +74,7 @@ class DNSModule(Module):
             try:
                 p = DNSQuery(data)
                 r = p.lookup_for_nodes(self.domain)
-                logger.debug("DNS lookup nodes response:", r, part='dns')
+                logger.debug("DNS lookup nodes response:", r)
                 self.sock.sendto(p.response(r), addr)
             except Exception, exp:
-                logger.log("DNS problem", exp, part='dns')
+                logger.log("DNS problem", exp)

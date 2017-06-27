@@ -6,13 +6,16 @@ import hashlib
 import subprocess
 import json
 
-from kunai.log import logger
+from kunai.log import LoggerFactory
 from kunai.pubsub import pubsub
 from kunai.threadmgr import threader
 from kunai.stop import stopper
 from kunai.detectormgr import detecter
 from kunai.gossip import gossiper
 from kunai.kv import kvmgr
+
+# Global logger for this part
+logger = LoggerFactory.create_logger('shinken')
 
 
 class ShinkenExporter(object):
@@ -68,7 +71,7 @@ class ShinkenExporter(object):
         
         v = kvmgr.get_key('__health/%s' % nuuid)
         if v is None or v == '':
-            logger.error('Cannot access to the checks list for', nuuid, part='shinken')
+            logger.error('Cannot access to the checks list for', nuuid)
             return
         
         lst = json.loads(v)
@@ -77,11 +80,11 @@ class ShinkenExporter(object):
             if v is None:  # missing check entry? not a real problem
                 continue
             check = json.loads(v)
-            logger.debug('CHECK VALUE %s' % check, part='shinken')
+            logger.debug('CHECK VALUE %s' % check)
             try:
                 f = open(p, 'a')
                 cmd = '[%s] PROCESS_SERVICE_CHECK_RESULT;%s;%s;%d;%s\n' % (int(time.time()), nuuid, self.sanatize_check_name(cname), check['state_id'], check['output'])
-                logger.debug('SAVING COMMAND %s' % cmd, part='shinken')
+                logger.debug('SAVING COMMAND %s' % cmd)
                 f.write(cmd)
                 f.flush()
                 f.close()
@@ -104,9 +107,9 @@ class ShinkenExporter(object):
             except Exception, exp:
                 print self.cfg_path
                 print exp
-                logger.error('Cannot create shinken directory at %s : %s', self.cfg_path, str(exp), part='shinken')
+                logger.error('Cannot create shinken directory at %s : %s', self.cfg_path, str(exp))
                 return
-        logger.debug('Generating cfg/sha file for node %s' % n, part='shinken')
+        logger.debug('Generating cfg/sha file for node %s' % n)
         p, shap = self.__get_node_cfg_sha_paths(uuid)
         # p = os.path.join(self.cfg_path, uuid + '.cfg')
         ptmp = p + '.tmp'
@@ -155,12 +158,12 @@ class ShinkenExporter(object):
         buf_sha = hashlib.sha1(buf).hexdigest()
         
         # if it the same as before?
-        logger.debug('COMPARING OLD SHA/NEWSHA= %s   %s' % (old_sha_value, buf_sha), part='shinken')
+        logger.debug('COMPARING OLD SHA/NEWSHA= %s   %s' % (old_sha_value, buf_sha))
         if buf_sha == old_sha_value:
-            logger.debug('SAME SHA VALUE, SKIP IT', part='shinken')
+            logger.debug('SAME SHA VALUE, SKIP IT')
             return
         
-        logger.info('Will generate in path %s (sha1=%s): \n%s' % (p, buf_sha, buf), part='shinken')
+        logger.info('Will generate in path %s (sha1=%s): \n%s' % (p, buf_sha, buf))
         try:
             # open both file, so if one goes wrong, will be consistent
             fcfg = open(ptmp, 'w')
@@ -182,9 +185,9 @@ class ShinkenExporter(object):
                 fsha.close()
             except:
                 pass
-            logger.error('Cannot create shinken node file at %s : %s' % (p, exp), part='shinken')
+            logger.error('Cannot create shinken node file at %s : %s' % (p, exp))
             return
-        logger.info('Generated file %s for node %s' % (p, uuid), part='shinken')
+        logger.info('Generated file %s for node %s' % (p, uuid))
         # We did change configuration, reload shinken
         self.reload_flag = True
     
@@ -198,29 +201,29 @@ class ShinkenExporter(object):
                 # We did remove a file, reload shinken so
                 self.reload_flag = True
             except IOError, exp:
-                logger.error('Cannot remove deprecated file %s' % cfgp, part='shinken')
+                logger.error('Cannot remove deprecated file %s' % cfgp)
         if os.path.exists(shap):
             try:
                 os.unlink(shap)
             except IOError, exp:
-                logger.error('Cannot remove deprecated file %s' % shap, part='shinken')
+                logger.error('Cannot remove deprecated file %s' % shap)
     
     
     def clean_cfg_dir(self):
         if not self.cfg_path:  # nothing to clean...
             return
         node_keys = gossiper.nodes.keys()
-        logger.debug('Current nodes uuids: %s' % node_keys, part='shinken')
+        logger.debug('Current nodes uuids: %s' % node_keys)
         # First look at cfg file that don't match our inner elements, based on their file name
         # Note: if the user did do something silly, no luck for him!
         cfgs = glob.glob('%s/*.cfg' % self.cfg_path)
-        logger.info('Looking at files for cleaning %s' % cfgs, part='shinken')
+        logger.info('Looking at files for cleaning %s' % cfgs)
         lpath = len(self.cfg_path) + 1
         for cfg in cfgs:
             fuuid_ = cfg[lpath:-len('.cfg')]  # get only the uuid part of the file name
-            logger.debug('Should we clean cfg file %s' % fuuid_, part='shinken')
+            logger.debug('Should we clean cfg file %s' % fuuid_)
             if fuuid_ not in node_keys:
-                logger.info('We clean deprecated cfg file %s' % cfg, part='shinken')
+                logger.info('We clean deprecated cfg file %s' % cfg)
                 self.clean_node_files(fuuid_)
     
     
@@ -244,7 +247,7 @@ class ShinkenExporter(object):
                 self.generate_node_file(n)
         
         while not stopper.interrupted:
-            logger.debug('Shinken loop, regenerate [%s]' % self.regenerate_flag, part='shinken')
+            logger.debug('Shinken loop, regenerate [%s]' % self.regenerate_flag)
             
             time.sleep(1)
             # If not initialize, skip loop
@@ -253,7 +256,7 @@ class ShinkenExporter(object):
             # If nothing to do, skip it too
             if not self.regenerate_flag:
                 continue
-            logger.info('Shinken callback raised, managing events: %s' % self.node_changes, part='shinken')
+            logger.info('Shinken callback raised, managing events: %s' % self.node_changes)
             # Set that we will manage all now
             self.regenerate_flag = False
             node_ids = self.node_changes
@@ -263,14 +266,14 @@ class ShinkenExporter(object):
                 if evt == 'new-node':
                     if n is None:  # maybe someone just delete the node?
                         continue
-                    logger.info('Manage new node %s' % n, part='shinken')
+                    logger.info('Manage new node %s' % n)
                     self.generate_node_file(n)
                     self.export_states_into_shinken(nid)  # update it's inner checks states
                 elif evt == 'delete-node':
-                    logger.info('Removing deleted node %s' % nid, part='shinken')
+                    logger.info('Removing deleted node %s' % nid)
                     self.clean_node_files(nid)
                 elif evt == 'change-node':
-                    logger.info('A node did change, updating its configuration. Node %s' % nid, part='shinken')
+                    logger.info('A node did change, updating its configuration. Node %s' % nid)
                     self.generate_node_file(n)
                     self.export_states_into_shinken(nid)  # update it's inner checks states
             
@@ -282,7 +285,7 @@ class ShinkenExporter(object):
                 stdout, stderr = p.communicate()
                 stdout += stderr
                 if p.returncode != 0:
-                    logger.error('Cannot reload shinken daemon: %s' % stdout, part='shinken')
+                    logger.error('Cannot reload shinken daemon: %s' % stdout)
                 else:
                     logger.info('Shinken daemon reload: OK')
 
