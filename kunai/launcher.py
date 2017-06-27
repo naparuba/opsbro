@@ -3,6 +3,12 @@ import sys
 import signal
 import locale
 
+# On unix, try to raise system resources to the max (unlimited if possible)
+try:
+    import resource
+except ImportError:
+    resource = None
+
 from kunai.cluster import Cluster
 from kunai.log import cprint, logger
 
@@ -164,8 +170,49 @@ class Launcher(object):
         else:
             if os.name != 'nt':
                 self.write_pid()
-                
                 # Here only the son-son reach this part :)
+        
+        # Now we are started, try to raise system limits to the maximum allowed
+        self.find_and_set_higer_system_limits()
+    
+    
+    def find_and_set_higer_system_limit(self, res, res_name):
+        # first try to get the system limit, if already unlimited (-1) then we are good :)
+        soft, hard = resource.getrlimit(res)
+        if soft == -1 and hard == -1:
+            logger.info('System resource %s is already unlimited: (soft:%s/hard:%s)' % (res_name, soft, hard))
+            return
+        # Ok not unlimited, maybe we can set unlimited?
+        try:
+            resource.setrlimit(res, (-1, -1))
+            is_unlimited = True
+        except ValueError:
+            is_unlimited = False
+        if is_unlimited:
+            logger.info('System resource %s was set to unlimited' % (res_name))
+            return
+        # Ok maybe we cannot set unlimited, but we can try to increase it as much as we can
+        can_still_increase = True
+        v = hard
+        if hard == -1:
+            v = soft
+        while can_still_increase:
+            v *= 2
+            try:
+                logger.debug('Try to increase system limit %s to %s/%s' % (res_name, v, v))
+                resource.setrlimit(res, (v, v))
+            except ValueError:
+                # We did find the max
+                can_still_increase = False
+        logger.info('System limit %s is set to maximum available: %s/%s' % (res_name, v, v))
+    
+    
+    def find_and_set_higer_system_limits(self):
+        if not resource:
+            logger.info('System resource package is not available, cannot increase system limits')
+            return
+        for (res, res_name) in [(resource.RLIMIT_NPROC, 'number of process/threads'), (resource.RLIMIT_NOFILE, 'number of open files')]:
+            self.find_and_set_higer_system_limit(res, res_name)
     
     
     # Main locking function, will LOCK here until the daemon is dead/killed/whatever

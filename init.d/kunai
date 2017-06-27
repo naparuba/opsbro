@@ -37,10 +37,17 @@ BASE=$(basename $0)
 ETC=/etc/kunai
 
 export PATH="${PATH:+$PATH:}/usr/sbin:/bin:/sbin"
+# Try to set US lang, to allow easy sub command call even on non english system (yes like french system...)
 export LANG=en_US.UTF8
 export LC_ALL=en_US.UTF8
+# Please python, manage utf8 by default, we are in 2017
 export PYTHONIOENCODING=utf8
-export PYTHONUNBUFFERED="0"
+# Do not lock on print calls
+export PYTHONUNBUFFERED="1"
+# We do nto want libcurl to go through a proxy by itself, so unset evn variables for this one
+unset http_proxy
+unset https_proxy
+
 
 # We try to find the LAST possible Python VERSION
 pythonver() {
