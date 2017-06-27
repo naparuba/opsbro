@@ -1218,7 +1218,7 @@ class Gossip(object):
         @route('/agent/push-pull')
         def interface_push_pull():
             response.content_type = 'application/json'
-
+            
             data = request.GET.get('msg')
             
             msg = json.loads(data)

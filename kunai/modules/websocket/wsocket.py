@@ -5,6 +5,7 @@ from kunai.log import LoggerFactory
 # Global logger for this part
 logger = LoggerFactory.create_logger('websocket')
 
+
 class WebExporter(WebSocket):
     def handleMessage(self):
         if self.data is None:

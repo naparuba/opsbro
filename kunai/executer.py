@@ -16,6 +16,7 @@ from kunai.httpdaemon import route, response, abort, request
 # Global logger for this part
 logger = LoggerFactory.create_logger('executer')
 
+
 class Executer(object):
     def __init__(self):
         # Execs launch as threads

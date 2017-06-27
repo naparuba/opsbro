@@ -44,7 +44,7 @@ def do_collectors_show(name='', all=False):
     except request_errors, exp:
         logger.error(exp)
         return
-
+    
     disabled = []
     for (cname, d) in collectors.iteritems():
         if name and not name == cname:
@@ -98,14 +98,14 @@ exports = {
         ],
         'description': 'Show collectors informations'
     },
-
+    
     do_collectors_list: {
         'keywords'   : ['collectors', 'list'],
         'args'       : [
         ],
         'description': 'Show collectors list'
     },
-
+    
     do_collectors_run : {
         'keywords'   : ['collectors', 'run'],
         'args'       : [
@@ -113,5 +113,5 @@ exports = {
         ],
         'description': 'Run a collector'
     },
-
+    
 }

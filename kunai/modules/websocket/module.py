@@ -1,4 +1,3 @@
-
 from kunai.log import logger
 from kunai.threadmgr import threader
 from kunai.module import Module
@@ -26,8 +25,8 @@ class WebSocketModule(Module):
     def prepare(self):
         # import listening addr from the daemon
         self.listening_addr = self.daemon.listening_addr
-
-
+    
+    
     def get_info(self):
         r = {}
         if self.websocket is None:
@@ -39,8 +38,8 @@ class WebSocketModule(Module):
         else:
             r['websocket_info'] = self.webso.get_info()
         return r
-
-
+    
+    
     def launch(self):
         if self.websocket is None:
             logger.log('No websocket object defined in the configuration, skipping it')
@@ -58,4 +57,3 @@ class WebSocketModule(Module):
         # can easily forward messages
         websocketmgr.set(self.webso)
         self.webso.run()
-    

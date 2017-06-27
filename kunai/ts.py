@@ -370,7 +370,6 @@ class TSListener(object):
     def __init__(self):
         # Our real database manager
         self.tsb = TSBackend()
-
     
     
     def start_threads(self):
