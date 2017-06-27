@@ -523,10 +523,10 @@ def do_show_threads():
     not_daemon_threads.sort(_sort_threads)
     print "Daemon threads (persistent):"
     for t in daemon_threads:
-        print '   Name:%-35s  id:%d   cpu(user):%.3f   cpu(system):%.3f' % (t['name'], t['tid'], t['user_time'], t['system_time'])
+        print '   Name:%-55s  id:%d   cpu(user):%.3f   cpu(system):%.3f' % (t['name'], t['tid'], t['user_time'], t['system_time'])
     print "Temporary threads:"
     for t in not_daemon_threads:
-        print '   Name:%-35s  id:%d   cpu(user):%.3f   cpu(system):%.3f' % (t['name'], t['tid'], t['user_time'], t['system_time'])
+        print '   Name:%-55s  id:%d   cpu(user):%.3f   cpu(system):%.3f' % (t['name'], t['tid'], t['user_time'], t['system_time'])
 
 
 exports = {

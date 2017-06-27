@@ -38,7 +38,7 @@ class ShinkenExporter(object):
     
     def launch_thread(self):
         # Launch a thread that will reap all put key asked by the udp
-        self.shinken_thread = threader.create_and_launch(self.main_thread, name='shinken-exporter', essential=True)
+        self.shinken_thread = threader.create_and_launch(self.main_thread, name='[Shinken] Export nodes/checks and states to Shinken', essential=True)
     
     
     def new_node_callback(self, node_uuid=None):

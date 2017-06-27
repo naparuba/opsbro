@@ -366,7 +366,7 @@ class Cluster(object):
         # by default do not launch timeserie listeners
         
         # Launch a thread that will reap all put key asked by the udp
-        threader.create_and_launch(kvmgr.put_key_reaper, name='put-key-reaper', essential=True)
+        threader.create_and_launch(kvmgr.put_key_reaper, name='[KV] key reaper', essential=True)
         
         # Load all collectors globaly
         collectormgr.load_collectors(self.cfg_data)
@@ -726,32 +726,32 @@ class Cluster(object):
     
     
     def launch_check_thread(self):
-        self.check_thread = threader.create_and_launch(monitoringmgr.do_check_thread, name='check-thread', essential=True)
+        self.check_thread = threader.create_and_launch(monitoringmgr.do_check_thread, name='[Monitoring] Checks', essential=True)
     
     
     def launch_collector_thread(self):
-        self.collector_thread = threader.create_and_launch(collectormgr.do_collector_thread, name='collector-thread', essential=True)
+        self.collector_thread = threader.create_and_launch(collectormgr.do_collector_thread, name='[Collector] Collector scheduling', essential=True)
     
     
     def launch_generator_thread(self):
-        self.generator_thread = threader.create_and_launch(self.do_generator_thread, name='generator-thread', essential=True)
+        self.generator_thread = threader.create_and_launch(self.do_generator_thread, name='[Generator] Generator scheduling', essential=True)
     
     
     def launch_detector_thread(self):
-        self.detector_thread = threader.create_and_launch(detecter.do_detector_thread, name='detector-thread', essential=True)
+        self.detector_thread = threader.create_and_launch(detecter.do_detector_thread, name='[Detector] Detector scheduling', essential=True)
     
     
     def launch_replication_backlog_thread(self):
-        self.replication_backlog_thread = threader.create_and_launch(kvmgr.do_replication_backlog_thread, name='replication-backlog-thread', essential=True)
+        self.replication_backlog_thread = threader.create_and_launch(kvmgr.do_replication_backlog_thread, name='[KV] Replication backlog', essential=True)
     
     
     def launch_replication_first_sync_thread(self):
-        self.replication_first_sync_thread = threader.create_and_launch(self.do_replication_first_sync_thread, name='replication-first-sync-thread', essential=True)
+        self.replication_first_sync_thread = threader.create_and_launch(self.do_replication_first_sync_thread, name='[KV] First replication synchronization', essential=True)
     
     
     def launch_listeners(self):
-        self.udp_thread = threader.create_and_launch(self.launch_udp_listener, name='udp-thread', essential=True)
-        self.tcp_thread = threader.create_and_launch(self.launch_tcp_listener, name='tcp-thread', essential=True)
+        self.udp_thread = threader.create_and_launch(self.launch_udp_listener, name='[Gossip] UDP listener', essential=True)
+        self.tcp_thread = threader.create_and_launch(self.launch_tcp_listener, name='[Agent] Http backend', essential=True)
         
         # Launch modules threads
         modulemanager.launch()
@@ -1013,15 +1013,13 @@ class Cluster(object):
             return 'OK'
         
         
-        self.external_http_thread = threader.create_and_launch(httpdaemon.run, name='external-http-thread',
-                                                               args=(self.listening_addr, self.port, ''),
-                                                               essential=True)
+        self.external_http_thread = threader.create_and_launch(httpdaemon.run, name='[Agent] External HTTP', args=(self.listening_addr, self.port, ''), essential=True)
         # Create the internal http thread
         # on unix, use UNIXsocket
         if os.name != 'nt':
-            self.internal_http_thread = threader.create_and_launch(httpdaemon.run, name='internal-http-thread', args=('', 0, self.socket_path,), essential=True)
+            self.internal_http_thread = threader.create_and_launch(httpdaemon.run, name='[Agent] Internal HTTP', args=('', 0, self.socket_path,), essential=True)
         else:  # ok windows, I look at you, really
-            self.internal_http_thread = threader.create_and_launch(httpdaemon.run, name='internal-http-thread', args=('127.0.0.1', 6770, '',), essential=True)
+            self.internal_http_thread = threader.create_and_launch(httpdaemon.run, name='[Agent] Internal HTTP', args=('127.0.0.1', 6770, '',), essential=True)
     
     
     # launch metric based listeners and backend
@@ -1437,10 +1435,10 @@ class Cluster(object):
                     gossiper.count('leave')), part='gossip')
             
             if i % 15 == 0:
-                threader.create_and_launch(gossiper.launch_full_sync, name='launch-full-sync', essential=True)
+                threader.create_and_launch(gossiper.launch_full_sync, name='[Gossip] Nodes full synchonization', essential=True)
             
             if i % 2 == 1:
-                threader.create_and_launch(gossiper.ping_another, name='ping-another')
+                threader.create_and_launch(gossiper.ping_another, name='[Gossip] Ping other nodes')
             
             gossiper.launch_gossip()
             

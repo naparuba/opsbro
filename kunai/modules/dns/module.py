@@ -53,7 +53,7 @@ class DNSModule(Module):
     
     
     def launch(self):
-        threader.create_and_launch(self.do_launch, name='dns-thread', essential=True)
+        threader.create_and_launch(self.do_launch, name='[DNS] UDP port:%d listening' % self.port, essential=True)
     
     
     def do_launch(self):

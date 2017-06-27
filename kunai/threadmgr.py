@@ -66,7 +66,7 @@ class ThreadMgr(object):
         return {'nb_threads': len(self.all_threads)}
     
     
-    def create_and_launch(self, f, args=(), name='unamed-thread', essential=False):
+    def create_and_launch(self, f, args=(), name='(unamed-thread)', essential=False):
         d = {'thread': None, 'tid': 0, 'name': name, 'essential': essential, 'user_time': -1, 'system_time': -1}
         
         # and exception catchs
