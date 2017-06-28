@@ -28,8 +28,7 @@ class DockerManager(object):
         self.con = None
         self.containers = {}
         self.images = {}
-        # We got an object, we can fill the http daemon part
-        self.export_http()
+
         # last stats computation for containers, some are rate
         # we must compare
         self.stats = {}

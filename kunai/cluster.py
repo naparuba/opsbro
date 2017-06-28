@@ -389,6 +389,7 @@ class Cluster(object):
         evaluater.export_http()
         
         # Load docker thing if possible
+        dockermgr.export_http()
         dockermgr.launch()
         
         # Our main object for gossip managment
