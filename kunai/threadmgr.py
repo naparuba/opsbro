@@ -67,16 +67,16 @@ class ThreadMgr(object):
     
     
     @classmethod
-    def __get_thread_entry(cls, name, essential, tid=0):
-        return {'thread': None, 'tid': tid, 'name': name, 'essential': essential, 'user_time': -1, 'system_time': -1}
+    def __get_thread_entry(cls, name, essential, part='', tid=0):
+        return {'thread': None, 'tid': tid, 'name': name, 'essential': essential, 'user_time': -1, 'system_time': -1, 'part': part}
     
     
-    def create_and_launch(self, f, args=(), name='', essential=False):
+    def create_and_launch(self, f, args=(), name='', essential=False, part=''):
         # If no name, try to give a name even a raw one, to help debug
         if not name:
             name = '(unamed thread:%s)' % f.__name__
         
-        d = self.__get_thread_entry(name, essential)
+        d = self.__get_thread_entry(name, essential, part=part)
         
         # and exception catchs
         t = threading.Thread(None, target=w, name=name, args=(d, f, name, essential, args))
@@ -110,10 +110,10 @@ class ThreadMgr(object):
             res = {'threads': [], 'process': None, 'age': 0}
             # copy all threads as we will add the main process too
             threads = self.all_threads[:]
-            main_thread = self.__get_thread_entry('[Agent] Main thread', True, tid=os.getpid())  # our main thread pid is the process pid
+            main_thread = self.__get_thread_entry('Main thread', True, tid=os.getpid(), part='agent')  # our main thread pid is the process pid
             threads.append(main_thread)
             
-            main_process = self.__get_thread_entry('[Agent] Main Process', True, tid=os.getpid())  # our process, to allow to get user/system times
+            main_process = self.__get_thread_entry('Main Process', True, tid=os.getpid(), part='agent')  # our process, to allow to get user/system times
             res['process'] = main_process
             if our_process:
                 v = our_process.get_cpu_times()
@@ -121,7 +121,7 @@ class ThreadMgr(object):
                 main_process['system_time'] = v.system
                 res['age'] = time.time() - our_process.create_time
             
-            props = ['name', 'tid', 'essential', 'user_time', 'system_time']  # only copy jsonifiable objects
+            props = ['name', 'tid', 'essential', 'user_time', 'system_time', 'part']  # only copy jsonifiable objects
             for d in threads:
                 nd = {}
                 for prop in props:

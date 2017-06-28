@@ -527,24 +527,68 @@ def do_show_threads():
     except request_errors, exp:
         logger.error('Cannot join kunai agent: %s' % exp)
         sys.exit(1)
-    threads = data['threads']
+    all_threads = data['threads']
     process = data['process']
     age = data['age']
     
     # Cut the threads into 2 lists: always here, and the others
-    daemon_threads = [t for t in threads if t['essential']]
-    not_daemon_threads = [t for t in threads if not t['essential']]
-    daemon_threads.sort(_sort_threads)
-    not_daemon_threads.sort(_sort_threads)
+    all_daemon_threads = [t for t in all_threads if t['essential']]
+    all_not_daemon_threads = [t for t in all_threads if not t['essential']]
+    
+    # Put essential ones into part
+    threads_into_parts = {}
+    for t in all_daemon_threads:
+        part = t['part'].capitalize()
+        if not t:
+            part = '(unknown)'
+        if part not in threads_into_parts:
+            threads_into_parts[part] = {'name': part, 'user_time': 0.0, 'system_time': 0.0, 'threads': []}
+        e = threads_into_parts[part]
+        e['user_time'] += t['user_time']
+        e['system_time'] += t['system_time']
+        e['threads'].append(t)
+    
+    # Sort threads inside the parts
+    for (pname, e) in threads_into_parts.iteritems():
+        e['threads'].sort(_sort_threads)
+    
+    # Now have parts sort by their times (from bigger to min)
+    parts_sorts_by_cpu_usage = threads_into_parts.values()
+    parts_sorts_by_cpu_usage = sorted(parts_sorts_by_cpu_usage, key=lambda e: -e['user_time'])
+    
+    # Then by name
+    parts_sorts_by_name = threads_into_parts.values()
+    parts_sorts_by_name = sorted(parts_sorts_by_name, key=lambda e: e['name'])
+    
+    all_daemon_threads.sort(_sort_threads)
+    
+    all_not_daemon_threads.sort(_sort_threads)
     upercent, syspercent = __get_cpu_time_percent_display(process, age)
-    print "Total process CPU consumption: cpu(user):%s%%  cpu(system):%s%%\n" % (upercent, syspercent)
+    cprint('Total process CPU consumption:  ', color='blue', end='')
+    cprint('cpu(user):%s%%  ' % upercent, color='magenta', end='')
+    cprint('cpu(system):%s%%' % syspercent)
+    print "\n"
+    
+    print "Summary of CPU consumption based on kunai parts:"
+    for p in parts_sorts_by_cpu_usage:
+        upercent, syspercent = __get_cpu_time_percent_display(p, age)
+        cprint('  * [ ', end='')
+        cprint('%-15s' % p['name'], color='blue', end='')
+        cprint(' ]  ', end='')
+        cprint('cpu(user):%s%%  ' % upercent, color='magenta', end='')
+        cprint('cpu(system):%s%%' % syspercent)
+    print ""
     print "Daemon threads (persistent):"
-    for t in daemon_threads:
-        upercent, syspercent = __get_cpu_time_percent_display(t, age)
-        print '   Name:%-55s  id:%d   cpu(user):%s%%   cpu(system):%s%%' % (t['name'], t['tid'], upercent, syspercent)
-    if not_daemon_threads:
-        print "Temporary threads:"
-        for t in not_daemon_threads:
+    for p in parts_sorts_by_name:
+        cprint('[ ', end='')
+        cprint('%-15s' % p['name'], color='blue', end='')
+        cprint(' ]  ')
+        for t in p['threads']:
+            upercent, syspercent = __get_cpu_time_percent_display(t, age)
+            print '   * %-55s  thread id:%5d   cpu(user):%s%%   cpu(system):%s%%' % (t['name'], t['tid'], upercent, syspercent)
+    if all_not_daemon_threads:
+        print "\nTemporary threads:"
+        for t in all_not_daemon_threads:
             upercent, syspercent = __get_cpu_time_percent_display(t, age)
             print '   Name:%-55s  id:%d   cpu(user):%s%%   cpu(system):%s%%' % (t['name'], t['tid'], upercent, syspercent)
 

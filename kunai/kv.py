@@ -36,7 +36,7 @@ class TTLDatabase(object):
         if not os.path.exists(self.ttldb_dir):
             os.mkdir(self.ttldb_dir)
         # Launch a thread that will look once a minute the old entries
-        threader.create_and_launch(self.ttl_cleaning_thread, name='[KV] Cleaning TTL expired key/values', essential=True)
+        threader.create_and_launch(self.ttl_cleaning_thread, name='Cleaning TTL expired key/values', essential=True, part='key-values')
     
     
     # Load the hour ttl/H base where we will save all master

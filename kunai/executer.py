@@ -85,7 +85,7 @@ class Executer(object):
         if response == p['challenge']:
             logger.debug('EXEC GOT GOOD FROM A CHALLENGE, DECRYPTED DATA', cid, response, p['challenge'],
                          response == p['challenge'])
-            threader.create_and_launch(self.do_launch_exec, name='do-launch-exec-%s' % exec_id, args=(cid, exec_id, cmd, addr))
+            threader.create_and_launch(self.do_launch_exec, name='do-launch-exec-%s' % exec_id, args=(cid, exec_id, cmd, addr), part='executer')
     
     
     # Someone ask us to launch a new command (was already auth by RSA keys)
@@ -129,7 +129,7 @@ class Executer(object):
         
         e = {'cmd': cmd, 'tag': tag, 'thread': None, 'res': {}, 'nodes': all_uuids, 'ctime': int(time.time())}
         self.execs[uid] = e
-        threader.create_and_launch(self.do_exec_thread, name='exec-%s' % uid, args=(e,), essential=True)
+        threader.create_and_launch(self.do_exec_thread, name='exec-%s' % uid, args=(e,), essential=True, part='executer')
         return e
     
     

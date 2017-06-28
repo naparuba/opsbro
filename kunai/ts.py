@@ -268,7 +268,7 @@ class TSBackend(object):
     # The reaper thread look at old minute objects that are not updated since long, and
     # force to archive them
     def launch_reaper_thread(self):
-        threader.create_and_launch(self.do_reaper_thread, name='[Time Series] Metric reaper', essential=True)
+        threader.create_and_launch(self.do_reaper_thread, name='Metric reaper', essential=True, part='time series')
     
     
     def do_reaper_thread(self):

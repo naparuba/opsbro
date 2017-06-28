@@ -18,7 +18,7 @@ class QuickNow(object):
     
     
     def launch(self):
-        threader.create_and_launch(self.do_thread, name='[Internal] Time getter', essential=True)
+        threader.create_and_launch(self.do_thread, name='Time getter', essential=True, part='agent')
 
 
 NOW = QuickNow()

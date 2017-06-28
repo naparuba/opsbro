@@ -52,7 +52,7 @@ class Service(win32serviceutil.ServiceFramework):
         l = Launcher(cfg_dir='c:\\kunai\\etc')
         l.do_daemon_init_and_start(is_daemon=False)
         # Start the stopper threads
-        threader.create_and_launch(self.__check_for_hWaitStop, (), name='windows-service-stopper', essential=True)
+        threader.create_and_launch(self.__check_for_hWaitStop, (), name='Windows service stopper', essential=True, part='agent')
         # Here only the last son reach this
         l.main()
         # called when we're being shut down

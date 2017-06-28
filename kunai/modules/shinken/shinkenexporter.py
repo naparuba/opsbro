@@ -41,7 +41,7 @@ class ShinkenExporter(object):
     
     def launch_thread(self):
         # Launch a thread that will reap all put key asked by the udp
-        self.shinken_thread = threader.create_and_launch(self.main_thread, name='[Shinken] Export nodes/checks and states to Shinken', essential=True)
+        self.shinken_thread = threader.create_and_launch(self.main_thread, name='Export nodes/checks and states to Shinken', essential=True, part='shinken')
     
     
     def new_node_callback(self, node_uuid=None):
@@ -280,8 +280,7 @@ class ShinkenExporter(object):
             # If we need to reload and have a reload commmand, do it
             if self.reload_flag and self.reload_command:
                 self.reload_flag = False
-                p = subprocess.Popen(self.reload_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                     close_fds=True, preexec_fn=os.setsid)
+                p = subprocess.Popen(self.reload_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, preexec_fn=os.setsid)
                 stdout, stderr = p.communicate()
                 stdout += stderr
                 if p.returncode != 0:

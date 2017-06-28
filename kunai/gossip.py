@@ -432,7 +432,7 @@ class Gossip(object):
                 pubsub.pub('interrupt')
             
             
-            threader.create_and_launch(bailout_after_leave, args=(self,))
+            threader.create_and_launch(bailout_after_leave, args=(self,), name='Exiting agent after set to leave', part='agent')
             return
         
         logger.info('LEAVING: The node %s is leaving' % node['name'])
@@ -820,7 +820,7 @@ class Gossip(object):
             return
         
         # Do the indirect ping as a sub-thread
-        threader.create_and_launch(self.do_indirect_ping, name='indirect-ping-%s-%s' % (tgt, _from), args=(tgt, _from, addr))
+        threader.create_and_launch(self.do_indirect_ping, name='indirect-ping-%s-%s' % (tgt, _from), args=(tgt, _from, addr), part='gossip')
     
     
     # A node did send us a discovery message but with the valid network key of course.

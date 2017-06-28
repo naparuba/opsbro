@@ -361,12 +361,12 @@ class Cluster(object):
         # in athread so the upd thread is not blocking
         self.libexec_to_update = []
         self.configuration_to_update = []
-        threader.create_and_launch(self.do_update_libexec_cfg_thread, name='[Agent] Checks directory (libexec) updates', essential=True)
+        threader.create_and_launch(self.do_update_libexec_cfg_thread, name='Checks directory (libexec) updates', essential=True, part='agent')
         
         # by default do not launch timeserie listeners
         
         # Launch a thread that will reap all put key asked by the udp
-        threader.create_and_launch(kvmgr.put_key_reaper, name='[KV] key reaper', essential=True)
+        threader.create_and_launch(kvmgr.put_key_reaper, name='key reaper', essential=True, part='key-value')
         
         # Load all collectors globaly
         collectormgr.load_collectors(self.cfg_data)
@@ -726,32 +726,32 @@ class Cluster(object):
     
     
     def launch_check_thread(self):
-        self.check_thread = threader.create_and_launch(monitoringmgr.do_check_thread, name='[Monitoring] Checks', essential=True)
+        self.check_thread = threader.create_and_launch(monitoringmgr.do_check_thread, name='Checks executions', essential=True, part='monitoring')
     
     
     def launch_collector_thread(self):
-        self.collector_thread = threader.create_and_launch(collectormgr.do_collector_thread, name='[Collector] Collector scheduling', essential=True)
+        self.collector_thread = threader.create_and_launch(collectormgr.do_collector_thread, name='Collector scheduling', essential=True, part='collector')
     
     
     def launch_generator_thread(self):
-        self.generator_thread = threader.create_and_launch(self.do_generator_thread, name='[Generator] Generator scheduling', essential=True)
+        self.generator_thread = threader.create_and_launch(self.do_generator_thread, name='Generator scheduling', essential=True, part='generator')
     
     
     def launch_detector_thread(self):
-        self.detector_thread = threader.create_and_launch(detecter.do_detector_thread, name='[Detector] Detector scheduling', essential=True)
+        self.detector_thread = threader.create_and_launch(detecter.do_detector_thread, name='Detector scheduling', essential=True, part='detector')
     
     
     def launch_replication_backlog_thread(self):
-        self.replication_backlog_thread = threader.create_and_launch(kvmgr.do_replication_backlog_thread, name='[KV] Replication backlog', essential=True)
+        self.replication_backlog_thread = threader.create_and_launch(kvmgr.do_replication_backlog_thread, name='Replication backlog', essential=True, part='key-value')
     
     
     def launch_replication_first_sync_thread(self):
-        self.replication_first_sync_thread = threader.create_and_launch(self.do_replication_first_sync_thread, name='[KV] First replication synchronization', essential=True)
+        self.replication_first_sync_thread = threader.create_and_launch(self.do_replication_first_sync_thread, name='First replication synchronization', essential=True, part='key-value')
     
     
     def launch_listeners(self):
-        self.udp_thread = threader.create_and_launch(self.launch_udp_listener, name='[Gossip] UDP listener', essential=True)
-        self.tcp_thread = threader.create_and_launch(self.launch_tcp_listener, name='[Agent] Http backend', essential=True)
+        self.udp_thread = threader.create_and_launch(self.launch_udp_listener, name='UDP listener', essential=True, part='gossip')
+        self.tcp_thread = threader.create_and_launch(self.launch_tcp_listener, name='Http backend', essential=True, part='agent')
         
         # Launch modules threads
         modulemanager.launch()
@@ -1019,13 +1019,13 @@ class Cluster(object):
             return json.dumps(p)
         
         
-        self.external_http_thread = threader.create_and_launch(httpdaemon.run, name='[Agent] External HTTP', args=(self.listening_addr, self.port, ''), essential=True)
+        self.external_http_thread = threader.create_and_launch(httpdaemon.run, name='External HTTP', args=(self.listening_addr, self.port, ''), essential=True, part='agent')
         # Create the internal http thread
         # on unix, use UNIXsocket
         if os.name != 'nt':
-            self.internal_http_thread = threader.create_and_launch(httpdaemon.run, name='[Agent] Internal HTTP', args=('', 0, self.socket_path,), essential=True)
+            self.internal_http_thread = threader.create_and_launch(httpdaemon.run, name='Internal HTTP', args=('', 0, self.socket_path,), essential=True, part='agent')
         else:  # ok windows, I look at you, really
-            self.internal_http_thread = threader.create_and_launch(httpdaemon.run, name='[Agent] Internal HTTP', args=('127.0.0.1', 6770, '',), essential=True)
+            self.internal_http_thread = threader.create_and_launch(httpdaemon.run, name='Internal HTTP', args=('127.0.0.1', 6770, '',), essential=True, part='gossip')
     
     
     # launch metric based listeners and backend
@@ -1441,12 +1441,12 @@ class Cluster(object):
         monitoringmgr.update_checks_kv()
         
         # We can now manage our memory by ourselves
-        threader.create_and_launch(self.do_memory_trim_thread, name='[Internal] Daemon memory cleaning', essential=True)
+        threader.create_and_launch(self.do_memory_trim_thread, name='Memory cleaning', essential=True, part='agent')
         
         # Launch gossip threads
-        threader.create_and_launch(gossiper.ping_another_nodes, name='[Gossip] Ping other nodes', essential=True)
-        threader.create_and_launch(gossiper.do_launch_gossip_loop, name='[Gossip] Cluster messages broadcasting', essential=True)
-        threader.create_and_launch(gossiper.launch_full_sync_loop, name='[Gossip] Nodes full synchronization', essential=True)
+        threader.create_and_launch(gossiper.ping_another_nodes, name='Ping other nodes', essential=True, part='gossip')
+        threader.create_and_launch(gossiper.do_launch_gossip_loop, name='Cluster messages broadcasting', essential=True, part='gossip')
+        threader.create_and_launch(gossiper.launch_full_sync_loop, name='Nodes full synchronization', essential=True, part='gossip')
         
         logger.log('Go go run!')
         i = -1

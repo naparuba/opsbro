@@ -80,8 +80,8 @@ class StatsdModule(Module):
     
     
     def launch(self):
-        threader.create_and_launch(self.launch_statsd_udp_listener, name='[Statsd] UDP port%d listening' % self.statsd_port, essential=True)
-        threader.create_and_launch(self.launch_compute_stats_thread, name='[Statsd] Stats computing', essential=True)
+        threader.create_and_launch(self.launch_statsd_udp_listener, name='UDP port:%d listening' % self.statsd_port, essential=True, part='statsd')
+        threader.create_and_launch(self.launch_compute_stats_thread, name='Stats computing', essential=True, part='statsd')
     
     
     # The compute stats thread compute the STATSD values each X

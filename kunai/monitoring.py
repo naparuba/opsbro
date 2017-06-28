@@ -297,7 +297,7 @@ class MonitoringManager(object):
                     # randomize a bit the checks
                     script = check['script']
                     logger.debug('CHECK: launching check %s:%s' % (cid, script))
-                    t = threader.create_and_launch(self.launch_check, name='check-%s' % cid, args=(check,))
+                    t = threader.create_and_launch(self.launch_check, name='check-%s' % cid, args=(check,), part='monitoring')
                     cur_launchs[cid] = t
             
             to_del = []
@@ -514,7 +514,7 @@ class MonitoringManager(object):
     # Will delete all checks into the kv and update new values, but in a thread
     def update_checks_kv(self):
         # Ok go launch it :)
-        threader.create_and_launch(self.do_update_checks_kv, name='do_update_checks_kv', essential=True)
+        threader.create_and_launch(self.do_update_checks_kv, name='do_update_checks_kv', essential=True, part='key-values')
     
     
     # TODO: RE-factorize with the TS code part

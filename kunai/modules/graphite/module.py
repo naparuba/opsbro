@@ -85,9 +85,9 @@ class GraphiteModule(Module):
     
     
     def launch(self):
-        threader.create_and_launch(self.launch_graphite_udp_listener, name='[Graphite] UDP port:%d listening' % self.graphite_port, essential=True)
-        threader.create_and_launch(self.launch_graphite_tcp_listener, name='[Graphite] TCP port:%d listening' % self.graphite_port, essential=True)
-        threader.create_and_launch(self.graphite_reaper, name='[Graphite] Metric reader', essential=True)
+        threader.create_and_launch(self.launch_graphite_udp_listener, name='UDP port:%d listening' % self.graphite_port, essential=True, part='graphite')
+        threader.create_and_launch(self.launch_graphite_tcp_listener, name='TCP port:%d listening' % self.graphite_port, essential=True, part='graphite')
+        threader.create_and_launch(self.graphite_reaper, name='Metric reader', essential=True, part='graphite')
     
     
     # Thread for listening to the graphite port in UDP (2003)

@@ -203,7 +203,7 @@ class CollectorManager:
                     continue
                 if now >= e['next_check']:
                     logger.debug('COLLECTOR: launching collector %s' % colname)
-                    t = threader.create_and_launch(inst.main, name='collector-%s' % colname)
+                    t = threader.create_and_launch(inst.main, name='collector-%s' % colname, part='collector')
                     cur_launchs[colname] = t
                     e['next_check'] += 10
                     e['last_check'] = now

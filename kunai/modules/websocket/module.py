@@ -48,7 +48,7 @@ class WebSocketModule(Module):
             logger.log('Websocket object defined in the configuration is disabled, skipping websocket launch')
             return
         
-        threader.create_and_launch(self.do_launch, name='[Websocket] Websocket port:%d listening' % self.websocket.get('port', 6769), essential=True)
+        threader.create_and_launch(self.do_launch, name='Websocket port:%d listening' % self.websocket.get('port', 6769), essential=True, part='websocket')
     
     
     def do_launch(self):
