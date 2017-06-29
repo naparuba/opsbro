@@ -3,6 +3,7 @@ import sys
 import time
 import datetime
 import logging
+import json
 from kunai.misc.colorama import init as init_colorama
 
 
@@ -42,6 +43,9 @@ def get_unicode_string(s):
     if isinstance(s, str):
         return unicode(s, 'utf8', errors='ignore')
     return str(s)
+
+
+loggers = {}
 
 
 class Logger(object):
@@ -179,6 +183,14 @@ class Logger(object):
     
     def do_null(self, *args, **kwargs):
         pass
+    
+    
+    def export_http(self):
+        from kunai.httpdaemon import http_export, response
+        @http_export('/log/parts/')
+        def list_parts():
+            response.content_type = 'application/json'
+            return json.dumps(loggers.keys())
 
 
 logger = Logger()
@@ -237,9 +249,6 @@ class PartLogger(object):
             logger.log(*args, **kwargs)
             return
         logger.log(*args, **kwargs)
-
-
-loggers = {}
 
 
 # Create logger for a specific part if not already exists

@@ -198,6 +198,7 @@ class Cluster(object):
         
         # open the log file
         raw_logger.load(self.log_dir, self.name)
+        raw_logger.export_http()
         
         # Look if our encryption key is valid or not
         if self.encryption_key:

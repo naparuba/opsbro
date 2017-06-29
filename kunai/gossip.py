@@ -656,7 +656,7 @@ class Gossip(object):
                     continue
             # Ok you match dear node ^^
             possible_nodes.append(n)
-            logger.info('VALID node to ping %s' % n['name'])
+            logger.debug('VALID node to ping %s' % n['name'])
         return possible_nodes
     
     

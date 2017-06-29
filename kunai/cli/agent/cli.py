@@ -593,6 +593,18 @@ def do_show_threads():
             print '   Name:%-55s  id:%d   cpu(user):%s%%   cpu(system):%s%%' % (t['name'], t['tid'], upercent, syspercent)
 
 
+def do_list_follow_log():
+    try:
+        parts = get_kunai_json('/log/parts/')
+    except request_errors, exp:
+        logger.error('Cannot join kunai agent: %s' % exp)
+        sys.exit(1)
+    parts.sort()
+    print "Available parts to follow logs:"
+    for p in parts:
+        print "  * %s" % p
+
+
 def do_follow_log(part=''):
     if not part:
         return
@@ -611,7 +623,7 @@ def do_follow_log(part=''):
     
     if not os.path.exists(p):
         os.mkfifo(p)
-
+    
     colors = {'DEBUG': 'magenta', 'INFO': 'blue', 'WARNING': 'yellow', 'ERROR': 'red'}
     try:
         w = 0.001
@@ -765,5 +777,12 @@ exports = {
             {'name': '--part', 'default': '', 'description': 'Follow log part (with debug)'},
         ],
         'description': 'Show info af a daemon'
-    }
+    },
+    
+    do_list_follow_log: {
+        'keywords'   : ['agent', 'list-follow-log'],
+        'args'       : [
+        ],
+        'description': 'List available logs parts to follow'
+    },
 }
