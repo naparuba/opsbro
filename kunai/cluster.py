@@ -29,7 +29,8 @@ except ImportError:
 
 
 
-from kunai.log import logger
+from kunai.log import LoggerFactory
+from kunai.log import logger as raw_logger
 from kunai.util import copy_dir, get_public_address, get_server_const_uuid, guess_server_const_uuid
 from kunai.threadmgr import threader
 from kunai.now import NOW
@@ -57,6 +58,10 @@ from kunai.zonemanager import zonemgr
 from kunai.executer import executer
 from kunai.monitoring import monitoringmgr
 from kunai.defaultpaths import DEFAULT_LIBEXEC_DIR, DEFAULT_LOCK_PATH, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR
+
+# Global logger for this part
+logger = LoggerFactory.create_logger('agent')
+logger_gossip = LoggerFactory.create_logger('gossip')
 
 
 # LIMIT= 4 * math.ceil(math.log10(float(2 + 1)))
@@ -176,7 +181,7 @@ class Cluster(object):
         self.load_cfg_dir(self.local_configuration)
         
         # Configure the logger with its new level if need
-        logger.setLevel(self.log_level)
+        raw_logger.setLevel(self.log_level)
         
         # For the path inside the configuration we must
         # string replace $data$ by the good value if it's set
@@ -192,7 +197,7 @@ class Cluster(object):
             self.is_proxy = False
         
         # open the log file
-        logger.load(self.log_dir, self.name)
+        raw_logger.load(self.log_dir, self.name)
         
         # Look if our encryption key is valid or not
         if self.encryption_key:
@@ -375,6 +380,7 @@ class Cluster(object):
         self.load_packs(self.global_configuration)
         # and their last data
         self.load_collector_retention()
+        collectormgr.export_http()
         
         # Open our TimeSerie manager and open the database in data_dir/ts
         tsmgr.tsb.load(self.data_dir)
@@ -772,18 +778,21 @@ class Cluster(object):
             
             # No data? bail out :)
             if len(data) == 0:
+                logger_gossip.debug("UDP: received void message from ", addr)
                 continue
             
             # Look if we use encryption
             data = encrypter.decrypt(data)
             # Maybe the decryption failed?
             if data == '':
+                logger_gossip.debug("UDP: received message with bad encryption key from ", addr)
                 continue
-            logger.debug("UDP: received message:", data, addr)
+            logger_gossip.debug("UDP: received message:", data, 'from', addr)
             # Ok now we should have a json to parse :)
             try:
                 raw = json.loads(data)
             except ValueError:  # garbage
+                logger_gossip.debug("UDP: received message that is not valid json:", data, 'from',  addr)
                 continue
             
             if isinstance(raw, list):
@@ -830,7 +839,7 @@ class Cluster(object):
         @http_export('/agent/info')
         def get_info():
             response.content_type = 'application/json'
-            r = {'logs'      : logger.get_errors(), 'pid': os.getpid(), 'name': self.name, 'display_name': self.display_name,
+            r = {'logs'      : raw_logger.get_errors(), 'pid': os.getpid(), 'name': self.name, 'display_name': self.display_name,
                  'port'      : self.port, 'addr': self.addr, 'socket': self.socket_path, 'zone': gossiper.zone,
                  'uuid'      : gossiper.uuid,
                  'threads'   : threader.get_info(),

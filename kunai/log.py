@@ -119,8 +119,9 @@ class Logger(object):
     def log(self, *args, **kwargs):
         part = kwargs.get('part', '')
         s_part = '' if not part else '[%s]' % part.upper()
+        
         d_display = self.__get_time_display()
-        s = '%s [%s]%s: %s' % (self.name, d_display, s_part, ' '.join([get_unicode_string(s) for s in args]))
+        s = '%s [%s][%s]%s: %s' % (self.name, kwargs.get('level', 'UNSET  '), d_display, s_part, ' '.join([get_unicode_string(s) for s in args]))
         if 'color' in kwargs:
             cprint(s, color=kwargs['color'])
         else:
@@ -136,33 +137,44 @@ class Logger(object):
         # if no data_dir, we cannot save anything...
         if self.data_dir == '':
             return
-        
+        s = s + '\n'
+        f = None
         if part == '':
             if self.log_file is not None:
-                self.log_file.write(s + '\n')
+                self.log_file.write(s)
         else:
             f = self.logs.get(part, None)
             if f is None:
                 f = open(os.path.join(self.data_dir, '%s.log' % part), 'a')
                 self.logs[part] = f
-            f.write(s + '\n')
+            f.write(s)
             f.flush()
+        
+        listener = kwargs.get('listener', '')
+        if listener and hasattr(os, 'O_NONBLOCK') and f is not None:  # no named pipe on windows
+            try:
+                fd = os.open(listener, os.O_WRONLY | os.O_NONBLOCK)
+                os.write(fd, s)
+                os.close(fd)
+            except Exception, exp:  # maybe the path did just disapear
+                s = "ERROR LISTERNER %s" % exp
+                f.write(s)
     
     
     def do_debug(self, *args, **kwargs):
-        self.log(*args, color='magenta', **kwargs)
+        self.log(*args, level='DEBUG', color='magenta', **kwargs)
     
     
     def do_info(self, *args, **kwargs):
-        self.log(*args, color='blue', **kwargs)
+        self.log(*args, level='INFO', color='blue', **kwargs)
     
     
     def do_warning(self, *args, **kwargs):
-        self.log(*args, color='yellow', stack='WARNING', **kwargs)
+        self.log(*args, level='WARNING', color='yellow', stack='WARNING', **kwargs)
     
     
     def do_error(self, *args, **kwargs):
-        self.log(*args, color='red', stack='ERROR', **kwargs)
+        self.log(*args, level='ERROR', color='red', stack='ERROR', **kwargs)
     
     
     def do_null(self, *args, **kwargs):
@@ -175,30 +187,55 @@ logger = Logger()
 class PartLogger(object):
     def __init__(self, part):
         self.part = part
+        self.listener_path = '/tmp/kunai-follow-%s' % part
     
     
     def debug(self, *args, **kwargs):
         kwargs['part'] = kwargs.get('part', self.part)
+        if os.path.exists(self.listener_path):
+            kwargs['listener'] = self.listener_path
+            kwargs['level'] = 'DEBUG  '
+            logger.log(*args, color='magenta', **kwargs)
+            return
         logger.debug(*args, **kwargs)
     
     
     def info(self, *args, **kwargs):
         kwargs['part'] = kwargs.get('part', self.part)
+        if os.path.exists(self.listener_path):
+            kwargs['listener'] = self.listener_path
+            kwargs['level'] = 'INFO   '
+            logger.log(*args, color='blue', **kwargs)
+            return
         logger.info(*args, **kwargs)
     
     
     def warning(self, *args, **kwargs):
         kwargs['part'] = kwargs.get('part', self.part)
+        if os.path.exists(self.listener_path):
+            kwargs['listener'] = self.listener_path
+            kwargs['level'] = 'WARNING'
+            logger.log(*args, color='yellow', **kwargs)
+            return
         logger.warning(*args, **kwargs)
     
     
     def error(self, *args, **kwargs):
         kwargs['part'] = kwargs.get('part', self.part)
+        if os.path.exists(self.listener_path):
+            kwargs['listener'] = self.listener_path
+            kwargs['level'] = 'ERROR  '
+            logger.log(*args, color='red', **kwargs)
+            return
         logger.error(*args, **kwargs)
     
     
     def log(self, *args, **kwargs):
         kwargs['part'] = kwargs.get('part', self.part)
+        if os.path.exists(self.listener_path):
+            kwargs['listener'] = self.listener_path
+            logger.log(*args, **kwargs)
+            return
         logger.log(*args, **kwargs)
 
 

@@ -21,7 +21,7 @@ from kunai.stop import stopper
 REPLICATS = 1
 
 # Global logger for this part
-logger = LoggerFactory.create_logger('kv')
+logger = LoggerFactory.create_logger('key-value')
 
 
 # This class manage the ttl entries for each key with a ttl. Each is with a 1hour precision idx key that we saved
@@ -36,7 +36,7 @@ class TTLDatabase(object):
         if not os.path.exists(self.ttldb_dir):
             os.mkdir(self.ttldb_dir)
         # Launch a thread that will look once a minute the old entries
-        threader.create_and_launch(self.ttl_cleaning_thread, name='Cleaning TTL expired key/values', essential=True, part='key-values')
+        threader.create_and_launch(self.ttl_cleaning_thread, name='Cleaning TTL expired key/values', essential=True, part='key-value')
     
     
     # Load the hour ttl/H base where we will save all master
@@ -294,8 +294,8 @@ class KVBackend:
         return r
     
     
-    def stack_put_key(self, k, v, ttl=0):
-        self.put_key_buffer.append((k, v, ttl))
+    def stack_put_key(self, k, v, ttl=0, force=False):
+        self.put_key_buffer.append((k, v, ttl, force))
     
     
     # put from udp should be clean quick from the thread so it can listen to udp again and
@@ -307,8 +307,8 @@ class KVBackend:
             _t = time.time()
             if len(put_key_buffer) != 0:
                 logger.debug("PUT KEY BUFFER LEN", len(put_key_buffer))
-            for (k, v, ttl) in put_key_buffer:
-                kvmgr.put_key(k, v, ttl=ttl, allow_udp=True)
+            for (k, v, ttl, force) in put_key_buffer:
+                kvmgr.put_key(k, v, ttl=ttl, allow_udp=True, force=force)
             if len(put_key_buffer) != 0:
                 logger.debug("PUT KEY BUFFER DONE IN", time.time() - _t)
             

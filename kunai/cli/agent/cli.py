@@ -593,6 +593,61 @@ def do_show_threads():
             print '   Name:%-55s  id:%d   cpu(user):%s%%   cpu(system):%s%%' % (t['name'], t['tid'], upercent, syspercent)
 
 
+def do_follow_log(part=''):
+    if not part:
+        return
+    try:
+        import fcntl
+    except ImportError:
+        print "Error: this action is not availabe on your OS."
+        return
+    
+    print 'Try to follow log part %s' % part
+    p = '/tmp/kunai-follow-%s' % part
+    
+    # Clean fifo to be sure to clean previous runs
+    if os.path.exists(p):
+        os.unlink(p)
+    
+    if not os.path.exists(p):
+        os.mkfifo(p)
+
+    colors = {'DEBUG': 'magenta', 'INFO': 'blue', 'WARNING': 'yellow', 'ERROR': 'red'}
+    try:
+        w = 0.001
+        while True:
+            with open(p, 'rb', 0) as fifo:
+                fd = fifo.fileno()
+                flag = fcntl.fcntl(fd, fcntl.F_GETFD)
+                fcntl.fcntl(fd, fcntl.F_SETFL, flag | os.O_NONBLOCK)
+                while True:
+                    try:
+                        data = fifo.read()
+                    except IOError:
+                        w *= 2
+                        w = min(w, 0.1)
+                        time.sleep(w)
+                        continue
+                    if len(data) == 0:
+                        break
+                    w = 0.001
+                    for line in data.splitlines():
+                        already_print = False
+                        for (k, color) in colors.iteritems():
+                            if k in line:
+                                cprint(line, color=color)
+                                already_print = True
+                                break
+                        if not already_print:
+                            print line
+    finally:
+        try:
+            print "\nDisabling log dumping for the part %s" % part
+            os.unlink(p)
+        except:
+            pass
+
+
 exports = {
     do_members        : {
         'keywords'   : ['members'],
@@ -704,4 +759,11 @@ exports = {
         'description': 'List all internal threads of the agent.'
     },
     
+    do_follow_log     : {
+        'keywords'   : ['agent', 'follow-log'],
+        'args'       : [
+            {'name': '--part', 'default': '', 'description': 'Follow log part (with debug)'},
+        ],
+        'description': 'Show info af a daemon'
+    }
 }

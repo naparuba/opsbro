@@ -15,6 +15,7 @@ from kunai.collector import Collector
 from jsonmgr import jsoner
 from kunai.now import NOW
 from kunai.ts import tsmgr
+from kunai.gossip import gossiper
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('collector')
@@ -47,7 +48,6 @@ class CollectorManager:
         self.results_lock = threading.RLock()
         self.results = {}
         self.ts = None
-        self.export_http()
     
     
     # Get the ts from the cluster
@@ -181,12 +181,11 @@ class CollectorManager:
         col['metrics'] = metrics
         col['active'] = True
         
-        # TODO: get back TS data?
         timestamp = NOW.now
         for (mname, value) in metrics:
-            key = '%s.%s.%s' % (tsmgr.get_name(), cname, mname)
+            key = '%s.%s.%s' % (gossiper.name, cname, mname)
             if hasattr(tsmgr, 'tsb'):
-                tsmgr.tsb.add_value(timestamp, key, value)
+                tsmgr.tsb.add_value(timestamp, key, value, local=True)
     
     
     # Main thread for launching collectors

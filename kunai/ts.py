@@ -24,14 +24,14 @@ from kunai.httpdaemon import http_export, response
 SERIALIZER = cPickle
 
 # Global logger for this part
-logger = LoggerFactory.create_logger('timeseries')
+logger = LoggerFactory.create_logger('time-series')
 
 
 class TSBackend(object):
     def __init__(self):
         self.data = {}
         self.data_lock = threading.RLock()
-        self.max_data_age = 5
+        self.max_data_age = 5 * 60  # number of seconds before an entry is declared too old and is forced archived
     
     
     # When we load, really open our database
@@ -44,13 +44,13 @@ class TSBackend(object):
         self.launch_reaper_thread()
     
     
-    def push_key(self, k, v, ttl=0):
+    def push_key(self, k, v, ttl=0, local=False):
         T0 = time.time()
         STATS.incr('ts.graphite.push-key', 1)
         v64 = base64.b64encode(v)
         logger.debug("PUSH KEY", k, "and value", len(v64))
-        # TODO: set allow_udp=True or not?
-        kvmgr.stack_put_key(k, v64, ttl=ttl)
+        # If we manage a local data (from collectors), manage directly
+        kvmgr.stack_put_key(k, v64, ttl=ttl, force=local)
         STATS.timer('ts.graphite.push-key', (time.time() - T0) * 1000)
         return
     
@@ -82,7 +82,7 @@ class TSBackend(object):
     
     
     # We consume data and create a new data entry if need
-    def add_value(self, t, key, v):
+    def add_value(self, t, key, v, local=False):
         # be sure to work with int time
         t = int(t)
         
@@ -110,7 +110,7 @@ class TSBackend(object):
         if t_minu != e['cur_min']:
             # we don't save the first def_e
             if e['cur_min'] != 0:
-                self.archive_minute(e, key)
+                self.archive_minute(e, key, local=local)
             now = NOW.now  # int(time.time())
             e = {'cur_min': t_minu, 'sum': 0, 'min': None, 'max': None, 'values': [None] * 60, 'nb': 0, 'ctime': now}
             self.data['min::%s' % key] = e
@@ -138,7 +138,7 @@ class TSBackend(object):
     # Main function for writing in the DB the minute that just
     # finished, update the hour/day entry too, and if need save
     # them too
-    def archive_minute(self, e, ID):
+    def archive_minute(self, e, ID, local):
         STATS.incr('ts-archive-minute', 1)
         T0 = time.time()
         
@@ -159,7 +159,7 @@ class TSBackend(object):
         STATS.incr('serializer', time.time() - _t)
         # We keep minutes for 1 day
         _t = time.time()
-        self.push_key(key, ser, ttl=86400)
+        self.push_key(key, ser, ttl=86400, local=local)
         STATS.incr('put-key', time.time() - _t)
         
         # Also insert the key in a time switching database
@@ -193,7 +193,7 @@ class TSBackend(object):
                 
                 # Keep hour thing for 1 month
                 _t = time.time()
-                self.push_key(key, ser, ttl=86400 * 31)
+                self.push_key(key, ser, ttl=86400 * 31, local=local)
                 STATS.incr('put-hour', time.time() - _t)
             
             # Now new one with the good hour of t :)
@@ -238,7 +238,7 @@ class TSBackend(object):
             
             _t = time.time()
             # And keep day object for 1 year
-            self.push_key(hkey, ser, ttl=86400 * 366)
+            self.push_key(hkey, ser, ttl=86400 * 366, local=local)
             STATS.incr('put-day', time.time() - _t)
             
             # Now new one :)
@@ -268,15 +268,13 @@ class TSBackend(object):
     # The reaper thread look at old minute objects that are not updated since long, and
     # force to archive them
     def launch_reaper_thread(self):
-        threader.create_and_launch(self.do_reaper_thread, name='Metric reaper', essential=True, part='time series')
+        threader.create_and_launch(self.do_reaper_thread, name='Metric reaper', essential=True, part='time-series')
     
     
     def do_reaper_thread(self):
-        while True:
-            now = int(time.time())
-            m = divmod(now, 60)[0] * 60  # current minute
-            
-            all_names = []
+        while not stopper.interrupted:
+            now = NOW.now
+
             with self.data_lock:
                 all_names = self.data.keys()
             logger.debug("DOING reaper thread on %d elements" % len(all_names))
@@ -288,7 +286,6 @@ class TSBackend(object):
                     if e is None:
                         continue
                     ctime = e['ctime']
-                    logger.debug("REAPER old data for ", name)
                     # if the creation time of this structure is too old and
                     # really for data, force to save the entry in KV entry
                     if ctime < now - self.max_data_age and e['nb'] > 0:
@@ -296,19 +293,13 @@ class TSBackend(object):
                         logger.debug("REAPER TOO OLD DATA FOR", name)
                         # get the raw metric name
                         _id = name[5:]
-                        self.archive_minute(e, _id)
-                        # the element was too old, so we can assume it won't be upadte again. Delete it's entry
+                        self.archive_minute(e, _id, local=True)
+                        # the element was too old, so we can assume it won't be update again. Delete it's entry
                         try:
                             del self.data[name]
                         except:
                             pass
-                        '''
-                        # and set a new minute, the next one
-                        n_minute = e['cur_min'] + 60
-                        e = {'cur_min':n_minute, 'sum':0, 'min':None, 'max':None,
-                             'values':[None for _ in xrange(60)], 'nb':0, 'ctime':now}
-                        self.data[name] = e
-                        '''
+
             time.sleep(10)
     
     
