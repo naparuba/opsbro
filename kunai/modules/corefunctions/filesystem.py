@@ -70,3 +70,54 @@ def grep_file(string, path, regexp=False):
                 return True
     logger.debug('[evaluater::grep_file] GREP FILE FAIL: no such line %s %s' % (p, s))
     return False
+
+
+
+@export_evaluater_function
+def path_dirname(path):
+    """**path_dirname(path)** -> Return the parent directory name for given path.
+
+ * path: (string) path of the file to look inside.
+
+<code>
+    Example:
+        path_dirname('/etc/apache2/httpd.conf')
+    Returns:
+        '/etc/apache2'
+</code>
+    """
+    return os.path.dirname(path)
+
+
+@export_evaluater_function
+def is_dir(path):
+    """**is_dir(path)** -> Return True if the path is a directory, False overwise
+
+ * path: (string) path of the path to check.
+
+<code>
+    Example:
+        is_dir('/etc/apache2/')
+    Returns:
+        True
+</code>
+    """
+    return os.path.isdir(path)
+
+
+
+@export_evaluater_function
+def is_link(path):
+    """**is_link(path)** -> Return True if the path is a symbolic link, False overwise
+
+ * path: (string) path of the path to check.
+
+<code>
+    Example:
+        is_link('/etc/apache2/http.conf')
+    Returns:
+        False
+</code>
+    """
+    return os.path.islink(path)
+

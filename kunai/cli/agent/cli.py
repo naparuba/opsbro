@@ -12,7 +12,6 @@ import base64
 import uuid
 import time
 import json
-import socket
 import os
 import pprint
 
