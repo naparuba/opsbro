@@ -12,11 +12,10 @@ try:
 except ImportError:
     pwd = None
 
-
 if os.name == 'nt':
     from kunai.misc.wmi import wmiaccess
 
-    
+
 class System(Collector):
     def launch(self):
         logger.debug('getSystem: start')
@@ -24,7 +23,7 @@ class System(Collector):
         
         res['hostname'] = platform.node()
         res['fqdn'] = socket.getfqdn()
-
+        
         res['os'] = {}
         res['os']['name'] = platform.system().lower()
         res['os']['platform'] = sys.platform
@@ -33,13 +32,33 @@ class System(Collector):
         res['cpucount'] = multiprocessing.cpu_count()
         
         # Linux, directly ask python
-        if os.name == 'linux2':
-            res['linux'] = {'distname': '', 'version': '', 'id': ''}
+        if res['os']['name'] == 'linux':
+            res['linux'] = {'distribution': '', 'version': '', 'id': '', 'major_version': None, 'minor_version': None}
             (distname, version, _id) = platform.linux_distribution()
-            res['linux']['distname'] = distname
-            res['linux']['version'] = version
-            res['linux']['id'] = _id
-
+            res['linux']['distribution'] = distname.lower()
+            res['linux']['version'] = version.lower()
+            res['linux']['id'] = _id.lower()
+            # Maybe version is directly an int, get it
+            _version = res['linux']['version']
+            _major = None
+            _minor = None
+            # something like 7.2
+            if '.' in _version:
+                elts = _version.split('.')  # no limit, if 8.0.1, will give 8.0
+                try:
+                    _major = int(elts[0])
+                    _minor = int(elts[1])
+                except ValueError:
+                    pass
+            else:
+                try:
+                    _major = int(_version)
+                    _minor = 0
+                except ValueError:
+                    pass
+            res['linux']['major_version'] = _major
+            res['linux']['minor_version'] = _minor
+        
         # Windows, get data from Win32_OperatingSystem
         if os.name == 'nt':
             win = {}
@@ -51,15 +70,14 @@ class System(Collector):
                      'SerialNumber', 'OSArchitecture', 'MUILanguages', 'CSDVersion']
             for prop in props:
                 win[prop.lower()] = getattr(_os, prop)
-                
+            
             # Also get server roles
             win['features'] = []
             _features = wmiaccess.get_table_where('Win32_ServerFeature')
             for f in _features:
                 win['features'].append(f.Name)
             win['features'].sort()
-
-
+        
         if hasattr(os, 'getlogin'):
             try:
                 res['user'] = os.getlogin()
@@ -68,7 +86,7 @@ class System(Collector):
                     res['user'] = pwd.getpwuid(os.geteuid()).pw_name
             res['uid'] = os.getuid()
             res['gid'] = os.getgid()
-
+        
         res['publicip'] = ''
         try:
             res['publicip'] = socket.gethostbyname(socket.gethostname())
