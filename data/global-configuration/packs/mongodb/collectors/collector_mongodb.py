@@ -1,28 +1,29 @@
 import traceback
 import urlparse
 import datetime
-from kunai.log import logger
+
 from kunai.collector import Collector
 from kunai.util import to_best_int_float
 
 
 class Mongodb(Collector):
     def launch(self):
+        logger = self.logger
         logger.debug('getMongoDBStatus: start')
-
+        
         if 'MongoDBServer' not in self.config or self.config['MongoDBServer'] == '':
             logger.debug('getMongoDBStatus: config not set')
             # return False
-
+        
         logger.debug('getMongoDBStatus: config set')
-
+        
         try:
             import pymongo
             from pymongo import Connection
         except ImportError:
             logger.warning('Unable to import pymongo library')
             return False
-
+        
         try:
             parsed = urlparse.urlparse(self.config.get('mongodb_server', 'mongodb://localhost'))
             mongoURI = ''
@@ -37,7 +38,7 @@ class Mongodb(Collector):
                         mongoURI = mongoURI + parsed[2]
             else:
                 mongoURI = self.config.get('mongodb_server', 'mongodb://localhost')
-
+            
             logger.debug('-- mongoURI: %s', mongoURI)
             conn = Connection(mongoURI, slave_okay=True)
             logger.debug('Connected to MongoDB')
@@ -48,7 +49,7 @@ class Mongodb(Collector):
             print type(exp)
             logger.error('Unable to connect to MongoDB server %s - Exception = %s', mongoURI, traceback.format_exc())
             return False
-
+        
         # Older versions of pymongo did not support the command()
         # method below.
         try:
@@ -73,82 +74,82 @@ class Mongodb(Collector):
             # Global locks
             try:
                 logger.debug('getMongoDBStatus: globalLock')
-
+                
                 status['globalLock'] = {}
                 status['globalLock']['ratio'] = statusOutput['globalLock']['ratio']
-
+                
                 status['globalLock']['currentQueue'] = {}
                 status['globalLock']['currentQueue']['total'] = statusOutput['globalLock']['currentQueue']['total']
                 status['globalLock']['currentQueue']['readers'] = statusOutput['globalLock']['currentQueue']['readers']
                 status['globalLock']['currentQueue']['writers'] = statusOutput['globalLock']['currentQueue']['writers']
-
+            
             except KeyError, ex:
                 logger.debug('getMongoDBStatus: globalLock KeyError exception = %s' % ex)
                 pass
-
+            
             # Memory
             try:
                 logger.debug('getMongoDBStatus: memory')
-
+                
                 status['mem'] = {}
                 status['mem']['resident'] = statusOutput['mem']['resident']
                 status['mem']['virtual'] = statusOutput['mem']['virtual']
                 status['mem']['mapped'] = statusOutput['mem']['mapped']
-
+            
             except KeyError, ex:
                 logger.debug('getMongoDBStatus: memory KeyError exception = %s', ex)
                 pass
-
+            
             # Connections
             try:
                 logger.debug('getMongoDBStatus: connections')
-
+                
                 status['connections'] = {}
                 status['connections']['current'] = statusOutput['connections']['current']
                 status['connections']['available'] = statusOutput['connections']['available']
-
+            
             except KeyError, ex:
                 logger.debug('getMongoDBStatus: connections KeyError exception = %s', ex)
                 pass
-
+            
             # Extra info (Linux only)
             try:
                 logger.debug('getMongoDBStatus: extra info')
-
+                
                 status['extraInfo'] = {}
                 status['extraInfo']['heapUsage'] = statusOutput['extra_info']['heap_usage_bytes']
                 status['extraInfo']['pageFaults'] = statusOutput['extra_info']['page_faults']
-
+            
             except KeyError, ex:
                 logger.debug('getMongoDBStatus: extra info KeyError exception = %s', ex)
                 pass
-
+            
             # Background flushing
             try:
                 logger.debug('getMongoDBStatus: backgroundFlushing')
-
+                
                 status['backgroundFlushing'] = {}
                 delta = datetime.datetime.utcnow() - statusOutput['backgroundFlushing']['last_finished']
                 status['backgroundFlushing']['secondsSinceLastFlush'] = delta.seconds
                 status['backgroundFlushing']['lastFlushLength'] = statusOutput['backgroundFlushing']['last_ms']
                 status['backgroundFlushing']['flushLengthAvrg'] = statusOutput['backgroundFlushing']['average_ms']
-
+            
             except KeyError, ex:
                 logger.debug('getMongoDBStatus: backgroundFlushing KeyError exception = %s', ex)
                 pass
-
+            
             # Per second metric calculations (opcounts and asserts)
             try:
                 if self.mongoDBStore == None:
                     logger.debug('getMongoDBStatus: per second metrics no cached data, so storing for first time')
                     self.setMongoDBStore(statusOutput)
-
+                
                 else:
                     logger.debug('getMongoDBStatus: per second metrics cached data exists')
-
+                    
                     accessesPS = float(statusOutput['indexCounters']['btree']['accesses'] -
                                        self.mongoDBStore['indexCounters']['btree']['accessesPS']) / 60
-
+                    
                     if accessesPS >= 0:
                         status['indexCounters'] = {}
                         status['indexCounters']['btree'] = {}
@@ -162,7 +163,7 @@ class Mongodb(Collector):
                         status['indexCounters']['btree']['missRatioPS'] = float(
                             statusOutput['indexCounters']['btree']['missRatio'] -
                             self.mongoDBStore['indexCounters']['btree']['missRatioPS']) / 60
-
+                        
                         status['opcounters'] = {}
                         status['opcounters']['insertPS'] = float(
                             statusOutput['opcounters']['insert'] - self.mongoDBStore['opcounters']['insertPS']) / 60
@@ -176,7 +177,7 @@ class Mongodb(Collector):
                             statusOutput['opcounters']['getmore'] - self.mongoDBStore['opcounters']['getmorePS']) / 60
                         status['opcounters']['commandPS'] = float(
                             statusOutput['opcounters']['command'] - self.mongoDBStore['opcounters']['commandPS']) / 60
-
+                        
                         status['asserts'] = {}
                         status['asserts']['regularPS'] = float(
                             statusOutput['asserts']['regular'] - self.mongoDBStore['asserts']['regularPS']) / 60
@@ -188,60 +189,60 @@ class Mongodb(Collector):
                             statusOutput['asserts']['user'] - self.mongoDBStore['asserts']['userPS']) / 60
                         status['asserts']['rolloversPS'] = float(
                             statusOutput['asserts']['rollovers'] - self.mongoDBStore['asserts']['rolloversPS']) / 60
-
+                        
                         self.setMongoDBStore(statusOutput)
                     else:
                         logger.debug(
                             'getMongoDBStatus: per second metrics negative value calculated, mongod likely restarted, so clearing cache')
                         self.setMongoDBStore(statusOutput)
-
+            
             except KeyError, ex:
                 logger.debug('getMongoDBStatus: per second metrics KeyError exception = %s' % ex)
                 pass
-
+            
             # Cursors
             try:
                 logger.debug('getMongoDBStatus: cursors')
-
+                
                 status['cursors'] = {}
                 status['cursors']['totalOpen'] = statusOutput['cursors']['totalOpen']
-
+            
             except KeyError, ex:
                 logger.debug('getMongoDBStatus: cursors KeyError exception = %s' % ex)
                 pass
-
+            
             # Replica set status
             if 'MongoDBReplSet' in self.config and self.config['MongoDBReplSet'] == 'yes':
                 logger.debug('getMongoDBStatus: get replset status too')
-
+                
                 # isMaster (to get state
                 isMaster = db.command('isMaster')
-
+                
                 logger.debug('getMongoDBStatus: executed isMaster')
-
+                
                 status['replSet'] = {}
                 status['replSet']['setName'] = isMaster['setName']
                 status['replSet']['isMaster'] = isMaster['ismaster']
                 status['replSet']['isSecondary'] = isMaster['secondary']
-
+                
                 if 'arbiterOnly' in isMaster:
                     status['replSet']['isArbiter'] = isMaster['arbiterOnly']
-
+                
                 logger.debug('getMongoDBStatus: finished isMaster')
-
+                
                 # rs.status()
                 db = conn['admin']
                 replSet = db.command('replSetGetStatus')
-
+                
                 logger.debug('getMongoDBStatus: executed replSetGetStatus')
-
+                
                 status['replSet']['myState'] = replSet['myState']
                 status['replSet']['members'] = {}
-
+                
                 for member in replSet['members']:
-
+                    
                     logger.debug('getMongoDBStatus: replSetGetStatus looping %s', member['name'])
-
+                    
                     status['replSet']['members'][str(member['_id'])] = {}
                     status['replSet']['members'][str(member['_id'])]['name'] = member['name']
                     status['replSet']['members'][str(member['_id'])]['state'] = member['state']
@@ -251,22 +252,22 @@ class Mongodb(Collector):
                     if 'optimeDate' in member:  # Only available as of 1.7.2
                         deltaOptime = datetime.datetime.utcnow() - member['optimeDate']
                         status['replSet']['members'][str(member['_id'])]['optimeDate'] = (deltaOptime.microseconds + (
-                        deltaOptime.seconds + deltaOptime.days * 24 * 3600) * 10 ** 6) / 10 ** 6
-
+                            deltaOptime.seconds + deltaOptime.days * 24 * 3600) * 10 ** 6) / 10 ** 6
+                    
                     if 'self' in member:
                         status['replSet']['myId'] = member['_id']
-
+                    
                     # Have to do it manually because total_seconds() is only available as of Python 2.7
                     else:
                         if 'lastHeartbeat' in member:
                             deltaHeartbeat = datetime.datetime.utcnow() - member['lastHeartbeat']
                             status['replSet']['members'][str(member['_id'])]['lastHeartbeat'] = (
-                                                                                                deltaHeartbeat.microseconds + (
-                                                                                                deltaHeartbeat.seconds + deltaHeartbeat.days * 24 * 3600) * 10 ** 6) / 10 ** 6
-
+                                                                                                    deltaHeartbeat.microseconds + (
+                                                                                                        deltaHeartbeat.seconds + deltaHeartbeat.days * 24 * 3600) * 10 ** 6) / 10 ** 6
+                    
                     if 'errmsg' in member:
                         status['replSet']['members'][str(member['_id'])]['error'] = member['errmsg']
-
+            
             # db.stats()
             if True:  # or ('MongoDBDBStats' in self.config and self.config['MongoDBDBStats'] == 'yes':
                 logger.debug('getMongoDBStatus: db.stats() too')
@@ -278,7 +279,7 @@ class Mongodb(Collector):
                         logger.debug('getMongoDBStatus: executing db.stats() for %s', database)
                         status['dbStats'][database] = conn[database].command('dbstats')
                         status['dbStats'][database]['namespaces'] = conn[database]['system']['namespaces'].count()
-
+                        
                         # Ensure all strings to prevent JSON parse errors. We typecast on the server
                         for key in status['dbStats'][database].keys():
                             status['dbStats'][database][key] = str(status['dbStats'][database][key])
@@ -286,26 +287,26 @@ class Mongodb(Collector):
                             v = to_best_int_float(status['dbStats'][database][key])
                             if v is not None:
                                 status['dbStats'][database][key] = v
-
+        
         except Exception, ex:
             logger.error('Unable to get MongoDB status - Exception = %s', traceback.format_exc())
             return False
-
+        
         logger.debug('getMongoDBStatus: completed, returning')
-
+        
         return status
-
-
+    
+    
     def setMongoDBStore(self, statusOutput):
         self.mongoDBStore = {}
-
+        
         self.mongoDBStore['indexCounters'] = {}
         self.mongoDBStore['indexCounters']['btree'] = {}
         self.mongoDBStore['indexCounters']['btree']['accessesPS'] = statusOutput['indexCounters']['btree']['accesses']
         self.mongoDBStore['indexCounters']['btree']['hitsPS'] = statusOutput['indexCounters']['btree']['hits']
         self.mongoDBStore['indexCounters']['btree']['missesPS'] = statusOutput['indexCounters']['btree']['misses']
         self.mongoDBStore['indexCounters']['btree']['missRatioPS'] = statusOutput['indexCounters']['btree']['missRatio']
-
+        
         self.mongoDBStore['opcounters'] = {}
         self.mongoDBStore['opcounters']['insertPS'] = statusOutput['opcounters']['insert']
         self.mongoDBStore['opcounters']['queryPS'] = statusOutput['opcounters']['query']
@@ -313,7 +314,7 @@ class Mongodb(Collector):
         self.mongoDBStore['opcounters']['deletePS'] = statusOutput['opcounters']['delete']
         self.mongoDBStore['opcounters']['getmorePS'] = statusOutput['opcounters']['getmore']
         self.mongoDBStore['opcounters']['commandPS'] = statusOutput['opcounters']['command']
-
+        
         self.mongoDBStore['asserts'] = {}
         self.mongoDBStore['asserts']['regularPS'] = statusOutput['asserts']['regular']
         self.mongoDBStore['asserts']['warningPS'] = statusOutput['asserts']['warning']

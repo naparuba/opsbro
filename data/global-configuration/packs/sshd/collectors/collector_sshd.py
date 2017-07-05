@@ -1,12 +1,11 @@
-import sys
 import os
-from kunai.log import logger
+
 from kunai.collector import Collector
 
 
 class Sshd(Collector):
     def launch(self):
-        logger.debug('get_sshd: starting')
+        self.logger.debug('get_sshd: starting')
         res = {}
         if os.path.exists('/etc/ssh/ssh_host_rsa_key.pub'):
             f = open('/etc/ssh/ssh_host_rsa_key.pub', 'r')

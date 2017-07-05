@@ -49,7 +49,8 @@ class DetectorMgr(object):
                         tags = gen['tags']
                         try:
                             # Try to evaluate the tag if need (can be an expression {} )
-                            tags = [evaluater.compile(t) for t in tags]
+                            # NOTE: to_string=True to not have a json object with 'value' but directly the string value
+                            tags = [evaluater.compile(t, to_string=True) for t in tags]
                         except Exception, exp:
                             logger.error('Cannot execute detector tag %s: %s' % (gname, exp))
                             tags = []

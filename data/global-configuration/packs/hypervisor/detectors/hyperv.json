@@ -1,7 +1,7 @@
 {
     "detector": {
         "tags": ["hyperv"],
-        "apply_if": "'{{collector.hypervisor.hypervisor}}' == 'Microsoft Hv'",
+        "apply_if": "{{collector.hypervisor.hypervisor}} == 'Microsoft Hv'",
         "interval": "10s"
     }
 }

@@ -1,20 +1,17 @@
 import os
-import sys
-import platform
-import multiprocessing
-import socket
-from kunai.log import logger
+
 from kunai.collector import Collector
-from kunai.util import get_public_address
 
 
 class Blockdevice(Collector):
     def launch(self):
-        logger.debug('getBlockdevice: start')
+        self.logger.debug('getBlockdevice: start')
         res = {}
         if not os.path.exists('/sys/block/'):
             return res
         names = os.listdir('/sys/block/')
+        # We will need to remove 0 size block device
+        to_del = []
         for blkname in names:
             # Skip useless ones
             if blkname.startswith('dm-') or blkname.startswith('ram') or blkname.startswith('loop'):
@@ -30,6 +27,14 @@ class Blockdevice(Collector):
                     v = f.read().strip()
                     f.close()
                     res[blkname][k] = v
-
-        logger.debug('getblockdevice: completed, returning')
+                    if k == 'size':
+                        v = int(v)
+                        # Don't care about purely virtual block device
+                        if v == 0:
+                            to_del.append(blkname)
+        # Clean void block device
+        for blkname in to_del:
+            del res[blkname]
+        
+        self.logger.debug('getblockdevice: completed, returning')
         return res

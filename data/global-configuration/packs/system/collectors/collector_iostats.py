@@ -2,7 +2,7 @@ import sys
 import os
 import re
 import traceback
-from kunai.log import logger
+
 from kunai.collector import Collector
 
 if os.name == 'nt':
@@ -11,6 +11,7 @@ if os.name == 'nt':
 
 class IoStats(Collector):
     def launch(self):
+        logger = self.logger
         # logger.debug('getIOStats: start')
         
         iostats = {}

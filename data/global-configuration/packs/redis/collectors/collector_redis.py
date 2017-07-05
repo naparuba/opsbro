@@ -1,12 +1,14 @@
 import time
 import socket
-from kunai.log import logger
+
 from kunai.collector import Collector
 
 
 # Parse the result of Redis's INFO command into a Python dict
 def parse_info(response):
     info = {}
+    
+    
     def get_value(value):
         if ',' not in value or '=' not in value:
             try:
@@ -22,6 +24,7 @@ def parse_info(response):
                 k, v = item.rsplit('=', 1)
                 sub_dict[k] = get_value(v)
             return sub_dict
+    
     
     for line in response.splitlines():
         if line and not line.startswith('#'):
@@ -49,6 +52,7 @@ class Redis(Collector):
     def launch(self):
         addr = '127.0.0.1'
         port = 6379
+        logger = self.logger
         
         start = time.time()
         try:

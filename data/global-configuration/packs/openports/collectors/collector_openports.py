@@ -1,11 +1,12 @@
 import sys
 import traceback
-from kunai.log import logger
+
 from kunai.collector import Collector
 
 
 class OpenPorts(Collector):
     def launch(self):
+        logger = self.logger
         # logger.debug('get_open_ports: start')
         
         open_port_details = {'tcp': [], 'udp': []}

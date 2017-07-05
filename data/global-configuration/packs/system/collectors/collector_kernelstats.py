@@ -1,7 +1,7 @@
 import sys
 import time
 import os
-from kunai.log import logger
+
 from kunai.collector import Collector
 
 if os.name == 'nt':
@@ -16,6 +16,7 @@ class KernelStats(Collector):
     
     
     def launch(self):
+        logger = self.logger
         now = int(time.time())
         diff = now - self.last_launch
         self.last_launch = now

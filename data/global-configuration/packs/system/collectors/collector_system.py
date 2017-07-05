@@ -3,7 +3,7 @@ import sys
 import platform
 import multiprocessing
 import socket
-from kunai.log import logger
+
 from kunai.collector import Collector
 from kunai.util import get_public_address
 
@@ -18,6 +18,8 @@ if os.name == 'nt':
 
 class System(Collector):
     def launch(self):
+        logger = self.logger
+        
         logger.debug('getSystem: start')
         res = {}
         
@@ -33,13 +35,14 @@ class System(Collector):
         
         # Linux, directly ask python
         if res['os']['name'] == 'linux':
-            res['linux'] = {'distribution': '', 'version': '', 'id': '', 'major_version': None, 'minor_version': None}
             (distname, version, _id) = platform.linux_distribution()
-            res['linux']['distribution'] = distname.lower()
-            res['linux']['version'] = version.lower()
-            res['linux']['id'] = _id.lower()
+            linux = {}
+            res['os']['linux'] = linux
+            linux['distribution'] = distname.lower()
+            linux['version'] = version.lower()
+            linux['id'] = _id.lower()
             # Maybe version is directly an int, get it
-            _version = res['linux']['version']
+            _version = linux['version']
             _major = None
             _minor = None
             # something like 7.2
@@ -56,8 +59,8 @@ class System(Collector):
                     _minor = 0
                 except ValueError:
                     pass
-            res['linux']['major_version'] = _major
-            res['linux']['minor_version'] = _minor
+            linux['major_version'] = _major
+            linux['minor_version'] = _minor
         
         # Windows, get data from Win32_OperatingSystem
         if os.name == 'nt':

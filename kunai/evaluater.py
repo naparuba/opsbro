@@ -66,7 +66,7 @@ class Evaluater(object):
         self.cfg_data = cfg_data
     
     
-    def compile(self, expr, check=None):
+    def compile(self, expr, check=None, to_string=False):
         # first manage {} thing and look at them
         all_parts = self.pat.findall(expr)
         
@@ -89,7 +89,10 @@ class Evaluater(object):
             raise ValueError('Some parts between {} cannot be changed')
         
         for (p, v) in changes:
-            expr = expr.replace('{{%s}}' % p, str(v))
+            f = repr
+            if to_string:
+                f = str
+            expr = expr.replace('{{%s}}' % p, f(v))
         
         return expr
     

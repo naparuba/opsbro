@@ -2,8 +2,8 @@ import sys
 import re
 import traceback
 import os
+
 from kunai.util import lower_dict
-from kunai.log import logger
 from kunai.collector import Collector
 
 if os.name == 'nt':
@@ -12,6 +12,7 @@ if os.name == 'nt':
 
 class Memory(Collector):
     def launch(self):
+        logger = self.logger
         # logger.debug('getMemoryUsage: start')
         if os.name == 'nt':
             data = {}

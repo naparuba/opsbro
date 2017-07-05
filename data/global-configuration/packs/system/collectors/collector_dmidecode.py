@@ -1,13 +1,14 @@
 import os
 import commands
 import re
-from kunai.log import logger
+
 from kunai.collector import Collector
 
 
 # DMI have lot of useful information that detectors can use to know lot about the platform/hardware
 class Dmidecode(Collector):
     def launch(self):
+        logger = self.logger
         logger.debug('getDmidecode: start')
         res = {}
         

@@ -5,10 +5,7 @@ import os
 import ctypes
 from ctypes import c_uint32, c_int, c_size_t, c_void_p, POINTER, CFUNCTYPE
 
-from kunai.log import logger
 from kunai.collector import Collector
-
-
 
 # hypervisor
 HYPERVISOR_INFO_LEAF = 0x40000000
@@ -145,12 +142,12 @@ class CPUID(object):
 
 class Hypervisor(Collector):
     def launch(self):
-        logger.debug('getHypervisor: starting')
+        self.logger.debug('getHypervisor: starting')
         res = {'hypervisor': ''}
         try:
             cpu = CPUID()
         except Exception, exp:
-            logger.warning('Cannot get cpuid/hypervisor information: %s' % exp)
+            self.logger.warning('Cannot get cpuid/hypervisor information: %s' % exp)
             return res
         
         hypervisor = struct.pack('IIII', *cpu(HYPERVISOR_INFO_LEAF)).decode('ascii', 'ignore')

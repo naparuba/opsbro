@@ -1,7 +1,7 @@
 import os
 import re
 import commands
-from kunai.log import logger
+
 from kunai.collector import Collector
 
 
@@ -37,6 +37,7 @@ def extract(input):
 
 class Interfaces(Collector):
     def launch(self):
+        logger = self.logger
         logger.debug('getInterfaces: start')
         
         res = {}
@@ -51,5 +52,5 @@ class Interfaces(Collector):
                     if 'interface' in r:
                         res[r['interface']] = r
                 return res
-
+        
         return res

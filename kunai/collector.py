@@ -2,7 +2,7 @@ import os
 import platform
 import traceback
 import subprocess
-from kunai.log import logger
+from kunai.log import LoggerFactory
 
 pythonVersion = platform.python_version_tuple()
 
@@ -23,6 +23,10 @@ class Collector(object):
     
     
     def __init__(self, config, put_result=None):
+        
+        # Global logger for this part
+        self.logger = LoggerFactory.create_logger('collector.%s' % self.__class__.__name__.lower())
+        
         self.config = config
         self.pythonVersion = pythonVersion
         self.state = 'pending'
@@ -47,14 +51,14 @@ class Collector(object):
     # our run did fail, so we must exit in a clean way and keep a log
     # if we can
     def error(self, txt):
-        logger.debug(txt)
+        self.logger.debug(txt)
         self.log = txt
     
     
     # Execute a shell command and return the result or '' if there is an error
     def execute_shell(self, cmd):
         # Get output from a command
-        logger.debug('execute_shell:: %s' % cmd)
+        self.logger.debug('execute_shell:: %s' % cmd)
         output = ''
         try:
             close_fds = True
@@ -62,17 +66,17 @@ class Collector(object):
             if os.name == 'nt':
                 close_fds = False
             proc = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE, close_fds=close_fds)
-            logger.debug('PROC LAUNCHED', proc)
+            self.logger.debug('PROC LAUNCHED', proc)
             output, err = proc.communicate()
-            logger.debug('OUTPUT, ERR', output, err)
+            self.logger.debug('OUTPUT, ERR', output, err)
             try:
                 proc.kill()
             except Exception, e:
                 pass
             if err:
-                logger.error('Error in sub process', err)
+                self.logger.error('Error in sub process', err)
         except Exception, exp:
-            logger.error('Collector [%s] execute command [%s] error: %s' % (self.__class__.__name__.lower(), cmd, traceback.format_exc()))
+            self.logger.error('Collector [%s] execute command [%s] error: %s' % (self.__class__.__name__.lower(), cmd, traceback.format_exc()))
             self.error(traceback.format_exc())
             return False
         return output
@@ -107,11 +111,11 @@ class Collector(object):
     
     
     def main(self):
-        logger.debug('Launching main for %s' % self.__class__)
+        self.logger.debug('Launching main for %s' % self.__class__)
         try:
             r = self.launch()
         except Exception, exp:
-            logger.error('Collector %s main error: %s' % (self.__class__.__name__.lower(), traceback.format_exc()))
+            self.logger.error('Collector %s main error: %s' % (self.__class__.__name__.lower(), traceback.format_exc()))
             self.error(traceback.format_exc())
             # And a void result
             if self.put_result:

@@ -1,7 +1,7 @@
 {
     "detector": {
         "tags": ["centos"],
-        "apply_if": "grep_file('centos', '/etc/redhat-release')",
+        "apply_if": "{{collector.system.os.linux.distribution}} == 'centos'",
         "interval": "10s"
     }
 }
