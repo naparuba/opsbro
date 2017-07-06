@@ -11,6 +11,7 @@ except ImportError:
 
 from kunai.cluster import Cluster
 from kunai.log import cprint, logger
+from kunai.gossip import gossiper
 
 REDIRECT_TO = getattr(os, "devnull", "/dev/null")
 
@@ -229,7 +230,7 @@ class Launcher(object):
         c.launch_generator_thread()
         c.launch_detector_thread()
         
-        if 'kv' in c.tags:
+        if 'kv' in gossiper.tags:
             c.launch_replication_backlog_thread()
             c.launch_replication_first_sync_thread()
         c.start_ts_listener()

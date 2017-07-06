@@ -103,7 +103,7 @@ class DetectorMgr(object):
                 if res[gname]['matched']:
                     res[gname]['tags'] = gen['tags']
                     for tag in res[gname]['tags']:
-                        if tag not in self.clust.tags:
+                        if tag not in gossiper.tags:
                             res[gname]['new_tags'].append(tag)
                             logger.info("ADDING NEW TAGS: %s" % tag)
             

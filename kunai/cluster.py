@@ -119,7 +119,7 @@ class Cluster(object):
         self.hostname = socket.gethostname()
         if not self.name:
             self.name = '%s' % self.hostname
-        self.tags = [s.strip() for s in tags.split(',') if s.strip()]
+        tags = [s.strip() for s in tags.split(',') if s.strip()]
         
         self.bootstrap = bootstrap
         self.seeds = [s.strip() for s in seeds.split(',')]
@@ -400,13 +400,13 @@ class Cluster(object):
         dockermgr.launch()
         
         # Our main object for gossip managment
-        gossiper.init(nodes, nodes_lock, self.addr, self.port, self.name, self.display_name, self.incarnation, self.uuid, self.tags, self.seeds, self.bootstrap, self.zone, self.is_proxy)
+        gossiper.init(nodes, nodes_lock, self.addr, self.port, self.name, self.display_name, self.incarnation, self.uuid, tags, self.seeds, self.bootstrap, self.zone, self.is_proxy)
         
         # About detecting tags and such things
         detecter.load(self)
         detecter.export_http()
         
-        # Let the modules preapre themselve
+        # Let the modules prepare themselve
         modulemanager.prepare()
         modulemanager.export_http()
         
@@ -442,7 +442,7 @@ class Cluster(object):
         logger.debug('Loading packs directory')
         pack_dir = os.path.join(root_dir, 'packs')
         if not os.path.exists(pack_dir):
-            logger.error('ERROR: the pack directory %s is missing' % pack_dir)
+            logger.debug('ERROR: the pack directory %s is missing' % pack_dir)
             return
         sub_dirs = [os.path.join(pack_dir, dname) for dname in os.listdir(pack_dir) if
                     os.path.isdir(os.path.join(pack_dir, dname))]
@@ -844,7 +844,7 @@ class Cluster(object):
                  'port'      : self.port, 'addr': self.addr, 'socket': self.socket_path, 'zone': gossiper.zone,
                  'uuid'      : gossiper.uuid,
                  'threads'   : threader.get_info(),
-                 'version'   : VERSION, 'tags': self.tags,
+                 'version'   : VERSION, 'tags': gossiper.tags,
                  'docker'    : dockermgr.get_info(),
                  'collectors': collectormgr.get_info(),
                  'kv'        : kvmgr.get_info(),
@@ -1047,7 +1047,7 @@ class Cluster(object):
     # The first sync thread will ask to our replicats for their lately changed value
     # and we will get the key/value from it
     def do_replication_first_sync_thread(self):
-        if 'kv' not in self.tags:
+        if 'kv' not in gossiper.tags:
             logger.log('SYNC no need, I am not a KV node')
             return
         logger.log('SYNC thread launched')
@@ -1086,10 +1086,10 @@ class Cluster(object):
         while not stopper.interrupted:
             logger.debug('Looking for %d generators' % len(self.generators))
             for (gname, gen) in self.generators.iteritems():
-                logger.debug('LOOK AT GENERATOR', gen, 'to be apply on', gen['apply_on'], 'with our tags', self.tags)
+                logger.debug('LOOK AT GENERATOR', gen, 'to be apply on', gen['apply_on'], 'with our tags', gossiper.tags)
                 apply_on = gen['apply_on']
                 # Maybe this generator is not for us...
-                if apply_on != '*' and apply_on not in self.tags:
+                if apply_on != '*' and apply_on not in gossiper.tags:
                     continue
                 logger.debug('Generator %s will runs' % gname)
                 g = Generator(gen)
