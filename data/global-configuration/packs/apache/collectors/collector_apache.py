@@ -35,7 +35,7 @@ class Apache(Collector):
             logger.error('Unable to get Apache status - Exception = %s', traceback.format_exc())
             return False
             
-            logger.debug('getApacheStatus: urlopen success, start parsing')
+        logger.debug('getApacheStatus: urlopen success, start parsing')
         # Split out each line
         lines = response.split('\n')
         

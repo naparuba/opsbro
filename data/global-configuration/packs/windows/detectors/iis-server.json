@@ -1,7 +1,7 @@
 {
     "detector": {
         "tags": ["iis-server"],
-        "apply_if": "'Web Server (IIS)' in {{collector.system.windows.features}}",
+        "apply_if": "get_os() == 'windows' and 'Web Server (IIS)' in {{collector.system.windows.features||[]}}",
 	    "interval": "10s"
     }
 }

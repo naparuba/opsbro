@@ -66,7 +66,7 @@ class ShinkenExporter(object):
     def export_states_into_shinken(self, nuuid):
         p = '/var/lib/shinken/nagios.cmd'
         if not os.path.exists(p):
-            logger.error('Shinken command file is missing, skipping node information export')
+            logger.info('Shinken command file is missing, skipping node information export')
             return
         
         v = kvmgr.get_key('__health/%s' % nuuid)

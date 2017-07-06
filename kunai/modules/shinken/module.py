@@ -36,5 +36,4 @@ class ShinkenModule(Module):
     
     
     def launch(self):
-        logger.error('STARTING SHINKEN MODULE')
         shinkenexporter.launch_thread()

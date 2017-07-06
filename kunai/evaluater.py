@@ -73,17 +73,32 @@ class Evaluater(object):
         changes = []
         
         for p in all_parts:
+            orig_p = p  # save the original expression, with {{}} and default parts
+            default_s = ''
             p = p[2:-2]  # remove {{ and }}
+            # If there is a EXPR||DEFAULT we split in the part we need to grok, and the default
+            if '||' in p:
+                part1, part2 = p.split('||', 1)
+                # get EXPR to get
+                p = part1
+                # and the default value to evaluate if need
+                default_s = part2
             
             if p.startswith('collector.'):
                 s = p[len('collector.'):]
-                v = collectormgr.get_data(s)
+                try:
+                    v = collectormgr.get_data(s)
+                except KeyError:  # ok cannot find it, try to switch to default if there is one
+                    if default_s == '':
+                        v = ''
+                    else:  # ok try to compile it to get a real python object
+                        v = self.compile(default_s, check=check, to_string=to_string)
                 logger.debug('Ask', s, 'got', v)
-                changes.append((p, v))
+                changes.append((orig_p, v))
             elif p.startswith('configuration.'):
                 s = p[len('configuration.'):]
                 v = self._found_params(s, check)
-                changes.append((p, v))
+                changes.append((orig_p, v))
         
         if not len(changes) == len(all_parts):
             raise ValueError('Some parts between {} cannot be changed')
@@ -92,7 +107,7 @@ class Evaluater(object):
             f = repr
             if to_string:
                 f = str
-            expr = expr.replace('{{%s}}' % p, f(v))
+            expr = expr.replace('%s' % p, f(v))
         
         return expr
     
