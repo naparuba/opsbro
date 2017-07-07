@@ -1,19 +1,33 @@
+import os
 import re
+import sys
 
 from kunai.collector import Collector
+
+MySQLdb = None
 
 
 class Mysql(Collector):
     def launch(self):
+        global MySQLdb
+        
         logger = self.logger
         logger.debug('getMySQLStatus: start')
         
-        # Try import MySQLdb - http://sourceforge.net/projects/mysql-python/files/
-        try:
-            import MySQLdb
-        except ImportError, e:
-            logger.warning('Unable to import MySQLdb')
-            return False
+        if MySQLdb is None:
+            # Try import MySQLdb, if installed on the system
+            try:
+                import MySQLdb
+            except ImportError, exp1:
+                try:
+                    mydir = os.path.dirname(__file__)
+                    sys.path.insert(0, mydir)
+                    import pymysql as MySQLdb
+                    sys.path = sys.path[1:]
+                except ImportError, exp2:
+                    sys.path = sys.path[1:]
+                    logger.warning('Unable to import MySQLdb (%s) or embedded pymsql (%s)' % (exp1, exp2))
+                    return False
         
         host = self.config.get('mysql_server', 'localhost')
         user = self.config.get('mysql_user', 'root')
@@ -47,12 +61,10 @@ class Mysql(Collector):
             except MySQLdb.OperationalError, message:
                 logger.error('getMySQLStatus: MySQL query error when getting version: %s', message)
             
-            version = result[0].split(
-                '-')  # Might include a description e.g. 4.1.26-log. See http://dev.mysql.com/doc/refman/4.1/en/information-functions.html#function_version
+            version = result[0].split('-')  # Might include a description e.g. 4.1.26-log. See http://dev.mysql.com/doc/refman/4.1/en/information-functions.html#function_version
             version = version[0].split('.')
             self.mysqlVersion = []
             
-            # Make sure the version is only an int. Case 31647
             for string in version:
                 number = re.match('([0-9]+)', string)
                 number = number.group(0)
@@ -65,7 +77,6 @@ class Mysql(Collector):
             cursor = db.cursor()
             cursor.execute('SHOW STATUS LIKE "Connections"')
             result = cursor.fetchone()
-        
         except MySQLdb.OperationalError, message:
             logger.error('getMySQLStatus: MySQL query error when getting Connections = %s', message)
         
@@ -113,7 +124,7 @@ class Mysql(Collector):
         except MySQLdb.OperationalError, message:
             logger.error('getMySQLStatus: MySQL query error when getting Max_used_connections = %s', message)
         
-        maxUsedConnections = result[1]
+        maxUsedConnections = int(result[1])
         logger.debug('getMySQLStatus: maxUsedConnections = %s', createdTmpDiskTables)
         logger.debug('getMySQLStatus: getting Max_used_connections - done')
         logger.debug('getMySQLStatus: getting Open_files')
@@ -126,7 +137,7 @@ class Mysql(Collector):
         except MySQLdb.OperationalError, message:
             logger.error('getMySQLStatus: MySQL query error when getting Open_files = %s', message)
         
-        openFiles = result[1]
+        openFiles = int(result[1])
         
         logger.debug('getMySQLStatus: openFiles = %s', openFiles)
         logger.debug('getMySQLStatus: getting Open_files - done')
@@ -186,7 +197,7 @@ class Mysql(Collector):
         except MySQLdb.OperationalError, message:
             logger.error('getMySQLStatus: MySQL query error when getting Threads_connected = %s', message)
         
-        threadsConnected = result[1]
+        threadsConnected = int(result[1])
         
         logger.debug('getMySQLStatus: threadsConnected = %s', threadsConnected)
         logger.debug('getMySQLStatus: getting Threads_connected - done')
@@ -215,7 +226,7 @@ class Mysql(Collector):
             
             logger.debug('getMySQLStatus: getting Seconds_Behind_Master - done')
         
-        return {'connections'        : connections, 'createdTmpDiskTables': createdTmpDiskTables,
-                'maxUsedConnections' : maxUsedConnections, 'openFiles': openFiles, 'slowQueries': slowQueries,
-                'tableLocksWaited'   : tableLocksWaited, 'threadsConnected': threadsConnected,
-                'secondsBehindMaster': secondsBehindMaster}
+        return {'connections'          : connections, 'created_tmp_disk_tables': createdTmpDiskTables,
+                'max_used_connections' : maxUsedConnections, 'open_files': openFiles, 'slow_queries': slowQueries,
+                'table_locks_waited'   : tableLocksWaited, 'threads_connected': threadsConnected,
+                'seconds_behind_master': secondsBehindMaster}
