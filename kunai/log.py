@@ -125,7 +125,7 @@ class Logger(object):
         s_part = '' if not part else '[%s]' % part.upper()
         
         d_display = self.__get_time_display()
-        s = '%s [%s][%s]%s: %s' % (self.name, kwargs.get('level', 'UNSET  '), d_display, s_part, ' '.join([get_unicode_string(s) for s in args]))
+        s = '[%s][%s][%s] %s: %s' % (d_display, kwargs.get('level', 'UNSET  '), self.name, s_part, ' '.join([get_unicode_string(s) for s in args]))
         if 'color' in kwargs:
             cprint(s, color=kwargs['color'])
         else:

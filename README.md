@@ -30,11 +30,6 @@ To monitor linux:
 To monitor mongodb server:
   * python-pymongo
 
-To monitor mysql server:
-  * python-mysql
-
-To monitor redis server:
-  * python-redis
 
 
 

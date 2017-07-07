@@ -1,0 +1,381 @@
+################ This document
+This document is only a todo/don't forget document for Jean Gabès, kunai author
+
+You don't need to read it unless you want to give a look at the internal of "think" such a tool, how it's defined
+
+
+
+
+
+
+
+
+################################# CLI SPEC
+
+#### Start (forground)
+kunai agent start
+
+
+#### List commands
+kunai -l
+
+### Show agent state
+kunai info
+# avec logs:
+kunai info --show-logs
+
+#### Detect other nodes on the network
+kunai agent detect
+
+
+#### Install/desinstall windows service
+kunai agent service-install
+kunai agent service-remove
+
+
+#### Debuging
+kunai agent show-threads
+kunai agent list-follow-log
+kunai agent follow-log
+
+
+
+
+#### Exec: ???
+
+
+### Show checks/services states
+kunai state
+Ex:
+Services:
+Checks:
+        packs/linux/checks/cpu UNKNOWN  -
+             /linux/checks/disks OK       - OK: / is at 7%
+             /linux/checks/load-average OK       - OK: load is at 0.05
+
+
+### Show cluster members:
+kunai members
+
+
+### Join a cluster:
+kunai join XXXX:YY
+
+### Generate keys:
+kunai keygen
+
+
+### Force a node to leave
+# TODO: master key si distant
+kunai leave XXXX:YY
+
+
+### Show version:
+  kunai version
+
+
+########## collectors
+  kunai collectors list
+  kunai collectors run sshd
+  kunai collectors show sshd
+
+  (TODO) kunai collectors show  --short
+
+######### detectors
+kunai detectors list
+kunai detectors run
+
+
+
+######## docker
+kunai docker show
+
+
+
+####### evaluator
+  kunai evaluator list
+
+  kunai -D evaluator eval "fileexists('/tmp/')"
+  (TODO)   kunai evaluator eval "fileexists('/tmp/') || {{collector.blabla.toto}} > {{configuration.mykey.key2}}"  --explain
+
+##### Zone
+  kunai zone change
+
+
+
+
+############################ API
+/agent/state/:nname         ==> state of services and checks
+/agent/info                 ==> agent internal info
+/agent/checks/:cname        ==> get all checks  (GET, DELETE, PUT)
+/agent/services/:sname      ==> get all services  (GET, DELETE, PUT)
+/agent/generators/:gname    ==> get generators
+
+/agent/propagate/libexec    ==> save libexec into kv and push event about reloading it to other nodes
+/agent/propagate/configuration    ==> save configuration into kv and push event about reloading it to other nodes
+
+/agent/detectors/           ==> get all detectors definition
+/agent/detectors/run/:dname ==> run detectors and show the results
+
+/agent/evaluator/list       ==> list functions available for evaluation
+/agent/evaluator/eval       ==> POST an command evaluation in expr POST param
+
+# gossip
+/agent/name                 ==> name of the node
+/agent/leave/:nname         ==> ask a node to leave
+/agent/members              ==> get all nodes
+/agent/join/:other          ==> join another node ring
+
+/configuration/update       ==> PUT (file) put a json and update the configuration
+/configuration/             ==> GET configuration
+
+/push-pull                  ==> merge nodes between nodes
+/state/services/:sname      ==> états des services
+
+/kv/:ukey                   ==> kv (GET, PUT, DELETE)
+/kv/                        ==> GET all keys
+/kv-meta/changed/:t         ==> key changed since t
+
+
+# TS
+/list/:key                  ==> TS get all keys for this name
+/_ui_list/:key              ==> TS get get for the UI
+/metric/find/               ==> TS GET list of metrics
+/render/                    ==> GET/POST render call "à la graphite"
+
+
+/stop                       ==> stop the  agent
+
+
+/exec/:tag                  ==> (?cmd=XXXX) execute a command on the tag nodes
+/exec-get/:cid              ==> GET hte result of a run
+
+
+/collectors/:_id            ==> get collectors
+
+
+/docker/                    ==> Bool sur connecté ou pas
+/docker/containers/:_id     ==> list containers
+/docker/images/:_id         ==> list images
+/docker/stats/              ==> get docker stats
+
+/packs                      ==> get all packs values
+
+/threads                    ==> list all threads
+
+
+/api                        ==> list all calls with doc
+
+
+:2003 UDP/TCP  ==> graphite listener
+:8025 UDP      ==> statsd listener
+:23   UDP      ==> DNS listener
+
+
+
+
+
+
+########### Repertoires
+
+## Chemins principaux et ports:
+/etc/kunai/
+           local.json    <== surcharge de conf genre chemins principaux and co
+
+## Spécifique au node (basé sur hostname) aka son identitée
+/var/lib/kunai/identity/---HOSTNAME---/
+									  checks.dat     <=== retention des checks
+									  collectors.dat <=== retention collectors
+									  incarnation    <=== incarnation number
+									  nodes.json     <=== other nodes
+									  server.key     <=== UUID
+									  services.dat   <=== retention ds services
+
+## lié au système et à l'installation même de l'agent
+
+
+kunai.sock     <=== socket de connection
+last_alive     <=== synchro des KV
+local-configuration/
+
+					listeners/
+                    		 websocket.json
+                    		 statsd.json
+                             graphite.json
+                             dns.json
+global-configuration/
+					generators/(json+data)   <=== update de fichiers locaux
+					handlers/                <=== comment réagir à un event. Exemple: email
+					keys/ (priv/pub)         <=== couples of priv/pub allowed keys
+					packs/                   <=== check+collectors
+						  ---PNAME---/
+						  			  package.json  <=== descriptif
+						  			  collectors/collector_*py   <=== code pour collector
+						  			  detectors/ (json)          <=== rule for detetion, based on collector data
+						  			  services/ (json)           <=== exposed services to the outside world, linked to a check
+						  			  checks/ (json)             <=== unitary checks, based on command or collectors data
+
+##TODO: templates?
+
+## Data
+ttl
+updates
+
+
+
+
+
+########### zones
+Besoins:
+  > si pas de liens, zone fonctionnelle (donc besoin des conf poussées sur les sous zones)
+  > info de vivant/mort purement local
+  > besoin de savoir si relays OK ou pas, mais sans propagations aux sur-zones (on peux pas dead un sur relay dans la sur-zone, donc on ne propage que si zone ou sous zone)
+  > besoin d'être sûr d'un relay de sur-zone est légitime
+
+
+* Internet
+   * ping/dead entre les noeuds d'une même zone
+   * visibilité de la zone internet
+   * et de ses sous zones
+   * clé priv/pub internet
+   * 1/X noeuds relays
+      * ont la clé priv des sous zones
+
+   > Shinken-solutions
+      * ping/dead entre les noeuds de la sous zone
+      * un/X noeud est relay
+      * visibilité des sous zones
+      * et des noeuds relay de la sur-zone
+      * un relay mets tjs quelques sur-relay dans sa boucle
+      * clé priv/pub shinken-solutions
+
+
+
+
+
+#################### Parties
+[ CORE ]
+* gossip / appartenance
+* raft (lock / master node )
+* generator de configuration (fichier plein et partiel)
+* check " à la nagios "
+* check à l'évaluation + exemples
+  ** fonctions pour l'évaluator à mettre dans des modules
+* detectors + exemples de rules
+* collectors + exemples
+* KV pour la configuration
+* storage TS (finesse + moyenne à l'heure)
+* agrégats de checks? (AKA services?)
+* handlers (notifications)
+*
+
+
+[ MODULES ]
+* export nagios/shinken
+* DNS local
+* websocket
+* entrée graphite
+* sortie graphite
+* entrée statsd
+* storage TS C
+* docker manager
+
+[ OTHER ]
+* UI
+
+
+
+
+
+############### POC installer definitions:
+
+  * un installeur pour X distros, + simple à lire
+  * l'installeur peux avoir un if qui permet de savoir s'il s'active ou pas
+  * l'installeur a une liste d'envrionnements qui vont pouvoir être matché dans l'ordre
+     * le premier à matcher est pris, et stop la boucle
+     * chaque env a un if pour savoir s'il est actif ou pas
+     * si pas de if, True, (donc closera la liste)
+
+{
+   "installer": {
+           "name" :   "mysql",
+           "note" :   "This installer will install the mysql server if you set the server into the mysql user defined group. Support debian (8 and lower) and centos/redhat platforms.",
+
+           "if"   :   "is_in_defined_group('mysql')",
+
+           "environments" : [
+                {
+                   "name" : "debian 8"
+                   "if" : "{{collector.os.linux.distribution}} == 'debian' & {{collector.os.linux.major_version}} == 8",
+	               "packages" : ['mysql-server-5.5']
+                },
+                {
+                   "name" : "debian"
+                   "if" : "{{collector.os.linux.distribution}} == 'debian'",
+	               "packages" : ['mysql-server']
+                },
+                {
+                   "name" : "centos"
+                   "if" : "{{collector.os.linux.distribution}} == 'centos' or {{collector.os.linux.distribution}} == 'redhat'",
+	               "packages" : ['mysql']
+                }
+           ]
+   }
+}
+
+
+
+
+
+
+
+
+
+
+####################### TODO
+# GROUPES
+  * renommer les tags en groupes
+  * séparer à l'affichage les groupes configurés et les auto-groups détectés
+
+
+# TESTS
+  * tester/réparer les handlers avec les emails
+  * tester les checks à la nagios
+
+
+# Nouvelle CLI
+  * définir une CLI pour les KV (put/list/get/delete)
+  * définir une cli pour les TS (put/dump)
+  * CLI lister la conf locale (avec affichage de la valeur par défaut en couleur) et lister les valeurs nécessaires non disponibles pour les collectors
+  * CLI setter un paramètre de la conf locale
+  * CLI: rajouter un option --explain sur l'appel eval afin de voir la transformation et idéalement d'où vient l'info
+
+
+# Collectors
+  * permettre un meilleur export des docs des functions de l'evaluater
+  * fonction pour get les données du collecter
+  * collectors : rajouter + d'états pour signaler si l'utilisateur a raté nun truc dans la conf ou s'il manque la discovery
+    * missing configuration
+    * not detected
+    * error
+    * ok
+    * ??
+  * collectors : avoir un moyen de choper X informations par exemple {{collectors.mongodb.dbstats.*.datasize}} renvoit une liste avec les valeurs, qu'on peux alors max().
+
+
+# Installers
+  * definir les installer
+
+
+# Monitoring
+  * gérer les expressions d'ensembles sur les groupes ( & | ! )
+  * redéfinir les "services" en autre choses qui se base sur une expression de dispo des checks
+
+
+# Export HTTP
+  * permettre un meilleur export des docs des appels HTTP
+
+
+#### Gossip/Members
+  * appel à leave doit comporter la clé master/auth si distant
+

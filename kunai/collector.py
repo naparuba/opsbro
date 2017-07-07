@@ -114,7 +114,7 @@ class Collector(object):
         self.logger.debug('Launching main for %s' % self.__class__)
         try:
             r = self.launch()
-        except Exception, exp:
+        except Exception:
             self.logger.error('Collector %s main error: %s' % (self.__class__.__name__.lower(), traceback.format_exc()))
             self.error(traceback.format_exc())
             # And a void result
