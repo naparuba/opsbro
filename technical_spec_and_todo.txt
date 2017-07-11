@@ -297,7 +297,7 @@ Besoins:
      * si pas de if, True, (donc closera la liste)
 
 {
-   "installer": {
+   "installor": {
            "name" :   "mysql",
            "note" :   "This installer will install the mysql server if you set the server into the mysql user defined group. Support debian (8 and lower) and centos/redhat platforms.",
 
@@ -305,17 +305,17 @@ Besoins:
 
            "environments" : [
                 {
-                   "name" : "debian 8"
+                   "name" : "debian 8",
                    "if" : "{{collector.os.linux.distribution}} == 'debian' & {{collector.os.linux.major_version}} == 8",
 	               "packages" : ['mysql-server-5.5']
                 },
                 {
-                   "name" : "debian"
+                   "name" : "debian",
                    "if" : "{{collector.os.linux.distribution}} == 'debian'",
 	               "packages" : ['mysql-server']
                 },
                 {
-                   "name" : "centos"
+                   "name" : "centos",
                    "if" : "{{collector.os.linux.distribution}} == 'centos' or {{collector.os.linux.distribution}} == 'redhat'",
 	               "packages" : ['mysql']
                 }
@@ -333,25 +333,26 @@ Besoins:
 
 
 ####################### TODO
-# GROUPES
+### GROUPES
   * renommer les tags en groupes
   * séparer à l'affichage les groupes configurés et les auto-groups détectés
 
 
-# TESTS
+### TESTS
   * tester/réparer les handlers avec les emails
   * tester les checks à la nagios
 
 
-# Nouvelle CLI
+### Nouvelle CLI
   * définir une CLI pour les KV (put/list/get/delete)
   * définir une cli pour les TS (put/dump)
   * CLI lister la conf locale (avec affichage de la valeur par défaut en couleur) et lister les valeurs nécessaires non disponibles pour les collectors
   * CLI setter un paramètre de la conf locale
   * CLI: rajouter un option --explain sur l'appel eval afin de voir la transformation et idéalement d'où vient l'info
+  * Rajouter un système de bash completion, pour faciliter grandement l'utilisabilité de l'outil, mais à partir de fichiers générés, pas directement en appelant kunai (long à lancer)
 
 
-# Collectors
+### Collectors
   * permettre un meilleur export des docs des functions de l'evaluater
   * fonction pour get les données du collecter
   * collectors : rajouter + d'états pour signaler si l'utilisateur a raté nun truc dans la conf ou s'il manque la discovery
@@ -363,19 +364,24 @@ Besoins:
   * collectors : avoir un moyen de choper X informations par exemple {{collectors.mongodb.dbstats.*.datasize}} renvoit une liste avec les valeurs, qu'on peux alors max().
 
 
-# Installers
+### Installers
   * definir les installer
+  * exporter leur états dans le CLI
 
 
-# Monitoring
+### Monitoring
   * gérer les expressions d'ensembles sur les groupes ( & | ! )
   * redéfinir les "services" en autre choses qui se base sur une expression de dispo des checks
 
 
-# Export HTTP
+### Export HTTP
   * permettre un meilleur export des docs des appels HTTP
 
 
-#### Gossip/Members
+### Gossip/Members
   * appel à leave doit comporter la clé master/auth si distant
+
+
+### Nouveaux packs
+  * Pack Azure
 

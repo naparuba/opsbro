@@ -57,6 +57,7 @@ from kunai.modulemanager import modulemanager
 from kunai.zonemanager import zonemgr
 from kunai.executer import executer
 from kunai.monitoring import monitoringmgr
+from kunai.installermanager import installormgr
 from kunai.defaultpaths import DEFAULT_LIBEXEC_DIR, DEFAULT_LOCK_PATH, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR
 
 # Global logger for this part
@@ -140,7 +141,7 @@ class Cluster(object):
         modulemanager.set_daemon(self)
         
         # save the known types for the configuration
-        self.known_types = ['check', 'service', 'handler', 'generator', 'zone']
+        self.known_types = ['check', 'service', 'handler', 'generator', 'zone', 'installor']
         # and extend with the ones from the modules
         self.modules_known_types = modulemanager.get_managed_configuration_types()
         self.known_types.extend(self.modules_known_types)
@@ -416,6 +417,9 @@ class Cluster(object):
         # Export checks/services http interface
         monitoringmgr.export_http()
         
+        # Also run installor part, as it need other part to be runs
+        installormgr.export_http()
+        
         # get the message in a pub-sub way
         pubsub.sub('manage-message', self.manage_message_pub)
     
@@ -545,6 +549,16 @@ class Cluster(object):
                 logger.log('ERROR: the zone from the file %s is not a valid dict' % fp)
                 sys.exit(2)
             zonemgr.add(zone)
+        
+        if 'installor' in o:
+            installor = o['installor']
+            if not isinstance(installor, dict):
+                logger.log('ERROR: the installor from the file %s is not a valid dict' % fp)
+                sys.exit(2)
+            mod_time = int(os.path.getmtime(fp))
+            fname = fp
+            gname = os.path.splitext(fname)[0]
+            installormgr.import_installor(installor, fname, gname, mod_time=mod_time)
         
         # grok all others data so we can use them in our checks
         parameters = self.__class__.parameters
@@ -749,6 +763,10 @@ class Cluster(object):
         self.detector_thread = threader.create_and_launch(detecter.do_detector_thread, name='Detector scheduling', essential=True, part='detector')
     
     
+    def launch_installor_thread(self):
+        threader.create_and_launch(installormgr.do_installer_thread, name='Installor scheduling', essential=True, part='installor')
+    
+    
     def launch_replication_backlog_thread(self):
         self.replication_backlog_thread = threader.create_and_launch(kvmgr.do_replication_backlog_thread, name='Replication backlog', essential=True, part='key-value')
     
@@ -793,7 +811,7 @@ class Cluster(object):
             try:
                 raw = json.loads(data)
             except ValueError:  # garbage
-                logger_gossip.debug("UDP: received message that is not valid json:", data, 'from',  addr)
+                logger_gossip.debug("UDP: received message that is not valid json:", data, 'from', addr)
                 continue
             
             if isinstance(raw, list):

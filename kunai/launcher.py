@@ -229,6 +229,7 @@ class Launcher(object):
         c.launch_collector_thread()
         c.launch_generator_thread()
         c.launch_detector_thread()
+        c.launch_installor_thread()
         
         if 'kv' in gossiper.tags:
             c.launch_replication_backlog_thread()
