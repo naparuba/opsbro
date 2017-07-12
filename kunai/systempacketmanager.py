@@ -33,13 +33,15 @@ class AptBackend(object):
         self.DEB_CACHE_MAX_AGE = 60  # if we cannot look at dpkg data age, allow a max cache of 60s to get a new apt update from disk
         self.DPKG_CACHE_PATH = '/var/cache/apt/pkgcache.bin'
         self.dpkg_cache_last_modification_epoch = 0.0
-    
+        # query cache, invalidate as soon as the apt cache is gone too
+        self.has_cache = {}
     
     def has_package(self, package):
         t0 = time.time()
         if not self.deb_cache:
             self.deb_cache = apt.Cache()
             self.deb_cache_update_time = int(time.time())
+            self.has_cache = {}
         else:  # ok already existing, look if we should update it
             # because if there was a package installed, it's no more in cache
             need_reload = False
@@ -55,8 +57,11 @@ class AptBackend(object):
             if need_reload:
                 self.deb_cache.open(None)
                 self.deb_cache_update_time = int(time.time())
-        b = (package in self.deb_cache and self.deb_cache[package].is_installed)
-        logger.debug('TIME TO QUERY APT: %.3f' % (time.time() - t0))
+                self.has_cache = {}
+        b = self.has_cache.get(package, None)
+        if b is None:
+            b = (package in self.deb_cache and self.deb_cache[package].is_installed)
+            logger.debug('APT: cache miss. time to query apt for package %s: %.3f' % (package, time.time() - t0))
         return b
 
 

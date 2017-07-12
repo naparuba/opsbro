@@ -1,7 +1,7 @@
 {
     "detector": {
         "tags": ["centos"],
-        "apply_if": "{{collector.system.os.linux.distribution}} == 'centos'",
+        "apply_if": "'centos' in {{collector.system.os.linux.distribution}}",
         "interval": "10s"
     }
 }
