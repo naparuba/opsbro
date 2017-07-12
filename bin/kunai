@@ -15,25 +15,11 @@ sys.path.append('.')
 
 from kunai.log import cprint, logger
 from kunai import cli as cli_mod
-from kunai.version import VERSION
+from kunai.info import VERSION, BANNER
 from kunai.modulemanager import modulemanager
 from kunai.defaultpaths import DEFAULT_LOG_DIR, DEFAULT_CFG_FILE
 
 logger.setLevel('WARNING')
-
-banner = r'''
-        ___           ___           ___           ___
-       /__/|         /__/\         /__/\         /  /\        ___
-      |  |:|         \  \:\        \  \:\       /  /::\      /  /\
-      |  |:|          \  \:\        \  \:\     /  /:/\:\    /  /:/
-    __|  |:|      ___  \  \:\   _____\__\:\   /  /:/~/::\  /__/::\
-   /__/\_|:|____ /__/\  \__\:\ /__/::::::::\ /__/:/ /:/\:\ \__\/\:\__
-   \  \:\/:::::/ \  \:\ /  /:/ \  \:\~~\~~\/ \  \:\/:/__\/    \  \:\/\
-    \  \::/~~~~   \  \:\  /:/   \  \:\  ~~~   \  \::/          \__\::/
-     \  \:\        \  \:\/:/     \  \:\        \  \:\          /__/:/
-      \  \:\        \  \::/       \  \:\        \  \:\         \__\/
-       \__\/         \__\/         \__\/         \__\/
-'''
 
 
 # Handle some signals
@@ -406,7 +392,7 @@ if __name__ == '__main__':
     
     # if just call kunai, we must show the available commands
     if len(command_args) == 0:
-        cprint(banner, color='blue')
+        cprint(BANNER, color='blue')
         parser.print_help()
         CLI.print_list()
         sys.exit(0)

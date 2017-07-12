@@ -338,6 +338,7 @@ Besoins:
   * séparer à l'affichage les groupes configurés et les auto-groups détectés
 
 
+
 ### TESTS
   * tester/réparer les handlers avec les emails
   * tester les checks à la nagios
@@ -361,6 +362,7 @@ Besoins:
     * ok
     * ??
   * collectors : avoir un moyen de choper X informations par exemple {{collectors.mongodb.dbstats.*.datasize}} renvoit une liste avec les valeurs, qu'on peux alors max().
+  * sortir les data importantes en "spec" genre distribution, CPUs ou Country
 
 
 ### Installers

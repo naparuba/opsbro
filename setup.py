@@ -8,6 +8,7 @@ import re
 import stat
 import optparse
 import shutil
+import imp
 from glob import glob
 
 try:
@@ -35,7 +36,6 @@ def read(fname):
 # Do a chmod -R +x
 def _chmodplusx(d):
     if not os.path.exists(d):
-        print "warn: _chmodplusx missing dir", d
         return
     if os.path.isdir(d):
         for item in os.listdir(d):
@@ -63,7 +63,8 @@ old_error = parser.error
 
 
 def _error(msg):
-    print 'Parser error', msg
+    # print 'Parser error', msg
+    pass
 
 
 parser.error = _error
@@ -73,6 +74,8 @@ parser.error = old_error
 
 root = opts.proot or ''
 
+prev_version = None
+prev_path = ''
 # We try to see if we are in a full install or an update process
 is_update = False
 # Try to import kunai but not the local one. If available, we are in 
@@ -84,12 +87,47 @@ try:
         sys.path.remove(os.path.abspath('.'))
     if '' in sys.path:
         sys.path.remove('')
-    import kunai
+    import kunai as kunai_test_import
     
     is_update = True
-    print "Previous Kunai lib detected at (%s)" % kunai.__file__
-except ImportError:  # great, first install so
-    pass
+    # Try to guess version
+    from kunai.info import VERSION as prev_version
+    
+    prev_path = os.path.dirname(kunai_test_import.__file__)
+    del kunai_test_import
+except ImportError, exp:  # great, first install so
+    print "No previous kunai installation found: %s" % exp
+
+# Now look at loading the local kunai lib for version and banner
+my_dir = os.path.dirname(os.path.abspath(__file__))
+kunai = imp.load_module('kunai', *imp.find_module('kunai', [os.path.realpath(my_dir)]))
+from kunai.info import VERSION, BANNER
+from kunai.log import cprint
+from kunai.systempacketmanager import systepacketmgr
+
+
+if os.getuid() != 0:
+    cprint('Setup must be launched as root.', color='red')
+    sys.exit(2)
+
+cprint(BANNER, color='green')
+
+what = 'Installing' if not is_update else 'Updating'
+cprint('%s   ' % ('*' * 20), end='')
+cprint('%s' % what, color='magenta', end='')
+cprint(' to version ', end='')
+cprint('%s' % VERSION, color='magenta', end='')
+cprint('     %s' % ('*' * 20))
+
+if is_update:
+    cprint('Previous Kunai lib detected on this system (location:', end='')
+    cprint(prev_path, color='blue', end='')
+    cprint(')(version:', end='')
+    cprint('%s' % prev_version, color='blue', end='')
+    cprint('), using the ', end='')
+    cprint('update process', color='magenta')
+
+print ''
 
 if '--update' in args or opts.upgrade or '--upgrade' in args:
     if 'update' in args:
@@ -123,6 +161,10 @@ to_del.sort()
 to_del.reverse()
 for idx in to_del:
     sys.argv.pop(idx)
+
+# Force the quiet mode for setup.py (too verbose by default)
+if '-v' not in sys.argv and '--quiet' not in sys.argv and '-q' not in sys.argv:
+    sys.argv.insert(1, '--quiet')
 
 # compute scripts
 scripts = [s for s in glob('bin/kunai*') if not s.endswith('.py')]
@@ -214,15 +256,28 @@ for o in not_allowed_options:
     if o in sys.argv:
         sys.argv.remove(o)
 
-required_pkgs = ['jinja2', 'pycurl', 'requests', 'cherrypy', 'crypto', 'rsa', 'pyasn1']
-
-# leveldb is not available on windows
+cprint('# %-30s  (1/3)' % 'Checking prerequites')
+mod_need = ['requests', 'cherrypy', 'leveldb', 'jinja2', 'rsa', 'pyasn1', 'pycurl', 'crypto']
+# leveldb and setproctitle are not available on windows
 if os.name != 'nt':
-    required_pkgs.append('leveldb')
+    mod_need.append('leveldb')
+    mod_need.append('setproctitle')
+
+for m in mod_need:
+    try:
+        __import__(m)
+    except ImportError:
+        cprint('Warning: cannot import module %s. You must install if before launch the kunai deamon' % m, color='yellow')
+
+
+cprint('\n\n# %-30s  (2/3)' % 'Python lib installation')
+cprint('%s kunai python lib in progress...' % what, end='')
+sys.stdout.flush()
+
 
 setup(
     name="kunai",
-    version="0.9-beta1",
+    version=VERSION,
     packages=find_packages(),
     package_data={'': package_data},
     description="Kunai is a service discovery tool",
@@ -246,24 +301,33 @@ setup(
         'Topic :: System :: Networking :: Monitoring',
         'Topic :: System :: Distributed Computing',
     ],
-    install_requires=[required_pkgs],
-    
-    extras_require={
-        'setproctitle': ['setproctitle']
-    },
     data_files=data_files,
 )
 
+cprint('  OK', color='green')
+
+
+# Just a print with aligned test over : OK
+def __print_sub_install_part(p):
+    cprint('  * %-30s :' % p, end='')
+    cprint(' OK', color='green')
+
+
+cprint('\n\n# %-30s  (3/3)' % 'Utility script installation')
+
 # if root is set, it's for package, so NO chown
 if not root and is_install:
+    cprint('Installing utility scripts (init.d, daemon, bash completion, etc)')
     # Also change the rights of the kunai- scripts
     for s in scripts:
         bs = os.path.basename(s)
         _chmodplusx(os.path.join(default_paths['bin'], bs))
+    __print_sub_install_part('daemon')
     _chmodplusx(default_paths['libexec'])
     
     # If not exists, won't raise an error there
     _chmodplusx('/etc/init.d/kunai')
+    __print_sub_install_part('init.d script')
     
     # Also install the bash completion part if there is such a directory
     bash_completion_dir = '/etc/bash_completion.d/'
@@ -271,13 +335,11 @@ if not root and is_install:
         dest = os.path.join(bash_completion_dir, 'kunai')
         shutil.copy('bash_completion/kunai', dest)
         _chmodplusx(dest)
-        print "Bash Completion rules installed: OK"
+        __print_sub_install_part('bash completion rule')
 
-mod_need = ['requests', 'cherrypy', 'leveldb', 'jinja2', 'rsa', 'pyasn1']
-for m in mod_need:
-    try:
-        __import__(m)
-    except ImportError:
-        print('\033[93mWarning: cannot import module %s. You must install if before launch the kunai deamon \033[0m' % m)
-
-print "\033[92mKunai install: OK\033[0m"
+print ''
+cprint('*' * 40)
+cprint('Kunai ', end='')
+cprint(what, color='magenta', end='')
+cprint(' : ', end='')
+cprint(' OK', color='green')

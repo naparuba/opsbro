@@ -34,7 +34,7 @@ if os.name == 'nt':
     from kunai.windows_service.windows_service import Service
 
 from kunai.log import cprint, logger
-from kunai.version import VERSION
+from kunai.info import VERSION
 from kunai.launcher import Launcher
 from kunai.unixclient import get_json, get_local, request_errors
 from kunai.cli import get_kunai_json, get_kunai_local, print_info_title, print_2tab, CONFIG, put_kunai_json

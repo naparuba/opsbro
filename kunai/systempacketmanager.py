@@ -1,5 +1,10 @@
 import time
 import os
+import platform
+
+from kunai.log import LoggerFactory
+# Global logger for this part
+logger = LoggerFactory.create_logger('system-packages')
 
 try:
     import apt
@@ -10,11 +15,6 @@ try:
     import yum
 except ImportError:
     yum = None
-
-from kunai.log import LoggerFactory
-
-# Global logger for this part
-logger = LoggerFactory.create_logger('system-packages')
 
 
 class DummyBackend(object):
@@ -81,6 +81,17 @@ class YumBackend(object):
 # if cannot find a real backend, go to dummy that cannot find or install anything
 class SystemPacketMgr(object):
     def __init__(self):
+        '''
+        if os.name != 'nt':
+            (distname, _, _) = platform.linux_distribution()
+            distname = distname.lower()
+        else:
+            distname = 'windows'
+
+        self.distro = 'unknown'
+        '''
+        
+
         if yum:
             self.backend = YumBackend()
         elif apt:
