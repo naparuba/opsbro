@@ -158,9 +158,7 @@ class CLICommander(object):
             return
         
         # Now prepare a new parser, for the command call this time
-        command_parser = optparse.OptionParser(
-            '',
-            version="%prog " + VERSION)
+        command_parser = optparse.OptionParser('', version="%prog " + VERSION)
         command_parser.prog = keyword
         
         f_args = []
@@ -195,6 +193,70 @@ class CLICommander(object):
         f(*cmd_args, **cmd_opts.__dict__)
     
     
+    def print_completion(self, args):
+        to_analayses = []
+        for (k, d) in self.keywords.iteritems():
+            if k != 'global':
+                to_analayses.append([k])
+                for sub_k in d.keys():
+                    to_analayses.append([k, sub_k])
+            else:
+                for sub_k in d.keys():
+                    to_analayses.append([sub_k])
+        
+        for to_analyse in to_analayses:
+            # if we are too far in the command, cannot be this one
+            if len(args) > len(to_analyse):
+                # print "SKIP impossible match", to_analyse
+                continue
+                # print "Possible", to_analyse
+        
+        res = []
+        # so args <= to_analyse
+        # Special case: no args, give only first level items
+        if len(args) == 0:
+            for to_analyse in to_analayses:
+                if len(to_analyse) == 1:
+                    res.append(to_analyse[0])
+        elif len(args) == 1:
+            arg = args[0]
+            # Maybe it's a keyword, if so automatically give sub commands
+            if arg in self.keywords:
+                d = self.keywords[arg]
+                res = d.keys()
+            elif arg in self.keywords['global']:  # maybe in global directly
+                res = self.keywords['global'].keys()
+            else:  # ok not directly a keyword, try to match
+                for k in self.keywords.keys():
+                    if k.startswith(arg):
+                        res.append(k)
+                # Also look at global entries
+                for k in self.keywords['global'].keys():
+                    if k.startswith(arg):
+                        res.append(k)
+        else:  # ok we will have to match/filter something
+            # Maybe we have a perfect entry, if so return nothing because we already found the entry
+            perfect_match = False
+            for to_analyse in to_analayses:
+                if to_analyse == args:
+                    # print "PERFECT FIT", to_analyse
+                    perfect_match = True
+            # Ok try to guess so
+            if not perfect_match:
+                last_partial = args[-1]
+                full_match = args[:-1]
+                for to_analyse in to_analayses:
+                    propose_last_partial = to_analyse[-1]
+                    propose_full_match = to_analyse[:-1]
+                    if propose_full_match != full_match:  # This propose entry is not matching full match
+                        continue
+                    if propose_last_partial.startswith(last_partial):  # valid entry found
+                        res.append(propose_last_partial)
+        
+        print ' '.join(res)
+        return
+    
+    
     def print_list(self, keyword=''):
         print "Available commands:"
         sub_cmds = self.keywords.keys()
@@ -226,22 +288,13 @@ class CLICommander(object):
 
 
 if __name__ == '__main__':
-    parser = optparse.OptionParser(
-        '',
-        version="%prog " + VERSION,
-        add_help_option=False)
-    parser.add_option('--proxy', dest="proxy",
-                      help="""Proxy URI. Like http://user:password@proxy-server:3128""")
-    parser.add_option('-l', '--list', action='store_true',
-                      dest="do_list", help=("List available commands"))
-    parser.add_option('-D', action='store_true',
-                      dest="do_debug", help=("Enable the debug mode"))
-    parser.add_option('-c', '--config', dest="jsonconfig", default=DEFAULT_CFG_FILE,
-                      help=("Path to your local.json file. Default: %s" % DEFAULT_CFG_FILE))
-    parser.add_option('-v', action='store_true',
-                      dest="do_verbose", help=("Be more verbose"))
-    parser.add_option('-h', '--help', action='store_true',
-                      dest="do_help", help=("Print help"))
+    parser = optparse.OptionParser('', version="%prog " + VERSION, add_help_option=False)
+    parser.add_option('--proxy', dest="proxy", help="""Proxy URI. Like http://user:password@proxy-server:3128""")
+    parser.add_option('-l', '--list', action='store_true', dest="do_list", help=("List available commands"))
+    parser.add_option('-D', action='store_true', dest="do_debug", help=("Enable the debug mode"))
+    parser.add_option('-c', '--config', dest="jsonconfig", default=DEFAULT_CFG_FILE, help=("Path to your local.json file. Default: %s" % DEFAULT_CFG_FILE))
+    parser.add_option('-v', action='store_true', dest="do_verbose", help=("Be more verbose"))
+    parser.add_option('-h', '--help', action='store_true', dest="do_help", help=("Print help"))
     
     # First parsing, for purely internal parameters, but disable
     # errors, because we only want to see the -D -v things
@@ -311,14 +364,22 @@ if __name__ == '__main__':
         return command_values
     
     
+    bash_completion_mode = ('EXEC_COMPLETION' in os.environ)
+    
     # We will remove specific commands from the sys.argv list and keep
     # them for parsing them after
-    command_args = hack_sys_argv()
+    # NOTE: in bash completion we do not want
+    if not bash_completion_mode:
+        command_args = hack_sys_argv()
     
     # Global command parsing, with the error enabled this time
     opts, args = parser.parse_args()
     
     logger.debug('CLI ARGS: %s' % args)
+    
+    if bash_completion_mode:
+        CLI.print_completion(args)
+        sys.exit(0)
     
     if opts.do_help:
         if len(command_args) == 0:
@@ -340,7 +401,7 @@ if __name__ == '__main__':
     
     # Maybe he/she just want to list our commands?
     if opts.do_list:
-        CLI.print_list()
+        CLI.print_list(' '.join(command_args))
         sys.exit(0)
     
     # if just call kunai, we must show the available commands

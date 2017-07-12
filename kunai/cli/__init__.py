@@ -1,8 +1,8 @@
 import os
 import json
 import requests
-from kunai.log import cprint, logger
-from kunai.unixclient import get_json, get_local, request_errors
+from kunai.log import cprint
+from kunai.unixclient import get_json, get_local
 
 # Will be populated by the kunai CLI command
 CONFIG = None
@@ -71,7 +71,7 @@ def print_2tab(e, capitalize=True, col_size=20):
         s = '%s: ' % label
         s = s.ljust(col_size)
         cprint(s, end='', color='blue')
-        # If it's a dict, we got additiionnal data like color or type
+        # If it's a dict, we got additionnal data like color or type
         if isinstance(v, dict):
             color = v.get('color', 'green')
             _type = v.get('type', 'std')

@@ -349,7 +349,6 @@ Besoins:
   * CLI lister la conf locale (avec affichage de la valeur par défaut en couleur) et lister les valeurs nécessaires non disponibles pour les collectors
   * CLI setter un paramètre de la conf locale
   * CLI: rajouter un option --explain sur l'appel eval afin de voir la transformation et idéalement d'où vient l'info
-  * Rajouter un système de bash completion, pour faciliter grandement l'utilisabilité de l'outil, mais à partir de fichiers générés, pas directement en appelant kunai (long à lancer)
 
 
 ### Collectors
@@ -384,4 +383,8 @@ Besoins:
 
 ### Nouveaux packs
   * Pack Azure
+
+
+### Core
+  * enlever la dépendance à psutil sur les linux (/proc c'est pas là pour faire joli)
 

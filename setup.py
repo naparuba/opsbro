@@ -7,6 +7,7 @@ import sys
 import re
 import stat
 import optparse
+import shutil
 from glob import glob
 
 try:
@@ -49,29 +50,14 @@ def _chmodplusx(d):
         os.chmod(d, st.st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
 
 
-parser = optparse.OptionParser(
-    "%prog [options]", version="%prog ")
-parser.add_option('--root',
-                  dest="proot", metavar="ROOT",
-                  help='Root dir to install, usefull only for packagers')
-parser.add_option('--upgrade', '--update',
-                  dest="upgrade", action='store_true',
-                  help='Only upgrade')
-parser.add_option('--install-scripts',
-                  dest="install_scripts",
-                  help='Path to install the kunai binary')
-parser.add_option('--skip-build',
-                  dest="skip_build", action='store_true',
-                  help='skipping build')
-parser.add_option('-O', type="int",
-                  dest="optimize",
-                  help='skipping build')
-parser.add_option('--record',
-                  dest="record",
-                  help='File to save writing files. Used by pip install only')
-parser.add_option('--single-version-externally-managed',
-                  dest="single_version", action='store_true',
-                  help='This option is for pip only')
+parser = optparse.OptionParser("%prog [options]", version="%prog ")
+parser.add_option('--root', dest="proot", metavar="ROOT", help='Root dir to install, usefull only for packagers')
+parser.add_option('--upgrade', '--update', dest="upgrade", action='store_true', help='Only upgrade')
+parser.add_option('--install-scripts', dest="install_scripts", help='Path to install the kunai binary')
+parser.add_option('--skip-build', dest="skip_build", action='store_true', help='skipping build')
+parser.add_option('-O', type="int", dest="optimize", help='skipping build')
+parser.add_option('--record', dest="record", help='File to save writing files. Used by pip install only')
+parser.add_option('--single-version-externally-managed', dest="single_version", action='store_true', help='This option is for pip only')
 
 old_error = parser.error
 
@@ -232,7 +218,7 @@ required_pkgs = ['jinja2', 'pycurl', 'requests', 'cherrypy', 'crypto', 'rsa', 'p
 
 # leveldb is not available on windows
 if os.name != 'nt':
-	required_pkgs.append('leveldb')
+    required_pkgs.append('leveldb')
 
 setup(
     name="kunai",
@@ -278,6 +264,14 @@ if not root and is_install:
     
     # If not exists, won't raise an error there
     _chmodplusx('/etc/init.d/kunai')
+    
+    # Also install the bash completion part if there is such a directory
+    bash_completion_dir = '/etc/bash_completion.d/'
+    if os.path.exists(bash_completion_dir):
+        dest = os.path.join(bash_completion_dir, 'kunai')
+        shutil.copy('bash_completion/kunai', dest)
+        _chmodplusx(dest)
+        print "Bash Completion rules installed: OK"
 
 mod_need = ['requests', 'cherrypy', 'leveldb', 'jinja2', 'rsa', 'pyasn1']
 for m in mod_need:
