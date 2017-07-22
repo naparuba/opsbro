@@ -1,4 +1,4 @@
-VERSION = '0.9-beta1'
+VERSION = '0.9b1'
 
 BANNER = r'''
         ___           ___           ___           ___
