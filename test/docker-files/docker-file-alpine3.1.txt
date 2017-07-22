@@ -1,0 +1,8 @@
+FROM alpine:3.1
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+RUN        apk update && apk add python
+ADD        . /root/kunai-oss
+
+WORKDIR       /root/kunai-oss
+ENTRYPOINT    test/test_one_linux_installation.sh
