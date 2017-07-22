@@ -12,9 +12,8 @@ try:
 except ImportError:
     Client = None
 
-
 from kunai.cgroups import cgroupmgr
-    
+
 
 class TestCGroup(KunaiTest):
     def setUp(self):
@@ -22,21 +21,20 @@ class TestCGroup(KunaiTest):
             self.con = None
             return
         self.con = Client(base_url='unix://var/run/docker.sock')
-        self.conts = self.con.containers()        
-
+        self.conts = self.con.containers()
+    
     
     def test_cgroup(self):
         if self.con is None:
             return
-            
+        
         print self.conts
         cids = [c['Id'] for c in self.conts]
         print 'CIDS', cids
-
+        
         metrics = cgroupmgr.get_containers_metrics(cids)
         print "METRICS", metrics
 
-        
-        
+
 if __name__ == '__main__':
     unittest.main()

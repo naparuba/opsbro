@@ -10,16 +10,19 @@ from kunai.threadmgr import ThreadMgr
 
 i = 0
 
+
 def f():
     global i
     print "I am a thread"
     i += 1
     time.sleep(0.5)
 
+
 class TestThreads(KunaiTest):
     def setUp(self):
         pass
-
+    
+    
     def test_thread(self):
         T = ThreadMgr()
         T.create_and_launch(f, name='F')

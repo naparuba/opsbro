@@ -8,7 +8,6 @@ import threading
 from pprint import pprint
 from kunai_test import *
 
-
 from kunai.dockermanager import dockermgr
 
 
@@ -17,14 +16,15 @@ class TestDocker(KunaiTest):
         dockermgr.connect()
         dockermgr.load_containers()
     
+    
     def test_docker(self):
         if dockermgr.con is None:
             return
-
+        
         dockermgr.compute_stats()
         time.sleep(1)
-        dockermgr.compute_stats()        
-        
-        
+        dockermgr.compute_stats()
+
+
 if __name__ == '__main__':
     unittest.main()

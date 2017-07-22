@@ -26,7 +26,7 @@ class TestRaft(KunaiTest):
     
     
     def compute_stats(self):
-        self.stats = {'votes':{}, 'election_turn':{}, 'frozen_number':{}, 'is_frozen':{True:0, False:0}, 'with_leader':{True:0, False:0}}
+        self.stats = {'votes': {}, 'election_turn': {}, 'frozen_number': {}, 'is_frozen': {True: 0, False: 0}, 'with_leader': {True: 0, False: 0}}
         
         for d in self.nodes:
             n = d['node']
@@ -41,17 +41,16 @@ class TestRaft(KunaiTest):
             if n.election_turn not in self.stats['election_turn']:
                 self.stats['election_turn'][n.election_turn] = 0
             self.stats['election_turn'][n.election_turn] += 1
-
+            
             # and frozen number
             if n.frozen_number not in self.stats['frozen_number']:
                 self.stats['frozen_number'][n.frozen_number] = 0
             self.stats['frozen_number'][n.frozen_number] += 1
             
-            
             self.stats['is_frozen'][n.is_frozen] += 1
             self.stats['with_leader'][(n.leader is not None)] += 1
-        
-
+    
+    
     def count(self, state):
         # hummering the stats so we are up to date
         self.compute_stats()
@@ -126,13 +125,13 @@ class TestRaft(KunaiTest):
         print "Looking if we really got a leader, and only one"
         print "Number of leaders: %d" % self.count('leader')
         self.compute_stats()
-
-        print "\n"*20
-
+        
+        print "\n" * 20
+        
         for d in self.nodes:
             n = d['node']
             print "== %4d %s turn=%d => candidate=%d leader=%s" % (n.i, n.state, n.election_turn, getattr(n, 'candidate_id', -1), n.leader)
-
+        
         print >> sys.stderr, "\nSTATS: %s" % self.stats
         
         if self.count('leader') == 1:

@@ -12,10 +12,12 @@ import copy
 
 # import the kunai library from the parent directory
 import __import_kunai
+
 del __import_kunai
 import kunai
 
 from kunai.log import logger
+
 
 class __DUMMY:
     def add(self, obj):
@@ -24,18 +26,22 @@ class __DUMMY:
 
 class _Unittest2CompatMixIn:
     def assertNotIn(self, member, container, msg=None):
-       self.assertTrue(member not in container)
-
+        self.assertTrue(member not in container)
+    
+    
     def assertIn(self, member, container, msg=None):
         self.assertTrue(member in container)
-
+    
+    
     def assertIsInstance(self, obj, cls, msg=None):
         self.assertTrue(isinstance(obj, cls))
-
+    
+    
     def assertRegexpMatches(self, line, pattern):
         r = re.search(pattern, line)
         self.assertTrue(r is not None)
-
+    
+    
     def assertIs(self, obj, cmp, msg=None):
         self.assertTrue(obj is cmp)
 
@@ -44,10 +50,9 @@ class KunaiTest(unittest.TestCase, _Unittest2CompatMixIn):
     def setUp(self):
         pass
     
-
+    
     def setup_with_file(self, path):
         pass
-
 
 
 if __name__ == '__main__':
