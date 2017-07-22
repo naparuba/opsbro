@@ -1,6 +1,6 @@
 {
     "detector": {
-        "tags": ["docker"],
+        "tags": ["docker-host"],
         "apply_if": "file_exists('/var/run/docker.sock')",
         "interval": "10s"
     }
