@@ -249,20 +249,24 @@ def do_info(show_logs):
     print_2tab(e)
     
     # Normal agent information
-    int_server = httpservers['external']
+    int_server = httpservers.get('external', None)
     if int_server:
         e = (('threads', int_server['nb_threads']), ('idle_threads', int_server['idle_threads']),
              ('queue', int_server['queue']))
         print_info_title('HTTP (LAN)')
         print_2tab(e)
+    else:
+        print_info_title('HTTP (LAN) info not available')
     
     # Unix socket http daemon
-    int_server = httpservers['internal']
+    int_server = httpservers.get('internal', None)
     if int_server:
         e = (('threads', int_server['nb_threads']), ('idle_threads', int_server['idle_threads']),
              ('queue', int_server['queue']))
         print_info_title('HTTP (Unix Socket)')
         print_2tab(e)
+    else:
+        print_info_title('HTTP (Unix Socket) info not available')
     
     # Now DNS part
     print_info_title('DNS')

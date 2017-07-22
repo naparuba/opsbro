@@ -46,7 +46,7 @@ from kunai.pubsub import pubsub
 from kunai.dockermanager import dockermgr
 from kunai.encrypter import encrypter, RSA
 from kunai.collectormanager import collectormgr
-from kunai.version import VERSION
+from kunai.info import VERSION
 from kunai.stop import stopper
 from kunai.evaluater import evaluater
 from kunai.detectormgr import detecter
@@ -878,8 +878,10 @@ class Cluster(object):
                 if server is None:
                     r['httpservers'][k] = None
                     continue
-                # if available get stats
-                s = server.stats
+                # if available get stats (some old cherrypy versions do not have them, like in debian 6)
+                s = getattr(server, 'stats', None)
+                if not s:
+                    continue
                 nb_threads = s['Threads'](s)
                 idle_threads = s['Threads Idle'](s)
                 q = s['Queue'](s)
