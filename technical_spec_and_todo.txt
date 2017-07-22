@@ -342,6 +342,20 @@ Besoins:
 ### TESTS
   * tester/réparer les handlers avec les emails
   * tester les checks à la nagios
+  * tester l'installation version setup.py sur:
+    * debian 6
+    * debian 7
+    * debian 8
+    * debian 9
+    * centos 6 sans EPEL
+    * centos 7 sans EPEL
+    * centos 6 avec EPEL
+    * centos 7 avec EPEL
+    * windows 2008 R2 (bundelisé les libs?)
+    * fedora X
+    * aws
+    * core os
+
 
 
 ### Nouvelle CLI
