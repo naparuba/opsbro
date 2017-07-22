@@ -38,8 +38,8 @@ ETC=/etc/kunai
 
 export PATH="${PATH:+$PATH:}/usr/sbin:/bin:/sbin"
 # Try to set US lang, to allow easy sub command call even on non english system (yes like french system...)
-export LANG=en_US.UTF8
-export LC_ALL=en_US.UTF8
+export LANG=en_US.UTF8   2>/dev/null
+export LC_ALL=en_US.UTF8 2>/dev/null
 # Please python, manage utf8 by default, we are in 2017
 export PYTHONIOENCODING=utf8
 # Do not lock on print calls
@@ -68,8 +68,13 @@ pythonver() {
         which python > /dev/null 2>&1
         if [ $? -ne 0 ]
         then
-            echo "No python interpreter found!"
-            exit 2
+            # Beware: maybe it's because which is not exiting itself! (like in docker centos images)
+            if [ -f "/usr/bin/python" ]; then
+                LASTFOUND="/usr/bin/python"
+            else
+                echo "No python interpreter found!"
+                exit 2
+            fi
         else
             echo "python found"
             LASTFOUND=$(which python)
@@ -119,6 +124,27 @@ CMD=$1
 ### This bloc part is for debian and redhat things, because they
 ### are not able to be ok in the most common part: boot
 # cross debian/redhat thing
+# To be replaced by LSB functions
+# Defined here for distributions that don't define
+# log_daemon_msg
+log_failure_msg () {
+    echo_failure $*
+}
+log_daemon_msg () {
+    echo $@
+}
+# To be replaced by LSB functions
+# Defined here for distributions that don't define
+# log_end_msg
+log_end_msg () {
+    retval=$1
+    if [ $retval -eq 0 ]; then
+        echo "."
+    else
+        echo " failed!"
+    fi
+    return $retval
+}
 echo_success() {
    log_end_msg 0 $*
 }
