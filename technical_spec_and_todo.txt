@@ -351,7 +351,7 @@ Besoins:
     * centos 7 sans EPEL
     * centos 6 avec EPEL
     * centos 7 avec EPEL
-    * windows 2008 R2 (bundelisé les libs?)
+    * windows 2008 R2 (bundeliser les libs?)
     * fedora X
     * aws
     * core os

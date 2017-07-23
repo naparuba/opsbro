@@ -28,3 +28,10 @@ if [ $? != 0 ]; then
    cat /var/log/kunai/daemon.log
    exit 2
 fi
+
+ADDR=$(kunai info | grep Addr | awk '{print $2}')
+if [ "$ADDR" == "None" ]; then
+   echo "The kunai daemon do not have a valid address."
+   echo `kunai info`
+   exit 2
+fi

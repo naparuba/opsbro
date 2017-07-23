@@ -102,6 +102,20 @@ def _get_linux_local_addresses():
     stdin.close()
     stdout.close()
     res = [s.strip() for s in buf.split(' ') if s.strip()]
+
+    # Some system like in alpine linux that don't have hostname -I call
+    # so try to guess
+    if len(res) == 0:
+        logger.info('Cannot use the hostname -I call for linux, trying to guess local addresses')
+        for prefi in ['bond', 'eth']:
+            for i in xrange(0, 10):
+                ifname = '%s%d' % (prefi, i)
+                try:
+                    addr = get_ip_address(ifname)
+                    res.append(addr)
+                except IOError:  # no such interface
+                    pass
+
     res.sort(_sort_local_addresses)
     return res
 
@@ -155,21 +169,10 @@ def get_public_address():
         pass
     
     if sys.platform == 'linux2':
-        '''
-        for prefi in ['bond', 'eth']:
-            for i in xrange(0, 10):
-                ifname = '%s%d' % (prefi, i)
-                try:
-                    addr = get_ip_address(ifname)
-                    if _is_valid_local_addr(addr):
-                        return addr
-                except IOError:  # no such interface
-                    pass
-        '''
         addrs = _get_linux_local_addresses()
         if len(addrs) > 0:
             return addrs[0]
-    
+            
     # On windows also loop over the interfaces
     if os.name == 'nt':
         c = windowser.get_wmi()
