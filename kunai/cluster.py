@@ -1459,9 +1459,9 @@ class Cluster(object):
             # Launch object collection
             gc.collect(gen)
             logger.debug('Memory collection (%d) executed in %.2f' % (gen, time.time() - before_collect))
-            
-            if libc6:
-                # Remove over allocated memory from glibc
+
+            # Remove over allocated memory from glibc, but beware, muslibc (alpine linux) do not have it
+            if libc6 and hasattr(libc6, 'malloc_trim'):
                 libc6.malloc_trim(0)
             time.sleep(30)
     
