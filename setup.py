@@ -11,6 +11,7 @@ import shutil
 import imp
 from cStringIO import StringIO
 from glob import glob
+import atexit
 
 # will fail under 2.5 python version, but if really you have such a version in
 # prod you are a morron and we can't help you
@@ -71,8 +72,8 @@ def unhook_stdout():
     global stderr_redirect
     # If we have something in the file descriptor 2, reinject into stderr
     stderr_redirect.close()
-    with open(stderr_redirect_path, 'r') as f:
-        sys.stderr.write(f.read())
+    #with open(stderr_redirect_path, 'r') as f:
+    #    stdout_catched.write(f.read())
     sys.stdout = stdout_orig
     sys.stderr = stderr_orig
 
@@ -420,6 +421,20 @@ sys.stdout.flush()
 
 hook_stdout()
 
+setup_phase_is_done = False
+def print_fail_setup(exp=''):
+    if setup_phase_is_done:
+        return
+    unhook_stdout()
+    cprint('\nERROR: fail to setup kunai: (%s)' % exp, color='red')
+    cprint(stdout_catched.getvalue())
+    with open(stderr_redirect_path, 'r') as f:
+        _prefix = '      | '
+        cprint('Python setuptools call fail:\n%s' % ('\n'.join(['%s%s' % (_prefix, s) for s in f.read().splitlines()])), color='red')
+    sys.exit(2)
+    
+atexit.register(print_fail_setup)
+
 try:
     setup(
         name="kunai",
@@ -451,10 +466,12 @@ try:
         data_files=data_files,
     )
 except Exception, exp:
-    unhook_stdout()
-    cprint('ERROR: fail to setup kunai: (%s)' % exp, color='red')
-    cprint(stdout_catched.getvalue())
+    print_fail_setup(exp)
     sys.exit(2)
+
+# don't print something at exit now
+setup_phase_is_done = True
+
 
 # We did finish the setup, and we did succeed, so we can put the result into a log, we don't fucking care about
 # printing it to everyone unless we want to fear them
