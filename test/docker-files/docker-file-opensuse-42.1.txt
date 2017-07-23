@@ -1,9 +1,19 @@
 FROM opensuse:42.1
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-#RUN        yum  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install python-setuptools
-#RUN       yum --nogpgcheck  -y  upgrade
+
+RUN        zypper --non-interactive install python
+RUN        zypper --non-interactive install python-leveldb
+RUN        zypper --non-interactive install python-pycurl
+RUN        zypper --non-interactive install python-CherryPy
+RUN        zypper --non-interactive install python-pycrypto
+RUN        zypper --non-interactive install python-Jinja2
+RUN        zypper --non-interactive install python-requests
+RUN        zypper --non-interactive install python-setuptools
+
 ADD        . /root/kunai-oss
+WORKDIR       /root/kunai-oss
+
 
 ENTRYPOINT    test/test_one_linux_installation.sh
-WORKDIR       /root/kunai-oss
+
