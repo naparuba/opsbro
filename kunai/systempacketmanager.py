@@ -139,8 +139,9 @@ class SystemPacketMgr(object):
         
         if os.name != 'nt':
             (distname, distversion, distid) = platform.linux_distribution()
-            distname = distname.lower()
-            distid = distid.lower()
+            distname = distname.lower().strip()
+            distversion = distversion.lower().strip()
+            distid = distid.lower().strip()
         else:
             distname = 'windows'
             distversion = ''

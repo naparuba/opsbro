@@ -10,15 +10,15 @@ fi
 
 
 echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Starting       ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
-# Try to start daemon
-/etc/init.d/kunai start
+# Try to start daemon, but we don't want systemd hook there
+SYSTEMCTL_SKIP_REDIRECT=1 /etc/init.d/kunai start
 if [ $? != 0 ]; then
    echo "ERROR: daemon start failed!"
    exit 2
 fi
 
 
-sleep 15
+sleep 20
 
 
 echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Info           ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"

@@ -59,7 +59,7 @@ function try_installation {
 
 export -f try_installation
 
-echo $DOCKER_FILES | xargs --delimiter=' ' --no-run-if-empty -n 1 -P 4 -I {} bash -c 'try_installation "{}"'
+echo $DOCKER_FILES | xargs --delimiter=' ' --no-run-if-empty -n 1 -P 2 -I {} bash -c 'try_installation "{}"'
 
 printf "Some tests are OK:\n"
 cat $SUCCESS_FILE
