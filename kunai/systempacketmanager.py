@@ -216,6 +216,9 @@ class SystemPacketMgr(object):
         return self.distro, self.distro_version
     
     
+    def get_raw_distro(self):
+        return self.raw_distname
+    
     def install_package(self, package):
         self.backend.install_package(package)
 
