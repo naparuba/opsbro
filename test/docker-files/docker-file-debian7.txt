@@ -5,5 +5,5 @@ RUN        apt-get update && apt-get install -y python
 ADD        . /root/kunai-oss
 
 WORKDIR       /root/kunai-oss
-ENTRYPOINT    test/test_one_linux_installation.sh
+ENTRYPOINT    test/test_one_linux_installation.sh  && test/assert_tag.sh "debian"
 

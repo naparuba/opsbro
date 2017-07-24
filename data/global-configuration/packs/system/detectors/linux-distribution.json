@@ -1,0 +1,7 @@
+{
+    "detector": {
+        "tags": ["{{collector.system.os.linux.distribution}}"],
+        "apply_if": "{{collector.system.os.linux.distribution}} != ''",
+	    "interval": "3600s"
+    }
+}

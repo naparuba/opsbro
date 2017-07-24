@@ -138,11 +138,13 @@ class SystemPacketMgr(object):
     def __init__(self):
         
         if os.name != 'nt':
-            (distname, distversion, _) = platform.linux_distribution()
+            (distname, distversion, distid) = platform.linux_distribution()
             distname = distname.lower()
+            distid = distid.lower()
         else:
             distname = 'windows'
             distversion = ''
+            distid = ''
         
         # Maybe linux_distribution did give us bull shit, so try other files like
         # os-release
@@ -154,46 +156,48 @@ class SystemPacketMgr(object):
                         k, v = line.rstrip().split("=")
                         # .strip('"') will remove if there or else do nothing
                         inf[k] = v.strip('"')
-                distname = inf['ID']
-                distversion = inf['VERSION_ID']
+                distname = inf['ID'].lower()
+                distversion = inf['VERSION_ID'].lower()
+                distid = inf['ID'].lower()
 
         
         # Raw string is used by setup for display
         self.raw_distname = distname
         
-        self.distro = ''
-        self.distro_version = ''
+        self.distro = distname
+        self.distro_version = distversion
+        self.distro_id = distid
+        
         if 'debian' in distname:
             self.distro = 'debian'
-            self.distro_version = distversion
+            self.managed_system = True
         elif 'ubuntu' in distname:
             self.distro = 'ubuntu'
-            self.distro_version = distversion
+            self.managed_system = True
         elif 'centos' in distname:
             self.distro = 'centos'
-            self.distro_version = distversion
+            self.managed_system = True
         elif 'redhat' in distname:
             self.distro = 'redhat'
-            self.distro_version = distversion
+            self.managed_system = True
         elif 'fedora' in distname:
             self.distro = 'fedora'
-            self.distro_version = distversion
+            self.managed_system = True
         elif 'oracle linux' in distname:
-            self.distro = 'oracle'
-            self.distro_version = distversion
+            self.distro = 'oracle-linux'
+            self.managed_system = True
         elif 'amzn' in distname:
-            self.distro = 'amzn'
-            self.distro_version = distversion
+            self.distro = 'amazon-linux'
+            self.managed_system = True
         elif distname == 'windows':
             self.distro = 'windows'
-            self.distro_version = distversion
+            self.managed_system = True
         else:
-            self.distro = ''
-            self.distro_version = ''
-        
+            # ok not managed one
+            self.managed_system = False
             
 
-        if self.distro in ['redhat', 'centos', 'amzn', 'oracle']:
+        if self.distro in ['redhat', 'centos', 'amazon-linux', 'oracle-linux']:
             if yum is not None:
                 self.backend = YumBackend()
             else:
@@ -208,12 +212,16 @@ class SystemPacketMgr(object):
             self.backend = DummyBackend()
     
     
+    def is_managed_system(self):
+        return self.managed_system
+    
+    
     def has_package(self, package):
         return self.backend.has_package(package)
     
     
     def get_distro(self):
-        return self.distro, self.distro_version
+        return self.distro, self.distro_version, self.distro_id
     
     
     def get_raw_distro(self):

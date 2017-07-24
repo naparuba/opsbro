@@ -7,6 +7,5 @@ RUN        apt-get update && apt-get install -y python
 ADD        . /root/kunai-oss
 
 WORKDIR       /root/kunai-oss
-#ENTRYPOINT    test/test_one_linux_installation.sh
-ENTRYPOINT      python setup.py install; /etc/init.d/kunai start; sleep 5; ps -fu root; kunai info; /bin/bash
+ENTRYPOINT    test/test_one_linux_installation.sh   && test/assert_tag.sh "debian"
 

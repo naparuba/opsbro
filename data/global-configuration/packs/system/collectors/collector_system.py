@@ -6,6 +6,7 @@ import socket
 
 from kunai.collector import Collector
 from kunai.util import get_public_address
+from kunai.systempacketmanager import systepacketmgr
 
 try:
     import pwd
@@ -35,12 +36,12 @@ class System(Collector):
         
         # Linux, directly ask python
         if res['os']['name'] == 'linux':
-            (distname, version, _id) = platform.linux_distribution()
+            (distname, version, _id) = systepacketmgr.get_distro()
             linux = {}
             res['os']['linux'] = linux
-            linux['distribution'] = distname.lower()
-            linux['version'] = version.lower()
-            linux['id'] = _id.lower()
+            linux['distribution'] = distname  #.lower()
+            linux['version'] = version  #.lower()
+            linux['id'] = _id  #.lower()
             # Maybe version is directly an int, get it
             _version = linux['version']
             _major = None

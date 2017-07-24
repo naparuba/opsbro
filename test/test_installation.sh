@@ -24,7 +24,8 @@ export SUCCESS_FILE=/tmp/kunai.test.installation.success
 export FAIL_FILE=/tmp/kunai.test.installation.fail
 
 # Clean results files
-rm -fr $SUCCESS_FILE  $FAIL_FILE
+> $SUCCESS_FILE
+> $FAIL_FILE
 
 
 function try_installation {
@@ -64,7 +65,7 @@ printf "Some tests are OK:\n"
 cat $SUCCESS_FILE
 
 ALL_ERRORS=$(cat $FAIL_FILE)
-if [ "X$ALL_ERRORS" -eq "X" ]; then
+if [ "X$ALL_ERRORS" == "X" ]; then
    echo "OK, no errors."
    exit 0
 else

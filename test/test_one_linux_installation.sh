@@ -29,6 +29,7 @@ if [ $? != 0 ]; then
    exit 2
 fi
 
+echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Address?       ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
 # Is there an address used by the daemon?
 ADDR=$(kunai info | grep Addr | awk '{print $2}')
 if [ "$ADDR" == "None" ]; then
@@ -38,6 +39,7 @@ if [ "$ADDR" == "None" ]; then
 fi
 
 
+echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Linux TAG      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
 # Check if linux tag is set
 test/assert_tag.sh "linux"
 if [ $? != 0 ]; then

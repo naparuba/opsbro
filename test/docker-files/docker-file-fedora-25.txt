@@ -10,5 +10,5 @@ RUN       yum  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=a
 
 ADD        . /root/kunai-oss
 
-ENTRYPOINT    test/test_one_linux_installation.sh
+ENTRYPOINT    test/test_one_linux_installation.sh  && test/assert_tag.sh "fedora"
 WORKDIR       /root/kunai-oss

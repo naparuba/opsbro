@@ -293,20 +293,20 @@ mod_need = {
     'requests': {
         'packages': {
             'debian': 'python-requests', 'ubuntu': 'python-requests',
-            'amzn'  : 'python27-requests', 'centos': 'python-requests', 'redhat': 'python-requests', 'oracle': 'python-requests', 'fedora': 'python-requests',
+            'amazon-linux'  : 'python27-requests', 'centos': 'python-requests', 'redhat': 'python-requests', 'oracle-linux': 'python-requests', 'fedora': 'python-requests',
         }
     },
     'cherrypy': {  # note: centos: first epel to enable cherrypy get from packages
         'packages'    : {
             'debian': 'python-cherrypy3', 'ubuntu': 'python-cherrypy3',
-            'amzn'  : 'python-cherrypy3', 'centos': ['epel-release', 'python-cherrypy'], 'redhat': 'python-cherrypy', 'oracle': 'python-cherrypy', 'fedora': 'python-cherrypy',
+            'amazon-linux'  : 'python-cherrypy3', 'centos': ['epel-release', 'python-cherrypy'], 'redhat': 'python-cherrypy', 'oracle-linux': 'python-cherrypy', 'fedora': 'python-cherrypy',
         },
         'failback_pip': 'cherrypy==3.2.4',
     },
     'jinja2'  : {
         'packages': {
             'debian': 'python-jinja2', 'ubuntu': 'python-jinja2',
-            'amzn'  : 'python-jinja2', 'centos': 'python-jinja2', 'redhat': 'python-jinja2', 'oracle': 'python-jinja2', 'fedora': 'python-jinja2',
+            'amazon-linux'  : 'python-jinja2', 'centos': 'python-jinja2', 'redhat': 'python-jinja2', 'oracle-linux': 'python-jinja2', 'fedora': 'python-jinja2',
         }
     },
     # 'rsa'     : {
@@ -318,13 +318,13 @@ mod_need = {
     'pycurl'  : {
         'packages': {
             'debian': 'python-pycurl', 'ubuntu': 'python-pycurl',
-            'amzn'  : 'python-pycurl', 'centos': 'python-pycurl', 'redhat': 'python-pycurl', 'oracle': 'python-pycurl', 'fedora': 'python-pycurl',
+            'amazon-linux'  : 'python-pycurl', 'centos': 'python-pycurl', 'redhat': 'python-pycurl', 'oracle-linux': 'python-pycurl', 'fedora': 'python-pycurl',
         }
     },
     'Crypto'  : {
         'packages': {
             'debian': 'python-crypto', 'ubuntu': 'python-crypto',
-            'amzn'  : 'python-crypto', 'centos': 'python-crypto', 'redhat': 'python-crypto', 'oracle': 'python-crypto', 'fedora': 'python-crypto',
+            'amazon-linux'  : 'python-crypto', 'centos': 'python-crypto', 'redhat': 'python-crypto', 'oracle-linux': 'python-crypto', 'fedora': 'python-crypto',
         }
     },
 }
@@ -333,24 +333,25 @@ if os.name != 'nt':
     mod_need['leveldb'] = {
         'packages'    : {
             'debian': 'python-leveldb', 'ubuntu': 'python-leveldb',
-            'amzn'  : 'python-leveldb', 'centos': 'python-leveldb', 'redhat': 'python-leveldb', 'oracle': 'python-leveldb', 'fedora': 'python-leveldb',
+            'amazon-linux'  : 'python-leveldb', 'centos': 'python-leveldb', 'redhat': 'python-leveldb', 'oracle-linux': 'python-leveldb', 'fedora': 'python-leveldb',
         },
         'pip_packages': {
             'debian': ['build-essential', 'python-dev'], 'ubuntu': ['build-essential', 'python-dev'],
             # NOTE: amazon: no python-devel/python-setuptools, only versionsed packages are available
-            'amzn'  : ['gcc', 'gcc-c++', 'python27-devel', 'libyaml-devel', 'python27-setuptools'], 'centos': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'], 'redhat': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
-            'oracle': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'], 'fedora': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
+            'amazon-linux'  : ['gcc', 'gcc-c++', 'python27-devel', 'libyaml-devel', 'python27-setuptools'], 'centos': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'], 'redhat': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
+            'oracle-linux': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'], 'fedora': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
         },
     }
 
 # We will have to look in which distro we are
-system_distro, system_distroversion = systepacketmgr.get_distro()
-if system_distro != '':
+is_managed_system = systepacketmgr.is_managed_system()
+system_distro, system_distroversion, _ = systepacketmgr.get_distro()
+if is_managed_system:
     cprint(' * Your system ', end='')
     cprint('%s (version %s) ' % (system_distro, system_distroversion), color='magenta', end='')
     cprint('is managed by this installer and will be able to use system package manager to install dependencies.')
 else:
-    cprint(" * NOTICE: your system (%s) is not a tested system, it won't use the package system to install dependencies and will use the python pip dependency system instead (internet connection is need)." % systepacketmgr.raw_distname)
+    cprint(" * NOTICE: your system (%s - %s) is not a tested system, it won't use the package system to install dependencies and will use the python pip dependency system instead (internet connection is need)." % (system_distro, system_distroversion))
 
 for (m, d) in mod_need.iteritems():
     cprint(' * checking dependency for ', end='')
