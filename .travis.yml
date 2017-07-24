@@ -19,7 +19,8 @@ install:
 # so we must combine them in the end
 script:
   - cd test
-  - /bin/bash test_installation.sh
+  - chmod a+x *sh
+  - ./test_installation.sh
   - nosetests -xv --process-restartworker --processes=1 --process-timeout=999999999  --with-cov --cov=kunai
   - coverage combine
   - cd ..
