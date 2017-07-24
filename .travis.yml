@@ -2,7 +2,11 @@ language: python
 python:
   - "2.6"
   - "2.7"
-  
+
+# We need docker for our scripts that test various intallations
+services:
+  - docker
+
 # command to install dependencies
 # some are only used for travis/coveralls so we are installing them here only
 install:
@@ -17,6 +21,9 @@ script:
   - cd test
   - nosetests -xv --process-restartworker --processes=1 --process-timeout=999999999  --with-cov --cov=kunai
   - coverage combine
+  - cd ..
+  - test/test_installation.sh
+
 # specific call to launch coverage data into coveralls.io
 after_success:
   coveralls

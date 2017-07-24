@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# Start mongodb
+mongod -f /etc/mongod.conf
 
 sleep 15
 

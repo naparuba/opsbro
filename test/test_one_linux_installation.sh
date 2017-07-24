@@ -29,9 +29,18 @@ if [ $? != 0 ]; then
    exit 2
 fi
 
+# Is there an address used by the daemon?
 ADDR=$(kunai info | grep Addr | awk '{print $2}')
 if [ "$ADDR" == "None" ]; then
    echo "The kunai daemon do not have a valid address."
    echo `kunai info`
+   exit 2
+fi
+
+
+# Check if linux tag is set
+test/assert_tag.sh "linux"
+if [ $? != 0 ]; then
+   echo "ERROR: the tag linux is missing!"
    exit 2
 fi

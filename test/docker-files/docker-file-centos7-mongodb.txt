@@ -8,9 +8,9 @@ RUN        yum --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=a
 RUN        yum --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install python-pymongo
 
 ADD        . /root/kunai-oss
-
 WORKDIR    /root/kunai-oss
 
-ENTRYPOINT      mongod -f /etc/mongod.conf;test/test_one_linux_installation.sh&&test/test_mongodb.sh
+
+ENTRYPOINT     test/test_one_linux_installation.sh && test/test_mongodb.sh
 
 
