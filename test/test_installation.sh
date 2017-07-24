@@ -4,6 +4,7 @@ cd ..
 
 DOCKER_FILES=`ls -1 test/docker-files/docker-file-*txt`
 
+
 function print_color {
    export COLOR="$2"
    export TEXT="$1"
@@ -19,6 +20,12 @@ function get_var_name {
    echo "$DOCKER_FILE"
 }
 
+export SUCCESS_FILE=/tmp/kunai.test.installation.success
+export FAIL_FILE=/tmp/kunai.test.installation.fail
+
+# Clean results files
+rm -fr $SUCCESS_FILE  $FAIL_FILE
+
 
 function try_installation {
    FULL_PATH=$1
@@ -30,6 +37,7 @@ function try_installation {
    if [ $? != 0 ]; then
        print_color "ERROR:$DOCKER_FILE" "red"
        printf "Cannot build. Look at $LOG\n"
+       printf "$DOCKER_FILE\n" >> $FAIL_FILE
        return
    fi
 
@@ -39,13 +47,28 @@ function try_installation {
    if [ $? != 0 ]; then
        print_color "ERROR: $DOCKER_FILE" "red"
        printf "  Cannot run. Look at $LOG\n"
+       printf "$DOCKER_FILE\n" >> $FAIL_FILE
        return
    fi
    print_color "OK: $DOCKER_FILE" "green"
    printf "  (log=$LOG)\n"
+   printf "$DOCKER_FILE\n" >> $SUCCESS_FILE
 }
 
 
 export -f try_installation
 
 echo $DOCKER_FILES | xargs --delimiter=' ' --no-run-if-empty -n 1 -P 4 -I {} bash -c 'try_installation "{}"'
+
+printf "Some tests are OK:\n"
+cat $SUCCESS_FILE
+
+ALL_ERRORS=$(cat $FAIL_FILE)
+if [ "X$ALL_ERRORS" -eq "X" ]; then
+   echo "OK, no errors."
+   exit 0
+else
+   echo "ERRORS: some tests did fail:"
+   cat $FAIL_FILE
+   exit 1
+fi
