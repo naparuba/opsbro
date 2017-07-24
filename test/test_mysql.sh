@@ -13,7 +13,7 @@ RES=$(kunai evaluator eval "{{collector.mysql.max_used_connections}} >= 1" | tai
 
 if [ $RES != "True" ]; then
     echo "Fail: mysql collectors is fail {{collector.mysql.max_used_connections}} >= 1 => $RES"
-    kunai collectors show mongodb
+    kunai collectors show mysql
     exit 2
 fi
 

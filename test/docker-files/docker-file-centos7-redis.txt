@@ -1,0 +1,13 @@
+FROM centos:7
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+RUN        yum --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install epel-release
+RUN        yum --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install redis
+
+ADD        . /root/kunai-oss
+
+WORKDIR    /root/kunai-oss
+
+ENTRYPOINT      test/test_one_linux_installation.sh && test/test_redis.sh
+
+
