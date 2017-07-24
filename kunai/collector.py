@@ -112,6 +112,8 @@ class Collector(object):
     
     def main(self):
         self.logger.debug('Launching main for %s' % self.__class__)
+        # Reset log
+        self.log = ''
         try:
             r = self.launch()
         except Exception:
