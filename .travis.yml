@@ -18,11 +18,12 @@ install:
 # notice: the nose-cov is used because it is compatible with --processes, but produce a .coverage by process
 # so we must combine them in the end
 script:
+  - bin/bash test/test_installation.sh
   - cd test
   - nosetests -xv --process-restartworker --processes=1 --process-timeout=999999999  --with-cov --cov=kunai
   - coverage combine
   - cd ..
-  - test/test_installation.sh
+
 
 # specific call to launch coverage data into coveralls.io
 after_success:
