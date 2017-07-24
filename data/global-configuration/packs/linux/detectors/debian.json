@@ -1,8 +1,0 @@
-{
-    "detector": {
-        "tags": ["debian"],
-        "apply_if": "{{collector.system.os.linux.distribution}} == 'debian'",
-        "interval": "10s"
-    }
-}
-

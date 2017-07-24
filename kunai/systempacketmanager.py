@@ -156,9 +156,9 @@ class SystemPacketMgr(object):
                         k, v = line.rstrip().split("=")
                         # .strip('"') will remove if there or else do nothing
                         inf[k] = v.strip('"')
-                distname = inf['ID'].lower()
-                distversion = inf['VERSION_ID'].lower()
-                distid = inf['ID'].lower()
+                distname = inf['ID'].lower().strip()
+                distversion = inf['VERSION_ID'].lower().strip()
+                distid = inf['ID'].lower().strip()
 
         
         # Raw string is used by setup for display

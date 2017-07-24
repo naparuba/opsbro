@@ -5,6 +5,12 @@ mongod -f /etc/mongod.conf
 
 sleep 15
 
+test/assert_tag.sh "mongodb"
+if [ $? != 0 ]; then
+    echo "ERROR: Mongodb tag is not set"
+fi
+
+
 RES=$(kunai evaluator eval "{{collector.mongodb.available}}==True" | tail -n 1)
 
 if [ $RES != "True" ]; then

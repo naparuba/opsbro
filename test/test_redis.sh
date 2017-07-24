@@ -5,6 +5,12 @@ redis-server&
 
 sleep 20
 
+test/assert_tag.sh "redis"
+if [ $? != 0 ]; then
+    echo "ERROR: redis tag is not set"
+fi
+
+
 RES=$(kunai evaluator eval "{{collector.redis.available}} == True" | tail -n 1)
 if [ $RES != "True" ]; then
     echo "Fail: redis collectors is fail {{collector.redis.available}} == True => $RES"
