@@ -1,0 +1,14 @@
+FROM centos:7
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+RUN        yum --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install epel-release
+RUN        yum --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install rabbitmq-server
+
+ADD        . /root/kunai-oss
+WORKDIR    /root/kunai-oss
+
+RUN        python setup.py install
+
+ENTRYPOINT   test/test_one_linux_installation.sh && test/test_rabbitmq.sh
+
+

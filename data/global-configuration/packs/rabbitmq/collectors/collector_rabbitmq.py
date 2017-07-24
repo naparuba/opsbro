@@ -11,43 +11,28 @@ class RabbitMQ(Collector):
         logger = self.logger
         logger.debug('getRabbitMQStatus: start')
         
-        if 'rabbitMQStatusUrl' not in self.config or \
-                        'rabbitMQUser' not in self.config or \
-                        'rabbitMQPass' not in self.config or \
-                        self.config['rabbitMQStatusUrl'] == 'http://www.example.com:55672/json':
-            
-            logger.debug('getRabbitMQStatus: config not set')
-            return False
-        
-        logger.debug('getRabbitMQStatus: config set')
+        uri = 'http://localhost:15672/api/overview'
+        user = 'guest'
+        password = 'guest'
         
         try:
             logger.debug('getRabbitMQStatus: attempting authentication setup')
             
             manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
-            manager.add_password(None, self.config['rabbitMQStatusUrl'], self.config['rabbitMQUser'],
-                                 self.config['rabbitMQPass'])
+            manager.add_password(None, uri, user,password)
             handler = urllib2.HTTPBasicAuthHandler(manager)
             opener = urllib2.build_opener(handler)
             urllib2.install_opener(opener)
             
             logger.debug('getRabbitMQStatus: attempting urlopen')
-            req = urllib2.Request(self.config['rabbitMQStatusUrl'], None, {})
+            req = urllib2.Request(uri, None, {})
             
             # Do the request, log any errors
             request = urllib2.urlopen(req)
             response = request.read()
         
-        except urllib2.HTTPError, e:
-            logger.error('Unable to get RabbitMQ status - HTTPError = %s', e)
-            return False
-        
-        except urllib2.URLError, e:
-            logger.error('Unable to get RabbitMQ status - URLError = %s', e)
-            return False
-        
-        except httplib.HTTPException, e:
-            logger.error('Unable to get RabbitMQ status - HTTPException = %s', e)
+        except (urllib2.HTTPError,urllib2.URLError, httplib.HTTPException) as e:
+            logger.error('Unable to get RabbitMQ status - HTTPError = %s' % e)
             return False
         
         except Exception:
@@ -56,7 +41,10 @@ class RabbitMQ(Collector):
         
         try:
             status = json.loads(response)
-            
+        except Exception, exp:
+            logger.error("Rabbitmq: parsing json: %s" % exp)
+            return False
+            '''
             logger.debug(status)
             
             if 'connections' not in status:
@@ -108,5 +96,5 @@ class RabbitMQ(Collector):
                 continue
             
             queue['name'] = '%s/%s' % (vhost, queue['name'])
-        
+        '''
         return status
