@@ -12,7 +12,7 @@ try:
 except ImportError:
     Client = None
 
-from kunai.cgroups import cgroupmgr
+from kunai.misc.cgroups import cgroupmgr
 
 
 class TestCGroup(KunaiTest):
