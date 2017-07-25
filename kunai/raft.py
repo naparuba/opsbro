@@ -423,9 +423,10 @@ class RaftNode(object):
         if candidate_race_ratio != 1:
             print "[%4d] [%d] New timings:%s %s" % (self.i, self.election_turn, low_election_timeout, high_election_timout)
         
-        # ask for a timeout between 150 and 300ms
-        election_timeout = random.randint(low_election_timeout * 1000, high_election_timout * 1000)
-        self.t_to_candidate = time.time() + election_timeout * 0.001
+        # ask for a timeout between 150 and 300ms (by default, time can grow up if election fail again and again)
+        election_timeout = low_election_timeout + random.random() * (high_election_timout - low_election_timeout)
+        print "[%4d] Election timeout: %.3f" % (self.i, election_timeout)
+        self.t_to_candidate = time.time() + election_timeout
         self.set_state('wait_for_candidate')
 
 

@@ -32,6 +32,20 @@ class DummyBackend(object):
     def install_package(self, package):
         raise NotImplemented()
 
+# TODO: get a way to know if a service is enabled, or not
+# RUN level: [root@centos-7 ~]# systemctl get-default
+# multi-user.target   ==> 3
+# graphical.target    ==> 5
+# systemctl list-unit-files --full --type=service --state=enabled --plain --no-legend
+# &
+# chkconfig --list 2>/dev/null| grep '3:on'
+
+# DEBIAN:
+# Run level:
+# root@docker-host:~/kunai-oss# systemctl get-default
+# graphical.target
+
+
 
 class AptBackend(object):
     def __init__(self):

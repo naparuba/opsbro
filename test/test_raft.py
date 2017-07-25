@@ -11,15 +11,17 @@ from kunai.raft import RaftNode
 
 
 class TestRaft(KunaiTest):
+    '''
     def setUp(self):
         pass
     
+    '''
     
     def tearDown(self):
-        import os
-        os._exit(0)
+        #import os
+        #os._exit(0)
         self.stop()
-    
+
     
     def create(self, N=3):
         self.nodes = [{'node': RaftNode(i), 'queue': Queue()} for i in range(N)]
@@ -75,11 +77,18 @@ class TestRaft(KunaiTest):
     
     
     def stop(self):
+        print "STOP"
         for d in self.nodes:
             n = d['node']
             n.stop()
+        print "WAITING"
+        wait_time = 1
         for t in self.threads:
-            t.join(2)
+            print "Waiting for", t
+            t.join(0.01)
+            wait_time -= 1
+            if wait_time < 0:
+                wait_time = 0.01
     
     
     # Create N nodes with their own thread, and wait some seconds 
@@ -117,13 +126,14 @@ class TestRaft(KunaiTest):
     
     # Try with far more nodes
     def test_raft_large_leader_election(self):
+        print "TEST: test_raft_large_leader_election"
         N = 600
         W = 30  # for very slow computing like travis?
         self.create_and_wait(N=N, wait=W)
         
-        time.sleep(5)
-        print "Looking if we really got a leader, and only one"
-        print "Number of leaders: %d" % self.count('leader')
+        #time.sleep(5)
+        print "test_raft_large_leader_election:: Looking if we really got a leader, and only one"
+        print "test_raft_large_leader_election:: Number of leaders: %d" % self.count('leader')
         self.compute_stats()
         
         print "\n" * 20
@@ -134,10 +144,10 @@ class TestRaft(KunaiTest):
         
         print >> sys.stderr, "\nSTATS: %s" % self.stats
         
-        if self.count('leader') == 1:
-            os._exit(0)
-        else:
-            os._exit(2)
+        #if self.count('leader') == 1:
+        #    os._exit(0)
+        #else:
+        #    os._exit(2)
         
         self.assert_(self.count('leader') == 1)
         
@@ -148,15 +158,16 @@ class TestRaft(KunaiTest):
         self.assert_(nb_followers == N - 1)
         
         # always clean before exiting a test
-        self.stop()
+        #self.stop()
     
     
     # What is we kill some not leader nodes?
     def test_raft_kill_no_leader(self):
+        print "TEST: test_raft_kill_no_leader"
         N = 10
         W = 3
         self.create_and_wait(N=N, wait=W)
-        print "Looking if we really got a leader, and only one"
+        print "test_raft_kill_no_leader:: Looking if we really got a leader, and only one"
         self.assert_(self.count('leader') == 1)
         self.assert_(self.count('follower') == N - 1)
         
@@ -182,7 +193,7 @@ class TestRaft(KunaiTest):
         self.assert_(self.count('follower') == N - 1 - NB_kill)
         
         # always clean before exiting a test
-        self.stop()
+        #self.stop()
 
 
 if __name__ == '__main__':
