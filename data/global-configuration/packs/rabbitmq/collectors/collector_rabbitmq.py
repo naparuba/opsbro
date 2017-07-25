@@ -5,6 +5,7 @@ import json
 
 from kunai.collector import Collector
 
+# TODO: look at all available at to learn how rabbitmq is working https://github.com/nagios-plugins-rabbitmq/nagios-plugins-rabbitmq
 
 class RabbitMQ(Collector):
     def launch(self):
@@ -44,57 +45,5 @@ class RabbitMQ(Collector):
         except Exception, exp:
             logger.error("Rabbitmq: parsing json: %s" % exp)
             return False
-            '''
-            logger.debug(status)
-            
-            if 'connections' not in status:
-                # We are probably using the newer RabbitMQ 2.x status plugin, so try to parse that instead.
-                status = {}
-                logger.debug('getRabbitMQStatus: using 2.x management plugin data')
-                import urlparse
-                
-                split_url = urlparse.urlsplit(self.config['rabbitMQStatusUrl'])
-                
-                # Connections
-                url = split_url[0] + '://' + split_url[1] + '/api/connections'
-                logger.debug('getRabbitMQStatus: attempting urlopen on %s', url)
-                manager.add_password(None, url, self.config['rabbitMQUser'], self.config['rabbitMQPass'])
-                req = urllib2.Request(url, None, {})
-                # Do the request, log any errors
-                request = urllib2.urlopen(req)
-                response = request.read()
-                
-                connections = json.loads(response)
-                
-                status['connections'] = len(connections)
-                logger.debug('getRabbitMQStatus: connections = %s', status['connections'])
-                
-                # Queues
-                url = split_url[0] + '://' + split_url[1] + '/api/queues'
-                logger.debug('getRabbitMQStatus: attempting urlopen on %s', url)
-                manager.add_password(None, url, self.config['rabbitMQUser'], self.config['rabbitMQPass'])
-                req = urllib2.Request(url, None, {})
-                # Do the request, log any errors
-                request = urllib2.urlopen(req)
-                response = request.read()
-                
-                queues = json.loads(response)
-                
-                status['queues'] = queues
-                logger.debug(status['queues'])
-        
-        except Exception:
-            logger.error('Unable to load RabbitMQ status JSON - Exception = %s', traceback.format_exc())
-            return False
-        
-        logger.debug('getRabbitMQStatus: completed, returning')
-        
-        # Fix for queues with the same name (case 32788)
-        for queue in status.get('queues', []):
-            vhost = queue.get('vhost', '/')
-            if vhost == '/':
-                continue
-            
-            queue['name'] = '%s/%s' % (vhost, queue['name'])
-        '''
+
         return status
