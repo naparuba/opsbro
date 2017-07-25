@@ -127,7 +127,7 @@ class TestRaft(KunaiTest):
     # Try with far more nodes
     def test_raft_large_leader_election(self):
         print "TEST: test_raft_large_leader_election"
-        N = 600
+        N = 300
         W = 30  # for very slow computing like travis?
         self.create_and_wait(N=N, wait=W)
         
