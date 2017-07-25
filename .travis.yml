@@ -28,10 +28,10 @@ script:
   - chmod a+x *sh
   - ./test_installation.sh
   - nosetests -xv --processes=1 --process-timeout=300 --process-restartworker --with-cov --cov=kunai --exe
-  - coverage combine
-  - cd ..
+#  - coverage combine
+#  - cd ..
 
 
 # specific call to launch coverage data into coveralls.io
-after_success:
-  coveralls
+#after_success:
+#  coveralls
