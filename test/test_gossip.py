@@ -2,18 +2,15 @@
 # Copyright (C) 2014:
 #    Gabes Jean, naparuba@gmail.com
 
-import copy
-import time
 import threading
 from kunai_test import *
 
-from kunai.gossip import Gossip
-from kunai.broadcast import Broadcaster
+from kunai.gossip import gossiper
 
 
 class TestGossip(KunaiTest):
     def setUp(self):
-        self.gossip = Gossip({}, threading.RLock(), 'localhost', 6768, 'testing-kunai', 0, 'AAAA', ['linux', 'kv'], [], False)
+        gossiper.init({}, threading.RLock(), '127.0.0.1', 6768, 'testing', 'super testing', 1, 'QQQQQQQQQQQQQQQQQQ', [], [], False, 'private', True)
     
     
     def test_gossip(self):
