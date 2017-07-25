@@ -1,15 +1,17 @@
+from __future__ import print_function
 import threading
 import time
 import random
 import math
 import sys
-from Queue import Queue, Empty
 
 # ELECTION_TIMEOUT_LIMITS = (150, 300)
 
 HEARTHBEAT_INTERVAL = 150
 
 ELECTION_PERIOD = 1000  # 1s for a candidate to wait for others response
+
+print_lock = threading.RLock()
 
 
 class RaftNode(object):
@@ -53,6 +55,8 @@ class RaftNode(object):
         self.candidate_nb_times = 0
         
         self.nodes = []
+        
+        self.creation_date = time.time()
     
     
     # timeouts will change based on the number of elements, as s timing
@@ -76,6 +80,15 @@ class RaftNode(object):
         return '(%d:%s)' % (self.i, self.state)
     
     
+    def get_print_header(self):
+        return '[%3d][%4d][%-20s][%.3f]' % (self.election_turn, self.i, self.state, time.time() - self.creation_date)
+    
+    
+    def do_print(self, *args, **kwargs):
+        with print_lock:
+            print(self.get_print_header(), *args, **kwargs)
+    
+    
     def tick(self, nodes):
         pass
     
@@ -84,7 +97,7 @@ class RaftNode(object):
         # Already the same state
         if state == self.state:
             return
-        print "[%4d] %s => %s " % (self.i, self.state, state)
+        self.do_print("%s => %s " % (self.state, state))
         self.state = state
     
     
@@ -96,15 +109,19 @@ class RaftNode(object):
             other = d['node']
             if other.i != self.i:
                 d['queue'].put(m)
+                # with d['lck']:
+                #    d['queue'].append(m)
     
     
     # Return a ok vote to the candidate_id node
     def give_vote_to(self, nodes, candidate_id):
-        print "[%4d] I give a vote to %d" % (self.i, candidate_id)
+        self.do_print("I give a vote to %d" % (candidate_id))
         for d in nodes:
             if d['node'].i == candidate_id:
                 m_ret = {'type': 'vote', 'from': self.i, 'election_turn': self.election_turn}
                 d['queue'].put(m_ret)
+                # with d['lck']:
+                #    d['queue'].append(m_ret)
     
     
     # Return a ok vote to the candidate_id node
@@ -113,6 +130,8 @@ class RaftNode(object):
             if d['node'].i == other_id:
                 m_ret = {'type': 'warn-old-election-turn', 'from': self.i, 'election_turn': self.election_turn}
                 d['queue'].put(m_ret)
+                # with d['lck']:
+                #    d['queue'].append(m_ret)
     
     
     # Wrn all nodes about a new election turn
@@ -121,7 +140,21 @@ class RaftNode(object):
         self.send_to_others(nodes, m_ret)
     
     
-    # someone did ask us t ovote for him. We must not already have a leader, and
+    # I did vote for someone, and I want it to win (stable system). So I forward it to other nodes
+    def forward_to_other_nodes_my_candidate(self, m, nodes):
+        n = int(math.ceil(math.log(len(nodes)))) + 1
+        
+        n = min(n, len(nodes))
+        
+        # try to find n nodes randomly from nodes
+        to_send = []
+        for i in xrange(n):
+            to_send.append(random.choice(nodes))
+        self.do_print('I did vote for %s and I want to let it know to %s neibours' % (self.candidate_id, len(to_send)))
+        self.send_to_others(to_send, m)
+    
+    
+    # someone did ask us to vote for him. We must not already have a leader, and
     # we must be a follower or not already a candidate
     def manage_ask_vote(self, m, nodes):
         if self.leader is None and self.state in ['follower', 'wait_for_candidate']:  # no leader? ok vote for you guy!
@@ -130,6 +163,8 @@ class RaftNode(object):
             self.vote_date = time.time()
             self.give_vote_to(nodes, candidate_id)
             self.candidate_id = candidate_id
+            # I am helping my new leader to win, I propagate the fact it is a candidate
+            self.forward_to_other_nodes_my_candidate(m, nodes)
     
     
     # Someone did vote for me, but I must be a candidate to accept this
@@ -141,7 +176,7 @@ class RaftNode(object):
         quorum_size = math.ceil(float(len(nodes) + 1) / 2)
         # print "I (%d) got a new voter %d" % (n.i, self.nb_vote)
         if self.nb_vote >= quorum_size:
-            print "[%4d] did win the vote! with %d votes for me on a total of %d (quorum size=%d) in %.2fs" % (self.i, self.nb_vote, len(nodes), quorum_size, time.time() - self.start)
+            self.do_print("did win the vote! with %d votes for me on a total of %d (quorum size=%d) in %.2fs" % (self.nb_vote, len(nodes), quorum_size, time.time() - self.start))
             self.set_state('leader')
             # warn every one that I am the leader
             m_broad = {'type': 'leader-elected', 'leader': self.i, 'from': self.i}
@@ -156,16 +191,16 @@ class RaftNode(object):
             return
         
         if self.state == 'leader':  # another leader?
-            print "TO MANAGE" * 100, self.i, elected_id, self.term
+            print("TO MANAGE" * 100, self.i, elected_id, self.term)
             return
         
         # Already know it
         if self.leader is not None and self.leader.i == elected_id:
-            print "[%4d] Already know about this leader %s" % (self.i, elected_id)
+            self.do_print("Already know about this leader %s" % (elected_id))
             return
         
         if self.state in ['candidate', 'follower', 'did-vote']:  #
-            # print "GOT A LEADER JUST ELECTED", self.i, elected_id
+            self.do_print("GOT A LEADER JUST ELECTED: %s" % elected_id)
             self.leader = None
             for d in nodes:
                 if d['node'].i == elected_id:
@@ -175,7 +210,7 @@ class RaftNode(object):
                 return
             
             if self.state == 'candidate':
-                print "[%4d] got a new leader (%d) before me, and I respect it" % (self.i, self.leader.i)
+                self.do_print(" got a new leader (%d) before me, and I respect it" % (self.leader.i))
             self.nb_vote = 0
             self.set_state('follower')
             self.t_to_candidate = 0
@@ -189,11 +224,11 @@ class RaftNode(object):
             # TODO: get the new leader? only if term is possible of course
             return
         if leader_id != self.leader.i:
-            print "NOT THE GOOD LEADER ASK US? WTF"
+            self.do_print("NOT THE GOOD LEADER ASK US? WTF")
             sys.exit(2)
         
         if self.state != 'follower':
-            print "A leader ask me to ping but I am not a follower"
+            self.do_print("A leader ask me to ping but I am not a follower")
             return
         # print "Acception leader ping"
         # Ok accept this leader ping
@@ -202,7 +237,7 @@ class RaftNode(object):
     
     def look_for_candidated(self, nodes):
         if time.time() > self.t_to_candidate:
-            print "[%4d] is going to be a candidate!" % self.i
+            self.do_print("is going to be a candidate!")
             # self.state = self.raft_state = 'candidate'
             self.set_state('candidate')
             self.nb_vote = 1  # I vote for me!
@@ -221,22 +256,22 @@ class RaftNode(object):
         m = {'type': 'leader-heartbeat', 'leader': self.i, 'from': self.i}
         self.send_to_others(nodes, m)
         if (time.time() - t0) > 0.1:
-            print "************ [%d] TIME TO LEADER OTHERS: %.3f" % (self.i, (time.time() - t0))
+            self.do_print("************ TIME TO LEADER OTHERS: %.3f" % (time.time() - t0))
     
     
     # Launch a dummy message to others, for example to be sure our election_turn is ok
     def launch_dummy_to_random_others(self, nodes):
         n = int(math.ceil(math.log(len(nodes)))) + 1
-        n *= self.frozen_number  # the more we did get into frozen, the more nodes we try to sync with
+        # n *= self.frozen_number  # the more we did get into frozen, the more nodes we try to sync with
         n = min(n, len(nodes))
         
-        n = len(nodes)
+        # n = len(nodes)
         # try to find n nodes randomly from nodes
         to_send = []
         for i in xrange(n):
             to_send.append(random.choice(nodes))
         # Now send
-        print "[%4d] SEND RANDOMLY dummy passage: %s" % (self.i, len(to_send))
+        self.do_print("SEND RANDOMLY dummy passage: %s [%s]" % (len(to_send), ','.join(['%d' % d['node'].i for d in to_send])))
         m = {'type': 'dummy', 'election_turn': self.election_turn, 'from': self.i}
         self.send_to_others(to_send, m)
     
@@ -245,7 +280,7 @@ class RaftNode(object):
     # so we will wait more for being candidate.
     # also reset the states
     def fail_to_elect(self):
-        print "[%4d] Fail to elect, increase election turn" % self.i
+        self.do_print("Fail to elect, increase election turn")
         self.reset()
         self.election_turn += 1
         self.build_wait_for_candidate_phase()
@@ -259,7 +294,7 @@ class RaftNode(object):
         self.leader = None
         self.last_leader_talk = 0
         self.vote_date = 0
-        print "[%4d] WAS CANDIDATE? %d nb times" % (self.i, self.candidate_nb_times)
+        self.do_print(" WAS CANDIDATE? %d nb times" % (self.candidate_nb_times))
     
     
     def main(self, q, nodes):
@@ -271,7 +306,7 @@ class RaftNode(object):
             # if self.state not in ['did-vote', 'follower']:
             #    print "END Of loop", self.state, self.term
             if self.state == 'leader':
-                print "I AM STILL THE LEADER OF THE TERM", self.term
+                self.do_print("I AM STILL THE LEADER OF THE TERM", self.term)
                 # time.sleep(1)
                 continue
             # maybe we are not the leader and so we must look if localy
@@ -294,21 +329,14 @@ class RaftNode(object):
         self.build_wait_for_candidate_phase()
         
         while not self.interrrupted:
-            # look for message before looking for a new state :)
-            try:
-                r = q.get_nowait()
-            except Empty:
-                r = {}
-            except Exception, exp:
-                print "ERROR: not managed: %s" % exp
-                break
+            r = q.get()
             
             # Look if we are still frozen
             now = time.time()
             if self.end_frozen_date != 0 and now > self.end_frozen_date:
                 self.end_frozen_date = 0
                 self.is_frozen = False
-                print "[%4d] Exiting from freeze" % self.i
+                self.do_print("Exiting from freeze")
             
             if r:
                 m = r
@@ -322,9 +350,11 @@ class RaftNode(object):
                     # print "[%4d] I warn the other nodes that the election turn can be too old, and our is %s, other is %d" % (self.i, self.election_turn, election_turn)
                     self.warn_other_node_about_old_election_turn(nodes, m['from'])
                     continue
-                
+                did_cahnge_election_turn = False
                 # Maybe the message is from a newer turn than ourselve, if so, close ourself, and accept the new message
                 if self.election_turn < election_turn:
+                    did_cahnge_election_turn = True
+                    self.do_print('We receive an increasing election turn (%d=>%d) from a message type %s' % (self.election_turn, election_turn, m['type']))
                     '''
                     # Ok I was too old, go in frozen mode
                     self.is_frozen = True
@@ -337,8 +367,7 @@ class RaftNode(object):
                         self.election_turn = election_turn
                     else:  # candidate, leader and did-vote
                         # close our election turn only if we did talk to others, like I am a candidate, a vote or
-                        print "[%4d] Our election turn is too old (our=%d other=%d) we close our election turn." % (self.i, self.election_turn, election_turn)
-                        print "[%4d] swith our election turn from %d to %d" % (self.i, self.election_turn, election_turn)
+                        self.do_print("Our election turn is too old (our=%d other=%d) we close our election turn." % (self.election_turn, election_turn))
                         self.fail_to_elect()
                         self.election_turn = election_turn  # get back to this election turn level
                         if self.state == 'leader' or self.state == 'candidate':
@@ -349,7 +378,10 @@ class RaftNode(object):
                 
                 # someone did warn that its election turn is newer than our, take it
                 if m['type'] == 'warn-old-election-turn':
-                    pass  # was already managed in the previous block, we did invalidate our turn
+                    continue  # was already managed in the previous block, we did invalidate our turn
+                
+                if did_cahnge_election_turn:
+                    self.do_print('I did change election turn and I am still managing message type: %s' % m['type'])
                 
                 # Someone ask us for voting for them. We can only if we got no valid leader
                 # and we are a follower or not until a candidate
@@ -375,7 +407,7 @@ class RaftNode(object):
             if self.state == 'did-vote':
                 now = time.time()
                 if now > self.vote_date + hearthbeat_timeout:
-                    print "[%4d] my vote is too old and I don't have any elected leader, I switch back to a new election. exchange timeout=%.3f" % (self.i, hearthbeat_timeout)
+                    self.do_print("my vote is too old and I don't have any elected leader, I switch back to a new election. exchange timeout=%.3f" % (hearthbeat_timeout))
                     self.fail_to_elect()
             
             # If we are a follower witohout a leader, it means we are in the begining of our job
@@ -388,7 +420,7 @@ class RaftNode(object):
             elif self.state == 'follower' and self.leader is not None:
                 now = time.time()
                 if now > self.last_leader_talk + hearthbeat_timeout:
-                    print "[%4d] my leader is too old, I refute it. exchange timeout=%.3f" % (self.i, hearthbeat_timeout)
+                    self.do_print(" my leader is too old, I refute it. exchange timeout=%.3f" % (hearthbeat_timeout))
                     # self.leader = None
                     self.fail_to_elect()
             
@@ -410,29 +442,30 @@ class RaftNode(object):
         # Crush 1/3 of the candidates
         if self.candidate_nb_times > 0:
             lucky_number = random.random()
-            print "[%4d] Current candidate nb times: %d, lucky_number=%.2f" % (self.i, self.candidate_nb_times, lucky_number)
+            self.do_print("Current candidate nb times: %d, lucky_number=%.2f" % (self.candidate_nb_times, lucky_number))
             if lucky_number > 0.1:
                 self.candidate_nb_times = 0
         
         # Other 2/3 have 3 more time to participate
         if self.candidate_nb_times > 0:
             candidate_race_ratio = 999
-            print "[%4d] We give a favor to candidature %s %s" % (self.i, low_election_timeout, high_election_timout)
+            self.do_print("We give a favor to candidature %s %s" % (low_election_timeout, high_election_timout))
         low_election_timeout /= candidate_race_ratio
         high_election_timout /= candidate_race_ratio
         if candidate_race_ratio != 1:
-            print "[%4d] [%d] New timings:%s %s" % (self.i, self.election_turn, low_election_timeout, high_election_timout)
+            self.do_print("New timings:%s %s" % (low_election_timeout, high_election_timout))
         
         # ask for a timeout between 150 and 300ms (by default, time can grow up if election fail again and again)
         election_timeout = low_election_timeout + random.random() * (high_election_timout - low_election_timeout)
-        print "[%4d] Election timeout: %.3f" % (self.i, election_timeout)
+        self.do_print("Election timeout: %.3f" % (election_timeout))
         self.t_to_candidate = time.time() + election_timeout
         self.set_state('wait_for_candidate')
 
 
 N = 3
 
-nodes = [{'node': RaftNode(i), 'queue': Queue()} for i in range(N)]
+# nodes = [{'node': RaftNode(i), 'queue': Queue()} for i in range(N)]
+nodes = [{'node': RaftNode(i), 'queue': [], 'lck': threading.RLock()} for i in range(N)]
 
 
 def do_the_job(LOOP):
@@ -451,7 +484,7 @@ def do_the_job(LOOP):
         t.join()
     
     # did we got a leader?
-    print "RESULT FOR", LOOP
+    print("RESULT FOR", LOOP)
     leader = None
     max_vote = 0
     for d in nodes:
@@ -459,18 +492,18 @@ def do_the_job(LOOP):
         max_vote = max(max_vote, n.nb_vote)
         if n.state == 'leader':
             if leader != None:
-                print "WE GOT 2 LEADER, WTF DID YOU DID JEAN?????"
+                print("WE GOT 2 LEADER, WTF DID YOU DID JEAN?????")
                 sys.exit("JEAN HOW CAN YOU BREAK SUCH AN ALGO?")
             
-            print "GOT A LEADER", n.i, 'with ', n.nb_vote, "LOOP", LOOP
+            print("GOT A LEADER", n.i, 'with ', n.nb_vote, "LOOP", LOOP)
             leader = n
     
-    print "Candidate density::", LOOP, 300 * (2 ** LOOP) / float(N), "ms", "& number of candidate in this loop (%d)" % LOOP, len([d for d in nodes if d['node'].state in ('candidate', 'leader')])
+    print("Candidate density::", LOOP, 300 * (2 ** LOOP) / float(N), "ms", "& number of candidate in this loop (%d)" % LOOP, len([d for d in nodes if d['node'].state in ('candidate', 'leader')]))
     if leader is not None:
-        print "Good job jim", "LOOP", LOOP
+        print("Good job jim", "LOOP", LOOP)
         sys.exit(0)
     
-    print "No leader, max vote is", max_vote
+    print("No leader, max vote is", max_vote)
 
 
 if __name__ == '__main__':
