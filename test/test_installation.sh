@@ -49,6 +49,10 @@ function try_installation {
        print_color "ERROR: $DOCKER_FILE" "red"
        printf "  Cannot run. Look at $LOG\n"
        printf "$DOCKER_FILE\n" >> $FAIL_FILE
+       # Note: under travis we cannot look at the log AFTER so we must print it now
+       if [ "X$TRAVIS" == "Xtrue" ]; then
+          cat $LOG
+       fi
        return
    fi
    print_color "OK: $DOCKER_FILE" "green"
