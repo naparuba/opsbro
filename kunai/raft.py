@@ -72,7 +72,7 @@ class RaftNode(object):
     
     
     def stop(self):
-        self.set_state('leaved')
+        # self.set_state('leaved')
         self.interrrupted = True
     
     
@@ -99,6 +99,11 @@ class RaftNode(object):
             return
         self.do_print("%s => %s " % (self.state, state))
         self.state = state
+        
+        # Hook test for multiprocess values
+        if hasattr(self, 'export_state'):
+            states_values = {'did-vote': 1, 'leader': 2, 'follower': 3, 'candidate': 4, 'wait_for_candidate': 5, 'leaved': 6}
+            self.export_state.value = states_values[state]
     
     
     # Send a message to all other nodes, but not me
