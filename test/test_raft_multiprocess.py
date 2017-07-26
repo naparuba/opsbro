@@ -140,7 +140,7 @@ class TestRaftMultiProcess(KunaiTest):
         self.create(N)
         self.launch(wait)
         
-        time.sleep(wait+5)
+        time.sleep(wait + 5)
     
     
     def get_leader(self):
@@ -188,8 +188,6 @@ class TestRaftMultiProcess(KunaiTest):
         print "NB followers", nb_followers
         print self.stats
         self.assert_(nb_followers == N - 1)
-        
-        self.assert_(False == True)
 
 
 if __name__ == '__main__':
