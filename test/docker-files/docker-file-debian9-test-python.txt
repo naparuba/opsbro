@@ -25,3 +25,4 @@ RUN       python setup.py install
 
 ENTRYPOINT    nosetests -xv --processes=1 --process-timeout=300 --process-restartworker --with-cov --cov=kunai --exe
 #ENTRYPOINT    cd test; python  test_raft_multiprocess.py  TestRaftMultiProcess.test_raft_large_leader_election
+#ENTRYPOINT    cd test; python  test_raft.py

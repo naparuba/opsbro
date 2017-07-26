@@ -163,7 +163,9 @@ class TestRaftMultiProcess(KunaiTest):
     # Try with far more nodes
     def test_raft_large_leader_election(self):
         print "TEST: test_raft_large_leader_election"
-        N = 300
+        # The thread switching context is killing message propagation time because we don't have so much CPU available. So
+        # we try to achieve 150 threads/CPU (it is still a lot)
+        N = 150 * multiprocessing.cpu_count()
         W = 30  # for very slow computing like travis?
         self.create_and_wait(N=N, wait=W)
         
