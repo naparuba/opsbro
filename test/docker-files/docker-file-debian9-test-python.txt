@@ -2,6 +2,7 @@ FROM debian:9
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 RUN        apt-get update && apt-get install -y python
+# Setup test env, "standard" installation is test with other tests ^^
 RUN        apt-get install -y python-pip
 RUN        pip install jinja2
 RUN        pip install leveldb
@@ -24,5 +25,10 @@ WORKDIR       /root/kunai-oss
 RUN       python setup.py install
 
 ENTRYPOINT    nosetests -xv --processes=1 --process-timeout=300 --process-restartworker --with-cov --cov=kunai --exe
+
+
+
+
+# Specific test, manual launch
 #ENTRYPOINT    cd test; python  test_raft_multiprocess.py  TestRaftMultiProcess.test_raft_large_leader_election
 #ENTRYPOINT    cd test; python  test_raft.py

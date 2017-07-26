@@ -8,6 +8,7 @@ sleep 15
 test/assert_tag.sh "mongodb"
 if [ $? != 0 ]; then
     echo "ERROR: Mongodb tag is not set"
+    exit 2
 fi
 
 

@@ -1,0 +1,17 @@
+FROM debian:9
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+RUN        apt-get update && apt-get install -y python
+# allow fast install (docker cache)
+RUN        apt-get install -y python-pip
+RUN        apt-get install -y python-leveldb
+RUN        apt-get install -y python-pycurl
+RUN        apt-get install -y python-cherrypy3
+
+
+ADD        . /root/kunai-oss
+WORKDIR       /root/kunai-oss
+
+RUN       python setup.py install
+
+ENTRYPOINT    test/test_one_linux_installation.sh   && test/test_installer_nginx.sh

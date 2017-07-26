@@ -2,11 +2,18 @@
   "installor": {
     "name": "nginx",
     "note": "This installer will install the nginx server if you set the server into the nginx user defined group. Support debian (8 and lower) and centos/redhat platforms.",
-    "if": "is_in_defined_group('nginx')",
+    "if": "file_exists('/tmp/install_nginx')",
     "environments": [
       {
-        "name": "debian 8",
-        "if": "{{collector.system.os.linux.distribution}} in ['debian', 'centos', 'redhat']",
+        "name": "ubuntu",
+        "if": "{{collector.system.os.linux.distribution}} == 'ubuntu'",
+        "packages": [
+          "nginx"
+        ]
+      },
+      {
+        "name": "debian",
+        "if": "{{collector.system.os.linux.distribution}} == 'debian'",
         "packages": [
           "nginx"
         ]

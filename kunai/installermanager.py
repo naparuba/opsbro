@@ -63,6 +63,9 @@ class Installor(object):
             logger.error('[%s] Execution of the if rule did fail: (%s)=>%s' % (self.name, self.if_, exp))
             return
         logger.debug('Installor:: (%s)  execute:: %s => %s' % (self.name, self.if_, r))
+        if not r:
+            logger.debug('Installor:: (%s) if rule do not match. Skip installer.' % (self.name))
+            return
         for env in self.environments:
             do_match = env.do_match()
             if do_match:
@@ -70,6 +73,13 @@ class Installor(object):
                 # Maybe
                 packages_to_install = env.which_packages_are_need_to_be_installed()
                 logger.debug('Installor:: (%s)  in the env %s, which packages need to be installed (because they are not currently) => %s ' % (self.name, env.name, ','.join(packages_to_install)))
+                for pkg in packages_to_install:
+                    logger.debug('Installor:: (%s)  in the env %s : installing package: %s' % (self.name, env.name, pkg))
+                    try:
+                        systepacketmgr.install_package(pkg)
+                    except Exception, exp:
+                        logger.error('Installor:: (%s)  in the env %s : package (%s) installation fail: %s' % (self.name, env.name, pkg, exp))
+                # always stop at the first env that match
                 break
 
 
