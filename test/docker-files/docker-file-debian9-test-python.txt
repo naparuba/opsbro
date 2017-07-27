@@ -32,3 +32,4 @@ ENTRYPOINT    nosetests -xv --processes=1 --process-timeout=300 --process-restar
 # Specific test, manual launch
 #ENTRYPOINT    cd test; python  test_raft_multiprocess.py  TestRaftMultiProcess.test_raft_large_leader_election
 #ENTRYPOINT    cd test; python  test_raft.py
+#ENTRYPOINT     cd test;python test_yaml.py

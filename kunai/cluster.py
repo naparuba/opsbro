@@ -53,6 +53,7 @@ from kunai.detectormgr import detecter
 from kunai.packer import packer
 from kunai.ts import tsmgr
 from kunai.jsonmgr import jsoner
+from kunai.yamlmgr import yamler
 from kunai.modulemanager import modulemanager
 from kunai.zonemanager import zonemgr
 from kunai.executer import executer
