@@ -54,7 +54,7 @@ function try_installation {
 
    SHA=`echo $BUILD|cut -d':' -f2`
 
-   docker run --interactive -a stdout -a stderr --rm=true  "$SHA" 2>&1 >$LOG
+   docker run --interactive -a stdout -a stderr --rm=true  "$SHA" 2>>$LOG >>$LOG
    if [ $? != 0 ]; then
        print_color "ERROR: $DOCKER_FILE" "red"
        printf "  Cannot run. Look at $LOG\n"
@@ -75,9 +75,9 @@ function try_installation {
 export -f try_installation
 
 NB_CPUS=`python -c "import multiprocessing;print multiprocessing.cpu_count()"`
-# Travis: lower t be sure there are CPU available (2 in burst)
+# Travis: be sure to use the 2 CPU available, and in fact to allow // connections so we keep the test time bellow the limit
 if [ "X$TRAVIS" == "Xtrue" ]; then
-   NB_CPUS=1
+   NB_CPUS=2
 fi
 
 
