@@ -3,9 +3,11 @@
 
 # Travis: only need to run the installation once, it it not link to a specific python version. They don't need to use CPU for nothing ;)
 if [ "X$TRAVIS_PYTHON_VERSION" == "X2.7" ]; then
-   echo "Skippping installation tests for travis 2.7 configuration."
+   echo "Skippping installation tests for travis 2.7 configuration, only need one launch (2.6)"
    exit 0
 fi
+
+echo "Launching installations tests for SUITE: $TEST_SUITE"
 
 cd ..
 

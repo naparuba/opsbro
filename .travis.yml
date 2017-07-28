@@ -14,6 +14,16 @@ install:
   - "pip install coveralls"
   - "pip install nose-cov"
   - "pip install unittest2"
+
+env:
+- TEST_SUITE=CENTOS
+- TEST_SUITE=UBUNTU
+- TEST_SUITE=FEDORA
+- TEST_SUITE=OTHER
+- TEST_SUITE=PYTHON
+
+
+
 # command to run tests
 # notice: the nose-cov is used because it is compatible with --processes, but produce a .coverage by process
 # so we must combine them in the end
@@ -26,8 +36,9 @@ install:
 script:
   - cd test
   - chmod a+x *sh
-  - ./test_installation.sh
-  - nosetests -xv --processes=1 --process-timeout=300 --process-restartworker --with-cov --cov=kunai --exe
+  - ./test_suite.sh
+#  - ./test_installation.sh
+#  - nosetests -xv --processes=1 --process-timeout=300 --process-restartworker --with-cov --cov=kunai --exe
 #  - coverage combine
 #  - cd ..
 
