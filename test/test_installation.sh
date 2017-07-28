@@ -1,8 +1,18 @@
 #!/usr/bin/env bash
 
+
+print "TRAVIS PYTHON TEST: $TRAVIS_PYTHON_VERSION"
+# Travis: only need to run the installation once, it it not link to a specific python version. They don't need to use CPU for nothing ;)
+if [ "X$TRAVIS_PYTHON_VERSION" == "X2.7" ]; then
+   echo "Skippping installation tests for travis 2.7 configuration."
+   exit 0
+fi
+
 cd ..
 
 DOCKER_FILES=`ls -1 test/docker-files/docker-file-*txt`
+
+
 
 
 function print_color {
