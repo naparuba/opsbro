@@ -80,9 +80,12 @@ NB_CPUS=`python -c "import multiprocessing;print multiprocessing.cpu_count()"`
 # Travis: be sure to use the 2 CPU available, and in fact to allow // connections so we keep the test time bellow the limit
 if [ "X$TRAVIS" == "Xtrue" ]; then
    NB_CPUS=2
+   echo "Travis detected, using 2 CPUs"
 fi
 
 
+# export TRAVIS var so xargs calls with have it
+export TRAVIS=$TRAVIS
 echo $DOCKER_FILES | xargs --delimiter=' ' --no-run-if-empty -n 1 -P $NB_CPUS -I {} bash -c 'try_installation "{}"'
 
 printf "Some tests are OK:\n"
