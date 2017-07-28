@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 
-print "TRAVIS PYTHON TEST: $TRAVIS_PYTHON_VERSION"
 # Travis: only need to run the installation once, it it not link to a specific python version. They don't need to use CPU for nothing ;)
 if [ "X$TRAVIS_PYTHON_VERSION" == "X2.7" ]; then
    echo "Skippping installation tests for travis 2.7 configuration."
@@ -41,7 +40,8 @@ export FAIL_FILE=/tmp/kunai.test.installation.fail
 function try_installation {
    FULL_PATH=$1
    DOCKER_FILE=`basename $FULL_PATH`
-   print_color "$DOCKER_FILE : starting \n" "magenta"
+   NOW=$(date +"%H:%M:%S")
+   print_color "$DOCKER_FILE : starting at $NOW \n" "magenta"
    LOG=/tmp/build-and-run.$DOCKER_FILE.log
    rm -fr $LOG
    BUILD=$(docker build --quiet -f $FULL_PATH .  2>&1)
@@ -65,8 +65,9 @@ function try_installation {
        fi
        return
    fi
+   NOW=$(date +"%H:%M:%S")
    print_color "OK: $DOCKER_FILE" "green"
-   printf "  (log=$LOG)\n"
+   printf " at $NOW (log=$LOG)\n"
    printf "$DOCKER_FILE\n" >> $SUCCESS_FILE
 }
 
