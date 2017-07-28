@@ -11,8 +11,8 @@ echo "Launching installations tests for SUITE: $TEST_SUITE"
 
 cd ..
 
-DOCKER_FILES=`ls -1 test/docker-files/docker-file-*txt`
-
+# Only do the test suite we must do
+DOCKER_FILES=`ls -1 test/docker-files/docker-file-$TEST_SUITE-*txt`
 
 
 
