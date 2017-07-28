@@ -3,7 +3,7 @@ python:
   - "2.6"
   - "2.7"
 
-# We need docker for our scripts that test various intallations
+# We need docker for our scripts that test various installations
 services:
   - docker
 

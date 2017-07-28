@@ -31,7 +31,8 @@ class OrderedDict(dict, DictMixin):
             self.__end
         except AttributeError:
             self.clear()
-        self.update(*args, **kwds)
+        if kwds:
+            self.update(*args, **kwds)
 
     def clear(self):
         self.__end = end = []
