@@ -433,7 +433,7 @@ class Cluster(object):
             for name in files:
                 fp = os.path.join(root, name)
                 logger.log('Loader: looking for file: %s' % fp)
-                if name.endswith('.json'):
+                if name.endswith('.json') or name.endswith('.yml'):
                     self.open_cfg_file(fp)
                 if name == 'module.py':
                     # dir name as module name part
@@ -478,16 +478,21 @@ class Cluster(object):
     
     
     def open_cfg_file(self, fp):
+        is_json = fp.endswith('.json')
+        is_yaml = fp.endswith('.yml')
         with open(fp, 'r') as f:
             buf = f.read()
             try:
-                o = json.loads(buf)
+                if is_json:
+                    o = json.loads(buf)
+                if is_yaml:
+                    o = yamler.loads(buf)
             except Exception, exp:
                 logger.log('ERROR: the configuration file %s malformed: %s' % (fp, exp))
                 sys.exit(2)
-        if not isinstance(o, dict):
-            logger.log('ERROR: the configuration file %s content is not a valid dict' % fp)
-            sys.exit(2)
+        #if not isinstance(o, dict):
+        #    logger.log('ERROR: the configuration file %s content is not a valid dict' % fp)
+        #    sys.exit(2)
         logger.debug("Configuration, opening file data", o, fp)
         
         if 'check' in o:

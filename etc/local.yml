@@ -1,0 +1,66 @@
+################## Local node configuration ############
+
+
+# You can set this node in a specific tag/group and so enable specific:
+# * checks
+# * asserters
+# * collectors
+# * aswer in specific DNS queries
+tags: []
+
+
+# By default the node name will be it's hostname. I can be quite random
+# so if you want to set a name that talk to you, you can set it in display_name
+display_name: ""
+
+# Datacenters: group of nodes (not used currently)
+datacenters:
+    - dc1
+
+# In which zone to set the element
+node-zone: internet
+
+proxy-node: false
+
+
+############################# Startup
+bootstrap: false
+
+# If set, at startup the node will try to join/synchronize with theses nodes
+seeds: []
+
+# Port to listen for UDP/HTTP connections
+port: 6768
+
+encryption_key: ""
+master_key_priv: ""
+master_key_pub: ""
+
+
+# Where to store the daemon data
+data: /var/lib/kunai
+lock: /var/run/kunai.lock
+
+socket: /var/lib/kunai/kunai.sock
+
+
+########## Log
+log: /var/log/kunai
+# Which level is the daemon running. Possible values are:
+# * ERROR
+# * WARNING
+# * INFO
+# * DEBUG
+log_level: INFO
+
+
+# Place to store nagios compatible plugins
+libexec: /var/lib/kunai/libexec/
+
+
+
+# node specific data
+
+load:
+    warning: 1
+    critical: 2

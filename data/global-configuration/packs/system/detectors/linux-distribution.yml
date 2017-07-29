@@ -1,0 +1,9 @@
+detector:
+    # directly set the linux distribution as tag name
+    tags:
+        - '{{collector.system.os.linux.distribution}}'
+    
+    # but only if really set
+    apply_if: '{{collector.system.os.linux.distribution}} != ""'
+
+    interval: 3600s    # only once an hour
