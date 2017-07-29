@@ -62,8 +62,9 @@ def pretty_print(d):
     if len(flat_results) == 0:
         print "No collector data"
         return
-
+    
     max_prefix_size = max([len(prefix) for (prefix, v) in flat_results])
+    flat_results = sorted(flat_results, key=lambda x: x[0])
     print "* Collector data:"
     for (prefix, v) in flat_results:
         cprint('collector.%s' % (d['name']), color='grey', end='')
