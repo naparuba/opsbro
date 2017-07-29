@@ -25,7 +25,30 @@ from kunai.cli import get_kunai_json, get_kunai_local, print_info_title, print_2
 from kunai.collectormanager import collectormgr
 
 
+def _extract_data_from_results(d, prefix, res):
+    if isinstance(d, dict):
+        for (k, v) in d.iteritems():
+            _extract_data_from_results(v, prefix + '.' + k, res)
+            continue
+    elif isinstance(d, list) or isinstance(d, set):
+        _idx = 0
+        for v in d:
+            _extract_data_from_results(v, prefix + '.%d' + _idx, res)
+            _idx += 1
+    elif isinstance(d, int) or isinstance(d, float) or isinstance(d, basestring) or d is None:
+        res.append((prefix, d))
+    else:
+        logger.do_debug('ERROR: data %d is not managed: prefix=%s' % (str(d), prefix))
+
+
 def pretty_print(d):
+    results = d.get('results')
+    del d['results']
+    del d['metrics']
+    
+    flat_results = []
+    _extract_data_from_results(results, '', flat_results)
+    
     # for pretty print in color, need to have both pygments and don't
     # be in a | or a file dump >, so we need to have a tty ^^
     if pygments and sys.stdout.isatty():
@@ -36,6 +59,17 @@ def pretty_print(d):
         print result
     else:
         pprint(d)
+    if len(flat_results) == 0:
+        print "No collector data"
+        return
+
+    max_prefix_size = max([len(prefix) for (prefix, v) in flat_results])
+    print "* Collector data:"
+    for (prefix, v) in flat_results:
+        cprint('collector.%s' % (d['name']), color='grey', end='')
+        cprint('%s' % prefix.ljust(max_prefix_size), color='blue', end='')
+        cprint(' = ', end='')
+        cprint('%s' % (v), color='magenta')
 
 
 def do_collectors_show(name='', all=False):
