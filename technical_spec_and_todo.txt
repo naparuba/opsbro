@@ -296,38 +296,6 @@ Besoins:
      * chaque env a un if pour savoir s'il est actif ou pas
      * si pas de if, True, (donc closera la liste)
 
-{
-   "installor": {
-           "name" :   "mysql",
-           "note" :   "This installer will install the mysql server if you set the server into the mysql user defined group. Support debian (8 and lower) and centos/redhat platforms.",
-
-           "if"   :   "is_in_defined_group('mysql')",
-
-           "environments" : [
-                {
-                   "name" : "debian 8",
-                   "if" : "{{collector.os.linux.distribution}} == 'debian' & {{collector.os.linux.major_version}} == 8",
-	               "packages" : ['mysql-server-5.5']
-                },
-                {
-                   "name" : "debian",
-                   "if" : "{{collector.os.linux.distribution}} == 'debian'",
-	               "packages" : ['mysql-server']
-                },
-                {
-                   "name" : "centos",
-                   "if" : "{{collector.os.linux.distribution}} == 'centos' or {{collector.os.linux.distribution}} == 'redhat'",
-	               "packages" : ['mysql']
-                }
-           ]
-   }
-}
-
-
-
-
-
-
 
 
 
@@ -341,7 +309,6 @@ Besoins:
 
 ### TESTS
   * tester/réparer les handlers avec les emails
-  * tester les checks à la nagios
   * tester l'installation version setup.py sur:
     * windows 2008 R2 (bundeliser les libs?)
     * core os
@@ -351,8 +318,8 @@ Besoins:
 ### Nouvelle CLI
   * définir une CLI pour les KV (put/list/get/delete)
   * définir une cli pour les TS (put/dump)
-  * CLI lister la conf locale (avec affichage de la valeur par défaut en couleur) et lister les valeurs nécessaires non disponibles pour les collectors
-  * CLI setter un paramètre de la conf locale
+  * CLI: lister la conf locale (avec affichage de la valeur par défaut en couleur) et lister les valeurs nécessaires non disponibles pour les collectors
+  * CLI: setter un paramètre de la conf locale
   * CLI: rajouter un option --explain sur l'appel eval afin de voir la transformation et idéalement d'où vient l'info
 
 
