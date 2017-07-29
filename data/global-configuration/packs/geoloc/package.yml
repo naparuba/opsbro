@@ -1,0 +1,16 @@
+name: geoloc
+types:
+    - pack
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description: Geoloc position
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - geoloc
+dependencies:
+    core: ">=1.0"
+license: ""
