@@ -34,9 +34,10 @@ if is_tty():
 else:
     def cprint(s, color='', end='\n'):
         if end == '':
-            print s,
+            sys.stdout.write(s)
         else:
-            print s
+            sys.stdout.write(s)
+            sys.stdout.write('\n')
 
 
 def get_unicode_string(s):
