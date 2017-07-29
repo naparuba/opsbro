@@ -1,0 +1,13 @@
+check:
+    interval: 10s
+    apply_on: linux
+    
+    ok_output: "'OK: cpu is great: %s%%' % (100-{{collector.cpustats.cpuall.%idle}})"
+    
+    critical_if: "{{collector.cpustats.cpuall.%idle}} < {{configuration.threshold.cpuidle.critical}}"
+    critical_output: "'Critical: cpu is too high: %s%%' % (100-{{collector.cpustats.cpuall.%idle}})"
+    
+    threshold:
+        cpuidle:
+            warning: 5
+            critical: 1

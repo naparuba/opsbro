@@ -1,7 +1,0 @@
-{
-    "detector": {
-        "tags": ["country::{{collector.geoloc.country}}"],
-	"apply_if": "{{collector.geoloc.country}} != ''",
-	"interval": "10s"
-    }
-}

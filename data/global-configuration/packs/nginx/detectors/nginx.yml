@@ -1,0 +1,5 @@
+detector:
+    tags:
+        - nginx
+    apply_if: "file_exists('/etc/nginx/nginx.conf')"
+    interval: 10s

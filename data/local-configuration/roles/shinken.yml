@@ -1,0 +1,3 @@
+shinken:
+    enabled:  true
+    cfg_path: /etc/shinken/agent

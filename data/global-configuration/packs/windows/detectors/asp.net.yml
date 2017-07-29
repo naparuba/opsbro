@@ -1,0 +1,6 @@
+detector:
+    tags:
+        - asp.net-server
+    apply_if: "get_os() == 'windows' and 'ASP.NET' in {{collector.system.windows.features||[]}}"
+    interval: 10s
+

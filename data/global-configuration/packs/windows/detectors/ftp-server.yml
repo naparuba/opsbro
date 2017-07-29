@@ -1,0 +1,5 @@
+detector:
+    tags:
+        - ftp-server
+    apply_if: "get_os() == 'windows' and 'FTP Server' in {{collector.system.windows.features||[]}}"
+    interval: 10s

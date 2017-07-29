@@ -1,7 +1,0 @@
-{
-    "detector": {
-        "tags": ["mongodb"],
-	"apply_if": "file_exists('/etc/mongodb.conf') or file_exists('/etc/mongod.conf')",
-	"interval": "10s"
-    }
-}

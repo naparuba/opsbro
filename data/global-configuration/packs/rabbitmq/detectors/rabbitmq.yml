@@ -1,0 +1,5 @@
+detector:
+    tags:
+        - rabbitmq
+    apply_if: "file_exists('/etc/rabbitmq/rabbitmq.config')"
+    interval: 10s

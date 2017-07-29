@@ -1,0 +1,8 @@
+detector:
+    # Which tag to set
+    tags:
+        - 'country::{{collector.geoloc.country}}'
+    # will be set onl if
+    apply_if: '{{collector.geoloc.country}} != ""'
+    # try to apply every
+    interval: 10s

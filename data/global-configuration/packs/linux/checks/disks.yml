@@ -1,0 +1,17 @@
+check:
+    apply_on: "linux"
+    
+    ok_output: "'OK: / is at %s%%' % {{collector.diskusage./.pct_used}}"
+    
+    critical_if: "{{collector.diskusage./.pct_used}} > {{configuration.threshold.diskuse.critical}}"
+    critical_output: "'CRITICAL: / is at %s%%' % {{collector.diskusage./.pct_used}}"
+
+    warning_if: "{{collector.diskusage./.pct_used}} > {{configuration.threshold.diskuse.warning}}"
+    warning_output:  "'WARNING: / is at %s%%' % {{collector.diskusage./.pct_used}}"
+    
+    threshold : 
+        diskuse:
+            warning: 90
+            critical: 95
+    
+    interval: "300s"

@@ -1,6 +1,0 @@
-{
-    "websocket": {
-	"enabled"    : true,
-	"port"       : 6769
-    }
-}

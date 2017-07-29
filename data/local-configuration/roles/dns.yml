@@ -1,0 +1,4 @@
+dns:
+    enabled: true
+    port: 6766
+    domain: .kunai
