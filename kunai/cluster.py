@@ -455,15 +455,15 @@ class Cluster(object):
         # Look at collectors
         for pname in sub_dirs:
             # First load meta data from the package.json file (if present)
-            package_pth = os.path.join(pname, 'package.json')
+            package_pth = os.path.join(pname, 'package.yml')
             pack_name = pname  # by default take the directory name
             if os.path.exists(package_pth):
                 try:
                     with open(package_pth, 'r') as f:
                         package_buf = f.read()
-                        package = json.loads(package_buf)
-                        if not isinstance(package, dict):
-                            raise Exception('Package.json file %s is not a valid dict object' % package_pth)
+                        package = yamler.loads(package_buf)
+                        #if not isinstance(package, dict):
+                        #    raise Exception('Package.json file %s is not a valid dict object' % package_pth)
                         pack_name = packer.load_package(package, package_pth)
                 except Exception, exp:  # todo: more precise catch? I think so
                     logger.error('Cannot load package %s: %s' % (package_pth, exp))

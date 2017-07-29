@@ -1,0 +1,16 @@
+name: openports
+types:
+    - pack
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description: Look at open ports
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - ports
+dependencies:
+    core: ">=1.0"
+license: ""

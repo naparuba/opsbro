@@ -1,0 +1,17 @@
+name: haproxy
+types:
+    - pack"
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description: Get haproxy checks and data
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - haproxy
+dependencies:
+    core: ">=1.0"
+license: ""
+

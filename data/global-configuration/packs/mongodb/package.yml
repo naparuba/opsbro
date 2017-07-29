@@ -1,0 +1,16 @@
+name: mongodb
+types:
+    - pack
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description: Various mongodb checks and detectors
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - mongodb
+dependencies:
+    core: ">=1.0"
+license: ""

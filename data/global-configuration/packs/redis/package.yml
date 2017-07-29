@@ -1,0 +1,16 @@
+name: redis
+types:
+    - pack
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description: Look at redis
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - redis
+dependencies:
+    core: ">=1.0"
+license: ""

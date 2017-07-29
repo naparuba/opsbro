@@ -1,0 +1,16 @@
+name: windows
+types:
+    - pack
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description:  windows stuff
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - windows
+dependencies:
+    core: ">=1.0"
+license: ""

@@ -1,0 +1,17 @@
+name: "apache"
+types:
+    - pack
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description: Check Apache stats
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - apache
+
+dependencies:
+    core: ">=1.0"
+license: ""

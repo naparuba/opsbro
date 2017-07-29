@@ -1,0 +1,16 @@
+name: mysql
+types:
+    - pack
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description: Various mysql checks and detectors
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - mysql
+dependencies:
+    core: ">=1.0"
+license: ""

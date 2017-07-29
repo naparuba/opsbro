@@ -1,0 +1,17 @@
+name: http
+types:
+    - pack
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description: Look for http data
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - http
+dependencies:
+    core: ">=1.0"
+license: ""
+

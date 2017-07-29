@@ -1,0 +1,16 @@
+name: rabbitmq
+types:
+    - pack
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description: Look at rabbitmq
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - rabbitmq
+dependencies:
+    core: ">=1.0"
+license: ""

@@ -1,0 +1,16 @@
+name: hypervisor
+types:
+    - pack
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description: Look at hypervisor information
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - hypervisor
+dependencies:
+    core: ">=1.0"
+license: ""
