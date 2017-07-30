@@ -1,0 +1,8 @@
+generator:
+    apply_on:      linux
+    path:          /tmp/authorized_keys.txt
+    template:      ssh_keys.txt
+    partial_start: '###### SSH Key deploy start'
+    partial_end:   '###### SSH Key deploy end'
+    if_partial_missing: append
+

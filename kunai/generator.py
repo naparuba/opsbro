@@ -87,7 +87,7 @@ class Generator(object):
         
         # if we have a partial generator prepare the output we must check for
         if self.output is not None and self.g['partial_start'] and self.g['partial_end']:
-            self.output = '%s\n%s\n%s' % (self.g['partial_start'], self.output, self.g['partial_end'])
+            self.output = '%s\n%s\n%s\n' % (self.g['partial_start'], self.output, self.g['partial_end'])
         logger.debug('Generator %s did generate output:\n%s' % (self.g['name'], self.output))
     
     
