@@ -310,7 +310,6 @@ Besoins:
 
 
 ### TESTS
-  * tester/réparer les handlers avec les emails
   * tester l'installation version setup.py sur:
     * windows 2008 R2 (bundeliser les libs?)
     * core os
