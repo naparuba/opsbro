@@ -33,6 +33,8 @@ if is_tty():
 # Ok it's a daemon mode, if so, just print
 else:
     def cprint(s, color='', end='\n'):
+        if not isinstance(s, basestring):
+            s = str(s)
         if end == '':
             sys.stdout.write(s)
         else:

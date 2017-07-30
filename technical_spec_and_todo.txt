@@ -303,6 +303,8 @@ Besoins:
 ####################### TODO
 ### GROUPES
   * renommer les tags en groupes
+    * defined_groups
+    * detected_groups
   * séparer à l'affichage les groupes configurés et les auto-groups détectés
 
 

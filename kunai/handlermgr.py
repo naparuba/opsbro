@@ -9,7 +9,10 @@ try:
 except ImportError:
     jinja2 = None
 
-from kunai.log import logger
+from kunai.log import LoggerFactory
+
+# Global logger for this part
+logger = LoggerFactory.create_logger('handler')
 
 
 # TODO: finish the email part
@@ -17,6 +20,27 @@ from kunai.log import logger
 class HandlerManager(object):
     def __init__(self):
         self.handlers = {}
+    
+    
+    def import_handler(self, handler, full_path, file_name, mod_time=0):
+        handler['from'] = full_path
+        handler['configuration_dir'] = os.path.dirname(full_path)
+        handler['name'] = handler['id']
+        if 'notes' not in handler:
+            handler['notes'] = ''
+        handler['modification_time'] = mod_time
+        if 'severities' not in handler:
+            handler['severities'] = ['ok', 'warning', 'critical', 'unknown']
+        # look at types now
+        if 'type' not in handler:
+            handler['type'] = 'none'
+        _type = handler['type']
+        if _type == 'mail':
+            if 'email' not in handler:
+                handler['email'] = 'root@localhost'
+        
+        # Add it into the list
+        self.handlers[handler['id']] = handler
     
     
     def send_mail(self, handler, check):
@@ -27,16 +51,17 @@ class HandlerManager(object):
         contacts = handler.get('contacts', ['admin@mydomain.com'])
         subject_p = handler.get('subject_template', 'email.subject.tpl')
         text_p = handler.get('text_template', 'email.text.tpl')
+        templates_dir = os.path.join(handler.get('configuration_dir', ''), 'templates')
         
         # go connect now
         try:
-            print "EMAIL connection to", smtp_server
+            logger.debug("Handler: EMAIL connection to %s" % smtp_server)
             s = smtplib.SMTP(smtp_server, timeout=30)
             
             _time = datetime.datetime.fromtimestamp(int(time.time())).strftime('%Y-%m-%d %H:%M:%S')
             
-            subject_f = os.path.join(self.configuration_dir, 'templates', subject_p)
-            text_f = os.path.join(self.configuration_dir, 'templates', text_p)
+            subject_f = os.path.join(templates_dir, subject_p)
+            text_f = os.path.join(templates_dir, text_p)
             
             if not os.path.exists(subject_f):
                 logger.error('Missing template file %s' % subject_f)
@@ -62,7 +87,7 @@ class HandlerManager(object):
     
     ''' % (addr_from, subject_m, text_m)
             # % (addr_from, check['name'], check['state'], _time, check['output'])
-            print "SENDING EMAIL", addr_from, contacts, msg
+            logger.debug("Sending email from:%s to %s. Message=%s" % (addr_from, contacts, msg))
             r = s.sendmail(addr_from, contacts, msg)
             s.quit()
         except Exception:
@@ -70,12 +95,14 @@ class HandlerManager(object):
     
     
     def launch_handlers(self, check, did_change):
+        logger.debug('Launch handlers: %s (didchange=%s)' % (check['name'], did_change))
         for hname in check['handlers']:
             handler = self.handlers.get(hname, None)
             # maybe some one did atomize this handler? if so skip it :)
             if handler is None:
+                logger.warning('Asking for handler %s by check %s but it is not found in my handlers: %s' % (hname, check['name'], self.handlers.keys()))
                 continue
-            
+            logger.debug('Handler is founded: %s' % handler)
             # Look at the state and should match severities
             if check['state'] not in handler['severities']:
                 continue
@@ -85,7 +112,7 @@ class HandlerManager(object):
                 continue
             elif handler['type'] == 'mail':
                 if did_change:
-                    print "HANDLER EMAIL" * 10, did_change, handler
+                    logger.info('Launching email handler for check %s' % check['name'])
                     self.send_mail(handler, check)
             else:
                 logger.warning('Unknown handler type %s for %s' % (handler['type'], handler['name']))

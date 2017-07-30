@@ -59,6 +59,7 @@ from kunai.zonemanager import zonemgr
 from kunai.executer import executer
 from kunai.monitoring import monitoringmgr
 from kunai.installermanager import installormgr
+from kunai.handlermgr import handlermgr
 from kunai.defaultpaths import DEFAULT_LIBEXEC_DIR, DEFAULT_LOCK_PATH, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR
 
 # Global logger for this part
@@ -501,7 +502,7 @@ class Cluster(object):
                 logger.log('ERROR: the check from the file %s is not a valid dict' % fp)
                 sys.exit(2)
             print fp
-            fname = fp[len(self.cfg_dir) + 1:]
+            fname = fp#[len(self.cfg_dir) + 1:]
             mod_time = int(os.path.getmtime(fp))
             cname = os.path.splitext(fname)[0]
             monitoringmgr.import_check(check, 'file:%s' % fname, cname, mod_time=mod_time)
@@ -513,7 +514,7 @@ class Cluster(object):
                 sys.exit(2)
             
             mod_time = int(os.path.getmtime(fp))
-            fname = fp[len(self.cfg_dir) + 1:]
+            fname = fp#[len(self.cfg_dir) + 1:]
             sname = os.path.splitext(fname)[0]
             monitoringmgr.import_service(service, 'file:%s' % fname, sname, mod_time=mod_time)
         
@@ -524,9 +525,9 @@ class Cluster(object):
                 sys.exit(2)
             
             mod_time = int(os.path.getmtime(fp))
-            fname = fp[len(self.cfg_dir) + 1:]
-            hname = os.path.splitext(fname)[0]
-            self.import_handler(handler, 'file:%s' % hname, hname, mod_time=mod_time)
+            fname = fp
+            hname = os.path.splitext(os.path.basename(fname))[0]
+            handlermgr.import_handler(handler, fp, hname, mod_time=mod_time)
         
         if 'generator' in o:
             generator = o['generator']
@@ -614,26 +615,6 @@ class Cluster(object):
                     return
                 # It's valid, I set it :)
                 setattr(self, mapto, v)
-    
-    
-    def import_handler(self, handler, fr, hname, mod_time=0):
-        handler['from'] = fr
-        handler['name'] = handler['id'] = hname
-        if 'notes' not in handler:
-            handler['notes'] = ''
-        handler['modification_time'] = mod_time
-        if 'severities' not in handler:
-            handler['severities'] = ['ok', 'warning', 'critical', 'unknown']
-        # look at types now
-        if 'type' not in handler:
-            handler['type'] = 'none'
-        _type = handler['type']
-        if _type == 'mail':
-            if 'email' not in handler:
-                handler['email'] = 'root@localhost'
-        
-        # Add it into the list
-        self.handlers[handler['id']] = handler
     
     
     # Generators will create files based on templates from
