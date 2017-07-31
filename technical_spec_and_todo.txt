@@ -308,6 +308,13 @@ Besoins:
   * séparer à l'affichage les groupes configurés et les auto-groups détectés
 
 
+### Drivers:
+  * gérer les cas "out of the box"
+    * opensuse (zipper)
+    * fedora (dnf)
+    * alpine (pkg)
+    * windows (va falloir livrer des msi)
+
 
 ### TESTS
   * tester l'installation version setup.py sur:
@@ -335,9 +342,11 @@ Besoins:
     * ??
   * collectors : avoir un moyen de choper X informations par exemple {{collectors.mongodb.dbstats.*.datasize}} renvoit une liste avec les valeurs, qu'on peux alors max().
   * sortir les data importantes en "spec" genre distribution, CPUs ou Country
+  * rabbitmq: prendre exemple sur les endpoints listés sur https://github.com/nagios-plugins-rabbitmq/nagios-plugins-rabbitmq/tree/master/scripts
 
 
 ### Installers
+  * renommer les en un truc + général (compliance?)
   * exporter leur états dans le CLI
 
 
@@ -366,3 +375,7 @@ Besoins:
 
 ### Raft
   * avoir une valeur sure de stabilisation, et voir les indicateurs sur ce qui aide/diminue la stabilisation
+
+
+### UI
+  * voir si http://qrohlf.com/trianglify/#gettingstarted ne ferais pas un fond interessant
