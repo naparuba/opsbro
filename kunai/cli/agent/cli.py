@@ -483,7 +483,7 @@ def do_zone_change(name=''):
     print r
 
 
-def do_detect_nodes():
+def do_detect_nodes(auto_join):
     print "Trying to detect other nodes on the network thanks to a UDP broadcast. Will last 3s."
     # Send UDP broadcast packets from the daemon
     try:
@@ -494,11 +494,26 @@ def do_detect_nodes():
     print "Detection is DONE.\nDetection result:"
     if len(network_nodes) == 0:
         print "Cannot detect (broadcast UDP) other nodes."
-        return
+        sys.exit(1)
     print "Other network nodes detected on this network:"
     print '  Name                                 Zone        Address:port          Proxy    Tags'
     for node in network_nodes:
         print '  %-35s  %-10s  %s:%d  %5s     %s' % (node['name'], node['zone'], node['addr'], node['port'], node['is_proxy'], ','.join(node['tags']))
+    if not auto_join:
+        print "Auto join (--auto-join) is not enabled, so don't try to join theses nodes"
+        return
+    # try to join theses nodes so :)
+    all_proxys = [node for node in network_nodes if node['is_proxy']]
+    not_proxys = [node for node in network_nodes if not node['is_proxy']]
+    if all_proxys:
+        node = all_proxys.pop()
+        print "A proxy node is detected, using it: %s (%s:%d)" % (node['name'], node['addr'], node['port'])
+        to_connect = '%s:%d' % (node['addr'], node['port'])
+    else:
+        node = not_proxys.pop()
+        print "No proxy node detected. Using a standard one: %s (%s:%d)" % (node['name'], node['addr'], node['port'])
+        to_connect = '%s:%d' % (node['addr'], node['port'])
+    do_join(to_connect)
 
 
 # Sort threads by user time, if same, sort by name
@@ -764,7 +779,9 @@ exports = {
     
     do_detect_nodes   : {
         'keywords'   : ['agent', 'detect'],
-        'args'       : [],
+        'args'       : [
+             {'name': '--auto-join', 'default': False, 'description': 'Try to join the first detected proxy node. If no proxy is founded, join the first one.', 'type': 'bool'},
+        ],
         'description': 'Try to detect (broadcast) others nodes in the network'
     },
     

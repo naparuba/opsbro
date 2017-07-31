@@ -77,13 +77,33 @@ You will have several information about the current kunai agent state:
 
 #### Agent cluster membership
 
-##### Add your local node to the node cluster?
+##### Add your local node to the node cluster
 
 First you need to install and launch the node in another server.
 
 Then in this other server you can launch:
   
     kunai join  OTHER-IP
+
+##### Auto discover LAN nodes (UDP broadcast detection)
+
+If your nodes are on the same LAN, you can use the UDP auto-detection to list others nodes on your network. I will send an UDP broadcast packet that other nodes will answer.
+
+NOTE: if you are using an encryption key (recommanded) then you must already have set it. If not, the other node won't answer to your query.
+
+
+    kunai agent detect
+
+If the other nodes are present, they will be list by the command.
+
+
+If you want to auto-join the other node cluster, then you can use the --auto-join parameter:
+
+    kunai agent detect --auto-join
+
+It will try to join nodes based on:
+ * first try to a proxy node if present
+ * if no proxy node is present, then use the fist other node
 
 
 ##### List your kunai cluster members

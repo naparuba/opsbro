@@ -26,6 +26,8 @@ env:
 - TEST_SUITE=PYTHON
 - TEST_SUITE=PACK
 - TEST_SUITE=UBUNTU
+# Some tests are with 2 docker that must run together. I hope it will be maintainable
+- TEST_SUITE=DUO1
 
 
 # command to run tests
