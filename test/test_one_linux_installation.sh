@@ -46,3 +46,12 @@ if [ $? != 0 ]; then
    echo "ERROR: the tag linux is missing!"
    exit 2
 fi
+
+
+echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Docker-container TAG      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
+# Check if docker-container tag is set
+test/assert_tag.sh "docker-container"
+if [ $? != 0 ]; then
+   echo "ERROR: the tag docker-container is missing!"
+   exit 2
+fi
