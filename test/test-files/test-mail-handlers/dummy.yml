@@ -1,0 +1,6 @@
+check:
+    apply_on: linux
+    script: "/usr/lib/nagios/plugins/check_dummy $exit_status$ '$exit_text$'"
+    interval: 1s
+    exit_status: 1
+    exit_text: This is the exit text
