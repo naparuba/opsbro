@@ -48,6 +48,7 @@ function try_installation {
    rm -fr $LOG
    BUILD=$(docker build --quiet -f $FULL_PATH .  2>&1)
    if [ $? != 0 ]; then
+       echo "$BUILD" > $LOG
        print_color "ERROR:$DOCKER_FILE" "red"
        printf " Cannot build. Look at $LOG\n"
        printf "$DOCKER_FILE\n" >> $FAIL_FILE
