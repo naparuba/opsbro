@@ -195,13 +195,14 @@ def get_ip_address(ifname):
 
 
 # Try to GET (fixed) uuid, but only if a constant one is here
-# * linux: get hardware uuid from dmi
+# * linux: get hardware uuid from dmi (but not in docker case)
 # * aws:   get instance uuid from url (TODO)
 # * windows: TODO
 def get_server_const_uuid():
     # First DMI, if there is a UUID, use it
+    # BUT not if docker one (have access to DMI but it's a container, so not unique)
     product_uuid_p = '/sys/class/dmi/id/product_uuid'
-    if os.path.exists(product_uuid_p):
+    if os.path.exists(product_uuid_p) and not os.path.exists('/.dockerenv'):
         with open(product_uuid_p, 'r') as f:
             buf = f.read()
         logger.info('[SERVER-UUID] using the DMI (bios) uuid as server unique UUID: %s' % buf.lower())
