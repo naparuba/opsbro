@@ -1,0 +1,19 @@
+handler:
+    id: slack
+    type: slack
+    severities:
+        - ok
+        - warning
+        - critical
+        - unknown
+
+    # Set your sclack token here.
+    token: ''
+
+    # Which channel to post to. If missing, will try to create it. You can get it at https://api.slack.com/custom-integrations/legacy-tokens
+    channel: '#alerts'
+
+    # Not managed currently: templates for messages
+    #subject_template: slack.subject.tpl
+    #text_template: slack.text.tpl
+

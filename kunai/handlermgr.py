@@ -9,6 +9,8 @@ try:
 except ImportError:
     jinja2 = None
 
+from kunai.gossip import gossiper
+from kunai.misc.slacker import Slacker
 from kunai.log import LoggerFactory
 
 # Global logger for this part
@@ -38,6 +40,9 @@ class HandlerManager(object):
         if _type == 'mail':
             if 'email' not in handler:
                 handler['email'] = 'root@localhost'
+        elif _type == 'slack':
+            handler['slack_token'] = handler.get('slack_token', os.environ.get('SLACK_TOKEN', ''))
+            handler['channel'] = handler.get('channel', '#general')
         
         # Add it into the list
         self.handlers[handler['id']] = handler
@@ -94,8 +99,50 @@ class HandlerManager(object):
             logger.error('Cannot send email: %s' % traceback.format_exc())
     
     
+    def try_to_send_message(self, slack, attachments, channel):
+        
+        r = slack.chat.post_message(channel=channel, text='', as_user=True, attachments=attachments)
+        logger.debug('[SLACK] return of the send: %s %s %s' % (r.successful, r.__dict__['body']['channel'], r.__dict__['body']['ts']))
+    
+    
+    def send_slack(self, handler, check):
+        slack = Slacker(handler['token'])
+        # title = '{date_num} {time_secs} [node:`%s`][addr:`%s`] Check `%s` is going %s' % (gossiper.display_name, gossiper.addr, check['name'], check['state'])
+        content = check['output']
+        channel = handler['channel']
+        colors = {'ok': 'good', 'warning': 'warning', 'critical': 'danger'}
+        node_name = '%s (%s)' % (gossiper.name, gossiper.addr)
+        if gossiper.display_name:
+            node_name = '%s [%s]' % (node_name, gossiper.display_name)
+        attachment = {"pretext": ' ', "text": content, 'color': colors.get(check['state'], '#764FA5'), 'author_name': node_name, 'footer': 'Send by OpsBro on %s' % node_name, 'ts': int(time.time())}
+        fields = [
+            {"title": "Node", "value": node_name, "short": True},
+            {"title": "Check", "value": check['name'], "short": True},
+        ]
+        attachment['fields'] = fields
+        attachments = [attachment]
+        try:
+            self.try_to_send_message(slack, attachments, channel)
+        except Exception, exp:
+            logger.error('[SLACK] Cannot send alert: %s (%s) %s %s %s' % (exp, type(exp), str(exp), str(exp) == 'channel_not_found', exp.__dict__))
+            # If it's just that the channel do not exists, try to create it
+            if str(exp) == 'channel_not_found':
+                try:
+                    logger.info('[SLACK] Channel %s do no exists. Trying to create it.' % channel)
+                    slack.channels.create(channel)
+                except Exception, exp:
+                    logger.error('[SLACK] Cannot create channel %s: %s' % (channel, exp))
+                    return
+                # Now try to resend the message
+                try:
+                    self.try_to_send_message(slack, attachments, channel)
+                except Exception, exp:
+                    logger.error('[SLACK] Did create channel %s but we still cannot send the message: %s' % (channel, exp))
+    
+    
     def launch_handlers(self, check, did_change):
         logger.debug('Launch handlers: %s (didchange=%s)' % (check['name'], did_change))
+        
         for hname in check['handlers']:
             handler = self.handlers.get(hname, None)
             # maybe some one did atomize this handler? if so skip it :)
@@ -114,6 +161,9 @@ class HandlerManager(object):
                 if did_change:
                     logger.info('Launching email handler for check %s' % check['name'])
                     self.send_mail(handler, check)
+            elif handler['type'] == 'slack':
+                if did_change:
+                    self.send_slack(handler, check)
             else:
                 logger.warning('Unknown handler type %s for %s' % (handler['type'], handler['name']))
 

@@ -316,6 +316,9 @@ Besoins:
     * windows (va falloir livrer des msi)
 
 
+### Checks:
+  * Add a way to have a display_name
+
 ### TESTS
   * tester l'installation version setup.py sur:
     * windows 2008 R2 (bundeliser les libs?)
@@ -372,10 +375,16 @@ Besoins:
   * enlever la dépendance à psutil sur les linux (/proc c'est pas là pour faire joli)
 
 
-
 ### Raft
   * avoir une valeur sure de stabilisation, et voir les indicateurs sur ce qui aide/diminue la stabilisation
 
 
 ### UI
   * voir si http://qrohlf.com/trianglify/#gettingstarted ne ferais pas un fond interessant
+
+### Modules d'export/ autre
+  * slack: https://github.com/os/slacker.git
+    * envoyer une alerte (channel global ou par node)
+    * bot de commande
+    * query dns
+

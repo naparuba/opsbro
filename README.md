@@ -17,7 +17,7 @@ This is a first release of the kunai project about a service discovery / monitor
 #### Prerequites
 You will need:
 
-  * python >= 2.6 (but not 3 currently)
+  * python 2.6 or 2.7 (python 3 is not managed currently)
   * python-leveldb
   * python-requests
   * python-jinja2 
@@ -129,13 +129,11 @@ Detectors are rules that are executed by the agent to detect your server propert
 
 You should declare a json object like:
 
-    {
-       "detector": {
-          "interval": "10s"       
-          "apply_if": "grep('centos', '/etc/redhat-release')",               
-          "tags": ["linux", "centos"],
-       }
-    }
+    detector:
+        interval: 10s
+        apply_if: "grep('centos', '/etc/redhat-release')"
+        tags: ["linux", "centos"]
+
 
  * Execute every 10 seconds
  * If there is the strong centos in the file /etc/redhat-release
@@ -234,7 +232,7 @@ NOTE: the $$ evaluation is not matching the previous checks, we will fix it in a
 
 ## Notify check/node state change with emails
 
-You can be notified about check state changed with handlers. currently only one is managed: email.
+You can be notified about check state changed with handlers. currently 2 are managed: email & slack
 
 You must define it in your local configuration:
 
@@ -250,13 +248,39 @@ You must define it in your local configuration:
           }
     }
 
-  * type: currently only 'mail' is managed
+  * type: email
   * severities: raise this handler only for this new states
   * contacts: who notifies
   * addr_from: from address to set your email from
   * smtp_server: which SMTP server to end your notification
   * subject_template: jinja2 template for the email subject, from the directory /templates
   * text_template: jinja2 template for the email content, from the directory /templates
+
+Then your handler must be registered into your checks, in the "handlers" list.
+
+## Notify check/node state change into slack
+
+You can be notified about check state changed with handlers. currently only one is managed: email.
+
+You must define it in your local configuration:
+
+    handler:
+       id: slack
+       type: slack
+       severities:
+          - ok
+          - warning
+          - critical
+          - unknown
+
+       token: ''
+       channel: '#alerts'
+
+  * type: slack
+  * severities: raise this handler only for this new states
+  * token: your slack token. Get one at https://api.slack.com/custom-integrations/legacy-tokens
+  * channel: on which channel should the alerts go. If the channel is not existing, it will try to create one
+
 
 Then your handler must be registered into your checks, in the "handlers" list.
 
