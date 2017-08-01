@@ -382,9 +382,7 @@ Besoins:
 ### UI
   * voir si http://qrohlf.com/trianglify/#gettingstarted ne ferais pas un fond interessant
 
-### Modules d'export/ autre
-  * slack: https://github.com/os/slacker.git
-    * envoyer une alerte (channel global ou par node)
-    * bot de commande
-    * query dns
+### Slack
+  * bot de commande
+  * query dns
 

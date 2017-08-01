@@ -106,6 +106,9 @@ class HandlerManager(object):
     
     
     def send_slack(self, handler, check):
+        if not handler['token']:
+            logger.error('[SLACK] token is not configured on the handler %s skipping slack messages.' % handler['name'])
+            return
         slack = Slacker(handler['token'])
         # title = '{date_num} {time_secs} [node:`%s`][addr:`%s`] Check `%s` is going %s' % (gossiper.display_name, gossiper.addr, check['name'], check['state'])
         content = check['output']
