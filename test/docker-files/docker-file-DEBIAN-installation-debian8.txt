@@ -2,8 +2,6 @@ FROM debian:8
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 RUN        apt-get update && apt-get install -y python
-#python-requests python-jinja2 python-pycurl python-crypto  python-setuptools
-#RUN        apt-get update && apt-get install -y python-leveldb
 ADD        . /root/kunai-oss
 
 WORKDIR       /root/kunai-oss

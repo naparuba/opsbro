@@ -4,7 +4,6 @@ MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 RUN        zypper --non-interactive install python
 RUN        zypper --non-interactive install python-leveldb
-RUN        zypper --non-interactive install python-pycurl
 RUN        zypper --non-interactive install python-CherryPy
 RUN        zypper --non-interactive install python-pycrypto
 RUN        zypper --non-interactive install python-Jinja2

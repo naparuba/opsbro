@@ -309,18 +309,6 @@ mod_need = {
             'amazon-linux'  : 'python-jinja2', 'centos': 'python-jinja2', 'redhat': 'python-jinja2', 'oracle-linux': 'python-jinja2', 'fedora': 'python-jinja2',
         }
     },
-    # 'rsa'     : {
-    #    'packages': {}
-    # },
-    # 'pyasn1'  : {
-    #    'packages': {}
-    # },
-    'pycurl'  : {
-        'packages': {
-            'debian': 'python-pycurl', 'ubuntu': 'python-pycurl',
-            'amazon-linux'  : 'python-pycurl', 'centos': 'python-pycurl', 'redhat': 'python-pycurl', 'oracle-linux': 'python-pycurl', 'fedora': 'python-pycurl',
-        }
-    },
     'Crypto'  : {
         'packages': {
             'debian': 'python-crypto', 'ubuntu': 'python-crypto',

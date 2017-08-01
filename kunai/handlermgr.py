@@ -100,7 +100,6 @@ class HandlerManager(object):
     
     
     def try_to_send_message(self, slack, attachments, channel):
-        
         r = slack.chat.post_message(channel=channel, text='', as_user=True, attachments=attachments)
         logger.debug('[SLACK] return of the send: %s %s %s' % (r.successful, r.__dict__['body']['channel'], r.__dict__['body']['ts']))
     

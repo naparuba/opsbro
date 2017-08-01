@@ -319,6 +319,7 @@ Besoins:
 ### Checks:
   * Add a way to have a display_name
 
+
 ### TESTS
   * tester l'installation version setup.py sur:
     * windows 2008 R2 (bundeliser les libs?)

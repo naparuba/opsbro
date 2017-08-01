@@ -5,7 +5,6 @@ RUN        apt-get update && apt-get install -y python
 # allow fast install (docker cache)
 RUN        apt-get install -y python-pip
 RUN        apt-get install -y python-leveldb
-RUN        apt-get install -y python-pycurl
 RUN        apt-get install -y python-cherrypy3
 
 
