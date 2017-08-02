@@ -185,22 +185,22 @@ The evaluation is done like this:
   
 For example here is a cpu check on a linux server:
 
-     {
-        "check": {
-            "interval":          "10s",
-            "apply_on":          "linux",
+    check:
+        interval:          10s
+        apply_on:          linux
             
-            "ok_output":         "'OK: cpu is great: %s%%' % (100-{collector.cpustats.cpuall.%idle})",
+        ok_output:         "'OK: cpu is great: %s%%' % (100-{collector.cpustats.cpuall.%idle})"
             
-            "critical_if":      "{collector.cpustats.cpuall.%idle} < {configuration.thresholds.cpuidle.critical}",
-            "critical_output":  "'Critical: cpu is too high: %s%%' % (100-{collector.cpustats.cpuall.%idle})",
+        critical_if:       "{collector.cpustats.cpuall.%idle} < {configuration.thresholds.cpuidle.critical}"
+        critical_output:   "'Critical: cpu is too high: %s%%' % (100-{collector.cpustats.cpuall.%idle})"
 
-            "warning_if":       "{collector.cpustats.cpuall.%idle} < {configuration.thresholds.cpuidle.warning}",
-            "warning_output":   "'Warning: cpu is very high: %s%%' % (100-{collector.cpustats.cpuall.%idle})",
+        warning_if:        "{collector.cpustats.cpuall.%idle} < {configuration.thresholds.cpuidle.warning}"
+        warning_output:    "'Warning: cpu is very high: %s%%' % (100-{collector.cpustats.cpuall.%idle})"
             
-            "thresholds" :       {"cpuidle" : { "warning": 5, "critical": 1} }
-        }
-     }
+        thresholds :
+               cpuidle :
+                    warning: 5
+                    critical: 1
 
 
 
@@ -213,19 +213,15 @@ The parameter for this is:
   
   Here is an example 
   
-      {
-             "check": {
-                  "apply_on": "linux",
-                  "script": "$nagiosplugins$/check_mailq -w $mailq.warning$ -c $mailq.critical$",
-                  "interval": "60s",
+    check:
+        apply_on: linux
+        script:   "$nagiosplugins$/check_mailq -w $mailq.warning$ -c $mailq.critical$"
+        interval: 60s
     
-                   "mailq" : {
-                      "warning": 1,
-                      "critical": 2
-                   }
-             }
-      }
-     
+        mailq:
+           warning: 1
+           critical: 2
+
 
 NOTE: the $$ evaluation is not matching the previous checks, we will fix it in a future version but it will break the current version configuration.
 
@@ -236,17 +232,19 @@ You can be notified about check state changed with handlers. currently 2 are man
 
 You must define it in your local configuration:
 
-    {
-          "handler": {
-                "type": "mail",
-                "severities": [ "ok", "warning", "critical", "unknown" ],
-                "contacts": [ "admin@mydomain.com" ],
-                "addr_from": "kunai@mydomain.com",
-                "smtp_server": "localhost",
-                "subject_template": "email.subject.tpl",
-                "text_template": "email.text.tpl"
-          }
-    }
+    handler:
+        type: mail
+        severities:
+            - ok
+            - warning
+            - critical
+            - unknown
+        contacts:
+            - "admin@mydomain.com"
+        addr_from: "kunai@mydomain.com"
+        smtp_server: localhost
+        subject_template: "email.subject.tpl"
+        text_template: "email.text.tpl"
 
   * type: email
   * severities: raise this handler only for this new states
@@ -293,11 +291,8 @@ You can export all your nodes informations (new, deleted or change node) into yo
 
 You must add in the agent installed on your shinken arbiter daemon the following local configuration:
 
-     {
-         "shinken": {
-             "cfg_path": "/etc/shinken/agent"
-         }
-     }
+    shinken:
+        cfg_path: "/etc/shinken/agent"
 
   * cfg_path: a directory where all your nodes will be sync as shinken hosts configuration (cfg files)
 
@@ -312,13 +307,11 @@ If you enable the DNS interface for your agent, it will start an internal DNS se
 
 You must define a dns object in your local configuration to enable this interface:
 
-    {
-        "dns":{
-	        "enabled"    : true,
-	        "port"       : 6766,
-	        "domain"     : ".kunai"
-        }    
-    }
+    dns:
+        enabled    : true
+	    port       : 6766
+	    domain     : ".kunai"
+
 
   * enabled: start or not the listener
   * port: UDP port to listen for UDP requests
@@ -346,19 +339,16 @@ The statsd daemon part will agregate counters for 10s and will then export the m
 
 In order to enable the statsd listener, you must define the statsd in your local configuration:
 
-    {
-        "statsd": {
-            "enabled"    : true,
-            "port"       : 8125,
-            "interval"   : 10
-        }
-    }
-    
+    statsd:
+        enabled    : true
+        port       : 8125
+        interval   : 10
+
   * enabled: launch or not the statsd listener
   * port: UDP port to listen
   * interval: store metrics into memory for X seconds, then export them into graphite for storing
 
-**TODO**: change the ts tag that enable this feature to real *role*
+**TODO**: change the ts tag that enable this feature to real *role*/addons
 
 
 ### Store your metrics for long term into Graphite
@@ -367,14 +357,11 @@ You can store your metrics into a graphite like system, that will automatically 
 
 In order to enable the graphite system, you must declare a graphite object in your local configuration:
     
-    {
-        "graphite": {
-            "enabled"    : true,
-            "port"       : 2003,
-            "udp"        : true,
-            "tcp"        : true
-        }
-    }
+    graphite:
+        enabled    : true
+        port       : 2003
+        udp        : true
+        tcp        : true
 
   * enabled: launch or not the graphite listener
   * port: TCP and/or UDP port to listen metrics
@@ -394,12 +381,9 @@ You can get notified about a node change (new node, deleted node or new tag or c
 
 All you need is to enable it on your local node configuration:
 
-    {
-        "websocket": {
-	        "enabled"    : true,
-	        "port"       : 6769
-        }
-    }
+    websocket:
+	   enabled    : true
+	   port       : 6769
 
   * enabled: start or not the websocket listener
   * port: which TCP port to listen for the websocket connections

@@ -1,16 +1,13 @@
 import os
 import time
 import threading
-import socket
 import base64
 import cPickle
-import hashlib
 import json
 
 from kunai.stats import STATS
 from kunai.log import LoggerFactory
 from kunai.threadmgr import threader
-from kunai.util import to_best_int_float
 from kunai.now import NOW
 from kunai.dbwrapper import dbwrapper
 from kunai.gossip import gossiper

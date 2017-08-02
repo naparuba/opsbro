@@ -7,9 +7,6 @@ You don't need to read it unless you want to give a look at the internal of "thi
 
 
 
-
-
-
 ################################# CLI SPEC
 
 #### Start (forground)
@@ -370,6 +367,9 @@ Besoins:
 ### Packs
   * Pack Azure
   * linux: enlever la dépendance à sysstat
+  * ipmi (hardware stuff)
+  * smart (disques)
+  * raid linux (md)
 
 
 ### Core
