@@ -423,6 +423,10 @@ The opsbro agent is by default getting lot of metrology data from your OS and ap
 **TODO** Allow to export into json format
 
 
+## How to install applications on your system thanks to OpsBro
+
+**TODO** Document installers, and rename them in fact (asserters?)
+
 ## How to see docker performance informations?
 
 If docker is launched on your server, OpsBro will get data from it, like collectors, images and performances.

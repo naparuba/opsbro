@@ -66,7 +66,7 @@ class Evaluater(object):
         self.cfg_data = cfg_data
     
     
-    def compile(self, expr, check=None, to_string=False):
+    def compile(self, expr, check=None, to_string=False, variables={}):
         # first manage {} thing and look at them
         all_parts = self.pat.findall(expr)
         
@@ -99,6 +99,13 @@ class Evaluater(object):
                 s = p[len('configuration.'):]
                 v = self._found_params(s, check)
                 changes.append((orig_p, v))
+            elif p.startswith('variables.'):
+                s = p[len('variables.'):]
+                print "TOOK VARIABLE %s from %s" % (s, variables)
+                v = variables[s]
+                changes.append((orig_p, v))
+            else:
+                raise Exception('The {{ }} expression: %s is not a known type' % p)
         
         if not len(changes) == len(all_parts):
             raise ValueError('Some parts between {} cannot be changed')
@@ -112,9 +119,9 @@ class Evaluater(object):
         return expr
     
     
-    def eval_expr(self, expr, check=None):
+    def eval_expr(self, expr, check=None, variables={}):
         logger.debug('EVAL: expression: %s' % expr)
-        expr = self.compile(expr, check=check)
+        expr = self.compile(expr, check=check, variables=variables)
         logger.debug('EVAL: exp changed: %s' % expr)
         # final tree
         tree = ast.parse(expr, mode='eval').body

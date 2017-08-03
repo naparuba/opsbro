@@ -18,10 +18,10 @@ class Environment(object):
         self.packages = packages
     
     
-    def do_match(self):
+    def do_match(self, variables):
         logger.debug('   Environment:: (%s) do_match:: evaluating  %s ' % (self.name, self.if_))
         try:
-            r = evaluater.eval_expr(self.if_)
+            r = evaluater.eval_expr(self.if_, variables=variables)
         except Exception, exp:
             logger.error('   Environnement:: (%s) if rule (%s) evaluation did fail: %s' % (self.name, self.if_, exp))
             return False
@@ -45,6 +45,8 @@ class Installor(object):
         self.note = o.get('note', '')
         self.if_ = o.get('if', None)
         self.environments = []
+        self.variables = o.get('variables', {})
+        print "VARIABLES", self.variables
         
         envs = o.get('environments', [])
         for e in envs:
@@ -53,6 +55,18 @@ class Installor(object):
             packages = e.get('packages')
             env = Environment(name, if_, packages)
             self.environments.append(env)
+    
+    
+    def get_variables_evals(self):
+        res = {}
+        for (k, expr) in self.variables.iteritems():
+            print "Evaluating variable %s (%s)" % (k, expr)
+            try:
+                res[k] = evaluater.eval_expr(expr)
+            except Exception, exp:
+                logger.error('Installor:: (%s)  Variable %s (%s) evaluation did fail: %s' % (self.name, k, expr, exp))
+                return None
+        return res
     
     
     def execute(self):
@@ -66,8 +80,15 @@ class Installor(object):
         if not r:
             logger.debug('Installor:: (%s) if rule do not match. Skip installer.' % (self.name))
             return
+        # We need to evaluate our variables if there are some
+        variables = self.get_variables_evals()
+        if variables is None:
+            logger.error('Installor:: (%s) some variables did fail, cannot continue the evaluation' % self.name)
+            return
+        
+        print "Evaluated variables: %s" % variables
         for env in self.environments:
-            do_match = env.do_match()
+            do_match = env.do_match(variables)
             if do_match:
                 logger.debug('Installor:: (%s)  we find a matching envrionnement: %s' % (self.name, env.name))
                 # Maybe
