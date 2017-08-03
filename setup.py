@@ -72,7 +72,7 @@ def unhook_stdout():
     global stderr_redirect
     # If we have something in the file descriptor 2, reinject into stderr
     stderr_redirect.close()
-    #with open(stderr_redirect_path, 'r') as f:
+    # with open(stderr_redirect_path, 'r') as f:
     #    stdout_catched.write(f.read())
     sys.stdout = stdout_orig
     sys.stderr = stderr_orig
@@ -130,8 +130,9 @@ except ImportError, exp:  # great, first install so
 # Now look at loading the local kunai lib for version and banner
 my_dir = os.path.dirname(os.path.abspath(__file__))
 kunai = imp.load_module('kunai', *imp.find_module('kunai', [os.path.realpath(my_dir)]))
-from kunai.info import VERSION, BANNER
-from kunai.log import cprint
+from kunai.info import VERSION, BANNER, TXT_BANNER
+from kunai.log import cprint, is_tty
+from kunai.misc.bro_quotes import get_quote
 from kunai.systempacketmanager import systepacketmgr
 
 ##################################       Only root as it's a global system tool.
@@ -140,12 +141,20 @@ if os.getuid() != 0:
     sys.exit(2)
 
 ##################################       Start to print to the user
-cprint(BANNER, color='green')
+# If we have a real tty, we can print the delicious banner with lot of BRO
+if is_tty():
+    cprint(BANNER)
+else:  # ok you are poor, just got some ascii art then
+    cprint(TXT_BANNER)
+
+# Also print a Bro quote
+quote, from_film = get_quote()
+cprint('  >> %s  (%s)\n' % (quote, from_film), color='grey')
 
 what = 'Installing' if not is_update else 'Updating'
 cprint('%s   ' % ('*' * 20), end='')
 cprint('%s' % what, color='magenta', end='')
-cprint(' to version ', end='')
+cprint(' OpsBro to version ', end='')
 cprint('%s' % VERSION, color='magenta', end='')
 cprint('     %s' % ('*' * 20))
 
@@ -292,27 +301,27 @@ install_from_pip = []
 mod_need = {
     'requests': {
         'packages': {
-            'debian': 'python-requests', 'ubuntu': 'python-requests',
-            'amazon-linux'  : 'python27-requests', 'centos': 'python-requests', 'redhat': 'python-requests', 'oracle-linux': 'python-requests', 'fedora': 'python-requests',
+            'debian'      : 'python-requests', 'ubuntu': 'python-requests',
+            'amazon-linux': 'python27-requests', 'centos': 'python-requests', 'redhat': 'python-requests', 'oracle-linux': 'python-requests', 'fedora': 'python-requests',
         }
     },
     'cherrypy': {  # note: centos: first epel to enable cherrypy get from packages
         'packages'    : {
-            'debian': 'python-cherrypy3', 'ubuntu': 'python-cherrypy3',
-            'amazon-linux'  : 'python-cherrypy3', 'centos': ['epel-release', 'python-cherrypy'], 'redhat': 'python-cherrypy', 'oracle-linux': 'python-cherrypy', 'fedora': 'python-cherrypy',
+            'debian'      : 'python-cherrypy3', 'ubuntu': 'python-cherrypy3',
+            'amazon-linux': 'python-cherrypy3', 'centos': ['epel-release', 'python-cherrypy'], 'redhat': 'python-cherrypy', 'oracle-linux': 'python-cherrypy', 'fedora': 'python-cherrypy',
         },
         'failback_pip': 'cherrypy==3.2.4',
     },
     'jinja2'  : {
         'packages': {
-            'debian': 'python-jinja2', 'ubuntu': 'python-jinja2',
-            'amazon-linux'  : 'python-jinja2', 'centos': 'python-jinja2', 'redhat': 'python-jinja2', 'oracle-linux': 'python-jinja2', 'fedora': 'python-jinja2',
+            'debian'      : 'python-jinja2', 'ubuntu': 'python-jinja2',
+            'amazon-linux': 'python-jinja2', 'centos': 'python-jinja2', 'redhat': 'python-jinja2', 'oracle-linux': 'python-jinja2', 'fedora': 'python-jinja2',
         }
     },
     'Crypto'  : {
         'packages': {
-            'debian': 'python-crypto', 'ubuntu': 'python-crypto',
-            'amazon-linux'  : 'python-crypto', 'centos': 'python-crypto', 'redhat': 'python-crypto', 'oracle-linux': 'python-crypto', 'fedora': 'python-crypto',
+            'debian'      : 'python-crypto', 'ubuntu': 'python-crypto',
+            'amazon-linux': 'python-crypto', 'centos': 'python-crypto', 'redhat': 'python-crypto', 'oracle-linux': 'python-crypto', 'fedora': 'python-crypto',
         }
     },
 }
@@ -320,13 +329,13 @@ mod_need = {
 if os.name != 'nt':
     mod_need['leveldb'] = {
         'packages'    : {
-            'debian': 'python-leveldb', 'ubuntu': 'python-leveldb',
-            'amazon-linux'  : 'python-leveldb', 'centos': 'python-leveldb', 'redhat': 'python-leveldb', 'oracle-linux': 'python-leveldb', 'fedora': 'python-leveldb',
+            'debian'      : 'python-leveldb', 'ubuntu': 'python-leveldb',
+            'amazon-linux': 'python-leveldb', 'centos': 'python-leveldb', 'redhat': 'python-leveldb', 'oracle-linux': 'python-leveldb', 'fedora': 'python-leveldb',
         },
         'pip_packages': {
-            'debian': ['build-essential', 'python-dev'], 'ubuntu': ['build-essential', 'python-dev'],
+            'debian'      : ['build-essential', 'python-dev'], 'ubuntu': ['build-essential', 'python-dev'],
             # NOTE: amazon: no python-devel/python-setuptools, only versionsed packages are available
-            'amazon-linux'  : ['gcc', 'gcc-c++', 'python27-devel', 'libyaml-devel', 'python27-setuptools'], 'centos': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'], 'redhat': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
+            'amazon-linux': ['gcc', 'gcc-c++', 'python27-devel', 'libyaml-devel', 'python27-setuptools'], 'centos': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'], 'redhat': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
             'oracle-linux': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'], 'fedora': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
         },
     }
@@ -339,7 +348,8 @@ if is_managed_system:
     cprint('%s (version %s) ' % (system_distro, system_distroversion), color='magenta', end='')
     cprint('is managed by this installer and will be able to use system package manager to install dependencies.')
 else:
-    cprint(" * NOTICE: your system (%s - %s) is not a tested system, it won't use the package system to install dependencies and will use the python pip dependency system instead (internet connection is need)." % (system_distro, system_distroversion))
+    cprint(
+        " * NOTICE: your system (%s - %s) is not a tested system, it won't use the package system to install dependencies and will use the python pip dependency system instead (internet connection is need)." % (system_distro, system_distroversion))
 
 for (m, d) in mod_need.iteritems():
     cprint(' * checking dependency for ', end='')
@@ -411,6 +421,8 @@ sys.stdout.flush()
 hook_stdout()
 
 setup_phase_is_done = False
+
+
 def print_fail_setup(exp=''):
     if setup_phase_is_done:
         return
@@ -421,7 +433,8 @@ def print_fail_setup(exp=''):
         _prefix = '      | '
         cprint('Python setuptools call fail:\n%s' % ('\n'.join(['%s%s' % (_prefix, s) for s in f.read().splitlines()])), color='red')
     sys.exit(2)
-    
+
+
 atexit.register(print_fail_setup)
 
 try:
@@ -460,7 +473,6 @@ except Exception, exp:
 
 # don't print something at exit now
 setup_phase_is_done = True
-
 
 # We did finish the setup, and we did succeed, so we can put the result into a log, we don't fucking care about
 # printing it to everyone unless we want to fear them

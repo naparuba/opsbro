@@ -349,6 +349,7 @@ Besoins:
 ### Installers
   * renommer les en un truc + général (compliance?)
   * exporter leur états dans le CLI
+  * rajouter un système de variable évaluable dans les intaller (afin de ne pas se répéter)
 
 
 ### Monitoring

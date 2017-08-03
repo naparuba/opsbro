@@ -13,10 +13,11 @@ import signal
 
 sys.path.append('.')
 
-from kunai.log import cprint, logger
+from kunai.log import cprint, logger, is_tty
 from kunai import cli as cli_mod
-from kunai.info import VERSION, BANNER
+from kunai.info import VERSION, BANNER, TXT_BANNER
 from kunai.modulemanager import modulemanager
+from kunai.misc.bro_quotes import get_quote
 from kunai.defaultpaths import DEFAULT_LOG_DIR, DEFAULT_CFG_FILE
 
 logger.setLevel('WARNING')
@@ -392,7 +393,14 @@ if __name__ == '__main__':
     
     # if just call kunai, we must show the available commands
     if len(command_args) == 0:
-        cprint(BANNER, color='blue')
+        if is_tty():
+            cprint(BANNER)
+        else:
+            cprint(TXT_BANNER, color='blue')
+        # Also print some quotes
+        quote, from_film = get_quote()
+        cprint('  >> %s  (%s)\n' % (quote, from_film), color='grey')
+        
         parser.print_help()
         CLI.print_list()
         sys.exit(0)
