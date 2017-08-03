@@ -6,12 +6,12 @@ import copy
 import time
 import threading
 from pprint import pprint
-from kunai_test import *
+from opsbro_test import *
 
-from kunai.dockermanager import dockermgr
+from opsbro.dockermanager import dockermgr
 
 
-class TestDocker(KunaiTest):
+class TestDocker(OpsBroTest):
     def setUp(self):
         dockermgr.connect()
         dockermgr.load_containers()

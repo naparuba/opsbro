@@ -32,15 +32,15 @@ ruamel.yaml.round_trip_dump(MyObj(), sys.stdout)
 
 import os
 import sys
-import kunai.misc
+import opsbro.misc
 
-p = os.path.join(os.path.dirname(kunai.misc.__file__), 'internalyaml')
+p = os.path.join(os.path.dirname(opsbro.misc.__file__), 'internalyaml')
 print p
 sys.path.insert(0, p)
 
 import ruamel.yaml as yaml
 
-# from kunai.misc.internalyaml.ruamel import yaml
+# from opsbro.misc.internalyaml.ruamel import yaml
 
 
 s = '''

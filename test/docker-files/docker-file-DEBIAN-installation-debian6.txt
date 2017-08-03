@@ -8,7 +8,7 @@ RUN        printf "deb http://archive.debian.org/debian-archive/debian/ squeeze-
 RUN        echo 'Acquire::Check-Valid-Until "false";' >/etc/apt/apt.conf.d/90ignore-release-date
 
 RUN         apt-get update && apt-get install -y python
-ADD         . /root/kunai-oss
+ADD         . /root/opsbro-oss
 
-WORKDIR     /root/kunai-oss
+WORKDIR     /root/opsbro-oss
 ENTRYPOINT         test/test_one_linux_installation.sh  && test/assert_tag.sh "debian"

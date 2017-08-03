@@ -2,7 +2,7 @@ import os
 import re
 import commands
 
-from kunai.collector import Collector
+from opsbro.collector import Collector
 
 
 def extract(input):

@@ -1,7 +1,7 @@
 import os
 import re
 
-from kunai.collector import Collector
+from opsbro.collector import Collector
 
 
 class DiskUsage(Collector):

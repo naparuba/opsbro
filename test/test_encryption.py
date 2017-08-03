@@ -5,12 +5,12 @@
 import copy
 import time
 import threading
-from kunai_test import *
+from opsbro_test import *
 
-from kunai.encrypter import encrypter
+from opsbro.encrypter import encrypter
 
 
-class TestEncrypter(KunaiTest):
+class TestEncrypter(OpsBroTest):
     def setUp(self):
         encrypter.load('NTdiN2NlNmE4NTViMTFlNA==')
     

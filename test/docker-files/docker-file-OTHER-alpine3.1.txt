@@ -10,7 +10,7 @@ RUN        apk add py-crypto
 RUN        apk add py-jinja2
 RUN        apk add py-setuptools python-dev
 
-ADD        . /root/kunai-oss
+ADD        . /root/opsbro-oss
 
-WORKDIR       /root/kunai-oss
+WORKDIR       /root/opsbro-oss
 ENTRYPOINT    test/test_one_linux_installation.sh  && test/assert_tag.sh "alpine"

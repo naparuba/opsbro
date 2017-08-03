@@ -6,12 +6,12 @@ import copy
 import time
 import threading
 import traceback
-from kunai_test import *
+from opsbro_test import *
 
-from kunai.evaluater import evaluater
+from opsbro.evaluater import evaluater
 
 
-class TestEvaluater(KunaiTest):
+class TestEvaluater(OpsBroTest):
     def setUp(self):
         pass
     

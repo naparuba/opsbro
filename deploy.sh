@@ -1,9 +1,9 @@
 #!/bin/bash
 
 cd /root
-tar cfz kunai-oss.tar.gz kunai-oss
+tar cfz opsbro-oss.tar.gz opsbro-oss
 
-/bin/cp -frp /root/kunai-oss/ui/* /var/www/ui/
+/bin/cp -frp /root/opsbro-oss/ui/* /var/www/ui/
 
 
 do_deploy() {
@@ -11,9 +11,9 @@ do_deploy() {
         return
     fi
     printf "********* Server: $1 \n";
-    SCP=$(scp kunai-oss.tar.gz $1:/tmp)
-    SSH1=$(ssh $1 "cd /tmp;rm -fr kunai-oss; tar xfz /tmp/kunai-oss.tar.gz")
-    SSH2=$(ssh $1 "cd /tmp/kunai-oss;python setup.py install" >/tmp/res-$1.txt 2>&1)
+    SCP=$(scp opsbro-oss.tar.gz $1:/tmp)
+    SSH1=$(ssh $1 "cd /tmp;rm -fr opsbro-oss; tar xfz /tmp/opsbro-oss.tar.gz")
+    SSH2=$(ssh $1 "cd /tmp/opsbro-oss;python setup.py install" >/tmp/res-$1.txt 2>&1)
     if [ $? -ne 0 ]; then
 	echo "FAIL $1 (BUILD)::"
 	echo "LOOK at file /tmp/res-$1.txt"
@@ -21,11 +21,11 @@ do_deploy() {
 	return 2
     fi;
 
-    SCP1=$(scp -r /root/kunai-oss/data/* $1:/var/lib/kunai/ >/dev/null)
+    SCP1=$(scp -r /root/opsbro-oss/data/* $1:/var/lib/opsbro/ >/dev/null)
     # NOTE: do nto copy etc/ local.json
-    #SCP2=$(scp -r /etc/kunai/* $1:/etc/kunai/  >/dev/null)
+    #SCP2=$(scp -r /etc/opsbro/* $1:/etc/opsbro/  >/dev/null)
 
-    SSH3=$(ssh $1 "/etc/init.d/kunai stop; sleep 3; /etc/init.d/kunai start" >/tmp/res-$1.txt 2>&1)
+    SSH3=$(ssh $1 "/etc/init.d/opsbro stop; sleep 3; /etc/init.d/opsbro start" >/tmp/res-$1.txt 2>&1)
     if [ $? -ne 0 ]; then
 	
 	echo "FAIL $1 (RESTART)::"

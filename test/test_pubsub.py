@@ -5,12 +5,12 @@
 import copy
 import time
 import threading
-from kunai_test import *
+from opsbro_test import *
 
-from kunai.pubsub import pubsub
+from opsbro.pubsub import pubsub
 
 
-class TestPubSub(KunaiTest):
+class TestPubSub(OpsBroTest):
     def setUp(self):
         self.f1_raised = False
         self.f2_raised = False

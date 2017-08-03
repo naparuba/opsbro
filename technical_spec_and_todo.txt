@@ -1,5 +1,5 @@
 ################ This document
-This document is only a todo/don't forget document for Jean Gabès, kunai author
+This document is only a todo/don't forget document for Jean Gabès, opsbro author
 
 You don't need to read it unless you want to give a look at the internal of "think" such a tool, how it's defined
 
@@ -10,30 +10,30 @@ You don't need to read it unless you want to give a look at the internal of "thi
 ################################# CLI SPEC
 
 #### Start (forground)
-kunai agent start
+opsbro agent start
 
 
 #### List commands
-kunai -l
+opsbro -l
 
 ### Show agent state
-kunai info
+opsbro info
 # avec logs:
-kunai info --show-logs
+opsbro info --show-logs
 
 #### Detect other nodes on the network
-kunai agent detect
+opsbro agent detect
 
 
 #### Install/desinstall windows service
-kunai agent service-install
-kunai agent service-remove
+opsbro agent service-install
+opsbro agent service-remove
 
 
 #### Debuging
-kunai agent show-threads
-kunai agent list-follow-log
-kunai agent follow-log
+opsbro agent show-threads
+opsbro agent list-follow-log
+opsbro agent follow-log
 
 
 
@@ -42,7 +42,7 @@ kunai agent follow-log
 
 
 ### Show checks/services states
-kunai state
+opsbro state
 Ex:
 Services:
 Checks:
@@ -52,51 +52,51 @@ Checks:
 
 
 ### Show cluster members:
-kunai members
+opsbro members
 
 
 ### Join a cluster:
-kunai join XXXX:YY
+opsbro join XXXX:YY
 
 ### Generate keys:
-kunai keygen
+opsbro keygen
 
 
 ### Force a node to leave
 # TODO: master key si distant
-kunai leave XXXX:YY
+opsbro leave XXXX:YY
 
 
 ### Show version:
-  kunai version
+  opsbro version
 
 
 ########## collectors
-  kunai collectors list
-  kunai collectors run sshd
-  kunai collectors show sshd
+  opsbro collectors list
+  opsbro collectors run sshd
+  opsbro collectors show sshd
 
-  (TODO) kunai collectors show  --short
+  (TODO) opsbro collectors show  --short
 
 ######### detectors
-kunai detectors list
-kunai detectors run
+opsbro detectors list
+opsbro detectors run
 
 
 
 ######## docker
-kunai docker show
+opsbro docker show
 
 
 
 ####### evaluator
-  kunai evaluator list
+  opsbro evaluator list
 
-  kunai -D evaluator eval "fileexists('/tmp/')"
-  (TODO)   kunai evaluator eval "fileexists('/tmp/') || {{collector.blabla.toto}} > {{configuration.mykey.key2}}"  --explain
+  opsbro -D evaluator eval "fileexists('/tmp/')"
+  (TODO)   opsbro evaluator eval "fileexists('/tmp/') || {{collector.blabla.toto}} > {{configuration.mykey.key2}}"  --explain
 
 ##### Zone
-  kunai zone change
+  opsbro zone change
 
 
 
@@ -176,11 +176,11 @@ kunai docker show
 ########### Repertoires
 
 ## Chemins principaux et ports:
-/etc/kunai/
+/etc/opsbro/
            local.json    <== surcharge de conf genre chemins principaux and co
 
 ## Spécifique au node (basé sur hostname) aka son identitée
-/var/lib/kunai/identity/---HOSTNAME---/
+/var/lib/opsbro/identity/---HOSTNAME---/
 									  checks.dat     <=== retention des checks
 									  collectors.dat <=== retention collectors
 									  incarnation    <=== incarnation number
@@ -191,7 +191,7 @@ kunai docker show
 ## lié au système et à l'installation même de l'agent
 
 
-kunai.sock     <=== socket de connection
+opsbro.sock     <=== socket de connection
 last_alive     <=== synchro des KV
 local-configuration/
 

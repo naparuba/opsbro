@@ -44,7 +44,7 @@ script:
   - chmod a+x *sh
   - ./test_suite.sh
 #  - ./test_installation.sh
-#  - nosetests -xv --processes=1 --process-timeout=300 --process-restartworker --with-cov --cov=kunai --exe
+#  - nosetests -xv --processes=1 --process-timeout=300 --process-restartworker --with-cov --cov=opsbro --exe
 #  - coverage combine
 #  - cd ..
 

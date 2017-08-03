@@ -8,8 +8,8 @@ RUN        apt-get install -y python-leveldb
 RUN        apt-get install -y python-cherrypy3
 
 
-ADD        . /root/kunai-oss
-WORKDIR       /root/kunai-oss
+ADD        . /root/opsbro-oss
+WORKDIR       /root/opsbro-oss
 
 RUN       python setup.py install
 

@@ -2,9 +2,9 @@ FROM centos:6
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 RUN        yum --nogpgcheck  -y  upgrade
-ADD        . /root/kunai-oss
+ADD        . /root/opsbro-oss
 
-WORKDIR    /root/kunai-oss
+WORKDIR    /root/opsbro-oss
 ENTRYPOINT        test/test_one_linux_installation.sh && test/assert_tag.sh "centos"
 
 

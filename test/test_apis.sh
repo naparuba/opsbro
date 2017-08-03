@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-/etc/init.d/kunai start
+/etc/init.d/opsbro start
 
 sleep 30
 

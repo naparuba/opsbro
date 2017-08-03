@@ -11,7 +11,7 @@ fi
 
 echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Starting       ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
 # Try to start daemon, but we don't want systemd hook there
-SYSTEMCTL_SKIP_REDIRECT=1 /etc/init.d/kunai start
+SYSTEMCTL_SKIP_REDIRECT=1 /etc/init.d/opsbro start
 if [ $? != 0 ]; then
    echo "ERROR: daemon start failed!"
    exit 2
@@ -22,19 +22,19 @@ sleep 60
 
 
 echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Info           ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
-kunai info
+opsbro info
 if [ $? != 0 ]; then
    echo "ERROR: information get failed!"
-   cat /var/log/kunai/daemon.log
+   cat /var/log/opsbro/daemon.log
    exit 2
 fi
 
 echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Address?       ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
 # Is there an address used by the daemon?
-ADDR=$(kunai info | grep Addr | awk '{print $2}')
+ADDR=$(opsbro info | grep Addr | awk '{print $2}')
 if [ "$ADDR" == "None" ]; then
-   echo "The kunai daemon do not have a valid address."
-   echo `kunai info`
+   echo "The opsbro daemon do not have a valid address."
+   echo `opsbro info`
    exit 2
 fi
 

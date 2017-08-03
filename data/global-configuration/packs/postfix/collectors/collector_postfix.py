@@ -1,5 +1,5 @@
 import os
-from kunai.collector import Collector
+from opsbro.collector import Collector
 
 
 # deferred : Stuck mails (that will be retried later)

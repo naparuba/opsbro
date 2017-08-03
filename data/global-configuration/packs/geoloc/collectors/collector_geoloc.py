@@ -1,7 +1,7 @@
 import json
 import requests
 
-from kunai.collector import Collector
+from opsbro.collector import Collector
 
 
 class Geoloc(Collector):

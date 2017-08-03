@@ -3,11 +3,11 @@ import re
 import traceback
 import os
 
-from kunai.util import lower_dict
-from kunai.collector import Collector
+from opsbro.util import lower_dict
+from opsbro.collector import Collector
 
 if os.name == 'nt':
-    import kunai.misc.wmi as wmi
+    import opsbro.misc.wmi as wmi
 
 
 class Memory(Collector):

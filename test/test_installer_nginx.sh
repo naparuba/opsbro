@@ -10,7 +10,7 @@ fi
 # Activate the installer
 touch /tmp/install_nginx
 
-# Wait a bit in order to allow kunai to install it (and wiaht for package, etc etc)
+# Wait a bit in order to allow opsbro to install it (and wiaht for package, etc etc)
 sleep 30
 
 test/assert_tag.sh "nginx"
@@ -20,7 +20,7 @@ if [ $? != 0 ]; then
 fi
 
 
-kunai info | grep Tags
+opsbro info | grep Tags
 echo "Nginx installer is OK"
 
 

@@ -19,7 +19,7 @@ DOCKER_FILES=`ls -1 test/docker-files/docker-file-$TEST_SUITE-*txt`
 function print_color {
    export COLOR="$2"
    export TEXT="$1"
-   python -c "from kunai.log import cprint;cprint('$TEXT', color='$COLOR', end='')"
+   python -c "from opsbro.log import cprint;cprint('$TEXT', color='$COLOR', end='')"
 }
 
 export -f print_color
@@ -31,8 +31,8 @@ function get_var_name {
    echo "$DOCKER_FILE"
 }
 
-export SUCCESS_FILE=/tmp/kunai.test.installation.success
-export FAIL_FILE=/tmp/kunai.test.installation.fail
+export SUCCESS_FILE=/tmp/opsbro.test.installation.success
+export FAIL_FILE=/tmp/opsbro.test.installation.fail
 
 # Clean results files
 > $SUCCESS_FILE

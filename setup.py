@@ -17,9 +17,9 @@ import atexit
 # prod you are a morron and we can't help you
 python_version = sys.version_info
 if python_version < (2, 6):
-    sys.exit("Kunai require as a minimum Python 2.6, sorry")
+    sys.exit("OpsBro require as a minimum Python 2.6, sorry")
 elif python_version >= (3,):
-    sys.exit("Kunai is not yet compatible with Python 3.x, sorry")
+    sys.exit("OpsBro is not yet compatible with Python 3.x, sorry")
 
 package_data = ['*.py']
 
@@ -53,7 +53,7 @@ def _chmodplusx(d):
 stdout_orig = sys.stdout
 stderr_orig = sys.stderr
 stdout_catched = StringIO()
-stderr_redirect_path = '/tmp/stderr.kunai.tmp'
+stderr_redirect_path = '/tmp/stderr.opsbro.tmp'
 stderr_redirect = None
 stderr_orig_bkp = None
 
@@ -82,7 +82,7 @@ def unhook_stdout():
 parser = optparse.OptionParser("%prog [options]", version="%prog ")
 parser.add_option('--root', dest="proot", metavar="ROOT", help='Root dir to install, usefull only for packagers')
 parser.add_option('--upgrade', '--update', dest="upgrade", action='store_true', help='Only upgrade')
-parser.add_option('--install-scripts', dest="install_scripts", help='Path to install the kunai binary')
+parser.add_option('--install-scripts', dest="install_scripts", help='Path to install the opsbro binary')
 parser.add_option('--skip-build', dest="skip_build", action='store_true', help='skipping build')
 parser.add_option('-O', type="int", dest="optimize", help='skipping build')
 parser.add_option('--record', dest="record", help='File to save writing files. Used by pip install only')
@@ -107,7 +107,7 @@ prev_version = None
 prev_path = ''
 # We try to see if we are in a full install or an update process
 is_update = False
-# Try to import kunai but not the local one. If available, we are in 
+# Try to import opsbro but not the local one. If available, we are in 
 # and upgrade phase, not a classic install
 try:
     if '.' in sys.path:
@@ -116,24 +116,24 @@ try:
         sys.path.remove(os.path.abspath('.'))
     if '' in sys.path:
         sys.path.remove('')
-    import kunai as kunai_test_import
+    import opsbro as opsbro_test_import
     
     is_update = True
     # Try to guess version
-    from kunai.info import VERSION as prev_version
+    from opsbro.info import VERSION as prev_version
     
-    prev_path = os.path.dirname(kunai_test_import.__file__)
-    del kunai_test_import
+    prev_path = os.path.dirname(opsbro_test_import.__file__)
+    del opsbro_test_import
 except ImportError, exp:  # great, first install so
     pass
 
-# Now look at loading the local kunai lib for version and banner
+# Now look at loading the local opsbro lib for version and banner
 my_dir = os.path.dirname(os.path.abspath(__file__))
-kunai = imp.load_module('kunai', *imp.find_module('kunai', [os.path.realpath(my_dir)]))
-from kunai.info import VERSION, BANNER, TXT_BANNER
-from kunai.log import cprint, is_tty
-from kunai.misc.bro_quotes import get_quote
-from kunai.systempacketmanager import systepacketmgr
+opsbro = imp.load_module('opsbro', *imp.find_module('opsbro', [os.path.realpath(my_dir)]))
+from opsbro.info import VERSION, BANNER, TXT_BANNER
+from opsbro.log import cprint, is_tty
+from opsbro.misc.bro_quotes import get_quote
+from opsbro.systempacketmanager import systepacketmgr
 
 ##################################       Only root as it's a global system tool.
 if os.getuid() != 0:
@@ -159,7 +159,7 @@ cprint('%s' % VERSION, color='magenta', end='')
 cprint('     %s' % ('*' * 20))
 
 if is_update:
-    cprint('  Previous Kunai lib detected on this system (location:', end='')
+    cprint('  Previous OpsBro lib detected on this system (location:', end='')
     cprint(prev_path, color='blue', end='')
     cprint(')(version:', end='')
     cprint('%s' % prev_version, color='blue', end='')
@@ -206,48 +206,48 @@ if '-v' not in sys.argv and '--quiet' not in sys.argv and '-q' not in sys.argv:
 
 ##################################       Prepare the list of files that will be installed
 # compute scripts
-scripts = [s for s in glob('bin/kunai*') if not s.endswith('.py')]
+scripts = [s for s in glob('bin/opsbro*') if not s.endswith('.py')]
 
 # Define files
 if 'win' in sys.platform:
     default_paths = {
-        'bin'    : install_scripts or "c:\\kunai\\bin",
-        'var'    : "c:\\kunai\\var",
-        'etc'    : "c:\\kunai\\etc",
-        'log'    : "c:\\kunai\\var\\log",
-        'run'    : "c:\\kunai\\var",
-        'libexec': "c:\\kunai\\libexec",
+        'bin'    : install_scripts or "c:\\opsbro\\bin",
+        'var'    : "c:\\opsbro\\var",
+        'etc'    : "c:\\opsbro\\etc",
+        'log'    : "c:\\opsbro\\var\\log",
+        'run'    : "c:\\opsbro\\var",
+        'libexec': "c:\\opsbro\\libexec",
     }
     data_files = []
 elif 'linux' in sys.platform or 'sunos5' in sys.platform:
     default_paths = {
         'bin'    : install_scripts or "/usr/bin",
-        'var'    : "/var/lib/kunai/",
-        'etc'    : "/etc/kunai",
-        'run'    : "/var/run/kunai",
-        'log'    : "/var/log/kunai",
-        'libexec': "/var/lib/kunai/libexec",
+        'var'    : "/var/lib/opsbro/",
+        'etc'    : "/etc/opsbro",
+        'run'    : "/var/run/opsbro",
+        'log'    : "/var/log/opsbro",
+        'libexec': "/var/lib/opsbro/libexec",
     }
     data_files = [
         (
             os.path.join('/etc', 'init.d'),
-            ['init.d/kunai']
+            ['init.d/opsbro']
         )
     ]
 
 elif 'bsd' in sys.platform or 'dragonfly' in sys.platform:
     default_paths = {
         'bin'    : install_scripts or "/usr/local/bin",
-        'var'    : "/usr/local/libexec/kunai",
-        'etc'    : "/usr/local/etc/kunai",
-        'run'    : "/var/run/kunai",
-        'log'    : "/var/log/kunai",
-        'libexec': "/usr/local/libexec/kunai/plugins",
+        'var'    : "/usr/local/libexec/opsbro",
+        'etc'    : "/usr/local/etc/opsbro",
+        'run'    : "/var/run/opsbro",
+        'log'    : "/var/log/opsbro",
+        'libexec': "/usr/local/libexec/opsbro/plugins",
     }
     data_files = [
         (
             '/usr/local/etc/rc.d',
-            ['bin/rc.d/kunai']
+            ['bin/rc.d/opsbro']
         )
     ]
 else:
@@ -415,7 +415,7 @@ except ImportError:
 
 ##################################       Go install the python part
 cprint('\n\n# %-30s  (2/3)' % 'Python lib installation')
-cprint('  * %s kunai python lib in progress...' % what, end='')
+cprint('  * %s opsbro python lib in progress...' % what, end='')
 sys.stdout.flush()
 
 hook_stdout()
@@ -427,7 +427,7 @@ def print_fail_setup(exp=''):
     if setup_phase_is_done:
         return
     unhook_stdout()
-    cprint('\nERROR: fail to setup kunai: (%s)' % exp, color='red')
+    cprint('\nERROR: fail to setup opsbro: (%s)' % exp, color='red')
     cprint(stdout_catched.getvalue())
     with open(stderr_redirect_path, 'r') as f:
         _prefix = '      | '
@@ -439,16 +439,16 @@ atexit.register(print_fail_setup)
 
 try:
     setup(
-        name="kunai",
+        name="opsbro",
         version=VERSION,
         packages=find_packages(),
         package_data={'': package_data},
-        description="Kunai is a service discovery tool",
+        description="OpsBro is a service discovery tool",
         long_description=read('README.md'),
         author="Gabes Jean",
         author_email="naparuba@gmail.com",
         license="MIT",
-        url="http://kunai.io",
+        url="http://opsbro.io",
         zip_safe=False,
         classifiers=[
             'Development Status :: 5 - Production/Stable',
@@ -480,7 +480,7 @@ unhook_stdout()
 
 cprint('  OK', color='green')
 
-installation_log = '/tmp/kunai.setup.log'
+installation_log = '/tmp/opsbro.setup.log'
 with open(installation_log, 'w') as f:
     f.write(stdout_catched.getvalue())
     cprint('   - Raw python setup lib (and possible depndencies) installation log at: %s' % installation_log, color='grey')
@@ -498,7 +498,7 @@ def __print_sub_install_part(p):
 # if root is set, it's for package, so NO chown
 if not root and is_install:
     cprint(' * Installing utility scripts (init.d, daemon, bash completion, etc)')
-    # Also change the rights of the kunai- scripts
+    # Also change the rights of the opsbro- scripts
     for s in scripts:
         bs = os.path.basename(s)
         _chmodplusx(os.path.join(default_paths['bin'], bs))
@@ -506,20 +506,20 @@ if not root and is_install:
     _chmodplusx(default_paths['libexec'])
     
     # If not exists, won't raise an error there
-    _chmodplusx('/etc/init.d/kunai')
+    _chmodplusx('/etc/init.d/opsbro')
     __print_sub_install_part('init.d script')
     
     # Also install the bash completion part if there is such a directory
     bash_completion_dir = '/etc/bash_completion.d/'
     if os.path.exists(bash_completion_dir):
-        dest = os.path.join(bash_completion_dir, 'kunai')
-        shutil.copy('bash_completion/kunai', dest)
+        dest = os.path.join(bash_completion_dir, 'opsbro')
+        shutil.copy('bash_completion/opsbro', dest)
         _chmodplusx(dest)
         __print_sub_install_part('bash completion rule')
 
 print ''
 cprint('*' * 40)
-cprint('Kunai ', end='')
+cprint('OpsBro ', end='')
 cprint(what, color='magenta', end='')
 cprint(' : ', end='')
 cprint(' OK', color='green')

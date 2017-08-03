@@ -3,7 +3,7 @@ import re
 import urllib2
 import traceback
 
-from kunai.collector import Collector
+from opsbro.collector import Collector
 
 
 class Nginx(Collector):

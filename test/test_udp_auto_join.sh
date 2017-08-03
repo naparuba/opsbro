@@ -12,16 +12,16 @@ fi
 
 # Case 1: try to detect and join other node
 
-kunai agent detect --auto-join
+opsbro agent detect --auto-join
 
-NB_MEMBERS=$(kunai members | grep 'docker-container' | wc -l)
+NB_MEMBERS=$(opsbro members | grep 'docker-container' | wc -l)
 
 if [ $NB_MEMBERS != 2 ]; then
    echo "BAD number of members: $NB_MEMBERS"
    exit 2
 fi
 
-kunai members
+opsbro members
 
 echo "Auto join is OK"
 

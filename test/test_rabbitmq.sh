@@ -12,15 +12,15 @@ if [ $? != 0 ]; then
 fi
 
 
-RES=$(kunai evaluator eval "{{collector.rabbitmq.queue_totals.messages}} >= 0" | tail -n 1)
+RES=$(opsbro evaluator eval "{{collector.rabbitmq.queue_totals.messages}} >= 0" | tail -n 1)
 if [ $RES != "True" ]; then
     echo "Fail: mysql collectors is fail {{collector.rabbitmq.queue_totals.messages}} >= 0 => $RES"
-    kunai collectors show rabbitmq
+    opsbro collectors show rabbitmq
     exit 2
 fi
 
 
-kunai collectors show rabbitmq
+opsbro collectors show rabbitmq
 echo "Rabbitmq is OK"
 
 

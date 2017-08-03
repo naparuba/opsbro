@@ -1,7 +1,7 @@
 FROM oraclelinux:7.2
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-ADD        . /root/kunai-oss
+ADD        . /root/opsbro-oss
 
 ENTRYPOINT    test/test_one_linux_installation.sh  && test/assert_tag.sh "oracle-linux"
-WORKDIR       /root/kunai-oss
+WORKDIR       /root/opsbro-oss

@@ -4,9 +4,9 @@
 
 import copy
 import time
-from kunai_test import *
+from opsbro_test import *
 
-from kunai.threadmgr import ThreadMgr
+from opsbro.threadmgr import ThreadMgr
 
 i = 0
 
@@ -18,7 +18,7 @@ def f():
     time.sleep(0.5)
 
 
-class TestThreads(KunaiTest):
+class TestThreads(OpsBroTest):
     def setUp(self):
         pass
     

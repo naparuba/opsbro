@@ -1,7 +1,7 @@
 import time
 import socket
 
-from kunai.collector import Collector
+from opsbro.collector import Collector
 
 
 # Parse the result of Redis's INFO command into a Python dict

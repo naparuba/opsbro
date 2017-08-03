@@ -1,7 +1,7 @@
 import os
 import sys
 
-from kunai.collector import Collector
+from opsbro.collector import Collector
 
 
 class Selinux(Collector):

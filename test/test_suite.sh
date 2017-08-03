@@ -4,7 +4,7 @@
 # Travis: only need to run the installation once, it it not link to a specific python version. They don't need to use CPU for nothing ;)
 if [ "$TEST_SUITE" == "PYTHON" ]; then
    echo "Test launch for Python"
-   nosetests -xv --processes=1 --process-timeout=300 --process-restartworker --with-cov --cov=kunai --exe
+   nosetests -xv --processes=1 --process-timeout=300 --process-restartworker --with-cov --cov=opsbro --exe
    exit $?
 fi
 

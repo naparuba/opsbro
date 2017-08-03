@@ -3,23 +3,23 @@
 #    Gabes Jean, naparuba@gmail.com
 
 
-from kunai_test import *
+from opsbro_test import *
 
 import os
 import sys
-from kunai.yamlmgr import yamler
+from opsbro.yamlmgr import yamler
 
 '''
-import kunai.misc
+import opsbro.misc
 
-p = os.path.join(os.path.dirname(kunai.misc.__file__), 'internalyaml')
+p = os.path.join(os.path.dirname(opsbro.misc.__file__), 'internalyaml')
 sys.path.insert(0, p)
 
 import ruamel.yaml as yaml
 '''
 
 
-class TestYaml(KunaiTest):
+class TestYaml(OpsBroTest):
     def setUp(self):
         pass
     

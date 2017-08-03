@@ -5,17 +5,17 @@
 import copy
 import time
 import threading
-from kunai_test import *
+from opsbro_test import *
 
 try:
     from docker import Client
 except ImportError:
     Client = None
 
-from kunai.misc.cgroups import cgroupmgr
+from opsbro.misc.cgroups import cgroupmgr
 
 
-class TestCGroup(KunaiTest):
+class TestCGroup(OpsBroTest):
     def setUp(self):
         if Client is None:
             self.con = None

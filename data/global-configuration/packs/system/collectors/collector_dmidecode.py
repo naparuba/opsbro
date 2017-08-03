@@ -2,7 +2,7 @@ import os
 import commands
 import re
 
-from kunai.collector import Collector
+from opsbro.collector import Collector
 
 
 # DMI have lot of useful information that detectors can use to know lot about the platform/hardware

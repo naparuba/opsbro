@@ -9,8 +9,8 @@ sys.path.insert(0, '.')
 import locale
 locale.setlocale( locale.LC_ALL, 'English_Australia.1252' )
 
-import kunai.misc.wmi as wmi
-import kunai.misc.winstats as winstats
+import opsbro.misc.wmi as wmi
+import opsbro.misc.winstats as winstats
 import _winreg
 
 t0 = time.time()

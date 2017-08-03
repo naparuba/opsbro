@@ -1,12 +1,12 @@
 
 
 
-This is a first release of the kunai project about a service discovery / monitoring / light cfg management / command execution tool.
+This is a first release of the opsbro project about a service discovery / monitoring / light cfg management / command execution tool.
 
-[![Build Status](https://travis-ci.org/naparuba/kunai.svg)](https://travis-ci.org/naparuba/kunai)
+[![Build Status](https://travis-ci.org/naparuba/opsbro.svg)](https://travis-ci.org/naparuba/opsbro)
 
 
-## **Kunai**: monitoring and service discovery
+## **OpsBro**: monitoring and service discovery
 
 ![Agent](images/agent.png)
 
@@ -40,36 +40,36 @@ Just launch:
     python setup.py install
 
 
-## Run your daemon, and join the kunai cluster
+## Run your daemon, and join the opsbro cluster
 
-#### Start Kunai
+#### Start OpsBro
 
-You can start kunai as a daemon with:
+You can start opsbro as a daemon with:
  
-    /etc/init.d/kunai start
+    /etc/init.d/opsbro start
 
 You can also launch it in foreground:
 
-    kunai agent start
+    opsbro agent start
 
 
-#### Stop kunai daemon
+#### Stop opsbro daemon
 Just launch:
   
-    kunai agent stop
+    opsbro agent stop
 
 Or use the init.d script:
 
-    /etc/init.d/kunai stop
+    /etc/init.d/opsbro stop
 
 
 
-#### Display kunai information
+#### Display opsbro information
 Just launch:
 
-    kunai info
+    opsbro info
 
-You will have several information about the current kunai agent state:
+You will have several information about the current opsbro agent state:
 
  
 ![Agent](images/info.png) 
@@ -83,7 +83,7 @@ First you need to install and launch the node in another server.
 
 Then in this other server you can launch:
   
-    kunai join  OTHER-IP
+    opsbro join  OTHER-IP
 
 ##### Auto discover LAN nodes (UDP broadcast detection)
 
@@ -92,24 +92,24 @@ If your nodes are on the same LAN, you can use the UDP auto-detection to list ot
 NOTE: if you are using an encryption key (recommanded) then you must already have set it. If not, the other node won't answer to your query.
 
 
-    kunai agent detect
+    opsbro agent detect
 
 If the other nodes are present, they will be list by the command.
 
 
 If you want to auto-join the other node cluster, then you can use the --auto-join parameter:
 
-    kunai agent detect --auto-join
+    opsbro agent detect --auto-join
 
 It will try to join nodes based on:
  * first try to a proxy node if present
  * if no proxy node is present, then use the fist other node
 
 
-##### List your kunai cluster members
+##### List your opsbro cluster members
 You can list the cluster members on all nodes with :
 
-    kunai  members
+    opsbro  members
 
 ![Agent](images/members.png) 
 
@@ -146,7 +146,7 @@ Collectors are code executed by the agent to grok and store local os or applicat
 
 You can list available collectors with the command:
 
-    kunai collectors list
+    opsbro collectors list
  
  
 ![Agent](images/collectors-list.png) 
@@ -241,7 +241,7 @@ You must define it in your local configuration:
             - unknown
         contacts:
             - "admin@mydomain.com"
-        addr_from: "kunai@mydomain.com"
+        addr_from: "opsbro@mydomain.com"
         smtp_server: localhost
         subject_template: "email.subject.tpl"
         text_template: "email.text.tpl"
@@ -310,7 +310,7 @@ You must define a dns object in your local configuration to enable this interfac
     dns:
         enabled    : true
 	    port       : 6766
-	    domain     : ".kunai"
+	    domain     : ".opsbro"
 
 
   * enabled: start or not the listener
@@ -319,7 +319,7 @@ You must define a dns object in your local configuration to enable this interfac
 
 You will be able to query it with dig for test:
 
-    $dig -p 6766 @localhost redis.tag.dc1.kunai  +short
+    $dig -p 6766 @localhost redis.tag.dc1.opsbro  +short
     192.168.56.103
     192.168.56.105
 
@@ -415,9 +415,9 @@ The API is:
 
 ## How to see collected data? (metrology)
 
-The kunai agent is by default getting lot of metrology data from your OS and applications. It's done by "collctors" objets. You can easily list them and look at the colelcted data by launching:
+The opsbro agent is by default getting lot of metrology data from your OS and applications. It's done by "collctors" objets. You can easily list them and look at the colelcted data by launching:
 
-    kunai collectors show
+    opsbro collectors show
 
 
 **TODO** Allow to export into json format
@@ -425,11 +425,11 @@ The kunai agent is by default getting lot of metrology data from your OS and app
 
 ## How to see docker performance informations?
 
-If docker is launched on your server, Kunai will get data from it, like collectors, images and performances.
+If docker is launched on your server, OpsBro will get data from it, like collectors, images and performances.
 
 To list all of this just launch:
 
-    kunai docker show
+    opsbro docker show
 
 
 ## Get quorum strong master/slave elections thanks to RAFT
@@ -446,5 +446,5 @@ You can ask your node cluster system to elect a node for a specific task or appl
 
 ## Is there an UI available?
 
-Yes. There is a UI available in the */var/lib/kunai/ui/* directory. It's just flat files and so you can just export the directory with apache/nginx and play with it.
+Yes. There is a UI available in the */var/lib/opsbro/ui/* directory. It's just flat files and so you can just export the directory with apache/nginx and play with it.
 

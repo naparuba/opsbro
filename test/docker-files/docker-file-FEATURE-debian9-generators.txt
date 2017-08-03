@@ -21,16 +21,16 @@ RUN        pip install ruamel.yaml==0.11.15
 RUN        apt-get install -y sysstat
 RUN        apt-get install -y nagios-plugins-standard
 
-ADD        . /root/kunai-oss
+ADD        . /root/opsbro-oss
 
 
-WORKDIR    /root/kunai-oss
+WORKDIR    /root/opsbro-oss
 
 RUN        python setup.py install
 
 # Copy the generator
-ADD        test/test-files/test-generators/   /var/lib/kunai/global-configuration/packs/
-RUN        ls -R /var/lib/kunai/global-configuration/packs/
-RUN        cp   /var/lib/kunai/global-configuration/packs/pack-generators/authorized_keys.txt  /tmp/
+ADD        test/test-files/test-generators/   /var/lib/opsbro/global-configuration/packs/
+RUN        ls -R /var/lib/opsbro/global-configuration/packs/
+RUN        cp   /var/lib/opsbro/global-configuration/packs/pack-generators/authorized_keys.txt  /tmp/
 
 ENTRYPOINT     test/test_one_linux_installation.sh   && test/test_generators.sh

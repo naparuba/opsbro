@@ -10,8 +10,8 @@ RUN        zypper --non-interactive install python-Jinja2
 RUN        zypper --non-interactive install python-requests
 RUN        zypper --non-interactive install python-setuptools
 
-ADD        . /root/kunai-oss
-WORKDIR       /root/kunai-oss
+ADD        . /root/opsbro-oss
+WORKDIR       /root/opsbro-oss
 
 
 ENTRYPOINT    test/test_one_linux_installation.sh  && test/assert_tag.sh "opensuse"

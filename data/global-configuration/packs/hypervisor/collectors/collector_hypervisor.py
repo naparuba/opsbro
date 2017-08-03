@@ -5,7 +5,7 @@ import os
 import ctypes
 from ctypes import c_uint32, c_int, c_size_t, c_void_p, POINTER, CFUNCTYPE
 
-from kunai.collector import Collector
+from opsbro.collector import Collector
 
 # hypervisor
 HYPERVISOR_INFO_LEAF = 0x40000000

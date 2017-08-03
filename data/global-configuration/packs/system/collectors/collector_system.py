@@ -4,9 +4,9 @@ import platform
 import multiprocessing
 import socket
 
-from kunai.collector import Collector
-from kunai.util import get_public_address
-from kunai.systempacketmanager import systepacketmgr
+from opsbro.collector import Collector
+from opsbro.util import get_public_address
+from opsbro.systempacketmanager import systepacketmgr
 
 try:
     import pwd
@@ -14,7 +14,7 @@ except ImportError:
     pwd = None
 
 if os.name == 'nt':
-    from kunai.misc.wmi import wmiaccess
+    from opsbro.misc.wmi import wmiaccess
 
 
 class System(Collector):

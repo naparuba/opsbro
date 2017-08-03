@@ -3,7 +3,7 @@ import urllib2
 import traceback
 import json
 
-from kunai.collector import Collector
+from opsbro.collector import Collector
 
 # TODO: look at all available at to learn how rabbitmq is working https://github.com/nagios-plugins-rabbitmq/nagios-plugins-rabbitmq
 

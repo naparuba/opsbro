@@ -1,6 +1,6 @@
 import os
 
-from kunai.collector import Collector
+from opsbro.collector import Collector
 
 
 class Blockdevice(Collector):

@@ -4,8 +4,8 @@
 
 import threading
 
-from kunai_test import *
-from kunai.raft import RaftNode
+from opsbro_test import *
+from opsbro.raft import RaftNode
 
 
 class RaftQueue():
@@ -27,7 +27,7 @@ class RaftQueue():
         
         
 
-class TestRaft(KunaiTest):
+class TestRaft(OpsBroTest):
     def tearDown(self):
         self.stop()
     

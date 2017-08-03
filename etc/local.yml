@@ -38,14 +38,14 @@ master_key_pub: ""
 
 
 # Where to store the daemon data
-data: /var/lib/kunai
-lock: /var/run/kunai.lock
+data: /var/lib/opsbro
+lock: /var/run/opsbro.lock
 
-socket: /var/lib/kunai/kunai.sock
+socket: /var/lib/opsbro/opsbro.sock
 
 
 ########## Log
-log: /var/log/kunai
+log: /var/log/opsbro
 # Which level is the daemon running. Possible values are:
 # * ERROR
 # * WARNING
@@ -55,7 +55,7 @@ log_level: INFO
 
 
 # Place to store nagios compatible plugins
-libexec: /var/lib/kunai/libexec/
+libexec: /var/lib/opsbro/libexec/
 
 
 

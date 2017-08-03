@@ -1,6 +1,6 @@
 import time
 
-from kunai.collector import Collector
+from opsbro.collector import Collector
 
 
 class Timezone(Collector):

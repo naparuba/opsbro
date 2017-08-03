@@ -6,8 +6,8 @@ import multiprocessing
 import threading
 from multiprocessing import Process, Value, Array
 
-from kunai_test import *
-from kunai.raft import RaftNode
+from opsbro_test import *
+from opsbro.raft import RaftNode
 
 
 class RaftQueue():
@@ -27,7 +27,7 @@ class RaftQueue():
         return m
 
 
-class TestRaftMultiProcess(KunaiTest):
+class TestRaftMultiProcess(OpsBroTest):
     def tearDown(self):
         self.stop_process()
     

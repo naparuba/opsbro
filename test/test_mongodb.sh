@@ -12,15 +12,15 @@ if [ $? != 0 ]; then
 fi
 
 
-RES=$(kunai evaluator eval "{{collector.mongodb.available}}==True" | tail -n 1)
+RES=$(opsbro evaluator eval "{{collector.mongodb.available}}==True" | tail -n 1)
 
 if [ $RES != "True" ]; then
     echo "Fail: mongodb collectors is not running $RES"
-    kunai collectors show mongodb
+    opsbro collectors show mongodb
     exit 2
 fi
 
-kunai collectors show mongodb
+opsbro collectors show mongodb
 echo "Mongodb is OK"
 
 

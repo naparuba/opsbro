@@ -2,8 +2,8 @@ import traceback
 import urlparse
 import datetime
 
-from kunai.collector import Collector
-from kunai.util import to_best_int_float
+from opsbro.collector import Collector
+from opsbro.util import to_best_int_float
 
 
 class Mongodb(Collector):

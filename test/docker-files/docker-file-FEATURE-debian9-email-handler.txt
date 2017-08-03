@@ -26,13 +26,13 @@ RUN        apt-get install -y nagios-plugins-standard
 RUN        DEBIAN_FRONTEND=noninteractive apt-get install -qy postfix
 
 
-ADD        . /root/kunai-oss
-WORKDIR       /root/kunai-oss
+ADD        . /root/opsbro-oss
+WORKDIR       /root/opsbro-oss
 
 # install to allow the directory to exists
 RUN       python setup.py install
 
 # Copy the new checks
-ADD        test/test-files/test-mail-handlers   /var/lib/kunai/global-configuration/packs/
+ADD        test/test-files/test-mail-handlers   /var/lib/opsbro/global-configuration/packs/
 
 ENTRYPOINT     /etc/init.d/postfix start; test/test_one_linux_installation.sh   && test/test_email_handlers.sh

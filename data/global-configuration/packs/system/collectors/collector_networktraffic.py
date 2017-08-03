@@ -4,10 +4,10 @@ import traceback
 import time
 import os
 
-from kunai.collector import Collector
+from opsbro.collector import Collector
 
 if os.name == 'nt':
-    import kunai.misc.wmi as wmi
+    import opsbro.misc.wmi as wmi
 
 
 class NetworkTraffic(Collector):

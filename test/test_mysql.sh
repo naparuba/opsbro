@@ -16,15 +16,15 @@ if [ $? != 0 ]; then
 fi
 
 
-RES=$(kunai evaluator eval "{{collector.mysql.max_used_connections}} >= 1" | tail -n 1)
+RES=$(opsbro evaluator eval "{{collector.mysql.max_used_connections}} >= 1" | tail -n 1)
 if [ $RES != "True" ]; then
     echo "Fail: mysql collectors is fail {{collector.mysql.max_used_connections}} >= 1 => $RES"
-    kunai collectors show mysql
+    opsbro collectors show mysql
     exit 2
 fi
 
 
-kunai collectors show mysql
+opsbro collectors show mysql
 echo "Mysql is OK"
 
 

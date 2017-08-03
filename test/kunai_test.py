@@ -10,13 +10,13 @@ import random
 import unittest
 import copy
 
-# import the kunai library from the parent directory
-import __import_kunai
+# import the opsbro library from the parent directory
+import __import_opsbro
 
-del __import_kunai
-import kunai
+del __import_opsbro
+import opsbro
 
-from kunai.log import logger
+from opsbro.log import logger
 
 
 class __DUMMY:
@@ -46,7 +46,7 @@ class _Unittest2CompatMixIn:
         self.assertTrue(obj is cmp)
 
 
-class KunaiTest(unittest.TestCase, _Unittest2CompatMixIn):
+class OpsBroTest(unittest.TestCase, _Unittest2CompatMixIn):
     def setUp(self):
         pass
     

@@ -2,7 +2,7 @@ import os
 import re
 import sys
 
-from kunai.collector import Collector
+from opsbro.collector import Collector
 
 MySQLdb = None
 
