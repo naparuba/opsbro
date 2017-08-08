@@ -586,16 +586,16 @@ class Cluster(object):
         def agent_generators():
             response.content_type = 'application/json'
             logger.debug("/agent/generators is called")
-            return self.generators
+            return generatormgr.generators
         
         
         @http_export('/agent/generators/:gname#.+#')
         def agent_generator(gname):
             response.content_type = 'application/json'
             logger.debug("/agent/generator is called for %s" % gname)
-            if gname not in self.generators:
+            if gname not in generatormgr.generators:
                 return abort(404, 'generator not found')
-            return self.generators[gname]
+            return generatormgr.generators[gname]
         
         
         @http_export('/agent/propagate/libexec', method='GET')
