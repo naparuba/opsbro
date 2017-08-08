@@ -2,6 +2,7 @@ import time
 import socket
 
 from opsbro.collector import Collector
+from opsbro.parameters import StringParameter, IntParameter
 
 
 # Parse the result of Redis's INFO command into a Python dict
@@ -42,6 +43,11 @@ class Redis(Collector):
     RATE_KEYS = ['used_cpu_sys', 'used_cpu_sys_children', 'used_cpu_user', 'used_cpu_user_children',
                  'total_commands_processed']
     
+    parameters = {
+        'server'  : StringParameter(default='127.0.0.1'),
+        'port'    : IntParameter(default=6379),
+    }
+
     
     def __init__(self, config, put_result=None):
         super(Redis, self).__init__(config, put_result)

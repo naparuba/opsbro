@@ -4,10 +4,20 @@ import traceback
 import json
 
 from opsbro.collector import Collector
+from opsbro.parameters import StringParameter, IntParameter
+
 
 # TODO: look at all available at to learn how rabbitmq is working https://github.com/nagios-plugins-rabbitmq/nagios-plugins-rabbitmq
 
 class RabbitMQ(Collector):
+    parameters = {
+        'uri'     : StringParameter(default='http://localhost:15672/api/overview'),
+        'user'    : StringParameter(default='root'),
+        'password': StringParameter(default=''),
+        
+    }
+    
+    
     def launch(self):
         logger = self.logger
         logger.debug('getRabbitMQStatus: start')
@@ -20,7 +30,7 @@ class RabbitMQ(Collector):
             logger.debug('getRabbitMQStatus: attempting authentication setup')
             
             manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
-            manager.add_password(None, uri, user,password)
+            manager.add_password(None, uri, user, password)
             handler = urllib2.HTTPBasicAuthHandler(manager)
             opener = urllib2.build_opener(handler)
             urllib2.install_opener(opener)
@@ -32,7 +42,7 @@ class RabbitMQ(Collector):
             request = urllib2.urlopen(req)
             response = request.read()
         
-        except (urllib2.HTTPError,urllib2.URLError, httplib.HTTPException) as e:
+        except (urllib2.HTTPError, urllib2.URLError, httplib.HTTPException) as e:
             logger.error('Unable to get RabbitMQ status - HTTPError = %s' % e)
             return False
         
@@ -45,5 +55,5 @@ class RabbitMQ(Collector):
         except Exception, exp:
             logger.error("Rabbitmq: parsing json: %s" % exp)
             return False
-
+        
         return status

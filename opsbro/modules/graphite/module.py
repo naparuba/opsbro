@@ -22,6 +22,7 @@ from opsbro.util import to_best_int_float
 from opsbro.gossip import gossiper
 from opsbro.httpclient import HTTP_EXCEPTIONS
 from opsbro.kv import kvmgr
+from opsbro.parameters import StringParameter, BoolParameter, IntParameter
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('graphite')
@@ -30,8 +31,12 @@ logger = LoggerFactory.create_logger('graphite')
 class GraphiteModule(Module):
     implement = 'graphite'
     manage_configuration_objects = ['graphite']
-    
-    
+    parameters = {
+        'enabled': BoolParameter(default=False),
+        'port'   : IntParameter(default=2003),
+    }
+
+
     def __init__(self):
         Module.__init__(self)
         
@@ -55,7 +60,7 @@ class GraphiteModule(Module):
         logger.debug('Graphite: prepare phase')
         if self.graphite:
             self.enabled = self.graphite.get('enabled', False)
-            self.graphite_port = self.graphite.get('port', 8125)
+            self.graphite_port = self.graphite.get('port', 2003)
         
         if self.enabled:
             

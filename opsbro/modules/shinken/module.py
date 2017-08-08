@@ -2,13 +2,19 @@ import os
 
 from opsbro.log import logger
 from opsbro.module import Module
+from opsbro.parameters import StringParameter, BoolParameter, IntParameter
 from shinkenexporter import shinkenexporter
 
 
 class ShinkenModule(Module):
     implement = 'shinken'
     manage_configuration_objects = ['shinken']
-    
+    parameters = {
+        'enabled': BoolParameter(default=False),
+        'cfg_path': StringParameter(default=''),
+        'reload_command': StringParameter(default=''),
+    }
+
     
     def __init__(self):
         Module.__init__(self)

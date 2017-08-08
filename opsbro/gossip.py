@@ -23,6 +23,8 @@ from opsbro.stop import stopper
 
 KGOSSIP = 10
 
+# LIMIT= 4 * math.ceil(math.log10(float(2 + 1)))
+
 # Global logger for this part
 logger = LoggerFactory.create_logger('gossip')
 

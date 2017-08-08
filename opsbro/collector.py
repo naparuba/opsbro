@@ -8,6 +8,10 @@ pythonVersion = platform.python_version_tuple()
 
 
 class Collector(object):
+    # By default, no parameters are need for a collector
+    # but they can declare some
+    parameters = {}
+    
     class __metaclass__(type):
         __inheritors__ = set()
         

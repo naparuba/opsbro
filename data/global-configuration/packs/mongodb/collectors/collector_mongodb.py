@@ -4,9 +4,16 @@ import datetime
 
 from opsbro.collector import Collector
 from opsbro.util import to_best_int_float
+from opsbro.parameters import StringParameter
 
 
 class Mongodb(Collector):
+    parameters = {
+        'uri': StringParameter(default='mongodb://localhost'),
+        'user'    : StringParameter(default=''),
+        'password': StringParameter(default=''),
+    }
+
     def launch(self):
         logger = self.logger
         logger.debug('getMongoDBStatus: start')

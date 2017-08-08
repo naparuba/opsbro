@@ -4,6 +4,7 @@ from opsbro.log import LoggerFactory
 from opsbro.threadmgr import threader
 from opsbro.module import Module
 from opsbro.stop import stopper
+from opsbro.parameters import StringParameter, BoolParameter, IntParameter
 
 from dnsquery import DNSQuery
 
@@ -14,6 +15,11 @@ logger = LoggerFactory.create_logger('dns')
 class DNSModule(Module):
     implement = 'dns'
     manage_configuration_objects = ['dns']
+    parameters = {
+        'enabled': BoolParameter(default=False),
+        'port'   : IntParameter(default=53),
+        'domain' : StringParameter(default=''),
+    }
     
     
     def __init__(self):

@@ -19,6 +19,7 @@ RUN        pip install rsa
 # The internal yaml seems to not be used, thanks nose
 RUN        pip install ruamel.yaml==0.11.15
 RUN        apt-get install -y sysstat
+RUN        apt-get install -y curl
 
 ADD        . /root/opsbro-oss
 WORKDIR       /root/opsbro-oss

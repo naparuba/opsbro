@@ -16,6 +16,7 @@ from jsonmgr import jsoner
 from opsbro.now import NOW
 from opsbro.ts import tsmgr
 from opsbro.gossip import gossiper
+from opsbro.configurationmanager import configmgr
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('collector')
@@ -94,6 +95,11 @@ class CollectorManager:
         try:
             # also give it our put result callback
             inst = cls(self.cfg_data, put_result=self.put_result)
+            parameters = getattr(inst, 'parameters', {})
+            print "LOADING PARAM", inst, parameters
+            if parameters:
+                configmgr.declare_parameters('collector', colname, parameters)
+
         except Exception, exp:
             logger.error('Cannot load the %s collector: %s' % (cls, traceback.format_exc()))
             return

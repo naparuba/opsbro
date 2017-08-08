@@ -36,9 +36,10 @@ from opsbro.threadmgr import threader
 from opsbro.now import NOW
 from opsbro.httpclient import HTTP_EXCEPTIONS
 
-from opsbro.generator import Generator
+
 # now singleton objects
 from opsbro.gossip import gossiper
+from opsbro.configurationmanager import configmgr
 from opsbro.kv import kvmgr
 from opsbro.broadcast import broadcaster
 from opsbro.httpdaemon import httpdaemon, http_export, response, request, abort, gserver
@@ -50,16 +51,13 @@ from opsbro.info import VERSION
 from opsbro.stop import stopper
 from opsbro.evaluater import evaluater
 from opsbro.detectormgr import detecter
-from opsbro.packer import packer
+from opsbro.generatormgr import generatormgr
 from opsbro.ts import tsmgr
 from opsbro.jsonmgr import jsoner
-from opsbro.yamlmgr import yamler
 from opsbro.modulemanager import modulemanager
-from opsbro.zonemanager import zonemgr
 from opsbro.executer import executer
 from opsbro.monitoring import monitoringmgr
 from opsbro.installermanager import installormgr
-from opsbro.handlermgr import handlermgr
 from opsbro.defaultpaths import DEFAULT_LIBEXEC_DIR, DEFAULT_LOCK_PATH, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR
 
 # Global logger for this part
@@ -67,32 +65,7 @@ logger = LoggerFactory.create_logger('agent')
 logger_gossip = LoggerFactory.create_logger('gossip')
 
 
-# LIMIT= 4 * math.ceil(math.log10(float(2 + 1)))
-
-
-
 class Cluster(object):
-    parameters = {
-        'display_name'   : {'type': 'string', 'mapto': 'display_name'},
-        'port'           : {'type': 'int', 'mapto': 'port'},
-        'datacenters'    : {'type': 'list', 'mapto': 'datacenters'},
-        'data'           : {'type': 'path', 'mapto': 'data_dir'},
-        'libexec'        : {'type': 'path', 'mapto': 'libexec_dir'},
-        'log'            : {'type': 'path', 'mapto': 'log_dir'},
-        'lock'           : {'type': 'path', 'mapto': 'lock_path'},
-        'socket'         : {'type': 'path', 'mapto': 'socket_path'},
-        'log_level'      : {'type': 'string', 'mapto': 'log_level'},
-        'bootstrap'      : {'type': 'bool', 'mapto': 'bootstrap'},
-        'seeds'          : {'type': 'list', 'mapto': 'seeds'},
-        'tags'           : {'type': 'list', 'mapto': 'tags'},
-        'encryption_key' : {'type': 'string', 'mapto': 'encryption_key'},
-        'master_key_priv': {'type': 'string', 'mapto': 'master_key_priv'},
-        'master_key_pub' : {'type': 'string', 'mapto': 'master_key_pub'},
-        'node-zone'      : {'type': 'string', 'mapto': 'zone'},
-        'proxy-node'     : {'type': 'bool', 'mapto': 'is_proxy'},
-    }
-    
-    
     def __init__(self, port=6768, name='', bootstrap=False, seeds='', tags='', cfg_dir='', libexec_dir=''):
         self.set_exit_handler()
         
@@ -102,8 +75,6 @@ class Cluster(object):
         # This will be the place where we will get our configuration data
         self.cfg_data = {}
         
-        self.generators = {}
-        self.detectors = {}
         self.handlers = {}
         
         # Some default value that can be erased by the
@@ -116,6 +87,8 @@ class Cluster(object):
         self.mfkey_priv = None  # real key objects
         self.mfkey_pub = None
         
+        # By default, we are not a proxy, and with default port
+        self.is_proxy = False
         self.port = port
         self.name = name
         self.display_name = ''
@@ -131,22 +104,19 @@ class Cluster(object):
         self.addr = get_public_address()
         self.listening_addr = '0.0.0.0'
         
-        self.data_dir = os.path.abspath(os.path.join(DEFAULT_DATA_DIR))  # '/var/lib/opsbro/')
+        self.data_dir = os.path.abspath(os.path.join(DEFAULT_DATA_DIR))  # '/var/lib/opsbro/'
         self.log_dir = DEFAULT_LOG_DIR  # '/var/log/opsbro'
         self.lock_path = DEFAULT_LOCK_PATH  # '/var/run/opsbro.lock'
         self.libexec_dir = DEFAULT_LIBEXEC_DIR  # '/var/lib/opsbro/libexec'
-        self.socket_path = '$data$/opsbro.sock'
+        self.socket_path = os.path.join(self.data_dir, 'opsbro.sock')  # /var/lib/opsbro/opsbro.sock
         
         self.log_level = 'INFO'
         
         # Let the modules know about the daemon object
         modulemanager.set_daemon(self)
         
-        # save the known types for the configuration
-        self.known_types = ['check', 'service', 'handler', 'generator', 'zone', 'installor']
-        # and extend with the ones from the modules
-        self.modules_known_types = modulemanager.get_managed_configuration_types()
-        self.known_types.extend(self.modules_known_types)
+        # Now that we did load modules, we are ready to load their configuration files (we know which types we need)
+        configmgr.prepare_to_load_cfg_dirs()
         
         # Now look at the cfg_dir part
         if cfg_dir:
@@ -159,7 +129,12 @@ class Cluster(object):
             sys.exit(2)
         
         # We need the main cfg_directory
-        self.load_cfg_dir(self.cfg_dir)
+        configmgr.load_cfg_dir(self.cfg_dir)
+        
+        parameters_from_local_configuration = configmgr.get_parameters_for_cluster_from_configuration()
+        print "Some parameters are founded in the local.yaml file: %s" % parameters_from_local_configuration
+        for (k, v) in parameters_from_local_configuration.iteritems():
+            setattr(self, k, v)
         
         # We can start with a void data dir
         if not os.path.exists(self.data_dir):
@@ -169,39 +144,26 @@ class Cluster(object):
         if not os.path.exists(self.log_dir):
             os.mkdir(self.log_dir)
         
+        # Configure the logger with its new level if need
+        raw_logger.setLevel(self.log_level)
+        
+        # open the log file
+        raw_logger.load(self.log_dir, self.name)
+        raw_logger.export_http()
+        
         # Then we will need to look at other directories, list from
-        # * global-confugration = comon to all nodes
+        # * global-confugration = common to all nodes
         # * local-configuration = on this specific node
         self.global_configuration = os.path.join(self.data_dir, 'global-configuration')
         self.zone_configuration = os.path.join(self.data_dir, 'zone-configuration')
         self.local_configuration = os.path.join(self.data_dir, 'local-configuration')
         
         # Ok let's load global configuration
-        self.load_cfg_dir(self.global_configuration)
+        configmgr.load_cfg_dir(self.global_configuration)
         # then zone one
-        self.load_cfg_dir(self.zone_configuration)
+        configmgr.load_cfg_dir(self.zone_configuration)
         # and then local one
-        self.load_cfg_dir(self.local_configuration)
-        
-        # Configure the logger with its new level if need
-        raw_logger.setLevel(self.log_level)
-        
-        # For the path inside the configuration we must
-        # string replace $data$ by the good value if it's set
-        parameters = self.__class__.parameters
-        for (k, d) in parameters.iteritems():
-            if d['type'] == 'path':
-                mapto = d['mapto']
-                v = getattr(self, mapto).replace('$data$', self.data_dir)
-                setattr(self, mapto, v)
-        
-        # Default some parameters, like is_proxy
-        if not hasattr(self, 'is_proxy'):
-            self.is_proxy = False
-        
-        # open the log file
-        raw_logger.load(self.log_dir, self.name)
-        raw_logger.export_http()
+        configmgr.load_cfg_dir(self.local_configuration)
         
         # Look if our encryption key is valid or not
         if self.encryption_key:
@@ -211,8 +173,8 @@ class Cluster(object):
             try:
                 self.encryption_key = base64.b64decode(self.encryption_key)
             except ValueError:
-                logger.warning('The encryption key is invalid, not in base64 format')
-                # todo: exit or no exit?
+                logger.error('The encryption key is invalid, not in base64 format')
+                sys.exit(2)
         # and load the encryption key in the global encrypter object
         encrypter.load(self.encryption_key)
         
@@ -380,8 +342,8 @@ class Cluster(object):
         # Load all collectors globaly
         collectormgr.load_collectors(self.cfg_data)
         # and configuration ones from local and global configuration
-        self.load_packs(self.local_configuration)
-        self.load_packs(self.global_configuration)
+        configmgr.load_packs(self.local_configuration)
+        configmgr.load_packs(self.global_configuration)
         # and their last data
         self.load_collector_retention()
         collectormgr.export_http()
@@ -406,7 +368,6 @@ class Cluster(object):
         gossiper.init(nodes, nodes_lock, self.addr, self.port, self.name, self.display_name, self.incarnation, self.uuid, tags, self.seeds, self.bootstrap, self.zone, self.is_proxy)
         
         # About detecting tags and such things
-        detecter.load(self)
         detecter.export_http()
         
         # Let the modules prepare themselve
@@ -422,267 +383,11 @@ class Cluster(object):
         # Also run installor part, as it need other part to be runs
         installormgr.export_http()
         
+        # And the configuration
+        configmgr.export_http()
+        
         # get the message in a pub-sub way
         pubsub.sub('manage-message', self.manage_message_pub)
-    
-    
-    def load_cfg_dir(self, cfg_dir):
-        if not os.path.exists(cfg_dir):
-            logger.error('ERROR: the configuration directory %s is missing' % cfg_dir)
-            sys.exit(2)
-        for root, dirs, files in os.walk(cfg_dir):
-            for name in files:
-                fp = os.path.join(root, name)
-                logger.log('Loader: looking for file: %s' % fp)
-                if name.endswith('.json') or name.endswith('.yml'):
-                    self.open_cfg_file(fp)
-                if name == 'module.py':
-                    # dir name as module name part
-                    dname = os.path.split(root)[1]
-                    # Load this module.py file
-                    m = imp.load_source('__module_' + dname, fp)
-                    logger.debug("Loader user module", m, "from", fp)
-    
-    
-    def load_packs(self, root_dir):
-        logger.debug('Loading packs directory')
-        pack_dir = os.path.join(root_dir, 'packs')
-        if not os.path.exists(pack_dir):
-            logger.debug('ERROR: the pack directory %s is missing' % pack_dir)
-            return
-        sub_dirs = [os.path.join(pack_dir, dname) for dname in os.listdir(pack_dir) if
-                    os.path.isdir(os.path.join(pack_dir, dname))]
-        logger.debug('Loading packs directories : %s' % sub_dirs)
-        # Look at collectors
-        for pname in sub_dirs:
-            # First load meta data from the package.json file (if present)
-            package_pth = os.path.join(pname, 'package.yml')
-            pack_name = pname  # by default take the directory name
-            if os.path.exists(package_pth):
-                try:
-                    with open(package_pth, 'r') as f:
-                        package_buf = f.read()
-                        package = yamler.loads(package_buf)
-                        #if not isinstance(package, dict):
-                        #    raise Exception('Package.json file %s is not a valid dict object' % package_pth)
-                        pack_name = packer.load_package(package, package_pth)
-                except Exception, exp:  # todo: more precise catch? I think so
-                    logger.error('Cannot load package %s: %s' % (package_pth, exp))
-            
-            # Now load collectors, an important part for packs :)
-            collector_dir = os.path.join(pname, 'collectors')
-            if os.path.exists(collector_dir):
-                collectormgr.load_directory(collector_dir, pack_name=pack_name)
-        
-        # now collectors class are loaded, load instances from them
-        collectormgr.load_all_collectors()
-    
-    
-    def open_cfg_file(self, fp):
-        is_json = fp.endswith('.json')
-        is_yaml = fp.endswith('.yml')
-        with open(fp, 'r') as f:
-            buf = f.read()
-            try:
-                if is_json:
-                    o = json.loads(buf)
-                if is_yaml:
-                    o = yamler.loads(buf)
-            except Exception, exp:
-                logger.log('ERROR: the configuration file %s malformed: %s' % (fp, exp))
-                sys.exit(2)
-        #if not isinstance(o, dict):
-        #    logger.log('ERROR: the configuration file %s content is not a valid dict' % fp)
-        #    sys.exit(2)
-        logger.debug("Configuration, opening file data", o, fp)
-        
-        if 'check' in o:
-            check = o['check']
-            if not isinstance(check, dict):
-                logger.log('ERROR: the check from the file %s is not a valid dict' % fp)
-                sys.exit(2)
-            print fp
-            fname = fp#[len(self.cfg_dir) + 1:]
-            mod_time = int(os.path.getmtime(fp))
-            cname = os.path.splitext(fname)[0]
-            monitoringmgr.import_check(check, 'file:%s' % fname, cname, mod_time=mod_time)
-        
-        if 'service' in o:
-            service = o['service']
-            if not isinstance(service, dict):
-                logger.log('ERROR: the service from the file %s is not a valid dict' % fp)
-                sys.exit(2)
-            
-            mod_time = int(os.path.getmtime(fp))
-            fname = fp#[len(self.cfg_dir) + 1:]
-            sname = os.path.splitext(fname)[0]
-            monitoringmgr.import_service(service, 'file:%s' % fname, sname, mod_time=mod_time)
-        
-        if 'handler' in o:
-            handler = o['handler']
-            if not isinstance(handler, dict):
-                logger.log('ERROR: the handler from the file %s is not a valid dict' % fp)
-                sys.exit(2)
-            
-            mod_time = int(os.path.getmtime(fp))
-            fname = fp
-            hname = os.path.splitext(os.path.basename(fname))[0]
-            handlermgr.import_handler(handler, fp, hname, mod_time=mod_time)
-        
-        if 'generator' in o:
-            generator = o['generator']
-            if not isinstance(generator, dict):
-                logger.log('ERROR: the generator from the file %s is not a valid dict' % fp)
-                sys.exit(2)
-            
-            mod_time = int(os.path.getmtime(fp))
-            fname = fp
-            gname = os.path.splitext(fname)[0]
-            self.import_generator(generator, fname, gname, mod_time=mod_time)
-        
-        if 'detector' in o:
-            detector = o['detector']
-            if not isinstance(detector, dict):
-                logger.log('ERROR: the detector from the file %s is not a valid dict' % fp)
-                sys.exit(2)
-            mod_time = int(os.path.getmtime(fp))
-            fname = fp[len(self.cfg_dir) + 1:]
-            gname = os.path.splitext(fname)[0]
-            self.import_detector(detector, 'file:%s' % fname, gname, mod_time=mod_time)
-        
-        if 'zone' in o:
-            zone = o['zone']
-            if not isinstance(zone, dict):
-                logger.log('ERROR: the zone from the file %s is not a valid dict' % fp)
-                sys.exit(2)
-            zonemgr.add(zone)
-        
-        if 'installor' in o:
-            installor = o['installor']
-            if not isinstance(installor, dict):
-                logger.log('ERROR: the installor from the file %s is not a valid dict' % fp)
-                sys.exit(2)
-            mod_time = int(os.path.getmtime(fp))
-            fname = fp
-            gname = os.path.splitext(fname)[0]
-            installormgr.import_installor(installor, fname, gname, mod_time=mod_time)
-        
-        # grok all others data so we can use them in our checks
-        parameters = self.__class__.parameters
-        for (k, v) in o.iteritems():
-            # Manage modules object types
-            if k in self.modules_known_types:
-                # File modification time
-                mod_time = int(os.path.getmtime(fp))
-                # file name
-                fname = fp[len(self.cfg_dir) + 1:]
-                # file short name
-                gname = os.path.splitext(fname)[0]
-                # Go import it
-                modulemanager.import_managed_configuration_object(k, v, mod_time, fname, gname)
-                continue
-            # check, service, ... are already managed
-            if k in self.known_types:
-                continue
-            # if k is not a internal parameters, use it in the cfg_data part
-            if k not in parameters:
-                logger.debug("SETTING RAW VALUE", k, v)
-                self.cfg_data[k] = v
-            else:  # cannot be check and service here
-                e = parameters[k]
-                _type = e['type']
-                mapto = e['mapto']
-                if _type == 'int':
-                    try:
-                        int(v)
-                    except ValueError:
-                        logger.error('The parameter %s is not an int' % k)
-                        return
-                elif _type in ['path', 'string']:
-                    if not isinstance(v, basestring):
-                        logger.error('The parameter %s is not a string' % k)
-                        return
-                elif _type == 'bool':
-                    if not isinstance(v, bool):
-                        logger.error('The parameter %s is not a bool' % k)
-                        return
-                elif _type == 'list':
-                    if not isinstance(v, list):
-                        logger.error('The parameter %s is not a list' % k)
-                        return
-                else:
-                    logger.error('Unknown parameter type %s' % k)
-                    return
-                # It's valid, I set it :)
-                setattr(self, mapto, v)
-    
-    
-    # Generators will create files based on templates from
-    # data and nodes after a change on a node
-    def import_generator(self, generator, fr, gname, mod_time=0):
-        generator['from'] = fr
-        generator['name'] = generator['id'] = gname
-        if 'notes' not in generator:
-            generator['notes'] = ''
-        if 'apply_on' not in generator:
-            generator['apply_on'] = generator['name']
-        
-        for prop in ['path', 'template']:
-            if prop not in generator:
-                logger.warning('Bad generator, missing property %s in the generator %s' % (prop, gname))
-                return
-        # Template must be from configuration path
-        gen_base_dir = os.path.dirname(fr)
-        
-        generator['template'] = os.path.normpath(os.path.join(gen_base_dir, generator['template']))
-        # and path must be a abs path
-        generator['path'] = os.path.abspath(generator['path'])
-        
-        # We will try not to hummer the generator
-        generator['modification_time'] = mod_time
-        
-        for k in ['partial_start', 'partial_end']:
-            if k not in generator:
-                generator[k] = ''
-        
-        generator['if_partial_missing'] = generator.get('if_partial_missing', '')
-        if generator['if_partial_missing'] and generator['if_partial_missing'] not in ['append']:
-            logger.error('Generator %s if_partial_missing property is not valid: %s' % (generator['name'], generator['if_partial_missing']))
-            return
-        
-        # Add it into the generators list
-        self.generators[generator['id']] = generator
-    
-    
-    # Detectors will run rules based on collectors and such things, and will tag the local node
-    # if the rules are matching
-    def import_detector(self, detector, fr, gname, mod_time=0):
-        detector['from'] = fr
-        detector['name'] = detector['id'] = gname
-        if 'notes' not in detector:
-            detector['notes'] = ''
-        if 'apply_on' not in detector:
-            detector['apply_on'] = detector['name']
-        
-        for prop in ['tags', 'apply_if']:
-            if prop not in detector:
-                logger.warning('Bad detector, missing property %s in the detector %s' % (prop, gname))
-                return
-        if not isinstance(detector['tags'], list):
-            logger.warning('Bad detector, tags is not a list in the detector %s' % gname)
-            return
-        
-        # We will try not to hummer the detector
-        detector['modification_time'] = mod_time
-        
-        # Do not lunach too much
-        detector['last_launch'] = 0
-        
-        # By default do not match
-        detector['do_apply'] = False
-        
-        # Add it into the detectors list
-        self.detectors[detector['id']] = detector
     
     
     # Load raw results of collectors, and give them to the
@@ -743,7 +448,7 @@ class Cluster(object):
     
     
     def launch_generator_thread(self):
-        self.generator_thread = threader.create_and_launch(self.do_generator_thread, name='Generator scheduling', essential=True, part='generator')
+        self.generator_thread = threader.create_and_launch(generatormgr.do_generator_thread, name='Generator scheduling', essential=True, part='generator')
     
     
     def launch_detector_thread(self):
@@ -1087,26 +792,6 @@ class Cluster(object):
             time.sleep(1)
     
     
-    # Main thread for launching generators
-    def do_generator_thread(self):
-        logger.log('GENERATOR thread launched')
-        while not stopper.interrupted:
-            logger.debug('Looking for %d generators' % len(self.generators))
-            for (gname, gen) in self.generators.iteritems():
-                logger.debug('LOOK AT GENERATOR', gen, 'to be apply on', gen['apply_on'], 'with our tags', gossiper.tags)
-                apply_on = gen['apply_on']
-                # Maybe this generator is not for us...
-                if apply_on != '*' and apply_on not in gossiper.tags:
-                    continue
-                logger.debug('Generator %s will runs' % gname)
-                g = Generator(gen)
-                logger.debug('Generator %s will generate' % str(g.__dict__))
-                g.generate()
-                logger.debug('Generator %s is generated' % str(g.__dict__))
-                should_launch = g.write_if_need()
-                if should_launch:
-                    g.launch_command()
-            time.sleep(1)
     
     
     # Thread that will look for libexec/configuration change events,
@@ -1446,7 +1131,7 @@ class Cluster(object):
             # Launch object collection
             gc.collect(gen)
             logger.debug('Memory collection (%d) executed in %.2f' % (gen, time.time() - before_collect))
-
+            
             # Remove over allocated memory from glibc, but beware, muslibc (alpine linux) do not have it
             if libc6 and hasattr(libc6, 'malloc_trim'):
                 libc6.malloc_trim(0)

@@ -3,9 +3,17 @@ import urllib2
 import traceback
 
 from opsbro.collector import Collector
+from opsbro.parameters import StringParameter
 
 
 class Apache(Collector):
+    parameters = {
+        'hostname': StringParameter(default='localhost'),
+        'user'    : StringParameter(default=''),
+        'password': StringParameter(default=''),
+    }
+    
+    
     def launch(self):
         logger = self.logger
         logger.debug('getApacheStatus: start')
@@ -36,7 +44,7 @@ class Apache(Collector):
             self.log = stack
             logger.error('Unable to get Apache status - Exception = %s', exp)
             return False
-            
+        
         logger.debug('getApacheStatus: urlopen success, start parsing')
         # Split out each line
         lines = response.split('\n')

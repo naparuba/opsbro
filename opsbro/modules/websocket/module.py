@@ -2,6 +2,7 @@ from opsbro.log import logger
 from opsbro.threadmgr import threader
 from opsbro.module import Module
 from opsbro.websocketmanager import websocketmgr
+from opsbro.parameters import StringParameter, BoolParameter, IntParameter
 
 from wsocket import WebSocketBackend
 
@@ -9,6 +10,11 @@ from wsocket import WebSocketBackend
 class WebSocketModule(Module):
     implement = 'websocket'
     manage_configuration_objects = ['websocket']
+    parameters = {
+        'enabled': BoolParameter(default=False),
+        'port'   : IntParameter(default=6769),
+        'address': StringParameter(default='0.0.0.0'),
+    }
     
     
     def __init__(self):

@@ -3,11 +3,21 @@ import re
 import sys
 
 from opsbro.collector import Collector
+from opsbro.parameters import StringParameter, IntParameter
 
 MySQLdb = None
 
 
 class Mysql(Collector):
+    parameters = {
+        'server'  : StringParameter(default='localhost'),
+        'user'    : StringParameter(default='root'),
+        'password': StringParameter(default=''),
+        'port'    : IntParameter(default=3306),
+        'socket'  : StringParameter(default=''),
+    }
+    
+    
     def launch(self):
         global MySQLdb
         

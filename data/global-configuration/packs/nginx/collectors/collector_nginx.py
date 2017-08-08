@@ -4,9 +4,14 @@ import urllib2
 import traceback
 
 from opsbro.collector import Collector
+from opsbro.parameters import StringParameter, IntParameter
 
 
 class Nginx(Collector):
+    parameters = {
+        'uri': StringParameter(default='http://localhost/nginx_status'),
+    }
+
     def launch(self):
         logger = self.logger
         

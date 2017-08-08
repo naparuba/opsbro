@@ -21,6 +21,7 @@ from opsbro.threadmgr import threader
 from opsbro.module import Module
 from opsbro.stop import stopper
 from opsbro.ts import tsmgr
+from opsbro.parameters import StringParameter, BoolParameter, IntParameter
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('statsd')
@@ -29,7 +30,13 @@ logger = LoggerFactory.create_logger('statsd')
 class StatsdModule(Module):
     implement = 'statsd'
     manage_configuration_objects = ['statsd']
-    
+    parameters = {
+        'enabled': BoolParameter(default=False),
+        'port': IntParameter(default=8125),
+        'interval': IntParameter(default=10),
+        'address': StringParameter(default='0.0.0.0'),
+    }
+
     
     def __init__(self):
         Module.__init__(self)
