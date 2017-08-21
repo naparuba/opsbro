@@ -100,8 +100,8 @@ class ConfigurationManager(object):
     
     # For a root.obj_name.key set the parameter_rule
     def declare_parameters(self, root, obj_name, parameter_rules):
-        logger.info('Declare a new parameter: root=%s  obj_name=%s ' % (root, obj_name))
-        logger.info('Parameters: %s' % parameter_rules)
+        logger.debug('Declare a new parameter: root=%s  obj_name=%s ' % (root, obj_name))
+        logger.debug('Parameters: %s' % parameter_rules)
         if root not in self.declared_parameters:
             logger.error('Cannot declare parameters from %s: the root %s is not known (not in %s)' % (obj_name, root, self.declared_parameters.keys()))
             return
@@ -112,7 +112,7 @@ class ConfigurationManager(object):
         obj_entry = {}
         root_entry[obj_name] = obj_entry
         for (parameter_name, parameter) in parameter_rules.iteritems():
-            logger.info('Add new parameter: %s.%s.%s : %s' % (root, obj_name, parameter_name, parameter))
+            logger.debug('Add new parameter: %s.%s.%s : %s' % (root, obj_name, parameter_name, parameter))
             obj_entry[parameter_name] = parameter
     
     
@@ -123,7 +123,6 @@ class ConfigurationManager(object):
             for (obj_name, parameter_rules) in parameter_parts.iteritems():
                 r[root][obj_name] = {}
                 for (parameter_name, parameter) in parameter_rules.iteritems():
-                    print "Dumping %s.%s.%s" % (root, obj_name, parameter)
                     r[root][obj_name][parameter_name] = parameter.as_json()
         return r
     
@@ -145,7 +144,7 @@ class ConfigurationManager(object):
         for root, dirs, files in os.walk(cfg_dir):
             for name in files:
                 fp = os.path.join(root, name)
-                logger.log('Loader: looking for file: %s' % fp)
+                logger.debug('Loader: looking for file: %s' % fp)
                 if name.endswith('.json') or name.endswith('.yml'):
                     self.open_cfg_file(fp)
                 if name == 'module.py':
@@ -167,16 +166,15 @@ class ConfigurationManager(object):
                 if is_yaml:
                     o = yamler.loads(buf)
             except Exception, exp:
-                logger.log('ERROR: the configuration file %s malformed: %s' % (fp, exp))
+                logger.error('ERROR: the configuration file %s malformed: %s' % (fp, exp))
                 sys.exit(2)
         logger.debug("Configuration, opening file data", o, fp)
         
         if 'check' in o:
             check = o['check']
             if not isinstance(check, dict):
-                logger.log('ERROR: the check from the file %s is not a valid dict' % fp)
+                logger.error('ERROR: the check from the file %s is not a valid dict' % fp)
                 sys.exit(2)
-            print fp
             fname = fp
             mod_time = int(os.path.getmtime(fp))
             cname = os.path.splitext(fname)[0]
@@ -186,7 +184,7 @@ class ConfigurationManager(object):
         if 'service' in o:
             service = o['service']
             if not isinstance(service, dict):
-                logger.log('ERROR: the service from the file %s is not a valid dict' % fp)
+                logger.error('ERROR: the service from the file %s is not a valid dict' % fp)
                 sys.exit(2)
             
             mod_time = int(os.path.getmtime(fp))
@@ -207,7 +205,7 @@ class ConfigurationManager(object):
         if 'generator' in o:
             generator = o['generator']
             if not isinstance(generator, dict):
-                logger.log('ERROR: the generator from the file %s is not a valid dict' % fp)
+                logger.error('ERROR: the generator from the file %s is not a valid dict' % fp)
                 sys.exit(2)
             
             mod_time = int(os.path.getmtime(fp))
@@ -219,7 +217,7 @@ class ConfigurationManager(object):
         if 'detector' in o:
             detector = o['detector']
             if not isinstance(detector, dict):
-                logger.log('ERROR: the detector from the file %s is not a valid dict' % fp)
+                logger.error('ERROR: the detector from the file %s is not a valid dict' % fp)
                 sys.exit(2)
             mod_time = int(os.path.getmtime(fp))
             fname = fp
@@ -235,7 +233,7 @@ class ConfigurationManager(object):
         if 'installor' in o:
             installor = o['installor']
             if not isinstance(installor, dict):
-                logger.log('ERROR: the installor from the file %s is not a valid dict' % fp)
+                logger.error('ERROR: the installor from the file %s is not a valid dict' % fp)
                 sys.exit(2)
             mod_time = int(os.path.getmtime(fp))
             fname = fp

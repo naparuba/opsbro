@@ -61,7 +61,6 @@ class MonitoringManager(object):
             if not apply_on:
                 apply_on = '*'
             check['apply_on'] = apply_on
-            print "APPLY ON", apply_on
         check['modification_time'] = mod_time
         check['state'] = 'pending'
         check['state_id'] = 3
@@ -134,7 +133,6 @@ class MonitoringManager(object):
             if not apply_on:
                 apply_on = service['name']
             service['apply_on'] = service['name']
-            print "APPLY SERVICE ON", apply_on
         apply_on = service['apply_on']
         if 'check' in service:
             check = service['check']
@@ -527,7 +525,6 @@ class MonitoringManager(object):
             # if it's me that manage this key, I add it in my backend
             if ts_node_manager == gossiper.uuid:
                 logger.debug("I am the TS node manager")
-                print "HOW ADDING", timestamp, mname, value, type(timestamp), type(mname), type(value)
                 tsmgr.tsb.add_value(timestamp, mname, value)
             # not me? stack a forwarder
             else:

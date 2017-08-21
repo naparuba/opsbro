@@ -88,7 +88,6 @@ def _sort_local_addresses(addr1, addr2):
     if addr2_is_127:
         addr2_order = 5
     
-    print "Address order: %s:%d %s:%d" % (addr1, addr1_order, addr2, addr2_order)
     if addr1_order > addr2_order:
         return 1
     elif addr1_order < addr2_order:

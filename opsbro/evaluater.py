@@ -101,7 +101,6 @@ class Evaluater(object):
                 changes.append((orig_p, v))
             elif p.startswith('variables.'):
                 s = p[len('variables.'):]
-                print "TOOK VARIABLE %s from %s" % (s, variables)
                 v = variables[s]
                 changes.append((orig_p, v))
             else:
@@ -268,18 +267,14 @@ class Evaluater(object):
             fnames = functions.keys()
             fnames.sort()
             for fname in fnames:
-                print "FNAME", fname
                 f = functions[fname]
-                print "FUNCTION", f
                 _doc = getattr(f, '__doc__')
                 # now get prototype
                 
                 # only possible if functions have
                 if isinstance(f, types.FunctionType):
                     argspec = inspect.getargspec(f)
-                    print "ARGSPECS", argspec
                     argnames = argspec.args
-                    print "ARGNAMES", argnames
                     args = []
                     for arg in argnames:
                         args.append([arg, '__NO_DEFAULT__'])
@@ -306,9 +301,7 @@ class Evaluater(object):
             response.content_type = 'application/json'
             expr64 = request.POST.get('expr')
             expr = base64.b64decode(expr64)
-            print "/agent/evaluator/eval is called for query %s" % expr
             v = evaluater.eval_expr(expr)
-            print "/agent/evaluator/eval result is %s" % v
             return json.dumps(v)
 
 

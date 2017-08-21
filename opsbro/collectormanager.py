@@ -96,7 +96,6 @@ class CollectorManager:
             # also give it our put result callback
             inst = cls(self.cfg_data, put_result=self.put_result)
             parameters = getattr(inst, 'parameters', {})
-            print "LOADING PARAM", inst, parameters
             if parameters:
                 configmgr.declare_parameters('collector', colname, parameters)
 

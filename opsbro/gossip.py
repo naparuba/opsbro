@@ -417,7 +417,6 @@ class Gossip(object):
                 logger.debug('Dropping old information (leave) about a node')
                 return
         
-        print "SET LEAVE UUID and SELF.UUID", uuid, self.uuid
         # Maybe it's us?? If so we must send our broadcast and exit in few seconds
         if uuid == self.uuid:
             logger.info('LEAVE: someone is asking me for leaving.')

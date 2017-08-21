@@ -75,7 +75,7 @@ class Cluster(object):
         # This will be the place where we will get our configuration data
         self.cfg_data = {}
         
-        self.handlers = {}
+        #self.handlers = {}
         
         # Some default value that can be erased by the
         # main configuration file
@@ -130,9 +130,9 @@ class Cluster(object):
         
         # We need the main cfg_directory
         configmgr.load_cfg_dir(self.cfg_dir)
-        
+        # now we read them, set it in our object
         parameters_from_local_configuration = configmgr.get_parameters_for_cluster_from_configuration()
-        print "Some parameters are founded in the local.yaml file: %s" % parameters_from_local_configuration
+        
         for (k, v) in parameters_from_local_configuration.iteritems():
             setattr(self, k, v)
         
@@ -662,9 +662,9 @@ class Cluster(object):
                 f.close()
                 buf64 = base64.b64encode(zbuf)
                 
-                print "READ A %d file %s and compressed into a %d one..." % (len(zbuf), path, len(buf64))
+                # print "READ A %d file %s and compressed into a %d one..." % (len(zbuf), path, len(buf64))
                 key = '__configuration/%s' % path
-                print "READ PUT KEY", key
+                # print "READ PUT KEY", key
                 kvmgr.put_key(key, buf64)
                 
                 payload = {'type': 'configuration', 'path': path, 'hash': _hash}

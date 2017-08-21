@@ -46,7 +46,6 @@ class Installor(object):
         self.if_ = o.get('if', None)
         self.environments = []
         self.variables = o.get('variables', {})
-        print "VARIABLES", self.variables
         
         envs = o.get('environments', [])
         for e in envs:
@@ -60,7 +59,6 @@ class Installor(object):
     def get_variables_evals(self):
         res = {}
         for (k, expr) in self.variables.iteritems():
-            print "Evaluating variable %s (%s)" % (k, expr)
             try:
                 res[k] = evaluater.eval_expr(expr)
             except Exception, exp:
@@ -86,7 +84,6 @@ class Installor(object):
             logger.error('Installor:: (%s) some variables did fail, cannot continue the evaluation' % self.name)
             return
         
-        print "Evaluated variables: %s" % variables
         for env in self.environments:
             do_match = env.do_match(variables)
             if do_match:

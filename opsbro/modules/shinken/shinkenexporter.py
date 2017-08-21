@@ -105,8 +105,6 @@ class ShinkenExporter(object):
             try:
                 os.mkdir(self.cfg_path)
             except Exception, exp:
-                print self.cfg_path
-                print exp
                 logger.error('Cannot create shinken directory at %s : %s', self.cfg_path, str(exp))
                 return
         logger.debug('Generating cfg/sha file for node %s' % n)

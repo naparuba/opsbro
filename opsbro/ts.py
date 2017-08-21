@@ -70,10 +70,10 @@ class TSBackend(object):
             start = key
             l = chr(ord(key[-1]) + 1)
             end = key[:-1] + l
-            print "LOOKUP from %s to %s" % (start, end)
+            logger.debug("LOOKUP from %s to %s" % (start, end))
             r = self.db.RangeIter(start, end, include_value=False, fill_cache=False)
         else:  # Full scan? are you crazy?
-            print "LOOKUP full scan"
+            logger.debug("LOOKUP full scan")
             r = self.db.RangeIter(include_value=False, fill_cache=False)
         return list(r)
     
@@ -313,42 +313,40 @@ class TSBackend(object):
         @http_export('/_ui_list/:key')
         def get_ts_keys(key=''):
             response.content_type = 'application/json'
-            print "LIST GET TS FOR KEY", key
-            response.content_type = 'application/json'
             
             r = []
             keys = tsmgr.list_keys(key)
             l = len(key)
             added = {}
             for k in keys:
-                print "LIST KEY", k
+                # print "LIST KEY", k
                 title = k[l:]
                 # maybe we got a key that do not belong to us
                 # like srv-linux10 when we ask for linux1
                 # so if we don't got a . here, it's an invalid
                 # dir
-                print "LIST TITLE", title
+                # print "LIST TITLE", title
                 if key and not title.startswith('.'):
-                    print "LIST SKIPPING KEY", key
+                    # print "LIST SKIPPING KEY", key
                     continue
                 if title.startswith('.'):
                     title = title[1:]
-                print "LIST TITLE CLEAN", title
+                # print "LIST TITLE CLEAN", title
                 # if there is a . in it, it's a dir we need to have
                 dname = title.split('.', 1)[0]
                 # If the dname was not added, do it
                 if dname not in added and title.count('.') != 0:
                     added[dname] = True
                     r.append({'title': dname, 'key': k[:l] + dname, 'folder': True, 'lazy': True})
-                    print "LIST ADD DIR", dname, k[:l] + dname
+                    # print "LIST ADD DIR", dname, k[:l] + dname
                 
-                print "LIST DNAME KEY", dname, key, title.count('.')
+                # print "LIST DNAME KEY", dname, key, title.count('.')
                 if title.count('.') == 0:
                     # not a directory, add it directly but only if the
                     # key asked was our directory
                     r.append({'title': title, 'key': k, 'folder': False, 'lazy': False})
-                    print "LIST ADD FILE", title
-            print "LIST FINALLY RETURN", r
+                    # print "LIST ADD FILE", title
+            # print "LIST FINALLY RETURN", r
             return json.dumps(r)
 
 
