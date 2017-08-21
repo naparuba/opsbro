@@ -15,10 +15,12 @@ sys.path.append('.')
 
 from opsbro.log import cprint, logger, is_tty
 from opsbro import cli as cli_mod
+from opsbro.configurationmanager import configmgr
+from opsbro.packer import packer
 from opsbro.info import VERSION, BANNER, TXT_BANNER
 from opsbro.modulemanager import modulemanager
 from opsbro.misc.bro_quotes import get_quote
-from opsbro.defaultpaths import DEFAULT_LOG_DIR, DEFAULT_CFG_FILE
+from opsbro.defaultpaths import DEFAULT_LOG_DIR, DEFAULT_CFG_FILE, DEFAULT_CFG_DIR, DEFAULT_DATA_DIR
 
 logger.setLevel('WARNING')
 
@@ -53,22 +55,59 @@ class CLICommander(object):
         
         self.config = config
         
-        log_dir = config.get('log', DEFAULT_LOG_DIR)  # '/var/lib/opsbro')
+        log_dir = config.get('log', DEFAULT_LOG_DIR)  # '/var/lib/opsbro'
         log_level = config.get('log_level', 'INFO')
         # early set the logger part
         logger.load(log_dir, '(cli)')
         logger.setLevel(log_level)
         
-        # First warn the modules
-        self.load_modules()
         
+        cfg_dir = DEFAULT_CFG_DIR
+        if not os.path.exists(cfg_dir):
+            logger.error('Configuration directory [%s] is missing' % cfg_dir)
+            sys.exit(2)
+            
+        # We need the main cfg_directory
+        configmgr.load_cfg_dir(cfg_dir)
+
+        data_dir = os.path.abspath(os.path.join(DEFAULT_DATA_DIR))  # '/var/lib/opsbro/'
+        
+        # We can start with a void data dir
+        if not os.path.exists(data_dir):
+            os.mkdir(data_dir)
+
+        # Then we will need to look at other directories, list from
+        # * global-confugration = common to all nodes
+        # * zone-configuration = common to zone nodes
+        # * local-configuration = on this specific node
+        global_configuration = os.path.join(data_dir, 'global-configuration')
+        zone_configuration = os.path.join(data_dir, 'zone-configuration')
+        local_configuration = os.path.join(data_dir, 'local-configuration')
+
+        # Ask the packer to load pack descriptions so it will be able to
+        # give us which pack directories must be read (with good order)
+        packer.load_pack_descriptions(global_configuration, 'global')
+        packer.load_pack_descriptions(zone_configuration, 'zone')
+        packer.load_pack_descriptions(local_configuration, 'local')
+        
+        # Now that packs are load and clean, we can load collector code from it
+        configmgr.load_collectors_from_packs()
+
+        # Now that packs are load and clean, we can load modules code from it
+        configmgr.load_modules_from_packs()
+
+        # Now that we did load modules, we are ready to load their configuration files (we know which types we need)
+        configmgr.prepare_to_load_cfg_dirs()
+        
+        # Ok let's load global configuration data
+        configmgr.load_cfg_dir(global_configuration)
+        # then zone one
+        configmgr.load_cfg_dir(zone_configuration)
+        # and then local one
+        configmgr.load_cfg_dir(local_configuration)
+
         # We will now try to load the keywords from the modules
         self.load_cli_mods(opts)
-    
-    
-    def load_modules(self):
-        # We should load modules to let them export what they need as configuration
-        modulemanager.load_module_sources()
     
     
     def load_cli_mods(self, opts):
@@ -79,8 +118,7 @@ class CLICommander(object):
         cli_mods_dir = os.path.dirname(os.path.abspath(cli_mod.__file__))
         
         logger.debug("Loading the cli directory %s" % cli_mods_dir)
-        cli_mods_dirs = [os.path.join(cli_mods_dir, d) for d in os.listdir(cli_mods_dir) if
-                         os.path.isdir(os.path.join(cli_mods_dir, d))]
+        cli_mods_dirs = [os.path.join(cli_mods_dir, d) for d in os.listdir(cli_mods_dir) if os.path.isdir(os.path.join(cli_mods_dir, d))]
         
         # Link the CONFIG objet into the common
         # cli mod
@@ -260,15 +298,15 @@ class CLICommander(object):
             if cmd == 'global':
                 prefix = ''
             d = self.keywords[cmd]
-            cprint('%s:' % cmd, color='blue')
+            cprint('[%s]' % cmd, color='blue')
             cmds = d.keys()
             cmds.sort()
             for k in cmds:
                 m = d[k]
-                s = k.ljust(15)
+                s = k.ljust(25)
                 if prefix:
                     s = '%s %s' % (prefix, k)
-                    s = s.ljust(15)
+                    s = s.ljust(25)
                 cprint('\t%s ' % s, 'green', end='')
                 cprint(': %s' % m['description'])
         return

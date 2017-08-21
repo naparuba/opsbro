@@ -15,14 +15,17 @@ class ModuleManager(object):
     def __init__(self):
         self.modules = []
         self.modules_configuration_types = {}
+        self.modules_directories_to_load = []
     
+    def add_module_directory_to_load(self, dirname):
+        self.modules_directories_to_load.append(dirname)
     
     # Raw import module source code. So they will be available in the Modules class as Class.
     def load_module_sources(self):
-        modules_dirs = []
+        modules_dirs = self.modules_directories_to_load
         
         # And directories
-        modules_dirs.extend([os.path.join(internal_modules_dir, dirname) for dirname in os.listdir(internal_modules_dir) if os.path.isdir(os.path.join(internal_modules_dir, dirname))])
+        #modules_dirs.extend([os.path.join(internal_modules_dir, dirname) for dirname in os.listdir(internal_modules_dir) if os.path.isdir(os.path.join(internal_modules_dir, dirname))])
         
         for dirname in modules_dirs:
             # Then we load the module.py inside this directory

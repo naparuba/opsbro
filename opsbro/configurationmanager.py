@@ -2,6 +2,7 @@ import os
 import imp
 import sys
 
+from opsbro.defaultpaths import DEFAULT_LIBEXEC_DIR, DEFAULT_LOCK_PATH, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR
 from opsbro.log import LoggerFactory
 from opsbro.httpdaemon import http_export, response, abort, request
 from opsbro.yamlmgr import yamler
@@ -55,7 +56,10 @@ class ConfigurationManager(object):
         
         # Maybe we did found other variables in the main configuration file or another?
         self.additionnal_variables = {}
-    
+
+        # Cluster parameters
+        self.data_dir = os.path.abspath(os.path.join(DEFAULT_DATA_DIR))  # '/var/lib/opsbro/'
+        
     
     def get_monitoringmgr(self):
         # Import at runtime, to avoid loop
@@ -147,12 +151,6 @@ class ConfigurationManager(object):
                 logger.debug('Loader: looking for file: %s' % fp)
                 if name.endswith('.json') or name.endswith('.yml'):
                     self.open_cfg_file(fp)
-                if name == 'module.py':
-                    # dir name as module name part
-                    dname = os.path.split(root)[1]
-                    # Load this module.py file
-                    m = imp.load_source('__module_' + dname, fp)
-                    logger.debug("Loader user module", m, "from", fp)
     
     
     def open_cfg_file(self, fp):
@@ -292,38 +290,32 @@ class ConfigurationManager(object):
                     return
                 # Save it, and in the cluster point of view (setattr for it)
                 self.parameters_for_cluster_from_configuration[mapto] = v
+
+
+    def load_modules_from_packs(self):
+        modulemanager = self.get_modulemanager()
+        pack_directories = packer.give_pack_directories_to_load()
     
-    
-    def load_packs(self, root_dir):
+        for (pname, dir) in pack_directories:
+            module_directory = os.path.join(dir, 'module')
+            if os.path.exists(module_directory):
+                modulemanager.add_module_directory_to_load(module_directory)
+
+        modulemanager.load_module_sources()
+
+            
+
+
+    def load_collectors_from_packs(self):
         # Load at running to avoid endless import loop
         from opsbro.collectormanager import collectormgr
+        pack_directories = packer.give_pack_directories_to_load()
         
-        logger.debug('Loading packs directory')
-        pack_dir = os.path.join(root_dir, 'packs')
-        if not os.path.exists(pack_dir):
-            logger.debug('ERROR: the pack directory %s is missing' % pack_dir)
-            return
-        sub_dirs = [os.path.join(pack_dir, dname) for dname in os.listdir(pack_dir) if
-                    os.path.isdir(os.path.join(pack_dir, dname))]
-        logger.debug('Loading packs directories : %s' % sub_dirs)
-        # Look at collectors
-        for pname in sub_dirs:
-            # First load meta data from the package.json file (if present)
-            package_pth = os.path.join(pname, 'package.yml')
-            pack_name = pname  # by default take the directory name
-            if os.path.exists(package_pth):
-                try:
-                    with open(package_pth, 'r') as f:
-                        package_buf = f.read()
-                        package = yamler.loads(package_buf)
-                        pack_name = packer.load_package(package, package_pth)
-                except Exception, exp:  # todo: more precise catch? I think so
-                    logger.error('Cannot load package %s: %s' % (package_pth, exp))
-            
+        for (pname, dir) in pack_directories:
             # Now load collectors, an important part for packs :)
-            collector_dir = os.path.join(pname, 'collectors')
+            collector_dir = os.path.join(dir, 'collectors')
             if os.path.exists(collector_dir):
-                collectormgr.load_directory(collector_dir, pack_name=pack_name)
+                collectormgr.load_directory(collector_dir, pack_name=pname)
         
         # now collectors class are loaded, load instances from them
         collectormgr.load_all_collectors()

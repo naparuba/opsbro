@@ -2,12 +2,10 @@ import os
 import sys
 import socket
 import json
-import imp
 import threading
 import time
 import hashlib
 import signal
-import traceback
 import cStringIO
 import requests as rq
 
@@ -58,7 +56,7 @@ from opsbro.modulemanager import modulemanager
 from opsbro.executer import executer
 from opsbro.monitoring import monitoringmgr
 from opsbro.installermanager import installormgr
-from opsbro.defaultpaths import DEFAULT_LIBEXEC_DIR, DEFAULT_LOCK_PATH, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR
+from opsbro.defaultpaths import DEFAULT_LIBEXEC_DIR, DEFAULT_LOCK_PATH, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR, DEFAULT_CFG_DIR
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('agent')
@@ -74,9 +72,12 @@ class Cluster(object):
         
         # This will be the place where we will get our configuration data
         self.cfg_data = {}
-        
-        #self.handlers = {}
-        
+        self.cfg_dir = cfg_dir
+        if not self.cfg_dir:
+            self.cfg_dir = DEFAULT_CFG_DIR
+        else:
+            self.cfg_dir = os.path.abspath(self.cfg_dir)
+            
         # Some default value that can be erased by the
         # main configuration file
         # By default no encryption
@@ -115,30 +116,18 @@ class Cluster(object):
         # Let the modules know about the daemon object
         modulemanager.set_daemon(self)
         
-        # Now that we did load modules, we are ready to load their configuration files (we know which types we need)
-        configmgr.prepare_to_load_cfg_dirs()
         
         # Now look at the cfg_dir part
-        if cfg_dir:
-            self.cfg_dir = os.path.abspath(cfg_dir)
-        else:
-            self.cfg_dir = DEFAULT_LOG_DIR
+        #if cfg_dir:
+        #    self.cfg_dir = cfg_dir)
+        #else:
+        #    self.cfg_dir = DEFAULT_LOG_DIR
         
-        if not os.path.exists(self.cfg_dir):
-            logger.error('Configuration directory [%s] is missing' % self.cfg_dir)
-            sys.exit(2)
-        
-        # We need the main cfg_directory
-        configmgr.load_cfg_dir(self.cfg_dir)
         # now we read them, set it in our object
         parameters_from_local_configuration = configmgr.get_parameters_for_cluster_from_configuration()
         
         for (k, v) in parameters_from_local_configuration.iteritems():
             setattr(self, k, v)
-        
-        # We can start with a void data dir
-        if not os.path.exists(self.data_dir):
-            os.mkdir(self.data_dir)
         
         # We can start with a void log dir too
         if not os.path.exists(self.log_dir):
@@ -150,20 +139,6 @@ class Cluster(object):
         # open the log file
         raw_logger.load(self.log_dir, self.name)
         raw_logger.export_http()
-        
-        # Then we will need to look at other directories, list from
-        # * global-confugration = common to all nodes
-        # * local-configuration = on this specific node
-        self.global_configuration = os.path.join(self.data_dir, 'global-configuration')
-        self.zone_configuration = os.path.join(self.data_dir, 'zone-configuration')
-        self.local_configuration = os.path.join(self.data_dir, 'local-configuration')
-        
-        # Ok let's load global configuration
-        configmgr.load_cfg_dir(self.global_configuration)
-        # then zone one
-        configmgr.load_cfg_dir(self.zone_configuration)
-        # and then local one
-        configmgr.load_cfg_dir(self.local_configuration)
         
         # Look if our encryption key is valid or not
         if self.encryption_key:
@@ -339,11 +314,8 @@ class Cluster(object):
         # Launch a thread that will reap all put key asked by the udp
         threader.create_and_launch(kvmgr.put_key_reaper, name='key reaper', essential=True, part='key-value')
         
-        # Load all collectors globaly
+        # Load all collectors instances
         collectormgr.load_collectors(self.cfg_data)
-        # and configuration ones from local and global configuration
-        configmgr.load_packs(self.local_configuration)
-        configmgr.load_packs(self.global_configuration)
         # and their last data
         self.load_collector_retention()
         collectormgr.export_http()

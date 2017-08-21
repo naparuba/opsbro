@@ -23,10 +23,7 @@ from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, prin
 
 def do_configuration_print():
     logger.setLevel('ERROR')
-    configmgr.prepare_to_load_cfg_dirs()
-    cfg_dir = os.path.abspath('/etc/opsbro')
-    # We need the main cfg_directory
-    configmgr.load_cfg_dir(cfg_dir)
+    # We should already have load the configuration, so just dump it
     # now we read them, set it in our object
     parameters_from_local_configuration = configmgr.get_parameters_for_cluster_from_configuration()
     # print "Local parameters", parameters_from_local_configuration
@@ -39,20 +36,6 @@ def do_configuration_print():
         cprint('%-15s' % k, color='magenta', end='')
         cprint(' => ', end='')
         cprint('%s\n' % v, color='green', end='')
-    data_dir = os.path.abspath(os.path.join(DEFAULT_DATA_DIR))  # '/var/lib/opsbro/'
-    global_configuration = os.path.join(data_dir, 'global-configuration')
-    zone_configuration = os.path.join(data_dir, 'zone-configuration')
-    local_configuration = os.path.join(data_dir, 'local-configuration')
-    
-    # Ok let's load global configuration
-    configmgr.load_cfg_dir(global_configuration)
-    # then zone one
-    configmgr.load_cfg_dir(zone_configuration)
-    # and then local one
-    configmgr.load_cfg_dir(local_configuration)
-    
-    configmgr.load_packs(local_configuration)
-    configmgr.load_packs(global_configuration)
     
     # print configmgr.declared_parameters
     print "Politics:"

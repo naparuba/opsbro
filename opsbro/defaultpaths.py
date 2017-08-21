@@ -5,7 +5,7 @@ if os.name == "nt":
     DEFAULT_LOG_DIR = r'c:\opsbro\log'
     DEFAULT_LOCK_PATH = r'c:\opsbro\run\opsbro.lock'
     DEFAULT_LIBEXEC_DIR = r'c:\opsbro\libexec'
-    DEFAULT_CFG_DIR = r'c:\opsbro\etc\local.json'
+    DEFAULT_CFG_DIR = r'c:\opsbro\etc'
 else:
     DEFAULT_DATA_DIR = r'/var/lib/opsbro'
     DEFAULT_LOG_DIR = r'/var/log/opsbro'

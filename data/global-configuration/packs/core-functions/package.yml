@@ -1,0 +1,18 @@
+name: core-functions
+types:
+    - pack
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description:  Module that export core functions for OpsBro
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - module
+    - functions
+
+dependencies:
+    core: ">=1.0"
+license: ""
