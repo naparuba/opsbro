@@ -1,0 +1,17 @@
+name: ssh-keys
+types:
+    - pack
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description: Sample to generate ssh auth keys into your directories
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - ssh
+    - ssh-keys
+dependencies:
+    core: ">=1.0"
+license: ""

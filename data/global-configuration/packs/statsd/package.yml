@@ -1,0 +1,19 @@
+name: statsd
+types:
+    - pack
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description:  Module to allow your daemon to listen to statsd metrology data
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - module
+    - metrology
+    - statsd
+
+dependencies:
+    core: ">=1.0"
+license: ""

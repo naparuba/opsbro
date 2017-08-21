@@ -1,0 +1,18 @@
+name: shinken
+types:
+    - pack
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description:  Module to allow your daemon to export alerts into your Shinken daemon
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - module
+    - shinken
+
+dependencies:
+    core: ">=1.0"
+license: ""
