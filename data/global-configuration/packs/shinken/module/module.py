@@ -1,12 +1,12 @@
 import os
 
 from opsbro.log import logger
-from opsbro.module import Module
+from opsbro.module import ConnectorModule
 from opsbro.parameters import StringParameter, BoolParameter, IntParameter
 from shinkenexporter import shinkenexporter
 
 
-class ShinkenModule(Module):
+class ShinkenModule(ConnectorModule):
     implement = 'shinken'
     manage_configuration_objects = ['shinken']
     parameters = {
@@ -17,7 +17,7 @@ class ShinkenModule(Module):
 
     
     def __init__(self):
-        Module.__init__(self)
+        ConnectorModule.__init__(self)
         self.shinken = None
     
     

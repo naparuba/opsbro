@@ -13,7 +13,7 @@ import requests as rq
 
 from opsbro.log import LoggerFactory
 from opsbro.threadmgr import threader
-from opsbro.module import Module
+from opsbro.module import ListenerModule
 from opsbro.stop import stopper
 from opsbro.ts import tsmgr
 from opsbro.stats import STATS
@@ -28,7 +28,7 @@ from opsbro.parameters import StringParameter, BoolParameter, IntParameter
 logger = LoggerFactory.create_logger('graphite')
 
 
-class GraphiteModule(Module):
+class GraphiteModule(ListenerModule):
     implement = 'graphite'
     manage_configuration_objects = ['graphite']
     parameters = {
@@ -38,7 +38,7 @@ class GraphiteModule(Module):
 
 
     def __init__(self):
-        Module.__init__(self)
+        ListenerModule.__init__(self)
         
         self.graphite_port = 2003
         # Graphite reaping queue

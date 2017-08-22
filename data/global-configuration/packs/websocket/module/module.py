@@ -1,13 +1,13 @@
 from opsbro.log import logger
 from opsbro.threadmgr import threader
-from opsbro.module import Module
+from opsbro.module import ListenerModule
 from opsbro.websocketmanager import websocketmgr
 from opsbro.parameters import StringParameter, BoolParameter, IntParameter
 
 from wsocket import WebSocketBackend
 
 
-class WebSocketModule(Module):
+class WebSocketModule(ListenerModule):
     implement = 'websocket'
     manage_configuration_objects = ['websocket']
     parameters = {
@@ -18,7 +18,7 @@ class WebSocketModule(Module):
     
     
     def __init__(self):
-        Module.__init__(self)
+        ListenerModule.__init__(self)
         self.websocket = None
         self.listening_addr = ''
     

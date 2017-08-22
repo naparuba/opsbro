@@ -18,7 +18,7 @@ from opsbro.gossip import gossiper
 
 from opsbro.log import LoggerFactory
 from opsbro.threadmgr import threader
-from opsbro.module import Module
+from opsbro.module import ListenerModule
 from opsbro.stop import stopper
 from opsbro.ts import tsmgr
 from opsbro.parameters import StringParameter, BoolParameter, IntParameter
@@ -27,7 +27,7 @@ from opsbro.parameters import StringParameter, BoolParameter, IntParameter
 logger = LoggerFactory.create_logger('statsd')
 
 
-class StatsdModule(Module):
+class StatsdModule(ListenerModule):
     implement = 'statsd'
     manage_configuration_objects = ['statsd']
     parameters = {
@@ -39,7 +39,7 @@ class StatsdModule(Module):
 
     
     def __init__(self):
-        Module.__init__(self)
+        ListenerModule.__init__(self)
         self.statsd = None
         self.enabled = False
         self.port = 0

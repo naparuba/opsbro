@@ -1,5 +1,3 @@
-
-
 class Module(object):
     implement = ''
     manage_configuration_objects = []
@@ -58,3 +56,15 @@ class Module(object):
     
     def export_http(self):
         return
+
+
+class FunctionsExportModule(Module):
+    module_type = 'functions_export'
+
+
+class ConnectorModule(Module):
+    module_type = 'connector'
+
+
+class ListenerModule(Module):
+    module_type = 'listener'
