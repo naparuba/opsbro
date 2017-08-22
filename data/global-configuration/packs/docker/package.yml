@@ -1,18 +1,19 @@
-name: core-functions
+name: docker
 types:
     - module
+    - cli
 version: "1.0"
 homepage: ""
 author: Shinken Solutions
-description:  Module that export core functions for OpsBro
+description: Module & CLI about interacting and monitor Docker
 contributors:
     - Jean Gabès
 repository: ""
 keywords:
-    - pack
     - module
-    - functions
-
+    - cli
+    - docker
 dependencies:
     core: ">=1.0"
 license: ""
+

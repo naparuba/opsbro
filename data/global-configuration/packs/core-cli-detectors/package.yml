@@ -1,17 +1,17 @@
-name: core-functions
+name: core-cli-detectors
 types:
-    - module
+    - cli
 version: "1.0"
 homepage: ""
 author: Shinken Solutions
-description:  Module that export core functions for OpsBro
+description:  CLI for launching/querying the OpsBro detectors
 contributors:
     - Jean Gabès
 repository: ""
 keywords:
-    - pack
-    - module
-    - functions
+    - cli
+    - agent
+    - detectors
 
 dependencies:
     core: ">=1.0"

@@ -18,7 +18,6 @@ from opsbro import cli as cli_mod
 from opsbro.configurationmanager import configmgr
 from opsbro.packer import packer
 from opsbro.info import VERSION, BANNER, TXT_BANNER
-from opsbro.modulemanager import modulemanager
 from opsbro.misc.bro_quotes import get_quote
 from opsbro.defaultpaths import DEFAULT_LOG_DIR, DEFAULT_CFG_FILE, DEFAULT_CFG_DIR, DEFAULT_DATA_DIR
 
@@ -42,12 +41,6 @@ class Dummy():
         pass
 
 
-# if os.name != 'nt':
-#    DEFAULT_CFG = '/etc/opsbro/local.json'
-# else:
-#    DEFAULT_CFG = 'c:\\opsbro\\etc\\local.json'
-
-
 # Commander is the main class for managing the CLI session and behavior
 class CLICommander(object):
     def __init__(self, config, opts):
@@ -61,29 +54,28 @@ class CLICommander(object):
         logger.load(log_dir, '(cli)')
         logger.setLevel(log_level)
         
-        
         cfg_dir = DEFAULT_CFG_DIR
         if not os.path.exists(cfg_dir):
             logger.error('Configuration directory [%s] is missing' % cfg_dir)
             sys.exit(2)
-            
+        
         # We need the main cfg_directory
         configmgr.load_cfg_dir(cfg_dir)
-
+        
         data_dir = os.path.abspath(os.path.join(DEFAULT_DATA_DIR))  # '/var/lib/opsbro/'
         
         # We can start with a void data dir
         if not os.path.exists(data_dir):
             os.mkdir(data_dir)
-
+        
         # Then we will need to look at other directories, list from
-        # * global-confugration = common to all nodes
+        # * global-configration = common to all nodes
         # * zone-configuration = common to zone nodes
         # * local-configuration = on this specific node
         global_configuration = os.path.join(data_dir, 'global-configuration')
         zone_configuration = os.path.join(data_dir, 'zone-configuration')
         local_configuration = os.path.join(data_dir, 'local-configuration')
-
+        
         # Ask the packer to load pack descriptions so it will be able to
         # give us which pack directories must be read (with good order)
         packer.load_pack_descriptions(global_configuration, 'global')
@@ -92,10 +84,10 @@ class CLICommander(object):
         
         # Now that packs are load and clean, we can load collector code from it
         configmgr.load_collectors_from_packs()
-
+        
         # Now that packs are load and clean, we can load modules code from it
         configmgr.load_modules_from_packs()
-
+        
         # Now that we did load modules, we are ready to load their configuration files (we know which types we need)
         configmgr.prepare_to_load_cfg_dirs()
         
@@ -105,7 +97,7 @@ class CLICommander(object):
         configmgr.load_cfg_dir(zone_configuration)
         # and then local one
         configmgr.load_cfg_dir(local_configuration)
-
+        
         # We will now try to load the keywords from the modules
         self.load_cli_mods(opts)
     
@@ -114,11 +106,16 @@ class CLICommander(object):
         # Main list of keywords for the first parameter
         self.keywords.clear()
         
-        # CLI are located in the opsbro lib
-        cli_mods_dir = os.path.dirname(os.path.abspath(cli_mod.__file__))
+        # CLI are load from the packs
+        cli_mods_dirs = []
+        pack_directories = packer.give_pack_directories_to_load()
         
-        logger.debug("Loading the cli directory %s" % cli_mods_dir)
-        cli_mods_dirs = [os.path.join(cli_mods_dir, d) for d in os.listdir(cli_mods_dir) if os.path.isdir(os.path.join(cli_mods_dir, d))]
+        for (pname, dir) in pack_directories:
+            cli_directory = os.path.join(dir, 'cli')
+            if os.path.exists(cli_directory):
+                cli_mods_dirs.append(cli_directory)
+        
+        logger.debug("Loading the cli directories %s" % cli_mods_dirs)
         
         # Link the CONFIG objet into the common
         # cli mod
@@ -144,7 +141,7 @@ class CLICommander(object):
                          'args'       : v.get('args', []),
                          'description': v.get('description', ''),
                          'came_from'  : sub_cmd}
-                    if not sub_cmd in self.keywords:
+                    if sub_cmd not in self.keywords:
                         self.keywords[sub_cmd] = {}
                     # Finally save it
                     self.keywords[sub_cmd][k] = e
