@@ -24,8 +24,10 @@ class HandlerManager(object):
         self.handlers = {}
     
     
-    def import_handler(self, handler, full_path, file_name, mod_time=0):
+    def import_handler(self, handler, full_path, file_name, mod_time=0, pack_name='', pack_level=''):
         handler['from'] = full_path
+        handler['pack_name'] = pack_name
+        handler['pack_level'] = pack_level
         handler['configuration_dir'] = os.path.dirname(full_path)
         handler['name'] = handler['id']
         if 'notes' not in handler:

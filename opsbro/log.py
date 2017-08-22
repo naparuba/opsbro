@@ -59,6 +59,7 @@ class Logger(object):
         self.logs = {}
         self.registered_parts = {}
         self.level = logging.INFO
+        self.is_force_level = False  # is the currently level is a force one or not (force by API or by CLI args for example)
         self.linkify_methods()
         
         # We will keep last 20 errors
@@ -94,8 +95,13 @@ class Logger(object):
             os.mkdir(self.data_dir)
         self.log_file = open(os.path.join(self.data_dir, 'daemon.log'), 'a')
     
-    
-    def setLevel(self, s):
+    # If a level is set to force, a not foce setting is not taken
+    # if a level we set by force before, and this call is not a force one, skip this one
+    def setLevel(self, s, force=False):
+        if not force and self.is_force_level:
+            return
+        if force:
+            self.is_force_level = True
         try:
             level = getattr(logging, s.upper())
             if not isinstance(level, int):

@@ -5,6 +5,10 @@ class Module(object):
     manage_configuration_objects = []
     parameters = {}
     
+    # pack name & level will be fill when we will load the klass
+    pack_name = '__UNSET__'
+    pack_level = '__UNSET__'
+    
     class __metaclass__(type):
         __inheritors__ = set()
         
@@ -13,6 +17,13 @@ class Module(object):
             klass = type.__new__(meta, name, bases, dct)
             # This class need to implement a real role to be load
             if klass.implement:
+                # When creating the class, we need to look at the module where it is. It will be create like this (in modulemanager)
+                # module___global___windows___collector_iis ==> level=global  pack_name=windows, collector_name=collector_iis
+                from_module = dct['__module__']
+                elts = from_module.split('___')
+                # Let the klass know it
+                klass.pack_level = elts[1]
+                klass.pack_name = elts[2]
                 meta.__inheritors__.add(klass)
             return klass
     

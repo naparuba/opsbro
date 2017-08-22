@@ -53,17 +53,19 @@ class PackManager(object):
     # We want to have directories that we need to load, but there is a rule:
     # * local > zone > global for a same pack (based on name)
     def give_pack_directories_to_load(self):
+        to_load_idx = set()  # used to know if we already see suck a pack
         to_load = {}
         for level in ('local', 'zone', 'global'):
             for pname in self.packs[level]:
-                if pname in to_load:
+                if pname in to_load_idx:
                     logger.debug('Skipping pack %s/%s to load because it was already present in a more priority level' % (level, pname))
                     continue
+                to_load_idx.add(pname)
                 package_data, dir_name = self.packs[level][pname]
-                to_load[pname] = dir_name
+                to_load[pname] = (pname, level, dir_name)
         logger.debug('Directories to load: %s' % to_load.values())
         
-        return list(to_load.iteritems())
+        return to_load.values()
     
     
     # main method to export http interface. Must be in a method that got

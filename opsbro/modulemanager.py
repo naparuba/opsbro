@@ -17,17 +17,14 @@ class ModuleManager(object):
         self.modules_configuration_types = {}
         self.modules_directories_to_load = []
     
-    def add_module_directory_to_load(self, dirname):
-        self.modules_directories_to_load.append(dirname)
+    def add_module_directory_to_load(self, dirname, pack_name, pack_level):
+        self.modules_directories_to_load.append((dirname, pack_name, pack_level))
     
     # Raw import module source code. So they will be available in the Modules class as Class.
     def load_module_sources(self):
         modules_dirs = self.modules_directories_to_load
         
-        # And directories
-        #modules_dirs.extend([os.path.join(internal_modules_dir, dirname) for dirname in os.listdir(internal_modules_dir) if os.path.isdir(os.path.join(internal_modules_dir, dirname))])
-        
-        for dirname in modules_dirs:
+        for (dirname, pack_name, pack_level) in modules_dirs:
             # Then we load the module.py inside this directory
             mod_file = os.path.join(dirname, 'module.py')
             if not os.path.exists(mod_file):
@@ -39,8 +36,10 @@ class ModuleManager(object):
             
             # We add this dir to sys.path so the module can load local files too
             sys.path.insert(0, dirname)
-            
-            short_mod_name = os.path.basename(dirname)
+
+            # NOTE: KEEP THE ___ as they are used to let the class INSIDE te module in which pack/level they are. If you have
+            # another way to give the information to the inner class inside, I take it ^^
+            short_mod_name = 'module___%s___%s___%s' % (pack_level, pack_name, dirname)
             try:
                 if mod_file.endswith('.py'):
                     # important, equivalent to import fname from module.py
@@ -61,7 +60,7 @@ class ModuleManager(object):
         for cls in modules_clss:
             try:
                 mod = cls()
-                logger.debug('[module] %s did load' % mod)
+                logger.debug('[module] %s (from pack=%s and pack level=%s) did load' % (mod, mod.pack_name, mod.pack_level))
                 self.modules.append(mod)
                 for configuration_type in mod.manage_configuration_objects:
                     if configuration_type not in self.modules_configuration_types:

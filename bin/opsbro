@@ -110,7 +110,7 @@ class CLICommander(object):
         cli_mods_dirs = []
         pack_directories = packer.give_pack_directories_to_load()
         
-        for (pname, dir) in pack_directories:
+        for (pname, level, dir) in pack_directories:
             cli_directory = os.path.join(dir, 'cli')
             if os.path.exists(cli_directory):
                 cli_mods_dirs.append(cli_directory)
@@ -331,11 +331,12 @@ if __name__ == '__main__':
         parser.print_help()
         sys.exit(0)
     
+    # Is args are setting them, they must be force to the rest of the execution without looking at the configuration
     if opts.do_verbose:
-        logger.setLevel('INFO')
+        logger.setLevel('INFO', force=True)
     
     if opts.do_debug:
-        logger.setLevel('DEBUG')
+        logger.setLevel('DEBUG', force=True)
     
     cfg = None
     if not os.path.exists(opts.jsonconfig):
@@ -350,12 +351,7 @@ if __name__ == '__main__':
             sys.exit(2)
     
     CLI = CLICommander(CONFIG, opts)
-    
-    # Reset levels if cli setup it
-    if opts.do_verbose:
-        logger.setLevel('INFO')
-    if opts.do_debug:
-        logger.setLevel('DEBUG')
+
     
     
     # We should look on the sys.argv if we find a valid keywords to

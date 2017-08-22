@@ -56,7 +56,7 @@ class CollectorManager:
         self.ts = ts
     
     
-    def load_directory(self, directory, pack_name=''):
+    def load_directory(self, directory, pack_name='', pack_level=''):
         logger.debug('Loading collector directory at %s for pack %s' % (directory, pack_name))
         pth = directory + '/collector_*.py'
         collector_files = glob.glob(pth)
@@ -64,7 +64,9 @@ class CollectorManager:
             fname = os.path.splitext(os.path.basename(f))[0]
             logger.debug('Loading collector from file %s' % f)
             try:
-                m = imp.load_source('collector_%s_%s' % (pack_name, fname), f)
+                # NOTE: KEEP THE ___ as they are used to let the class INSIDE te module in which pack/level they are. If you have
+                # another way to give the information to the inner class inside, I take it ^^
+                m = imp.load_source('collector___%s___%s___%s' % (pack_level, pack_name, fname), f)
                 logger.debug('Collector module loaded: %s' % m)
             except Exception, exp:
                 logger.error('Cannot load collector %s: %s' % (fname, exp))
@@ -91,7 +93,7 @@ class CollectorManager:
         if colname in self.collectors:
             return
         
-        logger.debug('Loading collector %s from class %s' % (colname, cls))
+        logger.debug('Loading collector %s from class %s, from pack %s and from pack level %s' % (colname, cls, cls.pack_name, cls.pack_level))
         try:
             # also give it our put result callback
             inst = cls(self.cfg_data, put_result=self.put_result)

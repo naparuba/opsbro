@@ -21,8 +21,10 @@ class GeneratorMgr(object):
     
     # Generators will create files based on templates from
     # data and nodes after a change on a node
-    def import_generator(self, generator, fr, gname, mod_time=0):
+    def import_generator(self, generator, fr, gname, mod_time=0, pack_name='', pack_level=''):
         generator['from'] = fr
+        generator['pack_name'] = pack_name
+        generator['pack_level'] = pack_level
         generator['name'] = generator['id'] = gname
         if 'notes' not in generator:
             generator['notes'] = ''

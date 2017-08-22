@@ -43,8 +43,10 @@ class MonitoringManager(object):
     
     
     # Load and sanatize a check object in our configuration
-    def import_check(self, check, fr, name, mod_time=0, service=''):
+    def import_check(self, check, fr, name, mod_time=0, service='', pack_name='', pack_level=''):
         check['from'] = fr
+        check['pack_name'] = pack_name
+        check['pack_level'] = pack_level
         check['id'] = check['name'] = name
         defaults_ = {'interval'       : '10s', 'script': '', 'ok_output': '', 'critical_if': '',
                      'critical_output': '', 'warning_if': '', 'warning_output': '', 'last_check': 0,
@@ -121,8 +123,10 @@ class MonitoringManager(object):
         shutil.rmtree(tempdir)
     
     
-    def import_service(self, service, fr, sname, mod_time=0):
+    def import_service(self, service, fr, sname, mod_time=0, pack_name='', pack_level=''):
         service['from'] = fr
+        service['pack_name'] = pack_name
+        service['pack_level'] = pack_level
         service['name'] = service['id'] = sname
         if 'notes' not in service:
             service['notes'] = ''

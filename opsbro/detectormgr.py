@@ -22,8 +22,10 @@ class DetectorMgr(object):
 
     # Detectors will run rules based on collectors and such things, and will tag the local node
     # if the rules are matching
-    def import_detector(self, detector, fr, gname, mod_time=0):
+    def import_detector(self, detector, fr, gname, mod_time=0, pack_name='', pack_level=''):
         detector['from'] = fr
+        detector['pack_name'] = pack_name
+        detector['pack_level'] = pack_level
         detector['name'] = detector['id'] = gname
         if 'notes' not in detector:
             detector['notes'] = ''

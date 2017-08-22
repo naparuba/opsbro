@@ -40,8 +40,10 @@ class Environment(object):
 
 
 class Installor(object):
-    def __init__(self, o):
+    def __init__(self, o, pack_name='', pack_level=''):
         self.name = o.get('name')
+        self.pack_name = pack_name
+        self.pack_level = pack_level
         self.note = o.get('note', '')
         self.if_ = o.get('if', None)
         self.environments = []
@@ -106,8 +108,8 @@ class InstallorMgr(object):
         self.install_rules = []
     
     
-    def import_installor(self, o, fname, gname, mod_time=0):
-        installor = Installor(o)
+    def import_installor(self, o, fname, gname, mod_time=0, pack_name='', pack_level=''):
+        installor = Installor(o, pack_name=pack_name, pack_level=pack_level)
         self.install_rules.append(installor)
     
     

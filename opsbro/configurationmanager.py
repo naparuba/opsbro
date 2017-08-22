@@ -1,10 +1,9 @@
 import os
-import imp
 import sys
 
-from opsbro.defaultpaths import DEFAULT_LIBEXEC_DIR, DEFAULT_LOCK_PATH, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR
+from opsbro.defaultpaths import DEFAULT_DATA_DIR
 from opsbro.log import LoggerFactory
-from opsbro.httpdaemon import http_export, response, abort, request
+from opsbro.httpdaemon import http_export, response
 from opsbro.yamlmgr import yamler
 from opsbro.jsonmgr import jsoner
 from opsbro.packer import packer
@@ -153,7 +152,7 @@ class ConfigurationManager(object):
                     self.open_cfg_file(fp)
     
     
-    def open_cfg_file(self, fp):
+    def open_cfg_file(self, fp, pack_name='', pack_level=''):
         is_json = fp.endswith('.json')
         is_yaml = fp.endswith('.yml')
         with open(fp, 'r') as f:
@@ -177,7 +176,7 @@ class ConfigurationManager(object):
             mod_time = int(os.path.getmtime(fp))
             cname = os.path.splitext(fname)[0]
             monitoringmgr = self.get_monitoringmgr()
-            monitoringmgr.import_check(check, 'file:%s' % fname, cname, mod_time=mod_time)
+            monitoringmgr.import_check(check, 'file:%s' % fname, cname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
         
         if 'service' in o:
             service = o['service']
@@ -189,7 +188,7 @@ class ConfigurationManager(object):
             fname = fp
             sname = os.path.splitext(fname)[0]
             monitoringmgr = self.get_monitoringmgr()
-            monitoringmgr.import_service(service, 'file:%s' % fname, sname, mod_time=mod_time)
+            monitoringmgr.import_service(service, 'file:%s' % fname, sname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
         
         if 'handler' in o:
             handler = o['handler']
@@ -198,7 +197,7 @@ class ConfigurationManager(object):
             fname = fp
             hname = os.path.splitext(os.path.basename(fname))[0]
             handlermgr = self.get_handlermgr()
-            handlermgr.import_handler(handler, fp, hname, mod_time=mod_time)
+            handlermgr.import_handler(handler, fp, hname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
         
         if 'generator' in o:
             generator = o['generator']
@@ -210,7 +209,7 @@ class ConfigurationManager(object):
             fname = fp
             gname = os.path.splitext(fname)[0]
             generatormgr = self.get_generatormgr()
-            generatormgr.import_generator(generator, fname, gname, mod_time=mod_time)
+            generatormgr.import_generator(generator, fname, gname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
         
         if 'detector' in o:
             detector = o['detector']
@@ -221,7 +220,7 @@ class ConfigurationManager(object):
             fname = fp
             gname = os.path.splitext(fname)[0]
             detecter = self.get_detecter()
-            detecter.import_detector(detector, 'file:%s' % fname, gname, mod_time=mod_time)
+            detecter.import_detector(detector, 'file:%s' % fname, gname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
         
         if 'zone' in o:
             zone = o['zone']
@@ -237,7 +236,7 @@ class ConfigurationManager(object):
             fname = fp
             gname = os.path.splitext(fname)[0]
             installormgr = self.get_installormgr()
-            installormgr.import_installor(installor, fname, gname, mod_time=mod_time)
+            installormgr.import_installor(installor, fname, gname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
         
         # grok all others data so we can use them in our checks
         cluster_parameters = self.__class__.cluster_parameters
@@ -296,10 +295,10 @@ class ConfigurationManager(object):
         modulemanager = self.get_modulemanager()
         pack_directories = packer.give_pack_directories_to_load()
     
-        for (pname, dir) in pack_directories:
+        for (pname, level, dir) in pack_directories:
             module_directory = os.path.join(dir, 'module')
             if os.path.exists(module_directory):
-                modulemanager.add_module_directory_to_load(module_directory)
+                modulemanager.add_module_directory_to_load(module_directory, pname, level)
 
         modulemanager.load_module_sources()
 
@@ -311,11 +310,11 @@ class ConfigurationManager(object):
         from opsbro.collectormanager import collectormgr
         pack_directories = packer.give_pack_directories_to_load()
         
-        for (pname, dir) in pack_directories:
+        for (pname, level, dir) in pack_directories:
             # Now load collectors, an important part for packs :)
             collector_dir = os.path.join(dir, 'collectors')
             if os.path.exists(collector_dir):
-                collectormgr.load_directory(collector_dir, pack_name=pname)
+                collectormgr.load_directory(collector_dir, pack_name=pname, pack_level=level)
         
         # now collectors class are loaded, load instances from them
         collectormgr.load_all_collectors()
