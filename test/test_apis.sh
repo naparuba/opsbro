@@ -8,7 +8,7 @@ echo "Starting to test APIS"
 
 
 echo "********** /packs *********"
-RES=$(curl -s http://localhost:6768/packs | jq '.[0].name')
+RES=$(curl -s http://localhost:6768/packs | jq '.global.hypervisor[0].name')
 
 if [ $? != 0 ] || [ $RES == "null" ]; then
     echo "ERROR: the /packs do not returns good results: $RES"

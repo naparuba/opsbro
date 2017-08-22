@@ -73,7 +73,7 @@ class PackManager(object):
         @http_export('/packs')
         def get_packs():
             response.content_type = 'application/json'
-            return json.dumps(self.packs.values())
+            return json.dumps(self.packs)
 
 
 packer = PackManager()
