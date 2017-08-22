@@ -1,0 +1,17 @@
+name: test-generators
+types:
+    - pack
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description: Test for generators
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - test
+
+dependencies:
+    core: ">=1.0"
+license: ""

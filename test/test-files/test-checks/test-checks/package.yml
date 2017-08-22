@@ -1,0 +1,17 @@
+name: test-checks
+types:
+    - pack
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description: Check Nagios test
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - test
+
+dependencies:
+    core: ">=1.0"
+license: ""
