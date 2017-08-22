@@ -357,7 +357,7 @@ Besoins:
 
 
 ### Export HTTP
-  * permettre un meilleur export des docs des appels HTTP
+  * permettre un meilleur export des docs/specs des appels HTTP
 
 
 ### Gossip/Members
@@ -387,3 +387,6 @@ Besoins:
   * bot de commande
   * query dns
 
+### Handlers:
+  * faire que ce soit des modules spécifiques qui exportent leur capacité au handler, donc qu'ils implémentent une sous classe de Module (jouable avec celle déjà existante?)
+    * exporter ensuite emails et slack en tant que handler modules

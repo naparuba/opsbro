@@ -90,13 +90,9 @@ class CLICommander(object):
         
         # Now that we did load modules, we are ready to load their configuration files (we know which types we need)
         configmgr.prepare_to_load_cfg_dirs()
-        
-        # Ok let's load global configuration data
-        configmgr.load_cfg_dir(global_configuration)
-        # then zone one
-        configmgr.load_cfg_dir(zone_configuration)
-        # and then local one
-        configmgr.load_cfg_dir(local_configuration)
+
+        # We load configuration from packs, but only the one we are sure we must load
+        configmgr.load_configuration_from_packs()
         
         # We will now try to load the keywords from the modules
         self.load_cli_mods(opts)
@@ -183,7 +179,6 @@ class CLICommander(object):
         command_parser = optparse.OptionParser('', version="%prog " + VERSION)
         command_parser.prog = keyword
         
-        f_args = []
         for a in mod.get('args', []):
             n = a.get('name', None)
             if n is None:

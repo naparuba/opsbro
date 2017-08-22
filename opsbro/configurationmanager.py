@@ -140,7 +140,7 @@ class ConfigurationManager(object):
         self.known_types.update(self.modules_known_types)
     
     
-    def load_cfg_dir(self, cfg_dir):
+    def load_cfg_dir(self, cfg_dir, pack_name='', pack_level=''):
         if not os.path.exists(cfg_dir):
             logger.error('ERROR: the configuration directory %s is missing' % cfg_dir)
             return
@@ -149,7 +149,7 @@ class ConfigurationManager(object):
                 fp = os.path.join(root, name)
                 logger.debug('Loader: looking for file: %s' % fp)
                 if name.endswith('.json') or name.endswith('.yml'):
-                    self.open_cfg_file(fp)
+                    self.open_cfg_file(fp, pack_name=pack_name, pack_level=pack_level)
     
     
     def open_cfg_file(self, fp, pack_name='', pack_level=''):
@@ -302,7 +302,12 @@ class ConfigurationManager(object):
 
         modulemanager.load_module_sources()
 
-            
+
+    def load_configuration_from_packs(self):
+        pack_directories = packer.give_pack_directories_to_load()
+    
+        for (pname, level, dir) in pack_directories:
+            self.load_cfg_dir(dir, pack_name=pname, pack_level=level)
 
 
     def load_collectors_from_packs(self):

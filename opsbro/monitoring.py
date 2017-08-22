@@ -143,7 +143,7 @@ class MonitoringManager(object):
             cname = 'service:%s' % sname
             # for the same apply_on of the check as ourself
             check['apply_on'] = apply_on
-            self.import_check(check, fr, cname, mod_time=mod_time, service=service['id'])
+            self.import_check(check, fr, cname, mod_time=mod_time, service=service['id'], pack_name=pack_name, pack_level=pack_level)
         
         # Put the default state to unknown, retention will load
         # the old data
