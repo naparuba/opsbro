@@ -25,6 +25,8 @@ class ShinkenExporter(object):
         self.cfg_path = None
         self.node_changes = []
         self.reload_command = ''
+        self.monitoring_tool = 'shinken'
+        self.external_command_file = '/var/lib/shinken/shinken.cmd'
         # register to node events
         pubsub.sub('new-node', self.new_node_callback)
         pubsub.sub('delete-node', self.delete_node_callback)
@@ -38,6 +40,12 @@ class ShinkenExporter(object):
     def load_reload_command(self, reload_command):
         self.reload_command = reload_command
     
+    def load_monitoring_tool(self, monitoring_tool):
+        self.monitoring_tool = monitoring_tool
+    
+    def load_external_command_file(self, external_command_file):
+        self.external_command_file = external_command_file
+
     
     def launch_thread(self):
         # Launch a thread that will reap all put key asked by the udp
@@ -64,9 +72,9 @@ class ShinkenExporter(object):
     
     
     def export_states_into_shinken(self, nuuid):
-        p = '/var/lib/shinken/nagios.cmd'
+        p = self.external_command_file
         if not os.path.exists(p):
-            logger.info('Shinken command file is missing, skipping node information export')
+            logger.info('Shinken command file %s is missing, skipping node information export' % p)
             return
         
         v = kvmgr.get_key('__health/%s' % nuuid)
@@ -140,10 +148,15 @@ class ShinkenExporter(object):
             use                     generic-service
             active_checks_enabled   0
             passive_checks_enabled  1
-            check_command           _echo
+            check_command           check-host-alive
             max_check_attempts      1
         \n}\n
         '''
+        # NOTE: nagios is not liking templates that are not exiting, so only export with generic-host
+        # shinken don't care, so we can give all we want here
+        use_value = ','.join(tpls)
+        if self.monitoring_tool == 'nagios':
+            use_value = 'generic-host'
         
         buf = '''# Auto generated host, do not edit
         \ndefine host{
@@ -151,8 +164,12 @@ class ShinkenExporter(object):
             display_name   %s
             address        %s
             use            %s
+            check_period                    24x7
+            check_interval                  1
+            retry_interval                  1
+            max_check_attempts              2
         \n}\n
-        \n%s\n''' % (n['uuid'], n['name'], n['addr'], ','.join(tpls), '\n'.join([buf_service % (n['uuid'], self.sanatize_check_name(cname)) for cname in cnames]))
+        \n%s\n''' % (n['uuid'], n['name'], n['addr'], use_value, '\n'.join([buf_service % (n['uuid'], self.sanatize_check_name(cname)) for cname in cnames]))
         buf_sha = hashlib.sha1(buf).hexdigest()
         
         # if it the same as before?

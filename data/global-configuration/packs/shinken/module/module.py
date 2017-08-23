@@ -13,6 +13,8 @@ class ShinkenModule(ConnectorModule):
         'enabled': BoolParameter(default=False),
         'cfg_path': StringParameter(default=''),
         'reload_command': StringParameter(default=''),
+        'monitoring_tool': StringParameter(default='shinken'),
+        'external_command_file': StringParameter(default='/var/lib/shinken/shinken.cmd'),
     }
 
     
@@ -28,6 +30,8 @@ class ShinkenModule(ConnectorModule):
         
         cfg_path = o['cfg_path']
         o['reload_command'] = o.get('reload_command', '')
+        o['monitoring_tool'] = o.get('monitoring_tool', 'shinken')
+        o['external_command_file'] = o.get('external_command_file', '/var/lib/shinken/shinken.cmd')
         # and path must be a abs path
         o['cfg_path'] = os.path.abspath(cfg_path)
         self.shinken = o
@@ -39,7 +43,8 @@ class ShinkenModule(ConnectorModule):
         if self.shinken:
             shinkenexporter.load_cfg_path(self.shinken['cfg_path'])
             shinkenexporter.load_reload_command(self.shinken['reload_command'])
-    
+            shinkenexporter.load_monitoring_tool(self.shinken['monitoring_tool'])
+            shinkenexporter.load_external_command_file(self.shinken['external_command_file'])
     
     def launch(self):
         shinkenexporter.launch_thread()
