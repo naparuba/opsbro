@@ -1,0 +1,10 @@
+
+
+# uri: uri to connect to rabbimq administration API
+uri: http://localhost:15672/api/overview
+
+# user: which user to connect
+user: root
+
+# password
+password:

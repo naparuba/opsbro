@@ -44,7 +44,10 @@ def do_configuration_print():
         for k in keys:
             obj_parameters = configmgr.declared_parameters[t][k]
             print "    - %-15s" % k
-            for (param_name, param_desc) in obj_parameters.iteritems():
+            param_names = obj_parameters.keys()
+            param_names.sort()
+            for param_name in param_names:
+                param_desc = obj_parameters[param_name]
                 print "       - %-15s => %s" % (param_name, param_desc)
     
     from opsbro.packer import packer
@@ -70,7 +73,6 @@ def do_configuration_print():
     from opsbro.collectormanager import collectormgr
     collectors = collectormgr.collectors
     for colname, collector in collectors.iteritems():
-        print collector
         pack_name = collector['inst'].pack_name
         pack_level = collector['inst'].pack_level
         packs[pack_level][pack_name]['collectors'][colname] = collector
@@ -99,8 +101,6 @@ def do_configuration_print():
         packs[pack_level][pack_name]['installors'][iname] = installator
 
     print "Finally:"
-    from pprint import pprint
-    pprint(packs)
     
     for level in ('global', 'zone', 'local'):
         cprint('[ Packs Level %s ]' % level, color='blue')

@@ -1,0 +1,4 @@
+
+
+# uri: uri to connect to the nginx_status
+uri: http://localhost/nginx_status

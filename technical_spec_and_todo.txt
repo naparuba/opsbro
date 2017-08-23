@@ -370,6 +370,31 @@ Besoins:
   * ipmi (hardware stuff)
   * smart (disques)
   * raid linux (md)
+  * LIST des packs et leurs composants
+     * opsbro pack list
+     * opsbro pack list global  (donc que global et en dessous)
+  * COPY d'un pack sur un autre level
+     * opsbro packs copy global.shinken  local.shinken
+  * REMOVE d'un pack sur un level particulier
+     * opsbro packs  local.shinken
+  * EDIT d'un paramètre comme par exemple:
+     * opsbro packs set local.nagios.roles.nagios.enabled   True
+     * opsbro packs get local.nagios.roles.nagios.enabled
+       => True
+
+
+
+#### Variables/parameters
+   * un même espace de variables entre les différents niveaux
+   * si une variable est présente au niveau objet > local > zone > global
+   * CLI affichage de cette surcharge de paramètre
+      * node/daemon.groups   set/add/unset/remove  VALUE
+        PART  PACKS  PACK_NAME   SUB_DIR   FILE  X.X.X => parameter level
+      * local.packs.shinken.module.shinken.enabled   set   true
+      * local.packs.mysql.parameters.mysql.user     set   monitoring
+
+
+
 
 
 ### Core

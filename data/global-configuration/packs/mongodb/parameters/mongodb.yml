@@ -1,0 +1,10 @@
+
+
+# uri: mongodb uri to connect to your mongodb server
+uri: mongodb://localhost
+
+# user: which user to connect
+user:
+
+# password
+password:

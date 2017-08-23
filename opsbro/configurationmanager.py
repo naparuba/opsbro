@@ -296,7 +296,7 @@ class ConfigurationManager(object):
         pack_directories = packer.give_pack_directories_to_load()
     
         for (pname, level, dir) in pack_directories:
-            module_directory = os.path.join(dir, 'module')
+            module_directory = os.path.join(dir, 'module_code')
             if os.path.exists(module_directory):
                 modulemanager.add_module_directory_to_load(module_directory, pname, level)
 

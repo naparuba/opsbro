@@ -10,7 +10,7 @@ MySQLdb = None
 
 class Mysql(Collector):
     parameters = {
-        'server'  : StringParameter(default='localhost'),
+        'server'  : StringParameter(default='127.0.0.1'),
         'user'    : StringParameter(default='root'),
         'password': StringParameter(default=''),
         'port'    : IntParameter(default=3306),

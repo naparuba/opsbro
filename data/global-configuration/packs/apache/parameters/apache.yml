@@ -1,0 +1,10 @@
+
+
+# server: the address of the apache server
+hostname: localhost
+
+# user: which user to connect
+user:
+
+# password
+password:
