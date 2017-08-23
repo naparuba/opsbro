@@ -55,10 +55,10 @@ class ConfigurationManager(object):
         
         # Maybe we did found other variables in the main configuration file or another?
         self.additionnal_variables = {}
-
+        
         # Cluster parameters
         self.data_dir = os.path.abspath(os.path.join(DEFAULT_DATA_DIR))  # '/var/lib/opsbro/'
-        
+    
     
     def get_monitoringmgr(self):
         # Import at runtime, to avoid loop
@@ -140,19 +140,37 @@ class ConfigurationManager(object):
         self.known_types.update(self.modules_known_types)
     
     
-    def load_cfg_dir(self, cfg_dir, pack_name='', pack_level=''):
+    def load_cfg_dir(self, cfg_dir, load_focus, pack_name='', pack_level=''):
         if not os.path.exists(cfg_dir):
             logger.error('ERROR: the configuration directory %s is missing' % cfg_dir)
             return
         for root, dirs, files in os.walk(cfg_dir):
             for name in files:
                 fp = os.path.join(root, name)
-                logger.debug('Loader: looking for file: %s' % fp)
-                if name.endswith('.json') or name.endswith('.yml'):
-                    self.open_cfg_file(fp, pack_name=pack_name, pack_level=pack_level)
+                # Only json and yml are interesting
+                if not name.endswith('.json') and not name.endswith('.yml'):
+                    continue
+                logger.debug('Loader: looking for cfg file: %s' % fp)
+                obj = self.__get_object_from_cfg_file(fp)
+                # agent: pid, log, graoups, etc
+                # and zones
+                if load_focus == 'agent':
+                    self.load_agent_parameters(obj)
+                elif load_focus == 'monitoring':
+                    self.load_monitoring_object(obj, fp, pack_name=pack_name, pack_level=pack_level)
+                elif load_focus == 'generator':
+                    self.load_generator_object(obj, fp, pack_name=pack_name, pack_level=pack_level)
+                elif load_focus == 'detector':
+                    self.load_detector_object(obj, fp, pack_name=pack_name, pack_level=pack_level)
+                elif load_focus == 'installor':
+                    self.load_installor_object(obj, fp, pack_name=pack_name, pack_level=pack_level)
+                elif load_focus == 'module':
+                    self.load_module_object(obj, fp, pack_name=pack_name, pack_level=pack_level)
+                else:
+                    raise Exception('Unknown load focus type! %s' % load_focus)
     
     
-    def open_cfg_file(self, fp, pack_name='', pack_level=''):
+    def __get_object_from_cfg_file(self, fp):
         is_json = fp.endswith('.json')
         is_yaml = fp.endswith('.yml')
         with open(fp, 'r') as f:
@@ -160,100 +178,27 @@ class ConfigurationManager(object):
             try:
                 if is_json:
                     o = jsoner.loads(buf)
-                if is_yaml:
+                elif is_yaml:
                     o = yamler.loads(buf)
+                else:
+                    raise Exception('Unknown file extension: %s' % fp)
             except Exception, exp:
                 logger.error('ERROR: the configuration file %s malformed: %s' % (fp, exp))
                 sys.exit(2)
         logger.debug("Configuration, opening file data", o, fp)
-        
-        if 'check' in o:
-            check = o['check']
-            if not isinstance(check, dict):
-                logger.error('ERROR: the check from the file %s is not a valid dict' % fp)
-                sys.exit(2)
-            fname = fp
-            mod_time = int(os.path.getmtime(fp))
-            cname = os.path.splitext(fname)[0]
-            monitoringmgr = self.get_monitoringmgr()
-            monitoringmgr.import_check(check, 'file:%s' % fname, cname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
-        
-        if 'service' in o:
-            service = o['service']
-            if not isinstance(service, dict):
-                logger.error('ERROR: the service from the file %s is not a valid dict' % fp)
-                sys.exit(2)
-            
-            mod_time = int(os.path.getmtime(fp))
-            fname = fp
-            sname = os.path.splitext(fname)[0]
-            monitoringmgr = self.get_monitoringmgr()
-            monitoringmgr.import_service(service, 'file:%s' % fname, sname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
-        
-        if 'handler' in o:
-            handler = o['handler']
-            
-            mod_time = int(os.path.getmtime(fp))
-            fname = fp
-            hname = os.path.splitext(os.path.basename(fname))[0]
-            handlermgr = self.get_handlermgr()
-            handlermgr.import_handler(handler, fp, hname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
-        
-        if 'generator' in o:
-            generator = o['generator']
-            if not isinstance(generator, dict):
-                logger.error('ERROR: the generator from the file %s is not a valid dict' % fp)
-                sys.exit(2)
-            
-            mod_time = int(os.path.getmtime(fp))
-            fname = fp
-            gname = os.path.splitext(fname)[0]
-            generatormgr = self.get_generatormgr()
-            generatormgr.import_generator(generator, fname, gname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
-        
-        if 'detector' in o:
-            detector = o['detector']
-            if not isinstance(detector, dict):
-                logger.error('ERROR: the detector from the file %s is not a valid dict' % fp)
-                sys.exit(2)
-            mod_time = int(os.path.getmtime(fp))
-            fname = fp
-            gname = os.path.splitext(fname)[0]
-            detecter = self.get_detecter()
-            detecter.import_detector(detector, 'file:%s' % fname, gname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
-        
+        return o
+    
+    
+    # pid, log & zones
+    def load_agent_parameters(self, o):
         if 'zone' in o:
             zone = o['zone']
             zonemgr = self.get_zonemgr()
             zonemgr.add(zone)
         
-        if 'installor' in o:
-            installor = o['installor']
-            if not isinstance(installor, dict):
-                logger.error('ERROR: the installor from the file %s is not a valid dict' % fp)
-                sys.exit(2)
-            mod_time = int(os.path.getmtime(fp))
-            fname = fp
-            gname = os.path.splitext(fname)[0]
-            installormgr = self.get_installormgr()
-            installormgr.import_installor(installor, fname, gname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
-        
         # grok all others data so we can use them in our checks
         cluster_parameters = self.__class__.cluster_parameters
         for (k, v) in o.iteritems():
-            # Manage modules object types
-            if k in self.modules_known_types:
-                # File modification time
-                mod_time = int(os.path.getmtime(fp))
-                # file name
-                fname = fp
-                # file short name
-                gname = os.path.splitext(fname)[0]
-                # Go import it
-                modulemanager = self.get_modulemanager()
-                modulemanager.import_managed_configuration_object(k, v, mod_time, fname, gname)
-                continue
-            
             # check, service, ... are already managed
             if k in self.known_types:
                 continue
@@ -289,27 +234,129 @@ class ConfigurationManager(object):
                     return
                 # Save it, and in the cluster point of view (setattr for it)
                 self.parameters_for_cluster_from_configuration[mapto] = v
-
-
+    
+    
+    # Monitoring objects: check, service and handler
+    def load_monitoring_object(self, o, fp, pack_name, pack_level):
+        if 'check' in o:
+            check = o['check']
+            if not isinstance(check, dict):
+                logger.error('ERROR: the check from the file %s is not a valid dict' % fp)
+                sys.exit(2)
+            fname = fp
+            mod_time = int(os.path.getmtime(fp))
+            cname = os.path.splitext(fname)[0]
+            monitoringmgr = self.get_monitoringmgr()
+            monitoringmgr.import_check(check, 'file:%s' % fname, cname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
+        
+        if 'service' in o:
+            service = o['service']
+            if not isinstance(service, dict):
+                logger.error('ERROR: the service from the file %s is not a valid dict' % fp)
+                sys.exit(2)
+            
+            mod_time = int(os.path.getmtime(fp))
+            fname = fp
+            sname = os.path.splitext(fname)[0]
+            monitoringmgr = self.get_monitoringmgr()
+            monitoringmgr.import_service(service, 'file:%s' % fname, sname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
+        
+        if 'handler' in o:
+            handler = o['handler']
+            
+            mod_time = int(os.path.getmtime(fp))
+            fname = fp
+            hname = os.path.splitext(os.path.basename(fname))[0]
+            handlermgr = self.get_handlermgr()
+            handlermgr.import_handler(handler, fp, hname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
+    
+    
+    def load_generator_object(self, o, fp, pack_name, pack_level):
+        if 'generator' in o:
+            generator = o['generator']
+            if not isinstance(generator, dict):
+                logger.error('ERROR: the generator from the file %s is not a valid dict' % fp)
+                sys.exit(2)
+            
+            mod_time = int(os.path.getmtime(fp))
+            fname = fp
+            gname = os.path.splitext(fname)[0]
+            generatormgr = self.get_generatormgr()
+            generatormgr.import_generator(generator, fname, gname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
+    
+    
+    def load_detector_object(self, o, fp, pack_name, pack_level):
+        if 'detector' in o:
+            detector = o['detector']
+            if not isinstance(detector, dict):
+                logger.error('ERROR: the detector from the file %s is not a valid dict' % fp)
+                sys.exit(2)
+            mod_time = int(os.path.getmtime(fp))
+            fname = fp
+            gname = os.path.splitext(fname)[0]
+            detecter = self.get_detecter()
+            detecter.import_detector(detector, 'file:%s' % fname, gname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
+    
+    
+    def load_installor_object(self, o, fp, pack_name, pack_level):
+        if 'installor' in o:
+            installor = o['installor']
+            if not isinstance(installor, dict):
+                logger.error('ERROR: the installor from the file %s is not a valid dict' % fp)
+                sys.exit(2)
+            mod_time = int(os.path.getmtime(fp))
+            fname = fp
+            gname = os.path.splitext(fname)[0]
+            installormgr = self.get_installormgr()
+            installormgr.import_installor(installor, fname, gname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
+    
+    
+    def load_module_object(self, o, fp, pack_name, pack_level):
+        for (k, v) in o.iteritems():
+            # Manage modules object types
+            if k in self.modules_known_types:
+                # File modification time
+                mod_time = int(os.path.getmtime(fp))
+                # file name
+                fname = fp
+                # file short name
+                gname = os.path.splitext(fname)[0]
+                # Go import it
+                modulemanager = self.get_modulemanager()
+                modulemanager.import_managed_configuration_object(k, v, mod_time, fname, gname)
+                return
+    
+    
     def load_modules_from_packs(self):
         modulemanager = self.get_modulemanager()
         pack_directories = packer.give_pack_directories_to_load()
-    
+        
         for (pname, level, dir) in pack_directories:
             module_directory = os.path.join(dir, 'module_code')
             if os.path.exists(module_directory):
                 modulemanager.add_module_directory_to_load(module_directory, pname, level)
-
+        
         modulemanager.load_module_sources()
-
-
+    
+    
     def load_configuration_from_packs(self):
         pack_directories = packer.give_pack_directories_to_load()
-    
+        
         for (pname, level, dir) in pack_directories:
-            self.load_cfg_dir(dir, pack_name=pname, pack_level=level)
-
-
+            # We load the sub directories, but we don't want to have a big mess of objects
+            # so must respect for each type
+            # dir, load_focus
+            _types = [('monitoring', 'monitoring'), ('handlers', 'monitoring'),
+                      ('generators', 'generator'),
+                      ('detectors', 'detector'), ('installors', 'installor'),
+                      ('module', 'module'),
+                      ]
+            for sub_dir, load_focus in _types:
+                full_sub_dir = os.path.join(dir, sub_dir)
+                if os.path.exists(full_sub_dir):
+                    self.load_cfg_dir(dir, load_focus=load_focus, pack_name=pname, pack_level=level)
+    
+    
     def load_collectors_from_packs(self):
         # Load at running to avoid endless import loop
         from opsbro.collectormanager import collectormgr

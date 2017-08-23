@@ -670,7 +670,8 @@ class Cluster(object):
             with open(local_file, 'w') as f:
                 f.write(json.dumps(j, sort_keys=True, indent=4))
             # Load the data we can
-            self.open_cfg_file(local_file)
+            #self.open_cfg_file(local_file)
+            # TODO: get this back?
             logger.debug('HTTP configuration update, now got %s' % j)
             return
         

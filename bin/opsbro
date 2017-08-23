@@ -60,7 +60,7 @@ class CLICommander(object):
             sys.exit(2)
         
         # We need the main cfg_directory
-        configmgr.load_cfg_dir(cfg_dir)
+        configmgr.load_cfg_dir(cfg_dir, load_focus='agent')
         
         data_dir = os.path.abspath(os.path.join(DEFAULT_DATA_DIR))  # '/var/lib/opsbro/'
         
