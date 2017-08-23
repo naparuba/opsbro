@@ -28,9 +28,5 @@ WORKDIR    /root/opsbro-oss
 
 RUN        python setup.py install
 
-# Copy the generator
-ADD        test/test-files/test-generators/   /var/lib/opsbro/global-configuration/packs/
-RUN        ls -R /var/lib/opsbro/global-configuration/packs/
-RUN        cp   /var/lib/opsbro/global-configuration/packs/pack-generators/authorized_keys.txt  /tmp/
 
 ENTRYPOINT     test/test_feature_config_show.sh
