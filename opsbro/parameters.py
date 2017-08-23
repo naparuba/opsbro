@@ -11,6 +11,10 @@ class Parameter(object):
         self.default = default
     
     
+    def have_default(self):
+        return not isinstance(self.default, NotExitingDefault)
+        
+    
     def __str__(self):
         return '[PARAMETER:: type=%s default=%s]' % (self.type, self.default)
     
@@ -29,6 +33,9 @@ class StringParameter(Parameter):
     def __init__(self, default=NotExitingDefault()):
         super(StringParameter, self).__init__(default=default)
 
+    def is_valid(self, v):
+        return isinstance(v, basestring)
+    
 
 class BoolParameter(Parameter):
     type = 'bool'
@@ -37,6 +44,10 @@ class BoolParameter(Parameter):
     def __init__(self, default=NotExitingDefault()):
         super(BoolParameter, self).__init__(default=default)
 
+    def is_valid(self, v):
+        return isinstance(v, bool)
+
+    
 
 class IntParameter(Parameter):
     type = 'int'
@@ -44,6 +55,10 @@ class IntParameter(Parameter):
     
     def __init__(self, default=NotExitingDefault()):
         super(IntParameter, self).__init__(default=default)
+
+
+    def is_valid(self, v):
+        return isinstance(v, int)
 
 
 class FloatParameter(Parameter):
@@ -54,9 +69,16 @@ class FloatParameter(Parameter):
         super(FloatParameter, self).__init__(default=default)
 
 
+    def is_valid(self, v):
+        return isinstance(v, float)
+
+
 class StringListParameter(Parameter):
     type = 'string_list'
     
     
     def __init__(self, default=NotExitingDefault()):
         super(StringListParameter, self).__init__(default=default)
+
+    def is_valid(self, v):
+        return isinstance(v, list)

@@ -13,8 +13,8 @@ class Postfix(Collector):
     types = ['deferred', 'active', 'maildrop', 'incoming', 'corrupt', 'hold']
     
     
-    def __init__(self, config, put_result=None):
-        super(Postfix, self).__init__(config, put_result)
+    def __init__(self):
+        super(Postfix, self).__init__()
         self.data = {}
         self.postfix_dir = '/var/spool/postfix'
     

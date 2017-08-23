@@ -41,7 +41,6 @@ def get_collectors(self):
 class CollectorManager:
     def __init__(self):
         self.collectors = {}
-        self.cfg_data = {}
         
         self.did_run = False  # did our data are all ok or we did not launch all?
         
@@ -96,7 +95,7 @@ class CollectorManager:
         logger.debug('Loading collector %s from class %s, from pack %s and from pack level %s' % (colname, cls, cls.pack_name, cls.pack_level))
         try:
             # also give it our put result callback
-            inst = cls(self.cfg_data, put_result=self.put_result)
+            inst = cls()
             parameters = getattr(inst, 'parameters', {})
             if parameters:
                 configmgr.declare_parameters('collector', colname, parameters)
@@ -117,10 +116,13 @@ class CollectorManager:
         }
         self.collectors[colname] = e
     
+    # Now we hae our collectors and our parameters, link both
+    def get_parameters_from_packs(self):
+        for (cname, e) in self.collectors.iteritems():
+            e['inst'].get_parameters_from_pack()
     
-    def load_collectors(self, cfg_data):
-        self.cfg_data = cfg_data
-        logger.debug('Cfg data:%s' % cfg_data)
+    
+    def load_collectors(self):
         get_collectors(self)
     
     

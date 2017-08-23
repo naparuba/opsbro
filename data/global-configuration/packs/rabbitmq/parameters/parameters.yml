@@ -7,4 +7,4 @@ uri: http://localhost:15672/api/overview
 user: root
 
 # password
-password:
+password: ''

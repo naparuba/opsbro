@@ -58,6 +58,8 @@ class ConfigurationManager(object):
         
         # Cluster parameters
         self.data_dir = os.path.abspath(os.path.join(DEFAULT_DATA_DIR))  # '/var/lib/opsbro/'
+        
+        self.pack_parameters = {}
     
     
     def get_monitoringmgr(self):
@@ -166,6 +168,8 @@ class ConfigurationManager(object):
                     self.load_installor_object(obj, fp, pack_name=pack_name, pack_level=pack_level)
                 elif load_focus == 'module':
                     self.load_module_object(obj, fp, pack_name=pack_name, pack_level=pack_level)
+                elif load_focus == 'parameter':
+                    self.load_pack_parameters(obj, pack_name=pack_name, pack_level=pack_level)
                 else:
                     raise Exception('Unknown load focus type! %s' % load_focus)
     
@@ -327,6 +331,22 @@ class ConfigurationManager(object):
                 return
     
     
+    def load_pack_parameters(self, o, pack_name, pack_level):
+        # If not already create entry, we can do it
+        if pack_name not in self.pack_parameters:
+            self.pack_parameters[pack_name] = {'pack_level': pack_level, 'properties': {}}
+        pack_entry = self.pack_parameters[pack_name]
+        for (k, v) in o.iteritems():
+            pack_entry['properties'][k] = v
+    
+    
+    def get_parameters_from_pack(self, pack_name):
+        entry = self.pack_parameters.get(pack_name, None)
+        if entry is None:
+            return {}
+        return entry['properties']
+    
+    
     def load_modules_from_packs(self):
         modulemanager = self.get_modulemanager()
         pack_directories = packer.give_pack_directories_to_load()
@@ -347,14 +367,14 @@ class ConfigurationManager(object):
             # so must respect for each type
             # dir, load_focus
             _types = [('monitoring', 'monitoring'), ('handlers', 'monitoring'),
-                      ('generators', 'generator'),
+                      ('generators', 'generator'), ('parameters', 'parameter'),
                       ('detectors', 'detector'), ('installors', 'installor'),
                       ('module', 'module'),
                       ]
             for sub_dir, load_focus in _types:
                 full_sub_dir = os.path.join(dir, sub_dir)
                 if os.path.exists(full_sub_dir):
-                    self.load_cfg_dir(dir, load_focus=load_focus, pack_name=pname, pack_level=level)
+                    self.load_cfg_dir(full_sub_dir, load_focus=load_focus, pack_name=pname, pack_level=level)
     
     
     def load_collectors_from_packs(self):

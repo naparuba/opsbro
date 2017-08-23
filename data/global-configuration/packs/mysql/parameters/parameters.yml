@@ -7,11 +7,11 @@ server: 127.0.0.1
 user: root
 
 # password
-password:
+password: ''
 
 # Which port to connect
 port: 3306
 
 # Socket: if set, will try to use this unix socket if the TCP port is not available
-socket:
+socket: /var/run/mysqld/mysqld.sock
 

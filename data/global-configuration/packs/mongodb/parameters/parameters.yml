@@ -4,7 +4,7 @@
 uri: mongodb://localhost
 
 # user: which user to connect
-user:
+user: ''
 
 # password
-password:
+password: ''

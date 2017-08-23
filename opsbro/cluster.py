@@ -315,7 +315,7 @@ class Cluster(object):
         threader.create_and_launch(kvmgr.put_key_reaper, name='key reaper', essential=True, part='key-value')
         
         # Load all collectors instances
-        collectormgr.load_collectors(self.cfg_data)
+        collectormgr.load_collectors()
         # and their last data
         self.load_collector_retention()
         collectormgr.export_http()

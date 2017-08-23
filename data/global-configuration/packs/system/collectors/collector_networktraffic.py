@@ -11,8 +11,8 @@ if os.name == 'nt':
 
 
 class NetworkTraffic(Collector):
-    def __init__(self, config, put_result=None):
-        super(NetworkTraffic, self).__init__(config, put_result)
+    def __init__(self):
+        super(NetworkTraffic, self).__init__()
         self.networkTrafficStore = {}
         self.last_launch = 0.0
     

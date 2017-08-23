@@ -9,8 +9,8 @@ if os.name == 'nt':
 
 
 class KernelStats(Collector):
-    def __init__(self, config, put_result=None):
-        super(KernelStats, self).__init__(config, put_result)
+    def __init__(self):
+        super(KernelStats, self).__init__()
         self.store = {}
         self.last_launch = 0.0
     

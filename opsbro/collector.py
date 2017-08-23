@@ -39,12 +39,11 @@ class Collector(object):
         return cls.__inheritors__
     
     
-    def __init__(self, config, put_result=None):
+    def __init__(self):
         
         # Global logger for this part
         self.logger = LoggerFactory.create_logger('collector.%s' % self.__class__.__name__.lower())
         
-        self.config = config
         self.pythonVersion = pythonVersion
         self.state = 'pending'
         self.log = ''
@@ -62,8 +61,33 @@ class Collector(object):
         self.linuxProcFsLocation = None
         
         # The manager all back
-        self.put_result = put_result
+        from collectormanager import collectormgr
+        self.put_result = collectormgr.put_result
+        
+        self.config = {}
     
+    def get_parameters_from_pack(self):
+        from configurationmanager import configmgr
+        pack_parameters = configmgr.get_parameters_from_pack(self.pack_name)
+        for (prop, property) in self.parameters.iteritems():
+            # If the need parameter it NOT
+            if prop not in pack_parameters:
+                if property.have_default:
+                    self.config[prop] = property.have_default
+                    continue
+                else:
+                    self.logger.error('The parameter %s do not have default value and is missing' % prop)
+                    continue
+            else:  # there is a value, but is it ok?
+                value = pack_parameters[prop]
+                self.logger.debug("Try to check if value %s is valid for %s" % (value, property))
+                if property.is_valid(value):
+                    self.config[prop] = value
+                    continue
+                else:
+                    self.logger.error('The value %s for parameter %s is not valid, should be of type %s' % (value, prop, property.type))
+                    continue
+                
     
     # our run did fail, so we must exit in a clean way and keep a log
     # if we can

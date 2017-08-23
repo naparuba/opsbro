@@ -49,8 +49,8 @@ class Redis(Collector):
     }
 
     
-    def __init__(self, config, put_result=None):
-        super(Redis, self).__init__(config, put_result)
+    def __init__(self):
+        super(Redis, self).__init__()
         self.store = {}
         self.last_launch = 0.0
     

@@ -5,8 +5,8 @@ from opsbro.collector import Collector
 
 
 class Geoloc(Collector):
-    def __init__(self, config, put_result=None):
-        super(Geoloc, self).__init__(config, put_result)
+    def __init__(self):
+        super(Geoloc, self).__init__()
         self.geodata = {}
     
     
