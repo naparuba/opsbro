@@ -10,7 +10,7 @@
 import sys
 import json
 # try pygments for pretty printing if available
-from pprint import pprint
+import pprint
 
 try:
     import pygments
@@ -33,7 +33,7 @@ def _extract_data_from_results(d, prefix, res):
     elif isinstance(d, list) or isinstance(d, set):
         _idx = 0
         for v in d:
-            _extract_data_from_results(v, prefix + '.%d' + _idx, res)
+            _extract_data_from_results(v, prefix + '.%d' % _idx, res)
             _idx += 1
     elif isinstance(d, int) or isinstance(d, float) or isinstance(d, basestring) or d is None:
         res.append((prefix, d))
@@ -58,7 +58,7 @@ def pretty_print(d):
         result = pygments.highlight(code, lexer, formatter)
         print result
     else:
-        pprint(d)
+        pprint.pprint(d)
     if len(flat_results) == 0:
         print "No collector data"
         return
