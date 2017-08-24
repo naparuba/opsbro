@@ -17,7 +17,7 @@ logger = LoggerFactory.create_logger('generator')
 class GeneratorMgr(object):
     def __init__(self):
         self.generators = {}
-
+    
     
     # Generators will create files based on templates from
     # data and nodes after a change on a node
@@ -56,8 +56,8 @@ class GeneratorMgr(object):
         
         # Add it into the generators list
         self.generators[generator['id']] = generator
-
-
+    
+    
     # Main thread for launching generators
     def do_generator_thread(self):
         logger.log('GENERATOR thread launched')

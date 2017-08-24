@@ -60,10 +60,6 @@ class ModuleManager(object):
                 mod = cls()
                 logger.debug('[module] %s (from pack=%s and pack level=%s) did load' % (mod, mod.pack_name, mod.pack_level))
                 self.modules.append(mod)
-                
-                parameters = mod.parameters
-                if parameters:
-                    configmgr.declare_parameters('module', mod.implement, parameters)
             except Exception:
                 logger.error('The module %s did fail to create: %s' % (cls, str(traceback.print_exc())))
                 sys.exit(2)

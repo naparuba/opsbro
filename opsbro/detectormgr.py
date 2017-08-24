@@ -19,7 +19,7 @@ class DetectorMgr(object):
         self.detected_tags = {}
         self.detectors = {}
     
-
+    
     # Detectors will run rules based on collectors and such things, and will tag the local node
     # if the rules are matching
     def import_detector(self, detector, fr, gname, mod_time=0, pack_name='', pack_level=''):
@@ -31,7 +31,7 @@ class DetectorMgr(object):
             detector['notes'] = ''
         if 'apply_on' not in detector:
             detector['apply_on'] = detector['name']
-    
+        
         for prop in ['tags', 'apply_if']:
             if prop not in detector:
                 logger.warning('Bad detector, missing property %s in the detector %s' % (prop, gname))
@@ -39,20 +39,20 @@ class DetectorMgr(object):
         if not isinstance(detector['tags'], list):
             logger.warning('Bad detector, tags is not a list in the detector %s' % gname)
             return
-    
+        
         # We will try not to hummer the detector
         detector['modification_time'] = mod_time
-    
+        
         # Do not lunach too much
         detector['last_launch'] = 0
-    
+        
         # By default do not match
         detector['do_apply'] = False
-    
+        
         # Add it into the detectors list
         self.detectors[detector['id']] = detector
-
-
+    
+    
     # Main thread for launching detectors
     def do_detector_thread(self):
         # if the collector manager did not run, our evaluation can be invalid, so wait for all collectors to run at least once

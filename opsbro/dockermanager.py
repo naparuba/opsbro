@@ -28,7 +28,7 @@ class DockerManager(object):
         self.con = None
         self.containers = {}
         self.images = {}
-
+        
         # last stats computation for containers, some are rate
         # we must compare
         self.stats = {}

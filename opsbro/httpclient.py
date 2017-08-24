@@ -5,4 +5,4 @@ import requests as rq
 if hasattr(rq, 'packages'):
     HTTP_EXCEPTIONS = (rq.exceptions.RequestException, rq.packages.urllib3.exceptions.HTTPError)
 else:
-    HTTP_EXCEPTIONS = (rq.exceptions.RequestException, )
+    HTTP_EXCEPTIONS = (rq.exceptions.RequestException,)

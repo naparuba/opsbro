@@ -96,10 +96,6 @@ class CollectorManager:
         try:
             # also give it our put result callback
             inst = cls()
-            parameters = getattr(inst, 'parameters', {})
-            if parameters:
-                configmgr.declare_parameters('collector', colname, parameters)
-
         except Exception, exp:
             logger.error('Cannot load the %s collector: %s' % (cls, traceback.format_exc()))
             return
@@ -115,6 +111,7 @@ class CollectorManager:
             'log'       : '',
         }
         self.collectors[colname] = e
+    
     
     # Now we hae our collectors and our parameters, link both
     def get_parameters_from_packs(self):

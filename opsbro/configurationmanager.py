@@ -105,35 +105,6 @@ class ConfigurationManager(object):
         return self.parameters_for_cluster_from_configuration
     
     
-    # For a root.obj_name.key set the parameter_rule
-    def declare_parameters(self, root, obj_name, parameter_rules):
-        logger.debug('Declare a new parameter: root=%s  obj_name=%s ' % (root, obj_name))
-        logger.debug('Parameters: %s' % parameter_rules)
-        if root not in self.declared_parameters:
-            logger.error('Cannot declare parameters from %s: the root %s is not known (not in %s)' % (obj_name, root, self.declared_parameters.keys()))
-            return
-        root_entry = self.declared_parameters[root]
-        if obj_name in root_entry.keys():
-            logger.error('Cannot declare twice parameters from %s.%s: already exiting' % (root, obj_name))
-            return
-        obj_entry = {}
-        root_entry[obj_name] = obj_entry
-        for (parameter_name, parameter) in parameter_rules.iteritems():
-            logger.debug('Add new parameter: %s.%s.%s : %s' % (root, obj_name, parameter_name, parameter))
-            obj_entry[parameter_name] = parameter
-    
-    
-    def dump_parameters(self):
-        r = {}
-        for (root, parameter_parts) in self.declared_parameters.iteritems():
-            r[root] = {}
-            for (obj_name, parameter_rules) in parameter_parts.iteritems():
-                r[root][obj_name] = {}
-                for (parameter_name, parameter) in parameter_rules.iteritems():
-                    r[root][obj_name][parameter_name] = parameter.as_json()
-        return r
-    
-    
     def load_cfg_dir(self, cfg_dir, load_focus, pack_name='', pack_level=''):
         if not os.path.exists(cfg_dir):
             logger.error('ERROR: the configuration directory %s is missing' % cfg_dir)

@@ -16,18 +16,18 @@ if os.name != 'nt':
     def get_opsbro_json(uri):
         local_socket = get_local_socket()
         return get_json(uri, local_socket)
-
-
+    
+    
     def get_opsbro_local(uri):
         local_socket = get_local_socket()
         return get_local(uri, local_socket)
-
-
+    
+    
     def post_opsbro_json(uri, data):
         local_socket = get_local_socket()
         return get_json(uri, local_socket, params=data, method='POST')
-
-
+    
+    
     def put_opsbro_json(uri, data):
         local_socket = get_local_socket()
         return get_json(uri, local_socket, params=data, method='PUT')
@@ -38,14 +38,14 @@ else:
         r = requests.get('http://127.0.0.1:6770%s' % uri)
         obj = json.loads(r.text)
         return obj
-
-
+    
+    
     def get_opsbro_local(uri):
         r = requests.get('http://127.0.0.1:6770%s' % uri)
         status = r.status_code
         text = r.text
         return (status, text)
-
+    
     
     def post_opsbro_json(uri, data):
         return get_json(uri, params=data, method='POST')
@@ -53,7 +53,7 @@ else:
     
     def put_opsbro_json(uri, data):
         return get_json(uri, params=data, method='PUT')
-    
+
 
 def print_info_title(title):
     # t = title.ljust(15)

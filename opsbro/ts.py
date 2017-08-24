@@ -271,7 +271,7 @@ class TSBackend(object):
     def do_reaper_thread(self):
         while not stopper.interrupted:
             now = NOW.now
-
+            
             with self.data_lock:
                 all_names = self.data.keys()
             logger.debug("DOING reaper thread on %d elements" % len(all_names))
@@ -296,7 +296,7 @@ class TSBackend(object):
                             del self.data[name]
                         except:
                             pass
-
+            
             time.sleep(10)
     
     

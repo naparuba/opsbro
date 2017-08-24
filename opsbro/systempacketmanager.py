@@ -32,6 +32,7 @@ class DummyBackend(object):
     def install_package(self, package):
         raise NotImplemented()
 
+
 # TODO: get a way to know if a service is enabled, or not
 # RUN level: [root@centos-7 ~]# systemctl get-default
 # multi-user.target   ==> 3
@@ -56,7 +57,8 @@ class AptBackend(object):
         self.dpkg_cache_last_modification_epoch = 0.0
         # query cache, invalidate as soon as the apt cache is gone too
         self.has_cache = {}
-
+    
+    
     # Maybe the apt module is not present, if so, fix it
     def assert_apt(self):
         global apt
@@ -174,7 +176,6 @@ class SystemPacketMgr(object):
                 distname = inf['ID'].lower().strip()
                 distversion = inf['VERSION_ID'].lower().strip()
                 distid = inf['ID'].lower().strip()
-
         
         # Raw string is used by setup for display
         self.raw_distname = distname
@@ -210,8 +211,7 @@ class SystemPacketMgr(object):
         else:
             # ok not managed one
             self.managed_system = False
-            
-
+        
         if self.distro in ['redhat', 'centos', 'amazon-linux', 'oracle-linux']:
             if yum is not None:
                 self.backend = YumBackend()
@@ -241,6 +241,7 @@ class SystemPacketMgr(object):
     
     def get_raw_distro(self):
         return self.raw_distname
+    
     
     def install_package(self, package):
         self.backend.install_package(package)

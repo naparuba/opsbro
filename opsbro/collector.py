@@ -66,6 +66,7 @@ class Collector(object):
         
         self.config = {}
     
+    
     def get_parameters_from_pack(self):
         from configurationmanager import configmgr
         pack_parameters = configmgr.get_parameters_from_pack(self.pack_name)
@@ -87,7 +88,7 @@ class Collector(object):
                 else:
                     self.logger.error('The value %s for parameter %s is not valid, should be of type %s' % (value, prop, property.type))
                     continue
-                
+    
     
     # our run did fail, so we must exit in a clean way and keep a log
     # if we can
