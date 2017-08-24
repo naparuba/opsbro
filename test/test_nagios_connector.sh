@@ -18,6 +18,10 @@ sleep 20
 
 sleep 20
 
+/usr/local/nagios/bin/nagios -v /usr/local/nagios/etc/nagios.cfg
+
+ls -R /usr/local/nagios/etc/
+
 # Start opsbro and assert that the cfg file of the local element is created
 NB_CFG=$(ls -1 /usr/local/nagios/etc/objects/agent/*cfg | wc -l)
 
