@@ -37,12 +37,6 @@ class ConfigurationManager(object):
     
     
     def __init__(self):
-        # We will have parameters from:
-        # * modules
-        # * collectors
-        # * agent (main configuration file)
-        self.declared_parameters = {'module': {}, 'collector': {}}
-        
         # Keep a list of the knowns cfg objects type we will encounter
         # NOTE: will be extend once with the modules types
         self.known_types = set(['check', 'service', 'handler', 'generator', 'zone', 'installor'])

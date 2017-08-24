@@ -14,7 +14,7 @@ class Mysql(Collector):
         'user'    : StringParameter(default='root'),
         'password': StringParameter(default=''),
         'port'    : IntParameter(default=3306),
-        'socket'  : StringParameter(default=''),
+        'socket'  : StringParameter(default='/var/run/mysqld/mysqld.sock'),
     }
     
     

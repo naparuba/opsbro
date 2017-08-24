@@ -104,6 +104,32 @@ class Module(object):
             else:
                 self.set_configuration_error('The value %s for parameter %s is not valid, should be of type %s' % (value, prop, property.type))
                 continue
+    
+    
+    # Someone need to know what is my conf and if it's ok
+    def get_configuration_snapshot(self):
+        from configurationmanager import configmgr
+        pack_parameters = configmgr.get_module_parameters_from_pack(self.pack_name)
+        
+        r = {'state': self.__state, 'errors': self.__configuration_error, 'parameters': {}}
+        for (prop, property) in self.parameters.iteritems():
+            value = None
+            is_missing = False
+            is_valid = True
+            is_default = False
+            have_default = property.have_default()
+            default_value = None
+            if have_default:
+                default_value = property.default
+            if prop in pack_parameters:
+                value = pack_parameters[prop]
+                is_valid = property.is_valid(value)
+                is_default = (value == property.default)
+            else:
+                is_missing = True
+            entry = {'is_missing': is_missing, 'is_valid': is_valid, 'is_default': is_default, 'have_default': have_default, 'default_value': default_value, 'value': value}
+            r['parameters'][prop] = entry
+        return r
 
 
 class FunctionsExportModule(Module):

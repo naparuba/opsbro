@@ -42,7 +42,7 @@ class Collector(object):
     def __init__(self):
         
         # Global logger for this part
-        self.logger = LoggerFactory.create_logger('collector.%s' % self.__class__.__name__.lower())
+        self.logger = LoggerFactory.create_logger('collector.%s.%s' % (self.pack_name, self.__class__.__name__.lower()))
         
         self.pythonVersion = pythonVersion
         self.state = 'pending'
@@ -64,7 +64,23 @@ class Collector(object):
         from collectormanager import collectormgr
         self.put_result = collectormgr.put_result
         
-        self.config = {}
+        self.__collector_config = {}
+        self.__configuration_error = ''
+        self.__state = 'OK'  # by default all is well
+    
+    
+    def set_configuration_error(self, err):
+        self.__configuration_error = err
+        self.logger.error(err)
+        self.__state = 'ERROR'
+    
+    
+    def get_parameter(self, parameter_name):
+        return self.__collector_config[parameter_name]
+    
+    
+    def is_in_error(self):
+        return self.__state == 'ERROR'
     
     
     def get_parameters_from_pack(self):
@@ -74,20 +90,49 @@ class Collector(object):
             # If the need parameter it NOT
             if prop not in pack_parameters:
                 if property.have_default():
-                    self.config[prop] = property.default
+                    self.__collector_config[prop] = property.default
                     continue
                 else:
-                    self.logger.error('The parameter %s do not have default value and is missing' % prop)
+                    err = 'The parameter %s do not have default value and is missing' % prop
+                    self.set_configuration_error(err)
                     continue
             else:  # there is a value, but is it ok?
                 value = pack_parameters[prop]
                 self.logger.debug("Try to check if value %s is valid for %s" % (value, property))
                 if property.is_valid(value):
-                    self.config[prop] = value
+                    self.__collector_config[prop] = value
                     continue
                 else:
-                    self.logger.error('The value %s for parameter %s is not valid, should be of type %s' % (value, prop, property.type))
+                    err = 'The value %s for parameter %s is not valid, should be of type %s' % (value, prop, property.type)
+                    self.set_configuration_error(err)
                     continue
+    
+    
+    # Someone need to know what is my conf and if it's ok
+    def get_configuration_snapshot(self):
+        from configurationmanager import configmgr
+        pack_parameters = configmgr.get_parameters_from_pack(self.pack_name)
+        
+        r = {'state': self.__state, 'errors': self.__configuration_error, 'parameters': {}}
+        for (prop, property) in self.parameters.iteritems():
+            value = None
+            is_missing = False
+            is_valid = True
+            is_default = False
+            have_default = property.have_default()
+            default_value = None
+            if have_default:
+                default_value = property.default
+            
+            if prop in pack_parameters:
+                value = pack_parameters[prop]
+                is_valid = property.is_valid(value)
+                is_default = (value == property.default)
+            else:
+                is_missing = True
+            entry = {'is_missing': is_missing, 'is_valid': is_valid, 'is_default': is_default, 'have_default': have_default, 'default_value': default_value, 'value': value}
+            r['parameters'][prop] = entry
+        return r
     
     
     # our run did fail, so we must exit in a clean way and keep a log
