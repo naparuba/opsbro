@@ -17,8 +17,10 @@ class ModuleManager(object):
         self.modules_configuration_types = {}
         self.modules_directories_to_load = []
     
+    
     def add_module_directory_to_load(self, dirname, pack_name, pack_level):
         self.modules_directories_to_load.append((dirname, pack_name, pack_level))
+    
     
     # Raw import module source code. So they will be available in the Modules class as Class.
     def load_module_sources(self):
@@ -36,7 +38,7 @@ class ModuleManager(object):
             
             # We add this dir to sys.path so the module can load local files too
             sys.path.insert(0, dirname)
-
+            
             # NOTE: KEEP THE ___ as they are used to let the class INSIDE te module in which pack/level they are. If you have
             # another way to give the information to the inner class inside, I take it ^^
             short_mod_name = 'module___%s___%s___%s' % (pack_level, pack_name, dirname)
@@ -74,15 +76,12 @@ class ModuleManager(object):
                 sys.exit(2)
     
     
-    def set_daemon(self, daemon):
-        for mod in self.modules:
-            mod.set_daemon(daemon)
-    
-    
     def prepare(self):
-        print "MODULE PREPARE"
         # Now prepare them (open socket and co)
         for mod in self.modules:
+            # Skip modules in error
+            if mod.is_in_error():
+                continue
             # If the prepare fail, exit
             try:
                 mod.prepare()
@@ -94,6 +93,9 @@ class ModuleManager(object):
     def export_http(self):
         # Now let module export their http endpoints
         for mod in self.modules:
+            # Skip modules in error
+            if mod.is_in_error():
+                continue
             try:
                 mod.export_http()
             except Exception:
@@ -104,18 +106,21 @@ class ModuleManager(object):
     def launch(self):
         # Launch all modules like DNS
         for mod in self.modules:
+            # Don't try to launch modules in error
+            if mod.is_in_error():
+                continue
             try:
                 mod.launch()
             except Exception:
                 logger.error('Cannot launch module %s: %s' % (mod, str(traceback.print_exc())))
                 sys.exit(2)
-       
+    
     
     # Now we have our modules and our parameters, link both
     def get_parameters_from_packs(self):
         for mod in self.modules:
             mod.get_parameters_from_pack()
-            
+    
     
     def get_infos(self):
         r = {}

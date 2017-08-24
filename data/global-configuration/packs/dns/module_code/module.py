@@ -24,41 +24,35 @@ class DNSModule(Module):
     
     def __init__(self):
         Module.__init__(self)
-        self.dns = None
         self.enabled = False
         self.port = 0
         self.domain = ''
         self.sock = None
     
     
-    def import_configuration_object(self, o):
-        self.dns = o
-    
-    
     # Prepare to open the UDP port
     def prepare(self):
         logger.debug('DNS: prepare phase')
-        if self.dns:
-            self.enabled = self.dns.get('enabled', False)
-            self.port = self.dns.get('port', 53)
-            self.domain = self.dns.get('domain', '')
-            # assume that domain is like .foo.
-            if not self.domain.endswith('.'):
-                self.domain += '.'
-            if not self.domain.startswith('.'):
-                self.domain = '.' + self.domain
-            if self.enabled:
-                logger.info('DNS is enabled, opening UDP port')
-                # Prepare the socket in the prepare phase because it's mandatory
-                self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                logger.info('DNS launched server port %d' % self.port)
-                self.sock.bind(('', self.port))
-            else:
-                logger.info('DNS is not enabled, skipping it')
+        self.enabled = self.get_parameter('enabled')
+        self.port = self.get_parameter('port')
+        self.domain = self.get_parameter('domain')
+        # assume that domain is like .foo.
+        if not self.domain.endswith('.'):
+            self.domain += '.'
+        if not self.domain.startswith('.'):
+            self.domain = '.' + self.domain
+        if self.enabled:
+            logger.info('DNS is enabled, opening UDP port')
+            # Prepare the socket in the prepare phase because it's mandatory
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            logger.info('DNS launched server port %d' % self.port)
+            self.sock.bind(('', self.port))
+        else:
+            logger.info('DNS is not enabled, skipping it')
     
     
     def get_info(self):
-        return {'dns_configuration': self.dns, 'dns_info': None}
+        return {'dns_configuration': self.get_config(), 'dns_info': None}
     
     
     def launch(self):

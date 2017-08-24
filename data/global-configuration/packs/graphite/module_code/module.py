@@ -22,7 +22,7 @@ from opsbro.util import to_best_int_float
 from opsbro.gossip import gossiper
 from opsbro.httpclient import HTTP_EXCEPTIONS
 from opsbro.kv import kvmgr
-from opsbro.parameters import StringParameter, BoolParameter, IntParameter
+from opsbro.parameters import BoolParameter, IntParameter
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('graphite')
@@ -46,23 +46,17 @@ class GraphiteModule(ListenerModule):
         # Graphite reaping queue
         self.graphite_queue = []
         
-        self.graphite = None
-        
         self.enabled = False
         self.graphite_port = 0
         self.addr = '0.0.0.0'
     
     
-    def import_configuration_object(self, o):
-        self.graphite = o
-    
-    
     # Prepare to open the UDP port
     def prepare(self):
         logger.debug('Graphite: prepare phase')
-        if self.graphite:
-            self.enabled = self.graphite.get('enabled', False)
-            self.graphite_port = self.graphite.get('port', 2003)
+        
+        self.enabled = self.get_parameter('enabled')
+        self.graphite_port = self.get_parameter('port')
         
         if self.enabled:
             
@@ -88,7 +82,7 @@ class GraphiteModule(ListenerModule):
     
     
     def get_info(self):
-        return {'graphite_configuration': self.graphite, 'graphite_info': None}
+        return {'graphite_configuration': self.get_config(), 'graphite_info': None}
     
     
     def launch(self):

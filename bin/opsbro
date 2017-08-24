@@ -89,9 +89,7 @@ class CLICommander(object):
         
         # Now that packs are load and clean, we can load modules code from it
         configmgr.load_modules_from_packs()
-        
-        # Now that we did load modules, we are ready to load their configuration files (we know which types we need)
-        #configmgr.prepare_to_load_cfg_dirs()
+
 
         # We load configuration from packs, but only the one we are sure we must load
         configmgr.load_configuration_from_packs()

@@ -21,11 +21,11 @@ class WebExporter(WebSocket):
 
 
 class WebSocketBackend(object):
-    def __init__(self, clust):
-        self.clust = clust
-        port = clust.websocket.get('port', 6769)
-        self.server = SimpleWebSocketServer(clust.listening_addr, port, WebExporter)
-        self.websocket_configuration = clust.websocket
+    def __init__(self, mod_conf):
+        port = mod_conf.get('port', 6769)
+        listening_addr = mod_conf.get('address', '0.0.0.0')
+        self.server = SimpleWebSocketServer(listening_addr, port, WebExporter)
+        self.websocket_configuration = mod_conf
     
     
     def run(self):

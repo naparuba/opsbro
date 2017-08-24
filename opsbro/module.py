@@ -38,18 +38,16 @@ class Module(object):
         self.__module_config = {}
         # Global logger for this part
         self.logger = LoggerFactory.create_logger('module.%s' % self.__class__.pack_name)
+        self.__configuration_error = ''
+        self.__state = 'OK'  # by default all is well
     
     
     def get_info(self):
         return {}
     
     
-    def import_configuration_object(self, config):
-        pass
-    
-    
-    def set_daemon(self, daemon):
-        self.daemon = daemon
+    def get_config(self):
+        return self.__module_config
     
     
     def prepare(self):
@@ -64,6 +62,20 @@ class Module(object):
         return
     
     
+    def get_parameter(self, parameter_name):
+        return self.__module_config[parameter_name]
+    
+    
+    def set_configuration_error(self, err):
+        self.__configuration_error = err
+        self.logger.error(err)
+        self.__state = 'ERROR'
+    
+    
+    def is_in_error(self):
+        return self.__state == 'ERROR'
+    
+    
     def get_parameters_from_pack(self):
         from configurationmanager import configmgr
         pack_parameters = configmgr.get_module_parameters_from_pack(self.pack_name)
@@ -74,12 +86,12 @@ class Module(object):
         # The keys in the yml should match exactly the module definition one
         missing_parameters = module_parameters_keys - pack_parameters_keys
         if missing_parameters:
-            self.logger.error('The parameters: %s are missing in the module definition. You must defined them.' % (','.join(list(missing_parameters))))
+            self.set_configuration_error('The parameters: %s are missing in the module definition. You must defined them.' % (','.join(list(missing_parameters))))
             return
         
         too_much_parameters = pack_parameters_keys - module_parameters_keys
         if too_much_parameters:
-            self.logger.error('The parameters: %s are set in the module definition but they are unknown for this module. You must remove them or check if it is not a typo.' % (','.join(list(too_much_parameters))))
+            self.set_configuration_error('The parameters: %s are set in the module definition but they are unknown for this module. You must remove them or check if it is not a typo.' % (','.join(list(too_much_parameters))))
             return
         
         # We prepare the config
@@ -90,11 +102,8 @@ class Module(object):
                 self.__module_config[prop] = value
                 continue
             else:
-                self.logger.error('The value %s for parameter %s is not valid, should be of type %s' % (value, prop, property.type))
+                self.set_configuration_error('The value %s for parameter %s is not valid, should be of type %s' % (value, prop, property.type))
                 continue
-        
-        # And at the end, propose to the user code to load it
-        self.import_configuration_object(self.__module_config)
 
 
 class FunctionsExportModule(Module):

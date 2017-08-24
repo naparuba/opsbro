@@ -19,26 +19,14 @@ class WebSocketModule(ListenerModule):
     
     def __init__(self):
         ListenerModule.__init__(self)
-        self.websocket = None
-        self.listening_addr = ''
-    
-    
-    def import_configuration_object(self, o):
-        self.websocket = o
-    
-    
-    # Prepare to open the UDP port
-    def prepare(self):
-        # import listening addr from the daemon
-        self.listening_addr = self.daemon.listening_addr
+        self.websocket = {}
+        self.webso = None
     
     
     def get_info(self):
         r = {}
-        if self.websocket is None:
-            r['websocket_configuration'] = None
-        else:
-            r['websocket_configuration'] = self.websocket
+        r['websocket_configuration'] = self.websocket
+        
         if not self.webso:
             r['websocket_info'] = None
         else:
@@ -46,10 +34,13 @@ class WebSocketModule(ListenerModule):
         return r
     
     
+    def prepare(self):
+        self.websocket['enabled'] = self.get_parameter('enabled')
+        self.websocket['port'] = self.get_parameter('port')
+        self.websocket['address'] = self.get_parameter('address')
+    
+    
     def launch(self):
-        if self.websocket is None:
-            logger.log('No websocket object defined in the configuration, skipping it')
-            return
         if not self.websocket['enabled']:
             logger.log('Websocket object defined in the configuration is disabled, skipping websocket launch')
             return
@@ -58,7 +49,7 @@ class WebSocketModule(ListenerModule):
     
     
     def do_launch(self):
-        self.webso = WebSocketBackend(self)
+        self.webso = WebSocketBackend(self.websocket)
         # also load it in the websockermanager so other part
         # can easily forward messages
         websocketmgr.set(self.webso)

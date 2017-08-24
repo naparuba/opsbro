@@ -31,12 +31,12 @@ class StatsdModule(ListenerModule):
     implement = 'statsd'
     manage_configuration_objects = ['statsd']
     parameters = {
-        'enabled': BoolParameter(default=False),
-        'port': IntParameter(default=8125),
+        'enabled' : BoolParameter(default=False),
+        'port'    : IntParameter(default=8125),
         'interval': IntParameter(default=10),
-        'address': StringParameter(default='0.0.0.0'),
+        'address' : StringParameter(default='0.0.0.0'),
     }
-
+    
     
     def __init__(self):
         ListenerModule.__init__(self)
@@ -58,17 +58,14 @@ class StatsdModule(ListenerModule):
         self.counters = {}
     
     
-    def import_configuration_object(self, o):
-        self.statsd = o
-    
-    
     # Prepare to open the UDP port
     def prepare(self):
         logger.debug('Statsd: prepare phase')
-        if self.statsd:
-            self.enabled = self.statsd.get('enabled', False)
-            self.statsd_port = self.statsd.get('port', 8125)
-            self.stats_interval = self.statsd.get('interval', 10)
+        
+        self.enabled = self.get_parameter('enabled')
+        self.statsd_port = self.get_parameter('port')
+        self.stats_interval = self.get_parameter('interval')
+        self.addr = self.get_parameter('address')
         
         if self.enabled:
             self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
@@ -83,7 +80,7 @@ class StatsdModule(ListenerModule):
     
     
     def get_info(self):
-        return {'statsd_configuration': self.statsd, 'statsd_info': None}
+        return {'statsd_configuration': self.get_config(), 'statsd_info': None}
     
     
     def launch(self):

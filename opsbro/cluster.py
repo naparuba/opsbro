@@ -34,7 +34,6 @@ from opsbro.threadmgr import threader
 from opsbro.now import NOW
 from opsbro.httpclient import HTTP_EXCEPTIONS
 
-
 # now singleton objects
 from opsbro.gossip import gossiper
 from opsbro.configurationmanager import configmgr
@@ -77,7 +76,7 @@ class Cluster(object):
             self.cfg_dir = DEFAULT_CFG_DIR
         else:
             self.cfg_dir = os.path.abspath(self.cfg_dir)
-            
+        
         # Some default value that can be erased by the
         # main configuration file
         # By default no encryption
@@ -112,16 +111,6 @@ class Cluster(object):
         self.socket_path = os.path.join(self.data_dir, 'opsbro.sock')  # /var/lib/opsbro/opsbro.sock
         
         self.log_level = 'INFO'
-        
-        # Let the modules know about the daemon object
-        modulemanager.set_daemon(self)
-        
-        
-        # Now look at the cfg_dir part
-        #if cfg_dir:
-        #    self.cfg_dir = cfg_dir)
-        #else:
-        #    self.cfg_dir = DEFAULT_LOG_DIR
         
         # now we read them, set it in our object
         parameters_from_local_configuration = configmgr.get_parameters_for_cluster_from_configuration()
@@ -669,7 +658,7 @@ class Cluster(object):
             with open(local_file, 'w') as f:
                 f.write(json.dumps(j, sort_keys=True, indent=4))
             # Load the data we can
-            #self.open_cfg_file(local_file)
+            # self.open_cfg_file(local_file)
             # TODO: get this back?
             logger.debug('HTTP configuration update, now got %s' % j)
             return
@@ -762,8 +751,6 @@ class Cluster(object):
                     logger.debug('SYNC : error asking to %s: %s' % (repl['name'], str(exp)))
                     continue
             time.sleep(1)
-    
-    
     
     
     # Thread that will look for libexec/configuration change events,
