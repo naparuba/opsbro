@@ -72,8 +72,8 @@ class Collector(object):
         for (prop, property) in self.parameters.iteritems():
             # If the need parameter it NOT
             if prop not in pack_parameters:
-                if property.have_default:
-                    self.config[prop] = property.have_default
+                if property.have_default():
+                    self.config[prop] = property.default
                     continue
                 else:
                     self.logger.error('The parameter %s do not have default value and is missing' % prop)

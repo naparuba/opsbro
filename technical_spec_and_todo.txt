@@ -390,7 +390,7 @@ Besoins:
    * CLI affichage de cette surcharge de paramètre
       * node/daemon.groups   set/add/unset/remove  VALUE
         PART  PACKS  PACK_NAME   SUB_DIR   FILE  X.X.X => parameter level
-      * local.packs.shinken.module.enabled   set   true
+      * local.packs.shinken.module.enabled    set   true
       * local.packs.mysql.parameters.user     set   monitoring
 
 

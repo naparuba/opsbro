@@ -1,3 +1,9 @@
-websocket:
-    enabled : true
-    port :    6769
+
+# Is this module enabled
+enabled : true
+
+# Which port to listen for websocket connections
+port :    6769
+
+# Which interface to listen to. 0.0.0.0 means all interfaces
+address: 0.0.0.0

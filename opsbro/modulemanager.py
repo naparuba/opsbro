@@ -80,6 +80,7 @@ class ModuleManager(object):
     
     
     def prepare(self):
+        print "MODULE PREPARE"
         # Now prepare them (open socket and co)
         for mod in self.modules:
             # If the prepare fail, exit
@@ -91,9 +92,8 @@ class ModuleManager(object):
     
     
     def export_http(self):
-        # Now prepare them (open socket and co)
+        # Now let module export their http endpoints
         for mod in self.modules:
-            # If the prepare fail, exit
             try:
                 mod.export_http()
             except Exception:
@@ -109,17 +109,13 @@ class ModuleManager(object):
             except Exception:
                 logger.error('Cannot launch module %s: %s' % (mod, str(traceback.print_exc())))
                 sys.exit(2)
+       
     
-    
-    def get_managed_configuration_types(self):
-        return self.modules_configuration_types.keys()
-    
-    
-    def import_managed_configuration_object(self, object_type, obj, mod_time, fname, short_name):
-        logger.debug("IMPORT managed configuration object", object_type, obj, mod_time, fname, short_name)
-        mod = self.modules_configuration_types[object_type]
-        mod.import_configuration_object(object_type, obj, mod_time, fname, short_name)
-    
+    # Now we have our modules and our parameters, link both
+    def get_parameters_from_packs(self):
+        for mod in self.modules:
+            mod.get_parameters_from_pack()
+            
     
     def get_infos(self):
         r = {}

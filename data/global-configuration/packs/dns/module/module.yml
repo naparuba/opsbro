@@ -1,4 +1,7 @@
-dns:
-    enabled: true
-    port: 6766
-    domain: .opsbro
+
+# Is this module enabled
+enabled: true
+
+port: 6766
+
+domain: .opsbro

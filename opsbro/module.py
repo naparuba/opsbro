@@ -1,3 +1,6 @@
+from opsbro.log import LoggerFactory
+
+
 class Module(object):
     implement = ''
     manage_configuration_objects = []
@@ -32,14 +35,17 @@ class Module(object):
     
     def __init__(self):
         self.daemon = None
+        self.__module_config = {}
+        # Global logger for this part
+        self.logger = LoggerFactory.create_logger('module.%s' % self.__class__.pack_name)
     
     
     def get_info(self):
         return {}
     
     
-    def import_configuration_object(self, object_type, o, mod_time, fname, short_name):
-        raise NotImplementedError('Error: you must implement the import_configuration_object method for the module %s' % self)
+    def import_configuration_object(self, config):
+        pass
     
     
     def set_daemon(self, daemon):
@@ -56,6 +62,39 @@ class Module(object):
     
     def export_http(self):
         return
+    
+    
+    def get_parameters_from_pack(self):
+        from configurationmanager import configmgr
+        pack_parameters = configmgr.get_module_parameters_from_pack(self.pack_name)
+        
+        pack_parameters_keys = set(pack_parameters.keys())
+        module_parameters_keys = set(self.parameters.keys())
+        
+        # The keys in the yml should match exactly the module definition one
+        missing_parameters = module_parameters_keys - pack_parameters_keys
+        if missing_parameters:
+            self.logger.error('The parameters: %s are missing in the module definition. You must defined them.' % (','.join(list(missing_parameters))))
+            return
+        
+        too_much_parameters = pack_parameters_keys - module_parameters_keys
+        if too_much_parameters:
+            self.logger.error('The parameters: %s are set in the module definition but they are unknown for this module. You must remove them or check if it is not a typo.' % (','.join(list(too_much_parameters))))
+            return
+        
+        # We prepare the config
+        for (prop, property) in self.parameters.iteritems():
+            value = pack_parameters[prop]
+            self.logger.debug("Try to check if value %s is valid for %s" % (value, property))
+            if property.is_valid(value):
+                self.__module_config[prop] = value
+                continue
+            else:
+                self.logger.error('The value %s for parameter %s is not valid, should be of type %s' % (value, prop, property.type))
+                continue
+        
+        # And at the end, propose to the user code to load it
+        self.import_configuration_object(self.__module_config)
 
 
 class FunctionsExportModule(Module):

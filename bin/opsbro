@@ -17,6 +17,7 @@ from opsbro.log import cprint, logger, is_tty
 from opsbro import cli as cli_mod
 from opsbro.configurationmanager import configmgr
 from opsbro.collectormanager import collectormgr
+from opsbro.modulemanager import modulemanager
 from opsbro.packer import packer
 from opsbro.info import VERSION, BANNER, TXT_BANNER
 from opsbro.misc.bro_quotes import get_quote
@@ -90,13 +91,17 @@ class CLICommander(object):
         configmgr.load_modules_from_packs()
         
         # Now that we did load modules, we are ready to load their configuration files (we know which types we need)
-        configmgr.prepare_to_load_cfg_dirs()
+        #configmgr.prepare_to_load_cfg_dirs()
 
         # We load configuration from packs, but only the one we are sure we must load
         configmgr.load_configuration_from_packs()
         
         # We can now give configuration to the collectors
         collectormgr.get_parameters_from_packs()
+
+        # We can now give configuration to the modules
+        modulemanager.get_parameters_from_packs()
+
         
         # We will now try to load the keywords from the modules
         self.load_cli_mods(opts)

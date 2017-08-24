@@ -46,8 +46,6 @@ class ConfigurationManager(object):
         # Keep a list of the knowns cfg objects type we will encounter
         # NOTE: will be extend once with the modules types
         self.known_types = set(['check', 'service', 'handler', 'generator', 'zone', 'installor'])
-        # For just modules, currently void
-        self.modules_known_types = set()
         
         # The cluster starts with defualt parameters, but of course configuration can set them too
         # so we will load them (in the local.yaml file) and give it back to the cluster when it will need it
@@ -59,7 +57,11 @@ class ConfigurationManager(object):
         # Cluster parameters
         self.data_dir = os.path.abspath(os.path.join(DEFAULT_DATA_DIR))  # '/var/lib/opsbro/'
         
+        # For each pack, we keep the parameters.yml data
         self.pack_parameters = {}
+        
+        # For each pack, we keep the module/module.yml data, so we can give back such configuration to modules
+        self.modules_parameters = {}
     
     
     def get_monitoringmgr(self):
@@ -132,16 +134,6 @@ class ConfigurationManager(object):
         return r
     
     
-    # Before we load the cfg dirs, we need to be sure we know all the objects types we will
-    # encounter, and especially the ones need by the modules
-    def prepare_to_load_cfg_dirs(self):
-        modulemanager = self.get_modulemanager()
-        
-        # and extend with the ones from the modules
-        self.modules_known_types = set(modulemanager.get_managed_configuration_types())
-        self.known_types.update(self.modules_known_types)
-    
-    
     def load_cfg_dir(self, cfg_dir, load_focus, pack_name='', pack_level=''):
         if not os.path.exists(cfg_dir):
             logger.error('ERROR: the configuration directory %s is missing' % cfg_dir)
@@ -167,7 +159,7 @@ class ConfigurationManager(object):
                 elif load_focus == 'installor':
                     self.load_installor_object(obj, fp, pack_name=pack_name, pack_level=pack_level)
                 elif load_focus == 'module':
-                    self.load_module_object(obj, fp, pack_name=pack_name, pack_level=pack_level)
+                    self.load_module_object(obj, pack_name=pack_name, pack_level=pack_level)
                 elif load_focus == 'parameter':
                     self.load_pack_parameters(obj, pack_name=pack_name, pack_level=pack_level)
                 else:
@@ -315,20 +307,13 @@ class ConfigurationManager(object):
             installormgr.import_installor(installor, fname, gname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
     
     
-    def load_module_object(self, o, fp, pack_name, pack_level):
+    def load_module_object(self, o, pack_name, pack_level):
+        # If not already create entry, we can do it
+        if pack_name not in self.modules_parameters:
+            self.modules_parameters[pack_name] = {'pack_level': pack_level, 'properties': {}}
+        pack_entry = self.modules_parameters[pack_name]
         for (k, v) in o.iteritems():
-            # Manage modules object types
-            if k in self.modules_known_types:
-                # File modification time
-                mod_time = int(os.path.getmtime(fp))
-                # file name
-                fname = fp
-                # file short name
-                gname = os.path.splitext(fname)[0]
-                # Go import it
-                modulemanager = self.get_modulemanager()
-                modulemanager.import_managed_configuration_object(k, v, mod_time, fname, gname)
-                return
+            pack_entry['properties'][k] = v
     
     
     def load_pack_parameters(self, o, pack_name, pack_level):
@@ -342,6 +327,13 @@ class ConfigurationManager(object):
     
     def get_parameters_from_pack(self, pack_name):
         entry = self.pack_parameters.get(pack_name, None)
+        if entry is None:
+            return {}
+        return entry['properties']
+    
+    
+    def get_module_parameters_from_pack(self, pack_name):
+        entry = self.modules_parameters.get(pack_name, None)
         if entry is None:
             return {}
         return entry['properties']

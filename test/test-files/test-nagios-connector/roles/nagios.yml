@@ -1,6 +1,0 @@
-shinken:
-    enabled:  true
-    cfg_path: /usr/local/nagios/etc/objects/agent
-    external_command_file: /usr/local/nagios/var/rw/nagios.cmd
-    reload_command: /etc/init.d/nagios reload
-    monitoring_tool: nagios

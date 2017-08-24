@@ -58,7 +58,7 @@ class StatsdModule(ListenerModule):
         self.counters = {}
     
     
-    def import_configuration_object(self, object_type, o, mod_time, fname, short_name):
+    def import_configuration_object(self, o):
         self.statsd = o
     
     

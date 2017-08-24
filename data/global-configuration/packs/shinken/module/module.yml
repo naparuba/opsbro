@@ -1,3 +1,19 @@
-shinken:
-    enabled:  true
-    cfg_path: /etc/shinken/agent
+
+# Is this module enable or not
+enabled:  true
+
+## Shinken configuration
+
+# Where to set your cfg for you nodes
+cfg_path: /etc/shinken/agent
+
+# When a node is add/remove/changed, which command call to let the monitoring tool reload it's configuration
+reload_command: /etc/init.d/shinken reload
+
+# Let expose the monitoring tool you are using. Feature will vary:
+# * shinken: will let you set all you node tags as templates
+# * nagios: won't allow a unknown template, so only generic-host is set
+monitoring_tool: shinken
+
+# The unix socket command file to give check return to your monitoring tool
+external_command_file: /var/lib/shinken/shinken.cmd

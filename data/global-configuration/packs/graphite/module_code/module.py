@@ -34,9 +34,11 @@ class GraphiteModule(ListenerModule):
     parameters = {
         'enabled': BoolParameter(default=False),
         'port'   : IntParameter(default=2003),
+        'udp'    : BoolParameter(default=True),
+        'tcp'    : BoolParameter(default=True),
     }
-
-
+    
+    
     def __init__(self):
         ListenerModule.__init__(self)
         
@@ -51,7 +53,7 @@ class GraphiteModule(ListenerModule):
         self.addr = '0.0.0.0'
     
     
-    def import_configuration_object(self, object_type, o, mod_time, fname, short_name):
+    def import_configuration_object(self, o):
         self.graphite = o
     
     

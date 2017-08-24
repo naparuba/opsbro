@@ -550,7 +550,6 @@ class Cluster(object):
                 idle_threads = s['Threads Idle'](s)
                 q = s['Queue'](s)
                 r['httpservers'][k] = {'nb_threads': nb_threads, 'idle_threads': idle_threads, 'queue': q}
-            
             return r
         
         

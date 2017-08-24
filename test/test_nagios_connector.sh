@@ -8,15 +8,15 @@ echo "Starting to test Nagios export (dummy check)"
 /etc/init.d/opsbro start
 
 # It will restart nagios
-sleep 20
+sleep 10
 
 /etc/init.d/opsbro stop
 
-sleep 20
+sleep 5
 
 /etc/init.d/opsbro start
 
-sleep 20
+sleep 10
 
 /usr/local/nagios/bin/nagios -v /usr/local/nagios/etc/nagios.cfg
 

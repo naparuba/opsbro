@@ -1,5 +1,12 @@
-graphite:
-    enabled: true
-    port:    2003
-    udp:     true
-    tcp:     true
+
+# Is this module enabled
+enabled: true
+
+# Which port to listen for graphite data
+port:    2003
+
+# Listen in UDP
+udp:     true
+
+# Listen in TCP
+tcp:     true
