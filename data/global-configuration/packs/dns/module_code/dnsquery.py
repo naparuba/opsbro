@@ -2,11 +2,10 @@ import re
 import socket
 import copy
 
-from opsbro.log import LoggerFactory
 from opsbro.gossip import gossiper
 
-# Global logger for this part
-logger = LoggerFactory.create_logger('dns')
+# Global logger will be set by the module
+logger = None
 
 pattern = r"((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)([ (\[]?(\.|dot)[ )\]]?(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3})"
 ipv4pattern = re.compile(pattern)

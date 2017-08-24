@@ -1,6 +1,5 @@
 import socket
 
-from opsbro.log import LoggerFactory
 from opsbro.threadmgr import threader
 from opsbro.module import Module
 from opsbro.stop import stopper
@@ -8,13 +7,10 @@ from opsbro.parameters import StringParameter, BoolParameter, IntParameter
 
 from dnsquery import DNSQuery
 
-# Global logger for this part
-logger = LoggerFactory.create_logger('dns')
-
 
 class DNSModule(Module):
     implement = 'dns'
-    manage_configuration_objects = ['dns']
+    
     parameters = {
         'enabled': BoolParameter(default=False),
         'port'   : IntParameter(default=53),
@@ -28,11 +24,14 @@ class DNSModule(Module):
         self.port = 0
         self.domain = ''
         self.sock = None
+        
+        # Let my logger to the sub class
+        DNSQuery.logger = self.logger
     
     
     # Prepare to open the UDP port
     def prepare(self):
-        logger.debug('DNS: prepare phase')
+        self.logger.debug('DNS: prepare phase')
         self.enabled = self.get_parameter('enabled')
         self.port = self.get_parameter('port')
         self.domain = self.get_parameter('domain')
@@ -42,13 +41,13 @@ class DNSModule(Module):
         if not self.domain.startswith('.'):
             self.domain = '.' + self.domain
         if self.enabled:
-            logger.info('DNS is enabled, opening UDP port')
+            self.logger.info('DNS is enabled, opening UDP port')
             # Prepare the socket in the prepare phase because it's mandatory
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            logger.info('DNS launched server port %d' % self.port)
+            self.logger.info('DNS launched server port %d' % self.port)
             self.sock.bind(('', self.port))
         else:
-            logger.info('DNS is not enabled, skipping it')
+            self.logger.info('DNS is not enabled, skipping it')
     
     
     def get_info(self):
@@ -61,11 +60,11 @@ class DNSModule(Module):
     
     def do_launch(self):
         if not self.enabled:
-            logger.error('No dns object defined in the configuration or not enabled, skipping it')
+            self.logger.error('No dns object defined in the configuration or not enabled, skipping it')
             return
         
         while not stopper.interrupted:
-            logger.debug('DNS MODULE LOOP')
+            self.logger.debug('DNS MODULE LOOP')
             try:
                 data, addr = self.sock.recvfrom(1024)
             except socket.timeout:
@@ -74,7 +73,7 @@ class DNSModule(Module):
             try:
                 p = DNSQuery(data)
                 r = p.lookup_for_nodes(self.domain)
-                logger.debug("DNS lookup nodes response:", r)
+                self.logger.debug("DNS lookup nodes response:", r)
                 self.sock.sendto(p.response(r), addr)
             except Exception, exp:
-                logger.log("DNS problem", exp)
+                self.logger.log("DNS problem", exp)

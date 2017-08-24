@@ -1,4 +1,3 @@
-from opsbro.log import logger
 from opsbro.threadmgr import threader
 from opsbro.module import ListenerModule
 from opsbro.websocketmanager import websocketmgr
@@ -9,7 +8,7 @@ from wsocket import WebSocketBackend
 
 class WebSocketModule(ListenerModule):
     implement = 'websocket'
-    manage_configuration_objects = ['websocket']
+    
     parameters = {
         'enabled': BoolParameter(default=False),
         'port'   : IntParameter(default=6769),
@@ -42,10 +41,10 @@ class WebSocketModule(ListenerModule):
     
     def launch(self):
         if not self.websocket['enabled']:
-            logger.log('Websocket object defined in the configuration is disabled, skipping websocket launch')
+            self.logger.log('Websocket object defined in the configuration is disabled, skipping websocket launch')
             return
         
-        threader.create_and_launch(self.do_launch, name='Websocket port:%d listening' % self.websocket.get('port', 6769), essential=True, part='websocket')
+        threader.create_and_launch(self.do_launch, name='Websocket port:%d listening' % self.websocket.get('port'), essential=True, part='websocket')
     
     
     def do_launch(self):

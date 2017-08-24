@@ -11,7 +11,6 @@ import requests as rq
 # sysctl -w net.core.rmem_max=26214400
 
 
-from opsbro.log import LoggerFactory
 from opsbro.threadmgr import threader
 from opsbro.module import ListenerModule
 from opsbro.stop import stopper
@@ -24,13 +23,10 @@ from opsbro.httpclient import HTTP_EXCEPTIONS
 from opsbro.kv import kvmgr
 from opsbro.parameters import BoolParameter, IntParameter
 
-# Global logger for this part
-logger = LoggerFactory.create_logger('graphite')
-
 
 class GraphiteModule(ListenerModule):
     implement = 'graphite'
-    manage_configuration_objects = ['graphite']
+    
     parameters = {
         'enabled': BoolParameter(default=False),
         'port'   : IntParameter(default=2003),
@@ -42,18 +38,17 @@ class GraphiteModule(ListenerModule):
     def __init__(self):
         ListenerModule.__init__(self)
         
-        self.graphite_port = 2003
         # Graphite reaping queue
         self.graphite_queue = []
         
         self.enabled = False
-        self.graphite_port = 0
+        self.graphite_port = 2003
         self.addr = '0.0.0.0'
     
     
     # Prepare to open the UDP port
     def prepare(self):
-        logger.debug('Graphite: prepare phase')
+        self.logger.debug('Graphite: prepare phase')
         
         self.enabled = self.get_parameter('enabled')
         self.graphite_port = self.get_parameter('port')
@@ -66,19 +61,19 @@ class GraphiteModule(ListenerModule):
             self.graphite_tcp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 1048576)
             self.graphite_tcp_sock.bind((self.addr, self.graphite_port))
             self.graphite_tcp_sock.listen(5)
-            logger.info("TS Graphite TCP port open", self.graphite_port)
+            self.logger.info("TS Graphite TCP port open", self.graphite_port)
             
             ############ UDP
             self.graphite_udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
             self.graphite_udp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.graphite_udp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 1048576)
-            logger.log(self.graphite_udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF))
+            self.logger.log(self.graphite_udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF))
             self.graphite_udp_sock.bind((self.addr, self.graphite_port))
-            logger.info("TS Graphite UDP port open", self.graphite_port)
-            logger.debug("UDP RCVBUF", self.graphite_udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF))
+            self.logger.info("TS Graphite UDP port open", self.graphite_port)
+            self.logger.debug("UDP RCVBUF", self.graphite_udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF))
         
         else:
-            logger.info('Graphite is not enabled, skipping it')
+            self.logger.info('Graphite is not enabled, skipping it')
     
     
     def get_info(self):
@@ -98,7 +93,7 @@ class GraphiteModule(ListenerModule):
                 data, addr = self.graphite_udp_sock.recvfrom(65535)
             except socket.timeout:  # loop until we got some data
                 continue
-            logger.debug("UDP Graphite: received message:", len(data), addr)
+            self.logger.debug("UDP Graphite: received message:", len(data), addr)
             STATS.incr('ts.graphite.udp.receive', 1)
             self.graphite_queue.append(data)
     
@@ -112,7 +107,7 @@ class GraphiteModule(ListenerModule):
             except socket.timeout:  # loop until we got some connect
                 continue
             conn.settimeout(5.0)
-            logger.debug('TCP Graphite Connection address:', addr)
+            self.logger.debug('TCP Graphite Connection address:', addr)
             data = ''
             while True:
                 try:
@@ -143,7 +138,7 @@ class GraphiteModule(ListenerModule):
             graphite_queue = self.graphite_queue
             self.graphite_queue = []
             if len(graphite_queue) > 0:
-                logger.info("Graphite queue", len(graphite_queue))
+                self.logger.info("Graphite queue", len(graphite_queue))
             for data in graphite_queue:
                 T0 = time.time()
                 self.grok_graphite_data(data)
@@ -166,7 +161,7 @@ class GraphiteModule(ListenerModule):
             ts_node_manager = gossiper.find_tag_node('ts', hkey)
             # if it's me that manage this key, I add it in my backend
             if ts_node_manager == gossiper.uuid:
-                logger.debug("I am the TS node manager")
+                self.logger.debug("I am the TS node manager")
                 try:
                     timestamp = int(timestamp)
                 except ValueError:
@@ -177,7 +172,7 @@ class GraphiteModule(ListenerModule):
                 tsmgr.tsb.add_value(timestamp, mname, value)
             # not me? stack a forwarder
             else:
-                logger.debug("The node manager for this Ts is ", ts_node_manager)
+                self.logger.debug("The node manager for this Ts is ", ts_node_manager)
                 l = forwards.get(ts_node_manager, [])
                 l.append(line)
                 forwards[ts_node_manager] = l
@@ -326,19 +321,19 @@ class GraphiteModule(ListenerModule):
                 nname = ''
                 if n:
                     nname = n['name']
-                logger.debug('HTTP ts: target %s is managed by %s(%s)' % (target, nname, nuuid))
+                self.logger.debug('HTTP ts: target %s is managed by %s(%s)' % (target, nname, nuuid))
                 # that's me or the other is no more there?
                 if nuuid == self.uuid or n is None:
-                    logger.debug('HTTP ts: /render, my job to manage %s' % target)
+                    self.logger.debug('HTTP ts: /render, my job to manage %s' % target)
                     
                     # Maybe I am also the TS manager of these data? if so, get the TS backend data for this
                     min_e = hour_e = day_e = None
                     
-                    logger.debug('HTTP RENDER founded TS %s' % tsmgr.tsb.data)
+                    self.logger.debug('HTTP RENDER founded TS %s' % tsmgr.tsb.data)
                     min_e = tsmgr.tsb.data.get('min::%s' % target, None)
                     hour_e = tsmgr.tsb.data.get('hour::%s' % target, None)
                     day_e = tsmgr.tsb.data.get('day::%s' % target, None)
-                    logger.debug('HTTP TS RENDER, FOUNDED TS data %s %s %s' % (min_e, hour_e, day_e))
+                    self.logger.debug('HTTP TS RENDER, FOUNDED TS data %s %s %s' % (min_e, hour_e, day_e))
                     
                     # Get from the past, but start at the good hours offset
                     t = past
@@ -347,7 +342,7 @@ class GraphiteModule(ListenerModule):
                     while t < now:
                         # Maybe the time match a hour we got in memory, if so take there
                         if hour_e and hour_e['hour'] == t:
-                            logger.debug('HTTP TS RENDER match memory HOUR, take this value instead')
+                            self.logger.debug('HTTP TS RENDER match memory HOUR, take this value instead')
                             raw_values = hour_e['values'][:]  # copy instead of cherrypick, because it can move/append
                             for i in xrange(60):
                                 # Get teh value and the time
@@ -355,7 +350,7 @@ class GraphiteModule(ListenerModule):
                                 tt = t + 60 * i
                                 r.append((e, tt))
                                 if e:
-                                    logger.debug('GOT NOT NULL VALUE from RENDER MEMORY cache %s:%s' % (e, tt))
+                                    self.logger.debug('GOT NOT NULL VALUE from RENDER MEMORY cache %s:%s' % (e, tt))
                         else:  # no memory match, got look in the KS part
                             ukey = '%s::h%d' % (target, t)
                             raw64 = kvmgr.get_key(ukey)
@@ -380,18 +375,18 @@ class GraphiteModule(ListenerModule):
                 else:  # someone else job, rely the question
                     uri = 'http://%s:%s/render/?target=%s&from=%s' % (n['addr'], n['port'], target, _from)
                     try:
-                        logger.debug('TS: (get /render) relaying to %s: %s' % (n['name'], uri))
+                        self.logger.debug('TS: (get /render) relaying to %s: %s' % (n['name'], uri))
                         r = rq.get(uri)
-                        logger.debug('TS: get /render founded (%d)' % len(r.text))
+                        self.logger.debug('TS: get /render founded (%d)' % len(r.text))
                         v = json.loads(r.text)
-                        logger.debug("TS /render relay GOT RETURN", v, "AND RES", res)
+                        self.logger.debug("TS /render relay GOT RETURN", v, "AND RES", res)
                         res.extend(v)
-                        logger.debug("TS /render res is now", res)
+                        self.logger.debug("TS /render res is now", res)
                     except HTTP_EXCEPTIONS, exp:
-                        logger.debug('TS: /render relay error asking to %s: %s' % (n['name'], str(exp)))
+                        self.logger.debug('TS: /render relay error asking to %s: %s' % (n['name'], str(exp)))
                         continue
             
-            logger.debug('TS RENDER FINALLY RETURN', res)
+            self.logger.debug('TS RENDER FINALLY RETURN', res)
             return json.dumps(res)
         
         

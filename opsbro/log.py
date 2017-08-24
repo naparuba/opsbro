@@ -95,6 +95,7 @@ class Logger(object):
             os.mkdir(self.data_dir)
         self.log_file = open(os.path.join(self.data_dir, 'daemon.log'), 'a')
     
+    
     # If a level is set to force, a not foce setting is not taken
     # if a level we set by force before, and this call is not a force one, skip this one
     def setLevel(self, s, force=False):

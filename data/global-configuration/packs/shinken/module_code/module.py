@@ -1,6 +1,5 @@
 import os
 
-from opsbro.log import logger
 from opsbro.module import ConnectorModule
 from opsbro.parameters import StringParameter, BoolParameter
 from shinkenexporter import shinkenexporter
@@ -8,7 +7,7 @@ from shinkenexporter import shinkenexporter
 
 class ShinkenModule(ConnectorModule):
     implement = 'shinken'
-    manage_configuration_objects = ['shinken']
+    
     parameters = {
         'enabled'              : BoolParameter(default=False),
         'cfg_path'             : StringParameter(default='/etc/shinken/agent'),
@@ -23,8 +22,9 @@ class ShinkenModule(ConnectorModule):
     
     
     def prepare(self):
-        logger.info('SHINKEN: prepare phase')
+        self.logger.info('SHINKEN: prepare phase')
         
+        shinkenexporter.load_logger(self.logger)
         shinkenexporter.load_cfg_path(os.path.abspath(self.get_parameter('cfg_path')))
         shinkenexporter.load_reload_command(self.get_parameter('reload_command'))
         shinkenexporter.load_monitoring_tool(self.get_parameter('monitoring_tool'))

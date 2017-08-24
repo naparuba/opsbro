@@ -16,20 +16,16 @@ from opsbro.gossip import gossiper
 # sysctl -w net.core.rmem_max=26214400
 
 
-from opsbro.log import LoggerFactory
 from opsbro.threadmgr import threader
 from opsbro.module import ListenerModule
 from opsbro.stop import stopper
 from opsbro.ts import tsmgr
 from opsbro.parameters import StringParameter, BoolParameter, IntParameter
 
-# Global logger for this part
-logger = LoggerFactory.create_logger('statsd')
-
 
 class StatsdModule(ListenerModule):
     implement = 'statsd'
-    manage_configuration_objects = ['statsd']
+    
     parameters = {
         'enabled' : BoolParameter(default=False),
         'port'    : IntParameter(default=8125),
@@ -60,7 +56,7 @@ class StatsdModule(ListenerModule):
     
     # Prepare to open the UDP port
     def prepare(self):
-        logger.debug('Statsd: prepare phase')
+        self.logger.debug('Statsd: prepare phase')
         
         self.enabled = self.get_parameter('enabled')
         self.statsd_port = self.get_parameter('port')
@@ -71,12 +67,12 @@ class StatsdModule(ListenerModule):
             self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
             self.udp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 1048576)
             self.udp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            logger.debug(self.udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF))
+            self.logger.debug(self.udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF))
             self.udp_sock.bind((self.addr, self.statsd_port))
-            logger.info("TS UDP port open", self.statsd_port)
-            logger.debug("UDP RCVBUF", self.udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF))
+            self.logger.info("TS UDP port open", self.statsd_port)
+            self.logger.debug("UDP RCVBUF", self.udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF))
         else:
-            logger.info('STATSD is not enabled, skipping it')
+            self.logger.info('STATSD is not enabled, skipping it')
     
     
     def get_info(self):
@@ -101,7 +97,7 @@ class StatsdModule(ListenerModule):
     
     def compute_stats(self):
         now = int(time.time())
-        logger.debug("Computing stats")
+        self.logger.debug("Computing stats")
         
         # First gauges, we take the data and put a void dict instead so the other thread can work now
         with self.stats_lock:
@@ -198,11 +194,11 @@ class StatsdModule(ListenerModule):
             except socket.timeout:  # loop until we got something
                 continue
             
-            logger.debug("UDP: received message:", data, addr)
+            self.logger.debug("UDP: received message:", data, addr)
             # No data? bail out :)
             if len(data) == 0:
                 continue
-            logger.debug("GETDATA", data)
+            self.logger.debug("GETDATA", data)
             
             for line in data.splitlines():
                 # avoid invalid lines
@@ -252,7 +248,7 @@ class StatsdModule(ListenerModule):
                 ## Gauge: <metric name>:<value>|g
                 elif _type == 'g':
                     self.nb_data += 1
-                    logger.log('GAUGE', mname, value)
+                    self.logger.log('GAUGE', mname, value)
                     with self.stats_lock:
                         gentry = self.gauges.get(mname, None)
                         if gentry is None:
@@ -266,13 +262,13 @@ class StatsdModule(ListenerModule):
                         if _max is None or value > _max:
                             _max = value
                         self.gauges[mname] = (_sum, nb, _min, _max)
-                        logger.debug('NEW GAUGE', mname, self.gauges[mname])
+                        self.logger.debug('NEW GAUGE', mname, self.gauges[mname])
                 
                 ## Timers: <metric name>:<value>|ms
                 ## But also
                 ## Histograms: <metric name>:<value>|h
                 elif _type == 'ms' or _type == 'h':
-                    logger.debug('timers', mname, value)
+                    self.logger.debug('timers', mname, value)
                     # TODO: avoid the SET each time
                     timer = self.timers.get(mname, [])
                     timer.append(value)
@@ -280,14 +276,14 @@ class StatsdModule(ListenerModule):
                 ## Counters: <metric name>:<value>|c[|@<sample rate>]
                 elif _type == 'c':
                     self.nb_data += 1
-                    logger.info('COUNTER', mname, value, "rate", 1)
+                    self.logger.info('COUNTER', mname, value, "rate", 1)
                     with self.stats_lock:
                         cvalue, ccount = self.counters.get(mname, (0, 0))
                         self.counters[mname] = (cvalue + value, ccount + 1)
-                        logger.debug('NEW COUNTER', mname, self.counters[mname])
+                        self.logger.debug('NEW COUNTER', mname, self.counters[mname])
                         ## Meters: <metric name>:<value>|m
                 elif _type == 'm':
-                    logger.debug('METERs', mname, value)
+                    self.logger.debug('METERs', mname, value)
                 else:  # unknow type, maybe a c[|@<sample rate>]
                     if _type[0] == 'c':
                         self.nb_data += 1
@@ -303,9 +299,9 @@ class StatsdModule(ListenerModule):
                         # Invalid rate, 0.0 is invalid too ;)
                         if rate <= 0.0 or rate > 1.0:
                             continue
-                        logger.debug('COUNTER', mname, value, "rate", rate)
+                        self.logger.debug('COUNTER', mname, value, "rate", rate)
                         with self.stats_lock:
                             cvalue, ccount = self.counters.get(mname, (0, 0))
-                            logger.debug('INCR counter', (value / rate))
+                            self.logger.debug('INCR counter', (value / rate))
                             self.counters[mname] = (cvalue + (value / rate), ccount + 1 / rate)
-                            logger.debug('NEW COUNTER', mname, self.counters[mname])
+                            self.logger.debug('NEW COUNTER', mname, self.counters[mname])

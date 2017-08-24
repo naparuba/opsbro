@@ -7,14 +7,10 @@ from opsbro.log import logger
 from opsbro.module import Module
 from opsbro.configurationmanager import configmgr
 
-myself_dir = os.path.dirname(__file__)
-internal_modules_dir = os.path.join(myself_dir, 'modules')
-
 
 class ModuleManager(object):
     def __init__(self):
         self.modules = []
-        self.modules_configuration_types = {}
         self.modules_directories_to_load = []
     
     
@@ -64,10 +60,7 @@ class ModuleManager(object):
                 mod = cls()
                 logger.debug('[module] %s (from pack=%s and pack level=%s) did load' % (mod, mod.pack_name, mod.pack_level))
                 self.modules.append(mod)
-                for configuration_type in mod.manage_configuration_objects:
-                    if configuration_type not in self.modules_configuration_types:
-                        logger.debug('Adding %s to manage configuration objects type %s' % (mod, configuration_type))
-                        self.modules_configuration_types[configuration_type] = mod
+                
                 parameters = mod.parameters
                 if parameters:
                     configmgr.declare_parameters('module', mod.implement, parameters)
