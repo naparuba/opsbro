@@ -30,8 +30,8 @@ class Mongodb(Collector):
             return False
         
         try:
-            parsed = urlparse.urlparse(self.get_parameter('server'))
             mongoURI = ''
+            parsed = urlparse.urlparse(self.get_parameter('uri'))
             
             # Can't use attributes on Python 2.4
             if parsed[0] != 'mongodb':
