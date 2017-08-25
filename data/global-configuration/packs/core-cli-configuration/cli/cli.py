@@ -177,7 +177,7 @@ def do_configuration_print():
             else:
                 __print_element_breadcumb(pack_name, pack_level, 'module')
                 cprint(' : configuration=', end='')
-                __print_element_parameters(module, pack_name, pack_level, 'module')
+                __print_element_parameters(module, pack_name, pack_level, 'parameters')
             
             # collectors
             collectors = pack_entry['collectors']

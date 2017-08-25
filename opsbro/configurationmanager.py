@@ -53,9 +53,6 @@ class ConfigurationManager(object):
         
         # For each pack, we keep the parameters.yml data
         self.pack_parameters = {}
-        
-        # For each pack, we keep the module/module.yml data, so we can give back such configuration to modules
-        self.modules_parameters = {}
     
     
     def get_monitoringmgr(self):
@@ -123,8 +120,6 @@ class ConfigurationManager(object):
                     self.load_detector_object(obj, fp, pack_name=pack_name, pack_level=pack_level)
                 elif load_focus == 'installor':
                     self.load_installor_object(obj, fp, pack_name=pack_name, pack_level=pack_level)
-                elif load_focus == 'module':
-                    self.load_module_object(obj, pack_name=pack_name, pack_level=pack_level)
                 elif load_focus == 'parameter':
                     self.load_pack_parameters(obj, pack_name=pack_name, pack_level=pack_level)
                 else:
@@ -272,15 +267,6 @@ class ConfigurationManager(object):
             installormgr.import_installor(installor, fname, gname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
     
     
-    def load_module_object(self, o, pack_name, pack_level):
-        # If not already create entry, we can do it
-        if pack_name not in self.modules_parameters:
-            self.modules_parameters[pack_name] = {'pack_level': pack_level, 'properties': {}}
-        pack_entry = self.modules_parameters[pack_name]
-        for (k, v) in o.iteritems():
-            pack_entry['properties'][k] = v
-    
-    
     def load_pack_parameters(self, o, pack_name, pack_level):
         # If not already create entry, we can do it
         if pack_name not in self.pack_parameters:
@@ -297,19 +283,12 @@ class ConfigurationManager(object):
         return entry['properties']
     
     
-    def get_module_parameters_from_pack(self, pack_name):
-        entry = self.modules_parameters.get(pack_name, None)
-        if entry is None:
-            return {}
-        return entry['properties']
-    
-    
     def load_modules_from_packs(self):
         modulemanager = self.get_modulemanager()
         pack_directories = packer.give_pack_directories_to_load()
         
         for (pname, level, dir) in pack_directories:
-            module_directory = os.path.join(dir, 'module_code')
+            module_directory = os.path.join(dir, 'module')
             if os.path.exists(module_directory):
                 modulemanager.add_module_directory_to_load(module_directory, pname, level)
         
@@ -326,7 +305,6 @@ class ConfigurationManager(object):
             _types = [('monitoring', 'monitoring'), ('handlers', 'monitoring'),
                       ('generators', 'generator'), ('parameters', 'parameter'),
                       ('detectors', 'detector'), ('installors', 'installor'),
-                      ('module', 'module'),
                       ]
             for sub_dir, load_focus in _types:
                 full_sub_dir = os.path.join(dir, sub_dir)
