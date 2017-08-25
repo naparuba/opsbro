@@ -18,6 +18,12 @@ from opsbro.log import cprint, logger
 from opsbro.configurationmanager import configmgr
 
 
+def __print_pack_breadcumb(pack_name, pack_level, end='\n'):
+    cprint('%-6s' % pack_level, color='blue', end='')
+    cprint(' > ', end='')
+    cprint('%-15s' % pack_name, color='yellow', end=end)
+
+
 def __print_element_breadcumb(pack_name, pack_level, what):
     cprint('  * ', end='')
     cprint(pack_level, color='blue', end='')
@@ -65,7 +71,7 @@ def __print_element_parameters(elt, pack_name, pack_level, what):
                 cprint(' (is default)', color='grey')
 
 
-def do_configuration_print():
+def do_packs_show():
     logger.setLevel('ERROR')
     # We should already have load the configuration, so just dump it
     # now we read them, set it in our object
@@ -147,9 +153,10 @@ def do_configuration_print():
         for pack_name in pack_names:
             pack_entry = packs[level][pack_name]
             cprint('==== Pack ', end='')
-            cprint(level, color='blue', end='')
-            cprint(' > ', end='')
-            cprint('%s' % pack_name, color='yellow')
+            __print_pack_breadcumb(pack_name, level)
+            # cprint(level, color='blue', end='')
+            # cprint(' > ', end='')
+            # cprint('%s' % pack_name, color='yellow')
             
             #### Now loop over objects
             # * checks
@@ -235,12 +242,35 @@ def do_configuration_print():
             print ''
 
 
+def do_packs_list():
+    from opsbro.packer import packer
+    packs = packer.get_packs()
+    print packs
+    all_packs = {}
+    for (level, packs_in_level) in packs.iteritems():
+        for (pname, pack) in packs_in_level.iteritems():
+            all_packs[pname] = (level, pack)
+    print "Packs:"
+    pnames = all_packs.keys()
+    pnames.sort()
+    for pname in pnames:
+        level, pack = all_packs[pname]
+        __print_pack_breadcumb(pname, level, end='')
+        keywords = pack[0]['keywords']
+        cprint('[keywords: %s]' % (','.join(keywords)), color='magenta')
+
+
 exports = {
     
-    do_configuration_print: {
-        'keywords'   : ['config', 'show'],
+    do_packs_show: {
+        'keywords'   : ['packs', 'show'],
         'args'       : [],
-        'description': 'Print configuration'
+        'description': 'Print pack informations & contents'
     },
     
+    do_packs_list: {
+        'keywords'   : ['packs', 'list'],
+        'args'       : [],
+        'description': 'List packs'
+    },
 }

@@ -68,6 +68,10 @@ class PackManager(object):
         return to_load.values()
     
     
+    def get_packs(self):
+        return self.packs
+    
+    
     # main method to export http interface. Must be in a method that got
     # a self entry
     def export_http(self):
