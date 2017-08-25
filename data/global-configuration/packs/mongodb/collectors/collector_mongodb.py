@@ -42,7 +42,7 @@ class Mongodb(Collector):
                     else:
                         mongoURI = mongoURI + parsed[2]
             else:
-                mongoURI = self.get_parameter('server')
+                mongoURI = self.get_parameter('uri')
             
             logger.debug('-- mongoURI: %s', mongoURI)
             conn = Connection(mongoURI, slave_okay=True)
