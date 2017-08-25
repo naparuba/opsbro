@@ -37,15 +37,20 @@ def __print_element_parameters(elt, pack_name, pack_level, what):
         cprint('    - ', end='')
         cprint('%s.packs.%s.%s.' % (pack_level, pack_name, what), color='grey', end='')
         cprint('%-15s' % parameter_name, color='magenta', end='')
-        cprint(' => ', end='')
+        cprint(' => ', color='grey', end='')
         is_valid = parameter_snap['is_valid']
         is_missing = parameter_snap['is_missing']
         is_default = parameter_snap['is_default']
         have_default = parameter_snap['have_default']
         default_value = parameter_snap['default_value']
         value = parameter_snap['value']
+        # Maybe it is missing but a default value is setting it
         if is_missing:
-            cprint('[MISSING]', color='red')
+            # Maybe not...
+            if not have_default:
+                cprint('[MISSING and no default]', color='red')
+            else:
+                cprint('%-10s (missing in parameters, so using the default value)' % default_value, color='grey')
         else:
             if not is_valid:
                 cprint('[INVALID] ', color='red', end='')

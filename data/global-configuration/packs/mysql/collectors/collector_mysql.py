@@ -3,18 +3,19 @@ import re
 import sys
 
 from opsbro.collector import Collector
-from opsbro.parameters import StringParameter, IntParameter
+from opsbro.parameters import StringParameter, IntParameter, BoolParameter
 
 MySQLdb = None
 
 
 class Mysql(Collector):
     parameters = {
-        'server'  : StringParameter(default='127.0.0.1'),
-        'user'    : StringParameter(default='root'),
-        'password': StringParameter(default=''),
-        'port'    : IntParameter(default=3306),
-        'socket'  : StringParameter(default='/var/run/mysqld/mysqld.sock'),
+        'server'             : StringParameter(default='127.0.0.1'),
+        'user'               : StringParameter(default='root'),
+        'password'           : StringParameter(default=''),
+        'port'               : IntParameter(default=3306),
+        'socket'             : StringParameter(default='/var/run/mysqld/mysqld.sock'),
+        'replication_enabled': BoolParameter(default=False)
     }
     
     
@@ -39,11 +40,11 @@ class Mysql(Collector):
                     logger.warning('Unable to import MySQLdb (%s) or embedded pymsql (%s)' % (exp1, exp2))
                     return False
         
-        host = self.config.get('mysql_server', 'localhost')
-        user = self.config.get('mysql_user', 'root')
-        password = self.config.get('mysql_password', 'root')
-        port = self.config.get('mysql_port', 3306)
-        mysql_socket = self.config.get('mysql_socket', '')
+        host = self.get_parameter('server')
+        user = self.get_parameter('user')
+        password = self.get_parameter('password')
+        port = self.get_parameter('port')
+        mysql_socket = self.get_parameter('socket')
         
         # You can connect with socket or TCP
         if not mysql_socket:
@@ -213,7 +214,7 @@ class Mysql(Collector):
         logger.debug('getMySQLStatus: getting Threads_connected - done')
         logger.debug('getMySQLStatus: getting Seconds_Behind_Master')
         
-        if 'mysql_norepl' not in self.config:
+        if self.get_parameter('replication_enabled'):
             # Seconds_Behind_Master
             try:
                 cursor = db.cursor(MySQLdb.cursors.DictCursor)

@@ -4,23 +4,21 @@ import datetime
 
 from opsbro.collector import Collector
 from opsbro.util import to_best_int_float
-from opsbro.parameters import StringParameter
+from opsbro.parameters import StringParameter, BoolParameter
 
 
 class Mongodb(Collector):
     parameters = {
-        'uri': StringParameter(default='mongodb://localhost'),
-        'user'    : StringParameter(default=''),
-        'password': StringParameter(default=''),
+        'uri'         : StringParameter(default='mongodb://localhost'),
+        'user'        : StringParameter(default=''),
+        'password'    : StringParameter(default=''),
+        'replicat_set': BoolParameter(default=False),
     }
-
+    
+    
     def launch(self):
         logger = self.logger
         logger.debug('getMongoDBStatus: start')
-        
-        if 'MongoDBServer' not in self.config or self.config['MongoDBServer'] == '':
-            logger.debug('getMongoDBStatus: config not set')
-            # return False
         
         logger.debug('getMongoDBStatus: config set')
         
@@ -32,7 +30,7 @@ class Mongodb(Collector):
             return False
         
         try:
-            parsed = urlparse.urlparse(self.config.get('mongodb_server', 'mongodb://localhost'))
+            parsed = urlparse.urlparse(self.get_parameter('mongodb_server'))
             mongoURI = ''
             
             # Can't use attributes on Python 2.4
@@ -44,7 +42,7 @@ class Mongodb(Collector):
                     else:
                         mongoURI = mongoURI + parsed[2]
             else:
-                mongoURI = self.config.get('mongodb_server', 'mongodb://localhost')
+                mongoURI = self.get_parameter('mongodb_server')
             
             logger.debug('-- mongoURI: %s', mongoURI)
             conn = Connection(mongoURI, slave_okay=True)
@@ -219,7 +217,7 @@ class Mongodb(Collector):
                 pass
             
             # Replica set status
-            if 'MongoDBReplSet' in self.config and self.config['MongoDBReplSet'] == 'yes':
+            if self.get_parameter('replicat_set'):
                 logger.debug('getMongoDBStatus: get replset status too')
                 
                 # isMaster (to get state
@@ -276,24 +274,21 @@ class Mongodb(Collector):
                         status['replSet']['members'][str(member['_id'])]['error'] = member['errmsg']
             
             # db.stats()
-            if True:  # or ('MongoDBDBStats' in self.config and self.config['MongoDBDBStats'] == 'yes':
-                logger.debug('getMongoDBStatus: db.stats() too')
-                
-                status['dbStats'] = {}
-                
-                for database in conn.database_names():
-                    if database != 'config' and database != 'local' and database != 'admin' and database != 'test':
-                        logger.debug('getMongoDBStatus: executing db.stats() for %s', database)
-                        status['dbStats'][database] = conn[database].command('dbstats')
-                        status['dbStats'][database]['namespaces'] = conn[database]['system']['namespaces'].count()
-                        
-                        # Ensure all strings to prevent JSON parse errors. We typecast on the server
-                        for key in status['dbStats'][database].keys():
-                            status['dbStats'][database][key] = str(status['dbStats'][database][key])
-                            # try a float/int cast
-                            v = to_best_int_float(status['dbStats'][database][key])
-                            if v is not None:
-                                status['dbStats'][database][key] = v
+            logger.debug('getMongoDBStatus: db.stats() too')
+            status['dbStats'] = {}
+            for database in conn.database_names():
+                if database != 'config' and database != 'local' and database != 'admin' and database != 'test':
+                    logger.debug('getMongoDBStatus: executing db.stats() for %s', database)
+                    status['dbStats'][database] = conn[database].command('dbstats')
+                    status['dbStats'][database]['namespaces'] = conn[database]['system']['namespaces'].count()
+                    
+                    # Ensure all strings to prevent JSON parse errors. We typecast on the server
+                    for key in status['dbStats'][database].keys():
+                        status['dbStats'][database][key] = str(status['dbStats'][database][key])
+                        # try a float/int cast
+                        v = to_best_int_float(status['dbStats'][database][key])
+                        if v is not None:
+                            status['dbStats'][database][key] = v
         
         except Exception, ex:
             logger.error('Unable to get MongoDB status - Exception = %s', traceback.format_exc())
