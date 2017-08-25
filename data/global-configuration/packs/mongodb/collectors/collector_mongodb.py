@@ -30,7 +30,7 @@ class Mongodb(Collector):
             return False
         
         try:
-            parsed = urlparse.urlparse(self.get_parameter('mongodb_server'))
+            parsed = urlparse.urlparse(self.get_parameter('server'))
             mongoURI = ''
             
             # Can't use attributes on Python 2.4
@@ -42,7 +42,7 @@ class Mongodb(Collector):
                     else:
                         mongoURI = mongoURI + parsed[2]
             else:
-                mongoURI = self.get_parameter('mongodb_server')
+                mongoURI = self.get_parameter('server')
             
             logger.debug('-- mongoURI: %s', mongoURI)
             conn = Connection(mongoURI, slave_okay=True)
@@ -51,7 +51,6 @@ class Mongodb(Collector):
             logger.debug('Unable to connect to MongoDB server %s - Exception = %s' % (mongoURI, exp))
             return False
         except Exception, exp:
-            print type(exp)
             logger.error('Unable to connect to MongoDB server %s - Exception = %s', mongoURI, traceback.format_exc())
             return False
         

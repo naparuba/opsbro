@@ -163,9 +163,12 @@ def do_configuration_print():
             if len(checks) == 0:
                 no_such_objects.append('checks')
             else:
-                cprint('   * Checks (%d):' % len(checks), color='magenta')
+                __print_element_breadcumb(pack_name, pack_level, 'checks')
+                cprint(' (%d)' % len(checks), color='magenta')
                 for cname, check in checks.iteritems():
-                    cprint('    - %s (apply on:%s)' % (cname, check['apply_on']))
+                    cprint('    - [', end='')
+                    cprint('check.%-15s' % cname, color='cyan', end='')
+                    cprint('] apply_on=%s' % (check['apply_on']))
             
             # Module
             module = pack_entry['module']
@@ -187,7 +190,7 @@ def do_configuration_print():
                     collector = collector_d['inst']
                     cprint('    - [', end='')
                     cprint('collectors.%-15s' % colname, end='', color='cyan')
-                    cprint('] configuration=' , end='')
+                    cprint('] configuration=', end='')
                     __print_element_parameters(collector, pack_name, pack_level, 'parameters')
             
             # handlers
@@ -195,27 +198,36 @@ def do_configuration_print():
             if len(handlers) == 0:
                 no_such_objects.append('handlers')
             else:
-                cprint('   * Handlers (%d):' % len(handlers), color='magenta')
+                __print_element_breadcumb(pack_name, pack_level, 'handlers')
+                cprint(' (%d)' % len(handlers), color='magenta')
                 for hname, handler in handlers.iteritems():
-                    cprint('    - %s   type=%s  severities=%s' % (hname, handler['type'], ','.join(handler['severities'])))
+                    cprint('    - [', end='')
+                    cprint('handler.%-15s' % hname, color='cyan', end='')
+                    cprint('] type=%s  severities=%s' % (handler['type'], ','.join(handler['severities'])))
             
             # generators
             generators = pack_entry['generators']
             if len(generators) == 0:
                 no_such_objects.append('generators')
             else:
-                cprint('   * Generators (%d):' % len(generators), color='magenta')
+                __print_element_breadcumb(pack_name, pack_level, 'generators')
+                cprint(' (%d)' % len(generators), color='magenta')
                 for gname, generator in generators.iteritems():
-                    cprint('    - %s (apply_on %s)' % (gname, generator['apply_on']))
+                    cprint('    - [', end='')
+                    cprint('generator.%-15s' % gname, color='cyan', end='')
+                    cprint('] apply_on=%s' % (generator['apply_on']))
             
             # installors
             installors = pack_entry['installors']
             if len(installors) == 0:
                 no_such_objects.append('installors')
             else:
-                cprint('   * Installors (%d):' % len(installors), color='magenta')
+                __print_element_breadcumb(pack_name, pack_level, 'installors')
+                cprint(' (%d)' % len(installors), color='magenta')
                 for iname, installor in installors.iteritems():
-                    cprint('    - %s ' % iname)
+                    cprint('    - [', end='')
+                    cprint('installor.%-15s' % iname, color='cyan', end='')
+                    cprint(']')
             
             # Display what the pack do not manage (for info)
             if no_such_objects:
