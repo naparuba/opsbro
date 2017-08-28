@@ -385,8 +385,8 @@ Besoins:
   * DELETE d'un pack sur un level particulier
      * opsbro packs delete local.shinken
   * EDIT d'un paramètre comme par exemple:
-     * opsbro packs edit-parameters set local.nagios.parameters.socket_path  /var/local/blabla.cmd
-     * opsbro packs edit-parameters get local.nagios.parameters.enable
+     * opsbro packs edit parameters set local.nagios.parameters.socket_path  /var/local/blabla.cmd
+     * opsbro packs edit parameters get local.nagios.parameters.enable
        => True
 
 

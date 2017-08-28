@@ -321,11 +321,11 @@ def do_overload(pack_full_id, to_level='local'):
     cprint(' %s (%s)' % (pack_level, dest_dir), color='magenta')
 
 
-def do_edit_parameters_set(parameter_full_path, value):
+def do_parameters_set(parameter_full_path, value):
     print "SET %s to %s" % (parameter_full_path, value)
 
 
-def do_edit_parameters_get(parameter_full_path):
+def do_parameters_get(parameter_full_path):
     print "GET %s" % (parameter_full_path)
 
 
@@ -352,8 +352,8 @@ exports = {
         'description': 'Overload (copy in a more priotiry pack level) a pack. For example copy a pack from the global level to the local one.'
     },
     
-    do_edit_parameters_set: {
-        'keywords'   : ['packs', 'edit', 'parameters', 'set'],
+    do_parameters_set: {
+        'keywords'   : ['packs', 'parameters', 'set'],
         'args'       : [
             {'name': 'parameter_full_path', 'description': 'Parameter path of the form LEVEL.packs.PACK_NAME.KEY'},
             {'name': 'value', 'description': 'Value to set for this parameter'},
@@ -361,8 +361,8 @@ exports = {
         'description': 'List packs'
     },
     
-    do_edit_parameters_get: {
-        'keywords'   : ['packs', 'edit', 'parameters', 'get'],
+    do_parameters_get: {
+        'keywords'   : ['packs', 'parameters', 'get'],
         'args'       : [
             {'name': 'parameter_full_path', 'description': 'Parameter path of the form LEVEL.packs.PACK_NAME.KEY'},
         ],
