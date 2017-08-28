@@ -323,11 +323,9 @@ Besoins:
     * core os
 
 
-
 ### Nouvelle CLI
   * définir une CLI pour les KV (put/list/get/delete)
   * définir une cli pour les TS (put/dump)
-  * CLI: lister la conf locale (avec affichage de la valeur par défaut en couleur) et lister les valeurs nécessaires non disponibles pour les collectors
   * CLI: setter un paramètre de la conf locale
   * CLI: rajouter un option --explain sur l'appel eval afin de voir la transformation et idéalement d'où vient l'info
 
@@ -370,18 +368,26 @@ Besoins:
   * ipmi (hardware stuff)
   * smart (disques)
   * raid linux (md)
-  * LIST des packs et leurs composants
-     * opsbro pack list
-     * opsbro pack list global  (donc que global et en dessous)
-  * COPY d'un pack sur un autre level
-     * opsbro packs copy global.shinken  local.shinken
-  * REMOVE d'un pack sur un level particulier
-     * opsbro packs  local.shinken
-  * EDIT d'un paramètre comme par exemple:
-     * opsbro packs set local.nagios.roles.nagios.enabled   True
-     * opsbro packs get local.nagios.roles.nagios.enabled
-       => True
 
+
+### PACKS CLI
+  * LIST des packs et leurs composants (même ceux pas pris, mais on montre qui gagne suivant le level)
+     * opsbro pack list
+     * opsbro pack list --level=global  (donc que global et en dessous)
+  * SHOW des packs finalement pris en compte et affichage de ce qu'il y a dedans et le paramétrage associé (paramètre par défaut/manquant, etc etc)
+  * OVERLOAD : prends un pack d'un niveau supérieur vers un niveau inférieur.
+     * opsbro packs overload global.shinken --to-local (default)   ou --to-zone
+  * PROMOTE : prends un pack d'un niveau bas et l'augmente vers un niveau + haut
+     * opsbro packs promote local.shinken --to-zone (defult niveau +1) ou --to-global
+     * attention: nécessite la clé maitre de la zone/global pour être autoriser à faire ça
+  * COPY d'un pack sur un autre mais au même niveau
+     * opsbro packs copy local.shinken  monitoring-generic
+  * DELETE d'un pack sur un level particulier
+     * opsbro packs delete local.shinken
+  * EDIT d'un paramètre comme par exemple:
+     * opsbro packs edit parameters set local.nagios.roles.nagios.enabled   True
+     * opsbro packs edit parameters get local.nagios.roles.nagios.enabled
+       => True
 
 
 #### Variables/parameters
@@ -408,9 +414,11 @@ Besoins:
 ### UI
   * voir si http://qrohlf.com/trianglify/#gettingstarted ne ferais pas un fond interessant
 
+
 ### Slack
   * bot de commande
   * query dns
+
 
 ### Handlers:
   * faire que ce soit des modules spécifiques qui exportent leur capacité au handler, donc qu'ils implémentent une sous classe de Module (jouable avec celle déjà existante?)

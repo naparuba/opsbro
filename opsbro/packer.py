@@ -26,6 +26,7 @@ class PackManager(object):
         if pname is None:
             logger.error('Package data is missing name entry (%s)' % file_path)
             return None
+        
         self.packs[level][pname] = (package, os.path.dirname(file_path))
     
     

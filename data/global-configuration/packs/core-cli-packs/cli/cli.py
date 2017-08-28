@@ -245,18 +245,25 @@ def do_packs_show():
 def do_packs_list():
     from opsbro.packer import packer
     packs = packer.get_packs()
-    print packs
-    all_packs = {}
+    all_pack_names = set()
     for (level, packs_in_level) in packs.iteritems():
-        for (pname, pack) in packs_in_level.iteritems():
-            all_packs[pname] = (level, pack)
+        for (pname, _) in packs_in_level.iteritems():
+            all_pack_names.add(pname)
     print "Packs:"
-    pnames = all_packs.keys()
+    pnames = list(all_pack_names)
     pnames.sort()
     for pname in pnames:
-        level, pack = all_packs[pname]
-        __print_pack_breadcumb(pname, level, end='')
-        keywords = pack[0]['keywords']
+        present_before = False
+        keywords = []  # useless but make lint code check happy
+        cprint(' * ', end='')
+        for level in ('global', 'zone', 'local'):
+            if pname in packs[level]:
+                (pack, _) = packs[level][pname]
+                if present_before:
+                    cprint('(overloaded by =>) ', color='green', end='')
+                __print_pack_breadcumb(pname, level, end='')
+                keywords = pack['keywords']
+            present_before = True
         cprint('[keywords: %s]' % (','.join(keywords)), color='magenta')
 
 
