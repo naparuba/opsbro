@@ -372,9 +372,9 @@ Besoins:
 
 ### PACKS CLI
   * LIST des packs et leurs composants (même ceux pas pris, mais on montre qui gagne suivant le level)
-     * opsbro pack list
+     * ✔ opsbro pack list
      * opsbro pack list --level=global  (donc que global et en dessous)
-  * SHOW des packs finalement pris en compte et affichage de ce qu'il y a dedans et le paramétrage associé (paramètre par défaut/manquant, etc etc)
+  * ✔ SHOW des packs finalement pris en compte et affichage de ce qu'il y a dedans et le paramétrage associé (paramètre par défaut/manquant, etc etc)
   * OVERLOAD : prends un pack d'un niveau supérieur vers un niveau inférieur.
      * opsbro packs overload global.shinken --to-local (default)   ou --to-zone
   * PROMOTE : prends un pack d'un niveau bas et l'augmente vers un niveau + haut
@@ -388,18 +388,6 @@ Besoins:
      * opsbro packs edit parameters set local.nagios.roles.nagios.enabled   True
      * opsbro packs edit parameters get local.nagios.roles.nagios.enabled
        => True
-
-
-#### Variables/parameters
-   * un même espace de variables entre les différents niveaux
-   * si une variable est présente au niveau objet > local > zone > global
-   * CLI affichage de cette surcharge de paramètre
-      * node/daemon.groups   set/add/unset/remove  VALUE
-        PART  PACKS  PACK_NAME   SUB_DIR   FILE  X.X.X => parameter level
-      * local.packs.shinken.parameters.enabled    set   true
-      * local.packs.mysql.parameters.user     set   monitoring
-
-
 
 
 

@@ -780,7 +780,7 @@ exports = {
     do_detect_nodes   : {
         'keywords'   : ['agent', 'detect'],
         'args'       : [
-             {'name': '--auto-join', 'default': False, 'description': 'Try to join the first detected proxy node. If no proxy is founded, join the first one.', 'type': 'bool'},
+            {'name': '--auto-join', 'default': False, 'description': 'Try to join the first detected proxy node. If no proxy is founded, join the first one.', 'type': 'bool'},
         ],
         'description': 'Try to detect (broadcast) others nodes in the network'
     },

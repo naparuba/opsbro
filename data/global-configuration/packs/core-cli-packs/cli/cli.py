@@ -5,6 +5,9 @@
 # Copyright (C) 2014:
 #    Gabes Jean, naparuba@gmail.com
 
+import sys
+import shutil
+import os
 
 # try pygments for pretty printing if available
 try:
@@ -267,6 +270,57 @@ def do_packs_list():
         cprint('[keywords: %s]' % (','.join(keywords)), color='magenta')
 
 
+def __split_pack_full_id(pack_full_id):
+    if pack_full_id.count('.') != 1:
+        logger.error('The pack_full_id %s parameter is malformed. Should be LEVEL.pack_name' % pack_full_id)
+        sys.exit(2)
+    pack_level, pack_name = pack_full_id.split('.')
+    return pack_level, pack_name
+
+
+def __get_pack_directory(pack_level, pack_name):
+    from opsbro.configurationmanager import configmgr
+    data_dir = configmgr.data_dir
+    pdir = os.path.join(data_dir, '%s-configuration' % pack_level, 'packs', pack_name)
+    return pdir
+
+
+def do_overload(pack_full_id, to_level='local'):
+    from opsbro.packer import packer
+    packs = packer.get_packs()
+    pack_level, pack_name = __split_pack_full_id(pack_full_id)
+    
+    if pack_level not in ['global', 'zone']:
+        logger.error('The pack level %s is not valid for the pack overload.' % pack_level)
+        sys.exit(2)
+    packs_from_level = packs[pack_level]
+    if pack_name not in packs_from_level:
+        logger.error('The pack %s is not known in the pack level %s' % (pack_name, pack_level))
+        sys.exit(2)
+    package_data, dir_name = packs[pack_level][pack_name]
+    
+    if to_level not in ['zone', 'local']:
+        logger.error('The destination pack level %s is not valid for the pack overload.' % to_level)
+        sys.exit(2)
+    
+    dest_dir = __get_pack_directory(to_level, pack_name)
+    
+    if os.path.exists(dest_dir):
+        logger.error('The pack destination directory %s is already exiting. Please delete it first.' % dest_dir)
+        sys.exit(2)
+    # Ok now really copy it
+    try:
+        shutil.copytree(dir_name, dest_dir)
+    except Exception, exp:
+        logger.error('The pack overload did fail (from %s to %s) : %s' % (dir_name, dest_dir, exp))
+        sys.exit(2)
+    cprint('SUCCESS: ', color='green', end='')
+    cprint('Pack ', end='')
+    cprint('%s (%s)' % (pack_name, dir_name), color='green', end='')
+    cprint(' is now overload at level ', end='')
+    cprint(' %s (%s)' % (pack_level, dest_dir), color='magenta')
+
+
 exports = {
     
     do_packs_show: {
@@ -278,6 +332,15 @@ exports = {
     do_packs_list: {
         'keywords'   : ['packs', 'list'],
         'args'       : [],
+        'description': 'List packs'
+    },
+    
+    do_overload  : {
+        'keywords'   : ['packs', 'overload'],
+        'args'       : [
+            {'name': 'pack_full_id', 'description': 'Pack full id (of the form LEVEL.pack_name, for example global.dns) that will be overload to a lower level'},
+            {'name': '--to-level', 'default': 'local', 'description': 'Level to overload the pack, local or zone, default to local.'},
+        ],
         'description': 'List packs'
     },
 }

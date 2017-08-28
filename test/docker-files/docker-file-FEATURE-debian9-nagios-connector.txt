@@ -50,11 +50,12 @@ WORKDIR       /root/opsbro-oss
 
 RUN       python setup.py install
 
-# Copy the new checks
-ADD        test/test-files/test-nagios-connector   /var/lib/opsbro/global-configuration/packs/shinken/
-# Remove the old shinken configuration
-RUN         rm -f /var/lib/opsbro/global-configuration/packs/shinken/roles/shinken.yml
+# We will modify a pack, so overload it first
+RUN        opsbro  packs overload global.shinken
 
+# Then copy our files to the new pack overloaded (monitoring plugin + parameters)
+# TODO: remove the parameter copy, should be with CLI calls
+ADD        test/test-files/test-nagios-connector   /var/lib/opsbro/local-configuration/packs/shinken/
 
 
 ENTRYPOINT     test/test_nagios_connector.sh
