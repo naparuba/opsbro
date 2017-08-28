@@ -74,6 +74,21 @@ def __print_element_parameters(elt, pack_name, pack_level, what):
                 cprint(' (is default)', color='grey')
 
 
+def __split_pack_full_id(pack_full_id):
+    if pack_full_id.count('.') != 1:
+        logger.error('The pack_full_id %s parameter is malformed. Should be LEVEL.pack_name' % pack_full_id)
+        sys.exit(2)
+    pack_level, pack_name = pack_full_id.split('.')
+    return pack_level, pack_name
+
+
+def __get_pack_directory(pack_level, pack_name):
+    from opsbro.configurationmanager import configmgr
+    data_dir = configmgr.data_dir
+    pdir = os.path.join(data_dir, '%s-configuration' % pack_level, 'packs', pack_name)
+    return pdir
+
+
 def do_packs_show():
     logger.setLevel('ERROR')
     # We should already have load the configuration, so just dump it
@@ -270,21 +285,6 @@ def do_packs_list():
         cprint('[keywords: %s]' % (','.join(keywords)), color='magenta')
 
 
-def __split_pack_full_id(pack_full_id):
-    if pack_full_id.count('.') != 1:
-        logger.error('The pack_full_id %s parameter is malformed. Should be LEVEL.pack_name' % pack_full_id)
-        sys.exit(2)
-    pack_level, pack_name = pack_full_id.split('.')
-    return pack_level, pack_name
-
-
-def __get_pack_directory(pack_level, pack_name):
-    from opsbro.configurationmanager import configmgr
-    data_dir = configmgr.data_dir
-    pdir = os.path.join(data_dir, '%s-configuration' % pack_level, 'packs', pack_name)
-    return pdir
-
-
 def do_overload(pack_full_id, to_level='local'):
     from opsbro.packer import packer
     packs = packer.get_packs()
@@ -321,26 +321,52 @@ def do_overload(pack_full_id, to_level='local'):
     cprint(' %s (%s)' % (pack_level, dest_dir), color='magenta')
 
 
+def do_edit_parameters_set(parameter_full_path, value):
+    print "SET %s to %s" % (parameter_full_path, value)
+
+
+def do_edit_parameters_get(parameter_full_path):
+    print "GET %s" % (parameter_full_path)
+
+
 exports = {
     
-    do_packs_show: {
+    do_packs_show         : {
         'keywords'   : ['packs', 'show'],
         'args'       : [],
         'description': 'Print pack informations & contents'
     },
     
-    do_packs_list: {
+    do_packs_list         : {
         'keywords'   : ['packs', 'list'],
         'args'       : [],
         'description': 'List packs'
     },
     
-    do_overload  : {
+    do_overload           : {
         'keywords'   : ['packs', 'overload'],
         'args'       : [
             {'name': 'pack_full_id', 'description': 'Pack full id (of the form LEVEL.pack_name, for example global.dns) that will be overload to a lower level'},
             {'name': '--to-level', 'default': 'local', 'description': 'Level to overload the pack, local or zone, default to local.'},
         ],
+        'description': 'Overload (copy in a more priotiry pack level) a pack. For example copy a pack from the global level to the local one.'
+    },
+    
+    do_edit_parameters_set: {
+        'keywords'   : ['packs', 'edit', 'parameters', 'set'],
+        'args'       : [
+            {'name': 'parameter_full_path', 'description': 'Parameter path of the form LEVEL.packs.PACK_NAME.KEY'},
+            {'name': 'value', 'description': 'Value to set for this parameter'},
+        ],
         'description': 'List packs'
     },
+    
+    do_edit_parameters_get: {
+        'keywords'   : ['packs', 'edit', 'parameters', 'get'],
+        'args'       : [
+            {'name': 'parameter_full_path', 'description': 'Parameter path of the form LEVEL.packs.PACK_NAME.KEY'},
+        ],
+        'description': 'List packs'
+    },
+    
 }

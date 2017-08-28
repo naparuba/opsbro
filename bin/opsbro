@@ -10,6 +10,7 @@ import os
 import json
 import imp
 import signal
+import traceback
 
 sys.path.append('.')
 
@@ -24,6 +25,8 @@ from opsbro.misc.bro_quotes import get_quote
 from opsbro.defaultpaths import DEFAULT_LOG_DIR, DEFAULT_CFG_FILE, DEFAULT_CFG_DIR, DEFAULT_DATA_DIR
 
 logger.setLevel('WARNING')
+
+CLI = None
 
 
 # Handle some signals
@@ -41,6 +44,13 @@ CONFIG = {}
 class Dummy():
     def __init__(self):
         pass
+
+
+class CLIEntry(object):
+    def __init__(self, f, args, description):
+        self.f = f
+        self.args = args
+        self.description = description
 
 
 # Commander is the main class for managing the CLI session and behavior
@@ -89,20 +99,88 @@ class CLICommander(object):
         
         # Now that packs are load and clean, we can load modules code from it
         configmgr.load_modules_from_packs()
-
-
+        
         # We load configuration from packs, but only the one we are sure we must load
         configmgr.load_configuration_from_packs()
         
         # We can now give configuration to the collectors
         collectormgr.get_parameters_from_packs()
-
+        
         # We can now give configuration to the modules
         modulemanager.get_parameters_from_packs()
-
         
         # We will now try to load the keywords from the modules
         self.load_cli_mods(opts)
+    
+    
+    # We should look on the sys.argv if we find a valid keywords to
+    # call in one loop or not.
+    def hack_sys_argv(self):
+        command_values = []  # Know which function to CALL
+        internal_values = []  # with which parameters
+        
+        founded = False
+        ptr = self.keywords
+        
+        for arg in sys.argv[1:]:  # don't care about the program name
+            # Maybe it's a global one
+            if not founded and arg in self.keywords['global']:
+                founded = True
+                command_values.insert(0, 'global')
+            if not founded and arg in ptr:
+                founded = True
+            # Did we found it?
+            if founded:
+                command_values.append(arg)
+            else:  # ok still not, it's for the opsbro command so
+                internal_values.append(arg)
+        
+        logger.debug('Internal args %s' % internal_values)
+        logger.debug('Command values %s' % command_values)
+        
+        # Ok, really hack sys.argv to catch PURE cli argument (like -D or -h)
+        sys.argv = internal_values
+        return command_values
+    
+    
+    # For some keywords, find (and create if need) the keywords entry in the keywords tree
+    def insert_keywords_entry(self, keywords, e):
+        # Simulate 'global' entry before top level entries
+        if len(keywords) == 1:
+            keywords = ['global', keywords[0]]
+        ptr = self.keywords
+        for keyword in keywords[:-1]:
+            if keyword not in ptr:
+                ptr[keyword] = {}
+            ptr = ptr[keyword]
+        entry_last_key = keywords[-1]
+        ptr[entry_last_key] = e
+    
+    
+    def create_cli_entry(self, f, raw_entry):
+        m_keywords = raw_entry.get('keywords', [])
+        args = raw_entry.get('args', [])
+        description = raw_entry.get('description', '')
+        e = CLIEntry(f, args, description)
+        # Finally save it
+        self.insert_keywords_entry(m_keywords, e)
+    
+    
+    def get_cli_entry_from_args(self, command_args):
+        logger.debug("ARGS: %s" % command_args)
+        if len(command_args) == 1:
+            command_args = ['global', command_args[0]]
+        
+        ptr = self.keywords
+        for arg in command_args:
+            if arg not in ptr:
+                logger.error('UNKNOWN command argument %s' % arg)
+                return None
+            ptr = ptr[arg]
+            # Reached a leaf
+            if isinstance(ptr, CLIEntry):
+                return ptr
+        return ptr
     
     
     def load_cli_mods(self, opts):
@@ -129,64 +207,50 @@ class CLICommander(object):
             if os.path.exists(f):
                 dname = os.path.split(d)[1]
                 # Let's load it, but first att it to sys.path
-                sys.path.append(d)
+                sys.path.insert(0, d)
                 # Load this PATH/cli.py file
                 m = imp.load_source(dname, f)
+                # Unset this sys.path hook, we do not need anymore
+                sys.path = sys.path[1:]
+                
                 exports = getattr(m, 'exports', {})
-                for (f, v) in exports.iteritems():
-                    m_keywords = v.get('keywords', [])
-                    sub_cmd = 'global'
-                    k = m_keywords[0]
-                    if len(m_keywords) >= 2:
-                        k = m_keywords[1]
-                        sub_cmd = m_keywords[0]
-                    e = {'f'          : f,
-                         'args'       : v.get('args', []),
-                         'description': v.get('description', ''),
-                         'came_from'  : sub_cmd}
-                    if sub_cmd not in self.keywords:
-                        self.keywords[sub_cmd] = {}
-                    # Finally save it
-                    self.keywords[sub_cmd][k] = e
+                for (f, raw_entry) in exports.iteritems():
+                    self.create_cli_entry(f, raw_entry)
         
         logger.debug('We load the keywords %s' % self.keywords)
+    
+    
+    # We need to have the command arguments clean from the keywords, so we only have the argument of the function()
+    # that will be called
+    def clean_command_args(self, command_args):
+        ptr = self.keywords
+        idx = 0
+        for arg in command_args:
+            if arg not in ptr:
+                return command_args[idx:]
+            ptr = ptr[arg]
+            idx += 1
+            if isinstance(ptr, CLIEntry):
+                return command_args[idx:]
+        return []
     
     
     # Execute a function based on the command line
     def one_loop(self, command_args):
         logger.debug("ARGS: %s" % command_args)
-        sub_cmd = 'global'
         
-        # cannot be void because if so won't be in this loop
-        if len(command_args) == 1:
-            keyword = command_args.pop(0)
-        else:
-            sub_cmd = command_args.pop(0)
-            keyword = command_args.pop(0)
-        
-        d = self.keywords.get(sub_cmd, None)
-        if d is None:
-            logger.error('Unknown sub command %s' % sub_cmd)
+        entry = self.get_cli_entry_from_args(command_args)
+        if entry is None:
+            self.print_list(command_args[0])
             return
         
-        mod = d.get(keyword, None)
-        if mod is None:
-            if sub_cmd == 'global':
-                if keyword in self.keywords:
-                    # ok it's a known sub part, like collectors, just
-                    # print it's own sub commands
-                    self.print_list(keyword)
-                else:
-                    logger.error("UNKNOWN command %s" % keyword)
-            else:
-                logger.error("UNKNOWN command %s" % keyword)
-            return
+        command_args = self.clean_command_args(command_args)
         
         # Now prepare a new parser, for the command call this time
         command_parser = optparse.OptionParser('', version="%prog " + VERSION)
-        command_parser.prog = keyword
+        command_parser.prog = ''
         
-        for a in mod.get('args', []):
+        for a in entry.args:
             n = a.get('name', None)
             if n is None:
                 continue
@@ -212,9 +276,15 @@ class CLICommander(object):
                 command_parser.add_option(n, **d)
         
         cmd_opts, cmd_args = command_parser.parse_args(command_args)
-        f = mod.get('f', None)
+        f = entry.f
         logger.debug("CALLING " + str(f) + " WITH " + str(cmd_args) + " and " + str(cmd_opts))
-        f(*cmd_args, **cmd_opts.__dict__)
+        try:
+            f(*cmd_args, **cmd_opts.__dict__)
+        except TypeError, exp:
+            logger.error('Bad call: missing or too much arguments: %s' % exp)
+            sys.exit(2)
+        except Exception, exp:
+            logger.error('The call did fail: %s' % (str(traceback.print_exc())))
     
     
     def print_completion(self, args):
@@ -233,7 +303,6 @@ class CLICommander(object):
             if len(args) > len(to_analyse):
                 # print "SKIP impossible match", to_analyse
                 continue
-                # print "Possible", to_analyse
         
         res = []
         # so args <= to_analyse
@@ -281,6 +350,23 @@ class CLICommander(object):
         return
     
     
+    def __print_sub_level_tree(self, ptr, prefix):
+        cmds = ptr.keys()
+        cmds.sort()
+        for k in cmds:
+            entry = ptr[k]
+            # Tree not finish? go for it
+            if isinstance(entry, dict):
+                self.__print_sub_level_tree(entry, '%s %s' % (prefix, k))
+                continue
+            s = k.ljust(25)
+            if prefix:
+                s = '%s %s' % (prefix, k)
+                s = s.ljust(25)
+            cprint('\t%s ' % s, 'green', end='')
+            cprint(': %s' % entry.description)
+    
+    
     def print_list(self, keyword=''):
         print "Available commands:"
         sub_cmds = self.keywords.keys()
@@ -298,17 +384,22 @@ class CLICommander(object):
                 prefix = ''
             d = self.keywords[cmd]
             cprint('[%s]' % cmd, color='blue')
-            cmds = d.keys()
-            cmds.sort()
-            for k in cmds:
-                m = d[k]
-                s = k.ljust(25)
-                if prefix:
-                    s = '%s %s' % (prefix, k)
-                    s = s.ljust(25)
-                cprint('\t%s ' % s, 'green', end='')
-                cprint(': %s' % m['description'])
+            self.__print_sub_level_tree(d, prefix)
         return
+
+
+def print_full_help():
+    if is_tty():
+        cprint(BANNER)
+    else:
+        cprint(TXT_BANNER, color='blue')
+    # Also print some quotes
+    quote, from_film = get_quote()
+    cprint('  >> %s  (%s)\n' % (quote, from_film), color='grey')
+    
+    parser.print_help()
+    CLI.print_list()
+    sys.exit(0)
 
 
 if __name__ == '__main__':
@@ -327,11 +418,6 @@ if __name__ == '__main__':
     opts, args = parser.parse_args()
     # reenable the errors for later use
     parser.error = old_error
-    
-    do_help = opts.do_help
-    if do_help and len(args) == 0:
-        parser.print_help()
-        sys.exit(0)
     
     # Is args are setting them, they must be force to the rest of the execution without looking at the configuration
     if opts.do_verbose:
@@ -353,36 +439,6 @@ if __name__ == '__main__':
             sys.exit(2)
     
     CLI = CLICommander(CONFIG, opts)
-
-    
-    
-    # We should look on the sys.argv if we find a valid keywords to
-    # call in one loop or not.
-    def hack_sys_argv():
-        command_values = []
-        internal_values = []
-        
-        founded = False
-        globals_keys = CLI.keywords['global'].keys()
-        for arg in sys.argv:
-            
-            # Maybe it's a global one
-            if not founded and arg in globals_keys:
-                founded = True
-                command_values.insert(0, 'global')
-            if arg in CLI.keywords:
-                founded = True
-            # Did we found it?
-            if founded:
-                command_values.append(arg)
-            else:  # ok still not, it's for the shinekn command so
-                internal_values.append(arg)
-        
-        logger.debug('Internal args %s' % internal_values)
-        logger.debug('Command values %s' % command_values)
-        sys.argv = internal_values
-        return command_values
-    
     
     bash_completion_mode = ('EXEC_COMPLETION' in os.environ)
     
@@ -390,7 +446,7 @@ if __name__ == '__main__':
     # them for parsing them after
     # NOTE: in bash completion we do not want
     if not bash_completion_mode:
-        command_args = hack_sys_argv()
+        command_args = CLI.hack_sys_argv()
     
     # Global command parsing, with the error enabled this time
     opts, args = parser.parse_args()
@@ -405,13 +461,16 @@ if __name__ == '__main__':
         if len(command_args) == 0:
             logger.error("Cannot find any help for you")
             sys.exit(1)
-        sub_cmd = command_args.pop(0)
+        if len(command_args) == 1:
+            sub_cmd = 'global'
+        else:
+            sub_cmd = command_args.pop(0)
         a = command_args.pop(0)
         if a not in CLI.keywords[sub_cmd]:
             logger.error("Cannot find any help for %s" % a)
             sys.exit(1)
         cprint('%s' % a, 'green')
-        for arg in CLI.keywords[sub_cmd][a]['args']:
+        for arg in CLI.keywords[sub_cmd][a].args:
             n = arg.get('name', '')
             desc = arg.get('description', '')
             cprint('\t%s' % n.ljust(10), 'green', end='')
@@ -426,17 +485,7 @@ if __name__ == '__main__':
     
     # if just call opsbro, we must show the available commands
     if len(command_args) == 0:
-        if is_tty():
-            cprint(BANNER)
-        else:
-            cprint(TXT_BANNER, color='blue')
-        # Also print some quotes
-        quote, from_film = get_quote()
-        cprint('  >> %s  (%s)\n' % (quote, from_film), color='grey')
-        
-        parser.print_help()
-        CLI.print_list()
-        sys.exit(0)
+        print_full_help()
     
     # If it's just a one call shot, do it!
     CLI.one_loop(command_args)

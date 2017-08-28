@@ -375,7 +375,7 @@ Besoins:
      * ✔ opsbro pack list
      * opsbro pack list --level=global  (donc que global et en dessous)
   * ✔ SHOW des packs finalement pris en compte et affichage de ce qu'il y a dedans et le paramétrage associé (paramètre par défaut/manquant, etc etc)
-  * OVERLOAD : prends un pack d'un niveau supérieur vers un niveau inférieur.
+  * ✔ OVERLOAD : prends un pack d'un niveau supérieur vers un niveau inférieur.
      * opsbro packs overload global.shinken --to-local (default)   ou --to-zone
   * PROMOTE : prends un pack d'un niveau bas et l'augmente vers un niveau + haut
      * opsbro packs promote local.shinken --to-zone (defult niveau +1) ou --to-global
@@ -385,8 +385,8 @@ Besoins:
   * DELETE d'un pack sur un level particulier
      * opsbro packs delete local.shinken
   * EDIT d'un paramètre comme par exemple:
-     * opsbro packs edit parameters set local.nagios.roles.nagios.enabled   True
-     * opsbro packs edit parameters get local.nagios.roles.nagios.enabled
+     * opsbro packs edit-parameters set local.nagios.parameters.socket_path  /var/local/blabla.cmd
+     * opsbro packs edit-parameters get local.nagios.parameters.enable
        => True
 
 
