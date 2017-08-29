@@ -3,11 +3,6 @@ import socket
 import hashlib
 import threading
 
-try:
-    import numpy as np
-except ImportError:
-    np = None
-
 from opsbro.util import to_best_int_float
 
 from opsbro.gossip import gossiper
@@ -39,7 +34,7 @@ class StatsdModule(ListenerModule):
         self.statsd = None
         self.enabled = False
         self.port = 0
-        self.sock = None
+        self.udp_sock = None
         self.addr = '0.0.0.0'
         self.last_write = time.time()
         self.nb_data = 0
@@ -52,6 +47,9 @@ class StatsdModule(ListenerModule):
         self.timers = {}
         self.histograms = {}
         self.counters = {}
+        
+        # Numpy lib is heavy, don't load it unless we really need it
+        self.np = None
     
     
     # Prepare to open the UDP port
@@ -71,6 +69,8 @@ class StatsdModule(ListenerModule):
             self.udp_sock.bind((self.addr, self.statsd_port))
             self.logger.info("TS UDP port open", self.statsd_port)
             self.logger.debug("UDP RCVBUF", self.udp_sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF))
+            import numpy as np
+            self.np = np
         else:
             self.logger.info('STATSD is not enabled, skipping it')
     
@@ -138,14 +138,14 @@ class StatsdModule(ListenerModule):
             # We will need to compute the mean_99, count_99, upper_99, sum_99, sum_quares_99
             # but also std, upper, lower, count, count_ps, sum, sum_square, mean, median
             _t = time.time()
-            npvalues = np.array(timer)
+            npvalues = self.np.array(timer)
             # Mean
-            mean = np.mean(npvalues)
+            mean = self.np.mean(npvalues)
             key = 'stats.timers.' + mname + '.mean'
             tsmgr.tsb.add_value(now, key, mean)
             
             # Upper 99th, percentile
-            upper_99 = np.percentile(npvalues, 99)
+            upper_99 = self.np.percentile(npvalues, 99)
             key = 'stats.timers.' + mname + '.upper_99'
             tsmgr.tsb.add_value(now, key, upper_99)
             
@@ -155,7 +155,7 @@ class StatsdModule(ListenerModule):
             tsmgr.tsb.add_value(now, key, sum_99)
             
             # Standard deviation
-            std = np.std(npvalues)
+            std = self.np.std(npvalues)
             key = 'stats.timers.' + mname + '.std'
             tsmgr.tsb.add_value(now, key, std)
             
@@ -165,22 +165,22 @@ class StatsdModule(ListenerModule):
             tsmgr.tsb.add_value(now, key, count)
             
             # Sum of all
-            _sum = np.sum(npvalues)
+            _sum = self.np.sum(npvalues)
             key = 'stats.timers.' + mname + '.sum'
             tsmgr.tsb.add_value(now, key, _sum)
             
             # Median of all
-            median = np.percentile(npvalues, 50)
+            median = self.np.percentile(npvalues, 50)
             key = 'stats.timers.' + mname + '.median'
             tsmgr.tsb.add_value(now, key, median)
             
             # Upper of all
-            upper = np.max(npvalues)
+            upper = self.np.max(npvalues)
             key = 'stats.timers.' + mname + '.upper'
             tsmgr.tsb.add_value(now, key, upper)
             
             # Lower of all
-            lower = np.min(npvalues)
+            lower = self.np.min(npvalues)
             key = 'stats.timers.' + mname + '.lower'
             tsmgr.tsb.add_value(now, key, lower)
     
@@ -189,6 +189,16 @@ class StatsdModule(ListenerModule):
     # be as fast as possible
     def launch_statsd_udp_listener(self):
         while not stopper.interrupted:
+            if not self.enabled:
+                # Maybe we was enabled, and we are no more:
+                if self.udp_sock:
+                    self.udp_sock.close()
+                    self.udp_sock = None
+                time.sleep(1)
+                continue
+            # maybe we were enabled, then not, then again, if so re-prepare
+            if self.udp_sock is None:
+                self.prepare()
             try:
                 data, addr = self.udp_sock.recvfrom(65535)  # buffer size is 1024 bytes
             except socket.timeout:  # loop until we got something

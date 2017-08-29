@@ -44,6 +44,9 @@ class GraphiteModule(ListenerModule):
         self.enabled = False
         self.graphite_port = 2003
         self.addr = '0.0.0.0'
+
+        self.graphite_tcp_sock = None
+        self.graphite_udp_sock = None
     
     
     # Prepare to open the UDP port
@@ -89,6 +92,9 @@ class GraphiteModule(ListenerModule):
     # Thread for listening to the graphite port in UDP (2003)
     def launch_graphite_udp_listener(self):
         while not stopper.interrupted:
+            if not self.enabled:
+                time.sleep(1)
+                continue
             try:
                 data, addr = self.graphite_udp_sock.recvfrom(65535)
             except socket.timeout:  # loop until we got some data
@@ -102,6 +108,9 @@ class GraphiteModule(ListenerModule):
     # TODO: use a real daemon part for this, this is not ok for fast receive
     def launch_graphite_tcp_listener(self):
         while not stopper.interrupted:
+            if not self.enabled:
+                time.sleep(1)
+                continue
             try:
                 conn, addr = self.graphite_tcp_sock.accept()
             except socket.timeout:  # loop until we got some connect

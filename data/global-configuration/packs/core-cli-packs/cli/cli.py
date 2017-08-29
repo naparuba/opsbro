@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # -*- coding: utf-8 -*-
 
 # Copyright (C) 2014:
@@ -171,6 +169,7 @@ def do_packs_show():
     print '*' * 40
     
     for level in ('global', 'zone', 'local'):
+        # TODO: How to setup? ─ and make print OK?
         cprint('========== Level ', end='')
         cprint(level, color='blue')
         pack_names = packs[level].keys()
