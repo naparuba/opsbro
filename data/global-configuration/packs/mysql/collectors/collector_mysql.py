@@ -14,7 +14,7 @@ class Mysql(Collector):
         'user'               : StringParameter(default='root'),
         'password'           : StringParameter(default=''),
         'port'               : IntParameter(default=3306),
-        'socket'             : StringParameter(default='/var/run/mysqld/mysqld.sock'),
+        'socket'             : StringParameter(default='/var/lib/mysql/mysql.sock'),
         'replication_enabled': BoolParameter(default=False)
     }
     
@@ -213,7 +213,7 @@ class Mysql(Collector):
         logger.debug('getMySQLStatus: threadsConnected = %s', threadsConnected)
         logger.debug('getMySQLStatus: getting Threads_connected - done')
         logger.debug('getMySQLStatus: getting Seconds_Behind_Master')
-        
+        secondsBehindMaster = 0
         if self.get_parameter('replication_enabled'):
             # Seconds_Behind_Master
             try:

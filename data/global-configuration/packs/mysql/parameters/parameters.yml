@@ -13,5 +13,5 @@ password: ''
 port: 3306
 
 # Socket: if set, will try to use this unix socket if the TCP port is not available
-socket: /var/run/mysqld/mysqld.sock
+socket: /var/lib/mysql/mysql.sock
 
