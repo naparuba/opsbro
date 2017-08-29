@@ -1,10 +1,10 @@
 
 
-# uri: uri to connect to rabbimq administration API
+# ri to connect to rabbimq administration API
 uri: http://localhost:15672/api/overview
 
-# user: which user to connect
+# which user to connect to your rabbitmq endpoints
 user: root
 
-# password
+# password to use for your rabbitmq endpoints
 password: ''

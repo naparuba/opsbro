@@ -1,12 +1,14 @@
 
-# is this module enabled
-enabled :  true
+# is the statsd listener module enabled
+# default to false
+enabled :  false
 
 # Which port to listen for statsd packet (UDP)
 port :     8125
 
-# Which interval (in seconds) to use to agregate stats and save them
+# Which interval (in seconds) to use to aggregate stats and save them
 interval:  10
 
-# Which interface to listen to. 0.0.0.0 means all interfaces
+# Which interface to listen to.
+# note: 0.0.0.0 means all interfaces
 address: 0.0.0.0

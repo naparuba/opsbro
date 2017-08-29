@@ -1,12 +1,12 @@
 
 
-# server: the address of the mysql server
+# The address of the mysql server
 server: 127.0.0.1
 
-# user: which user to connect
+# Which user to connect to your mysql server
 user: root
 
-# password
+# password to use to connect to mysql
 password: ''
 
 # Which port to connect

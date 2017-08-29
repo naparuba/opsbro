@@ -45,7 +45,8 @@ class TestYaml(OpsBroTest):
         
         buf = yamler.dumps(data)
         print "BUF", buf
-
+    
+    
     def test_yaml_comments(self):
         s = '''# document comment line1
 # document comment line2
@@ -64,16 +65,13 @@ key4: 36
         '''
         data = yamler.loads(s)
         print "DATA", data, type(data), dir(data)
-        #print 'DICT', data.__dict__
-        #print data._yaml_format.__dict__
-        #print data._yaml_line_col.__dict__
         
         print "CA", data.ca
         print "CA internals", data.ca.__dict__
         print "CA dir", dir(data.ca)
         print "CA.attrib", data.ca.attrib
         print "CA comment", data.ca.comment
-
+        
         print "CA items", data.ca.items
         
         whole_data_comment = yamler.get_document_comment(data)
@@ -86,7 +84,6 @@ key4: 36
         key1_comment = yamler.get_key_comment(data, 'key1')
         print "KEY1 comment:", key1_comment
         key1_comment_OK = '# key1 comment'
-        #self.assert_(key1_comment == key1_comment_OK)
         self.assertEqual(key1_comment, key1_comment_OK)
         
         # Key2 is a bit harder: got both lines before and same line comments
@@ -102,6 +99,12 @@ key4: 36
         print "KEY4 comment:", key4_comment
         self.assertEqual(key4_comment, None)
         
-        
+        ending_comments = yamler.get_document_ending_comment(data)
+        print "Ending comments", ending_comments
+        ending_comments_OK = '''# ending comment
+# ending comment bis'''
+        self.assertEqual(ending_comments, ending_comments_OK)
+
+
 if __name__ == '__main__':
     unittest.main()

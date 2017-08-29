@@ -1,8 +1,8 @@
 
 
-# server: the address of the redis local server
+# The address of the redis local server
 server: localhost
 
-# port: to connect to redis
+# port to connect to redis
 port: 6379
 

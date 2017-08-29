@@ -5,9 +5,13 @@ enabled:  true
 ## Shinken configuration
 
 # Where to set your cfg for you nodes
+# * shinken : /etc/shinken/agent
+# * nagios: /usr/local/nagios/etc/objects
 cfg_path: /etc/shinken/agent
 
 # When a node is add/remove/changed, which command call to let the monitoring tool reload it's configuration
+# * shinken: /etc/init.d/shinken reload
+# * nagios: /etc/init.d/nagios restart
 reload_command: /etc/init.d/shinken reload
 
 # Let expose the monitoring tool you are using. Feature will vary:
@@ -16,4 +20,7 @@ reload_command: /etc/init.d/shinken reload
 monitoring_tool: shinken
 
 # The unix socket command file to give check return to your monitoring tool
+# * shinken: /var/lib/shinken/shinken.cmd
+# * nagios: /usr/local/nagios/var/rw/nagios.cmd
 external_command_file: /var/lib/shinken/shinken.cmd
+
