@@ -107,7 +107,13 @@ class ConfigurationManager(object):
                 if not name.endswith('.json') and not name.endswith('.yml'):
                     continue
                 logger.debug('Loader: looking for cfg file: %s' % fp)
-                obj = self.__get_object_from_cfg_file(fp)
+                # Note: for parameters, if we don't trick the document by adding a first dummy entry
+                # at the start of the document, the first key won't be able to have before line comments
+                # because they will be put in the document one
+                force_document_comment_to_first_entry = False
+                if load_focus == 'parameter':
+                    force_document_comment_to_first_entry = True
+                obj = self.__get_object_from_cfg_file(fp, force_document_comment_to_first_entry=force_document_comment_to_first_entry)
                 # agent: pid, log, graoups, etc
                 # and zones
                 if load_focus == 'agent':
@@ -126,7 +132,7 @@ class ConfigurationManager(object):
                     raise Exception('Unknown load focus type! %s' % load_focus)
     
     
-    def __get_object_from_cfg_file(self, fp):
+    def __get_object_from_cfg_file(self, fp, force_document_comment_to_first_entry=False):
         is_json = fp.endswith('.json')
         is_yaml = fp.endswith('.yml')
         with open(fp, 'r') as f:
@@ -135,7 +141,7 @@ class ConfigurationManager(object):
                 if is_json:
                     o = jsoner.loads(buf)
                 elif is_yaml:
-                    o = yamler.loads(buf)
+                    o = yamler.loads(buf, force_document_comment_to_first_entry=force_document_comment_to_first_entry)
                 else:
                     raise Exception('Unknown file extension: %s' % fp)
             except Exception, exp:

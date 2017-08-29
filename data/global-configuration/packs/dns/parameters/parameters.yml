@@ -1,7 +1,10 @@
 
-# Is this module enabled
-enabled: true
+# If set to true, the DNS listener will be enabled,
+# default to not enable it
+enabled: false
 
-port: 6766
 
-domain: .opsbro
+port: 6766  # UDP port to listen for DNS requests
+
+
+domain: .opsbro   # Which DNS domain to answer to

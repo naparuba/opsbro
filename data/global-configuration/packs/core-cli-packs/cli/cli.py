@@ -19,6 +19,7 @@ except ImportError:
 
 from opsbro.log import cprint, logger
 from opsbro.configurationmanager import configmgr
+from opsbro.yamlmgr import yamler
 
 
 def __print_pack_breadcumb(pack_name, pack_level, end='\n'):
@@ -80,6 +81,15 @@ def __split_pack_full_id(pack_full_id):
         sys.exit(2)
     pack_level, pack_name = pack_full_id.split('.')
     return pack_level, pack_name
+
+
+# local.nagios.enable => (local, nagios, enable)
+def __split_parameter_full_path(parameter_full_path):
+    if parameter_full_path.count('.') < 2:
+        logger.error('The parameter full path %s is malformed. Should be LEVEL.pack_name.parameter_name' % parameter_full_path)
+        sys.exit(2)
+    pack_level, pack_name, parameter_name = parameter_full_path.split('.', 2)
+    return pack_level, pack_name, parameter_name
 
 
 def __get_pack_directory(pack_level, pack_name):
@@ -326,24 +336,53 @@ def do_parameters_set(parameter_full_path, value):
 
 
 def do_parameters_get(parameter_full_path):
-    print "GET %s" % (parameter_full_path)
+    pack_level, pack_name, parameter_name = __split_parameter_full_path(parameter_full_path)
+    pack_root_dir = __get_pack_directory(pack_level, pack_name)
+    parameters_file_path = os.path.join(pack_root_dir, 'parameters', 'parameters.yml')
+    if not os.path.exists(parameters_file_path):
+        logger.error('The parameters file %s is missing' % parameters_file_path)
+        sys.exit(2)
+    with open(parameters_file_path, 'r') as f:
+        buf = f.read()
+    # As we have a parameter style, need to insert dummy key entry to have all comments, even the first key one
+    o = yamler.loads(buf, force_document_comment_to_first_entry=True)
+    
+    if parameter_name not in o:
+        logger.error('Cannot find the parameter %s in the parameters file %s' % (parameter_name, parameters_file_path))
+        sys.exit(2)
+    # yaml is putting us a ugly '...' as last line, remove it
+    lines = yamler.dumps(o[parameter_name]).splitlines()
+    if '...' in lines:
+        lines.remove('...')
+    
+    value_string = '\n'.join(lines)
+    cprint('%s' % parameter_full_path, color='magenta', end='')
+    cprint(' => ', end='')
+    cprint(value_string, color='green')
 
+    # Now if there are, get the comments
+    comment = yamler.get_key_comment(o, parameter_name)
+    if comment is not None:
+        lines = comment.splitlines()
+        for line in lines:
+            cprint('  | %s' % line, color='grey')
+    
 
 exports = {
     
-    do_packs_show         : {
+    do_packs_show    : {
         'keywords'   : ['packs', 'show'],
         'args'       : [],
         'description': 'Print pack informations & contents'
     },
     
-    do_packs_list         : {
+    do_packs_list    : {
         'keywords'   : ['packs', 'list'],
         'args'       : [],
         'description': 'List packs'
     },
     
-    do_overload           : {
+    do_overload      : {
         'keywords'   : ['packs', 'overload'],
         'args'       : [
             {'name': 'pack_full_id', 'description': 'Pack full id (of the form LEVEL.pack_name, for example global.dns) that will be overload to a lower level'},
