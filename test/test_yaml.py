@@ -104,6 +104,37 @@ key4: 36
         ending_comments_OK = '''# ending comment
 # ending comment bis'''
         self.assertEqual(ending_comments, ending_comments_OK)
+    
+    
+    def test_yaml_comments_creation(self):
+        s = '''
+
+
+key1: blabla  # key1 comment
+
+# Key2 line before comment, part2
+key2: 36.000  # key2 same line comment
+
+key3: 45
+
+
+#___ENDING___'''
+        data = yamler.loads(s)
+        print "DATA", data, type(data), dir(data)
+        
+        print "CA", data.ca
+        print "CA internals", data.ca.__dict__
+        print "CA dir", dir(data.ca)
+        print "CA.attrib", data.ca.attrib
+        print "CA comment", data.ca.comment, type(data.ca.comment)
+        print "END", data.ca.end, type(data.ca.end)
+        yamler.add_document_ending_comment(data, "# mon cul \n# c'est du poulet", '#___ENDING___')
+        
+        print dir(data.ca)
+        final = yamler.dumps(data)
+        print "FINAL"
+        print final
+
 
 
 if __name__ == '__main__':

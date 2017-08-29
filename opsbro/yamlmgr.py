@@ -16,7 +16,8 @@ logger = LoggerFactory.create_logger('yaml')
 # Class to wrap several things to json, like manage some utf8 things and such things
 class YamlMgr(object):
     def __init__(self):
-        pass
+        # To allow some libs to directly call ruaml.yaml. FOR DEBUGING PURPOSE ONLY!
+        self.yaml = yaml
     
     
     def dumps(self, o):
@@ -80,5 +81,21 @@ class YamlMgr(object):
         
         return ''.join(res).strip()
 
+
+    def add_document_ending_comment(self, doc, s, what_to_replace):
+        if not isinstance(doc, yaml.comments.CommentedMap):
+            logger.error('Cannot set comments to document because it is not a CommentedMap object (%s)' % type(doc))
+            return
+        ending_comments = doc.ca.end
+        # TODO: how to CREATE comments from scratch?
+        if ending_comments is None or ending_comments is []:
+            logger.error('Cannot create new ending comment entry')
+            return
+        for ct in ending_comments:
+            if what_to_replace in ct.value:
+                ct.value = s
+                return
+            
+        
 
 yamler = YamlMgr()

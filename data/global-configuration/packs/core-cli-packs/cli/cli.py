@@ -6,6 +6,8 @@
 import sys
 import shutil
 import os
+import time
+import datetime
 
 # try pygments for pretty printing if available
 try:
@@ -330,25 +332,76 @@ def do_overload(pack_full_id, to_level='local'):
     cprint(' %s (%s)' % (pack_level, dest_dir), color='magenta')
 
 
+ENDING_SUFFIX = '#___ENDING___'
+
+
 def do_parameters_set(parameter_full_path, value):
-    print "SET %s to %s" % (parameter_full_path, value)
+    pack_level, pack_name, parameter_name = __split_parameter_full_path(parameter_full_path)
+    pack_root_dir = __get_pack_directory(pack_level, pack_name)
+    parameters_file_path = os.path.join(pack_root_dir, 'parameters', 'parameters.yml')
+    o = __get_object_from_parameter_file(parameters_file_path, suffix=ENDING_SUFFIX)
+    
+    try:
+        python_value = yamler.loads('%s' % value)
+    except Exception, exp:
+        logger.error('Cannot load the value %s as a valid parameter: %s' % (value, exp))
+        sys.exit(2)
+    
+    # Get the value as from yaml
+    o[parameter_name] = python_value
+    
+    # Add a change history entry
+    # BEWARE: only a oneliner!
+    value_str = value.replace('\n', ' ')
+    change_line = '# CHANGE: (%s) SET %s => %s' % (datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), parameter_name, value_str)
+    yamler.add_document_ending_comment(o, change_line, ENDING_SUFFIX)
+    
+    result_str = yamler.dumps(o)
+    tmp_file = '%s.tmp' % parameters_file_path
+    f = open(tmp_file, 'w')
+    f.write(result_str)
+    f.close()
+    shutil.move(tmp_file, parameters_file_path)
+    
+    cprint('OK: ', color='green', end='')
+    cprint('%s (%s)' % (parameter_full_path, parameters_file_path), color='magenta', end='')
+    cprint(' SET ', end='')
+    cprint(parameter_name, color='magenta', end='')
+    cprint(' => ', end='')
+    cprint(value, color='green')
+
+
+def __get_object_from_parameter_file(parameters_file_path, suffix=''):
+    if not os.path.exists(parameters_file_path):
+        logger.error('The parameters file %s is missing' % parameters_file_path)
+        sys.exit(2)
+    with open(parameters_file_path, 'r') as f:
+        buf = f.read()
+    # If we want to suffix the file, be sure to only add a line
+    # and beware of the void file too
+    if suffix:
+        if buf:
+            if buf.endswith('\n'):
+                buf += '%s\n' % suffix
+            else:
+                buf += '\n%s\n' % suffix
+        else:  # void file
+            buf = '%s\n' % suffix
+    
+    # As we have a parameter style, need to insert dummy key entry to have all comments, even the first key one
+    o = yamler.loads(buf, force_document_comment_to_first_entry=True)
+    return o
 
 
 def do_parameters_get(parameter_full_path):
     pack_level, pack_name, parameter_name = __split_parameter_full_path(parameter_full_path)
     pack_root_dir = __get_pack_directory(pack_level, pack_name)
     parameters_file_path = os.path.join(pack_root_dir, 'parameters', 'parameters.yml')
-    if not os.path.exists(parameters_file_path):
-        logger.error('The parameters file %s is missing' % parameters_file_path)
-        sys.exit(2)
-    with open(parameters_file_path, 'r') as f:
-        buf = f.read()
-    # As we have a parameter style, need to insert dummy key entry to have all comments, even the first key one
-    o = yamler.loads(buf, force_document_comment_to_first_entry=True)
-    
+    o = __get_object_from_parameter_file(parameters_file_path)
     if parameter_name not in o:
         logger.error('Cannot find the parameter %s in the parameters file %s' % (parameter_name, parameters_file_path))
         sys.exit(2)
+    
     # yaml is putting us a ugly '...' as last line, remove it
     lines = yamler.dumps(o[parameter_name]).splitlines()
     if '...' in lines:
@@ -358,14 +411,14 @@ def do_parameters_get(parameter_full_path):
     cprint('%s' % parameter_full_path, color='magenta', end='')
     cprint(' => ', end='')
     cprint(value_string, color='green')
-
+    
     # Now if there are, get the comments
     comment = yamler.get_key_comment(o, parameter_name)
     if comment is not None:
         lines = comment.splitlines()
         for line in lines:
             cprint('  | %s' % line, color='grey')
-    
+
 
 exports = {
     
