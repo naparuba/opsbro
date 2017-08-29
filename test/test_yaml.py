@@ -100,7 +100,7 @@ key4: 36
         # Key4: nothing, should be None
         key4_comment = yamler.get_key_comment(data, 'key4')
         print "KEY4 comment:", key4_comment
-        self.assertIsNone(key4_comment)
+        self.assertEqual(key4_comment, None)
         
         
 if __name__ == '__main__':
