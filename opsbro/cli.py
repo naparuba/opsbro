@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import os
 import json
 import requests
@@ -90,6 +92,19 @@ def print_2tab(e, capitalize=True, col_size=20):
             cprint(value, color=color)
         else:
             cprint(v, color='green')
+
+# raw_title means do not format it, use it's own color
+def print_h1(title, raw_title=False):
+    p1 = 4
+    p2 = len(title) + 2  # +2 for spaces around the title
+    p3 = 80 - p1 - p2
+    
+    cprint(u'─' * p1, color='cyan', end='')
+    if not raw_title:
+        cprint(' %s ' % title, color='yellow', end='')
+    else:
+        cprint(' '+title+' ', end='')
+    cprint(u'─' * p3, color='cyan')
 
 
 class Dummy():

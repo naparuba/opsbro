@@ -24,7 +24,15 @@
 """ANSII Color formatting for output in terminal."""
 
 from __future__ import print_function
+
 import os
+import codecs
+import sys
+
+# We want to print as UTF8
+# TODO: what about windows? will it works even on old XP?
+stdout_utf8 = codecs.getwriter("utf-8")(sys.stdout)
+
 
 __ALL__ = ['colored', 'cprint']
 
@@ -117,8 +125,13 @@ def cprint(text, color=None, on_color=None, attrs=None, **kwargs):
 
     It accepts arguments of print function.
     """
-    
+    # Force writing to a utf8 encoded stdout
+    kwargs['file'] = stdout_utf8
     print((colored(text, color, on_color, attrs)), **kwargs)
+
+
+def sprintf(text, color=None, on_color=None, attrs=None, **kwargs):
+    return colored(text, color, on_color, attrs)
 
 
 if __name__ == '__main__':

@@ -17,7 +17,7 @@ def is_tty():
 if is_tty():
     # Try to load the terminal color. Won't work under python 2.4
     try:
-        from opsbro.misc.termcolor import cprint
+        from opsbro.misc.termcolor import cprint, sprintf
         
         # init the colorama hook, for windows print
         # will do nothing for other than windows
@@ -29,17 +29,34 @@ if is_tty():
                 print s,
             else:
                 print s
+        
+        
+        # Also overwrite sprintf
+        def sprintf(s, color='', end=''):
+            return s
+
+
 
 # Ok it's a daemon mode, if so, just print
 else:
+    # Protect sys.stdout write for utf8 outputs
+    import codecs
+    
+    stdout_utf8 = codecs.getwriter("utf-8")(sys.stdout)
+    
+    
     def cprint(s, color='', end='\n'):
         if not isinstance(s, basestring):
             s = str(s)
         if end == '':
-            sys.stdout.write(s)
+            stdout_utf8.write(s)
         else:
-            sys.stdout.write(s)
-            sys.stdout.write('\n')
+            stdout_utf8.write(s)
+            stdout_utf8.write('\n')
+    
+    
+    def sprintf(s, color='', end=''):
+        return s
 
 
 def get_unicode_string(s):

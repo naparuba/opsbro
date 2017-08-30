@@ -17,9 +17,10 @@ try:
 except ImportError:
     pygments = None
 
-from opsbro.log import cprint, logger
+from opsbro.log import cprint, sprintf, logger
 from opsbro.configurationmanager import configmgr
 from opsbro.yamlmgr import yamler
+from opsbro.cli import print_h1
 
 
 def __print_pack_breadcumb(pack_name, pack_level, end='\n'):
@@ -105,9 +106,7 @@ def do_packs_show():
     # now we read them, set it in our object
     parameters_from_local_configuration = configmgr.get_parameters_for_cluster_from_configuration()
     # print "Local parameters", parameters_from_local_configuration
-    print '*' * 40
-    print '         Local agent parameter'
-    print '*' * 40
+    print_h1('Local agent parameters')
     key_names = parameters_from_local_configuration.keys()
     key_names.sort()
     for k in key_names:
@@ -166,12 +165,9 @@ def do_packs_show():
         pack_level = installator.pack_level
         packs[pack_level][pack_name]['installors'][iname] = installator
     
-    print '*' * 40
-    print '         Packs'
-    print '*' * 40
+    print_h1('Packs')
     
     for level in ('global', 'zone', 'local'):
-        # TODO: How to setup? ─ and make print OK?
         cprint('========== Level ', end='')
         cprint(level, color='blue')
         pack_names = packs[level].keys()
@@ -183,9 +179,6 @@ def do_packs_show():
             pack_entry = packs[level][pack_name]
             cprint('==== Pack ', end='')
             __print_pack_breadcumb(pack_name, level)
-            # cprint(level, color='blue', end='')
-            # cprint(' > ', end='')
-            # cprint('%s' % pack_name, color='yellow')
             
             #### Now loop over objects
             # * checks
@@ -278,7 +271,9 @@ def do_packs_list():
     for (level, packs_in_level) in packs.iteritems():
         for (pname, _) in packs_in_level.iteritems():
             all_pack_names.add(pname)
-    print "Packs:"
+    
+    print_h1('Packs')
+    
     pnames = list(all_pack_names)
     pnames.sort()
     for pname in pnames:
@@ -325,7 +320,7 @@ def do_overload(pack_full_id, to_level='local'):
     except Exception, exp:
         logger.error('The pack overload did fail (from %s to %s) : %s' % (dir_name, dest_dir, exp))
         sys.exit(2)
-    cprint('SUCCESS: ', color='green', end='')
+    cprint(u'SUCCESS: ', color='green', end='')
     cprint('Pack ', end='')
     cprint('%s (%s)' % (pack_name, dir_name), color='green', end='')
     cprint(' is now overload at level ', end='')

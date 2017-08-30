@@ -72,3 +72,6 @@ banner_lines[_idx] = line
 line_after += (u'     %s\\\\\\~~~~~~~~~~~///%s' % (_REVERSE, _RESET))
 banner_lines[_idx + 1] = line_after
 BANNER = u'\n'.join(banner_lines)
+
+# TODO: test which caracters works on standard linux shell + putty + native windows
+TEST_CHARS = u' ✔. ✓. ☐. ☑. ✗. ✘. ☐. ᠠᢩ  ᠁ ᠉ ߺߺߺ ߹߹߹߹  ߸߸߸߸  ¯¯¯¯ ¦ ㉖ ✓ ✔ ✕ ✖ ✗ ✘ ➜ ➤ ✱ ❌ 𝖁 ᒧ ᒣ ᒪ ᒥ ¯ ⦁ ⌛ ⌦ ⏰ ☀ ☁ ★ ☕ ☢ ☹ ☺ ♚ ⚐ ⚒ ⚠ ⛅ ⛔ 😏 🍰 💬 📂 📤 📥 🔃 🔎 🔒 🔓 🔔'
