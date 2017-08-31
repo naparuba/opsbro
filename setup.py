@@ -134,7 +134,7 @@ from opsbro.info import VERSION, BANNER, TXT_BANNER
 from opsbro.log import cprint, is_tty, sprintf
 from opsbro.misc.bro_quotes import get_quote
 from opsbro.systempacketmanager import systepacketmgr
-from opsbro.cli import print_h1
+from opsbro.cli_display import print_h1
 from opsbro.characters import CHARACTERS
 
 ##################################       Only root as it's a global system tool.

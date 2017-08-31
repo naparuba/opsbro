@@ -38,7 +38,8 @@ from opsbro.log import cprint, logger, sprintf
 from opsbro.info import VERSION
 from opsbro.launcher import Launcher
 from opsbro.unixclient import get_json, get_local, request_errors
-from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, print_2tab, CONFIG, put_opsbro_json, print_h1, print_h2
+from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, print_2tab, CONFIG, put_opsbro_json
+from opsbro.cli_display import print_h1, print_h2
 from opsbro.defaultpaths import DEFAULT_LOCK_PATH
 from opsbro.configurationmanager import configmgr
 

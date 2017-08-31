@@ -20,7 +20,7 @@ except ImportError:
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, sprintf, logger
 from opsbro.yamlmgr import yamler
-from opsbro.cli import print_h1, print_h2, print_h3, print_element_breadcumb
+from opsbro.cli_display import print_h1, print_h2, print_h3, print_element_breadcumb
 
 
 def __print_pack_breadcumb(pack_name, pack_level, end='\n'):
@@ -30,8 +30,6 @@ def __print_pack_breadcumb(pack_name, pack_level, end='\n'):
 def __get_pack_breadcumb(pack_name, pack_level, end=''):
     res = sprintf('%-6s' % pack_level, color='blue', end='') + sprintf(' > ', end='') + sprintf('%-15s' % pack_name, color='yellow', end='') + end
     return res
-
-
 
 
 def __print_element_parameters(elt, pack_name, pack_level, what):
