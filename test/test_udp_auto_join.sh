@@ -12,7 +12,7 @@ fi
 
 # Case 1: try to detect and join other node
 
-opsbro agent detect --auto-join
+opsbro agent gossip detect --auto-join
 
 NB_MEMBERS=$(opsbro members | grep 'docker-container' | wc -l)
 
@@ -21,7 +21,7 @@ if [ $NB_MEMBERS != 2 ]; then
    exit 2
 fi
 
-opsbro members
+opsbro gossip members
 
 echo "Auto join is OK"
 
