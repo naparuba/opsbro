@@ -7,7 +7,7 @@ echo "Starting to test Nagios test (dummy check)"
 
 
 
-opsbro state | grep 'This is the exit text' | grep 'WARNING'
+opsbro monitoring state | grep 'This is the exit text' | grep WARNING
 
 if [ $? != 0 ]; then
     echo "ERROR: the nagios checks is not available."
