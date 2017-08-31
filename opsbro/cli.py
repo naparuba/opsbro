@@ -91,7 +91,9 @@ def print_2tab(e, capitalize=True, col_size=20):
 # raw_title means do not format it, use it's own color
 def print_h1(title, raw_title=False, only_first_part=False, line_color='cyan', title_color='yellow'):
     p1 = 12
-    p2 = len(title) + 2  # +2 for spaces around the title
+    # 4.5= enter add 4, exit 5, so if enter == exit, will be 4.5 in avg.
+    l_title = len(title) - int(title.count(u'\x1b[') * 4.5)
+    p2 = l_title + 2  # +2 for spaces around the title
     p3 = 80 - p1 - p2
     
     cprint(u'─' * p1, color=line_color, end='')

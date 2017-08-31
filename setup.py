@@ -131,14 +131,21 @@ except ImportError, exp:  # great, first install so
 my_dir = os.path.dirname(os.path.abspath(__file__))
 opsbro = imp.load_module('opsbro', *imp.find_module('opsbro', [os.path.realpath(my_dir)]))
 from opsbro.info import VERSION, BANNER, TXT_BANNER
-from opsbro.log import cprint, is_tty
+from opsbro.log import cprint, is_tty, sprintf
 from opsbro.misc.bro_quotes import get_quote
 from opsbro.systempacketmanager import systepacketmgr
+from opsbro.cli import print_h1
+from opsbro.characters import CHARACTERS
 
 ##################################       Only root as it's a global system tool.
 if os.getuid() != 0:
     cprint('Setup must be launched as root.', color='red')
     sys.exit(2)
+
+what = 'Installing' if not is_update else 'Updating'
+title = sprintf('%s' % what, color='magenta', end='') + sprintf(' OpsBro to version ', end='') + sprintf('%s' % VERSION, color='magenta', end='')
+
+print_h1(title, raw_title=False)
 
 ##################################       Start to print to the user
 # If we have a real tty, we can print the delicious banner with lot of BRO
@@ -150,13 +157,6 @@ else:  # ok you are poor, just got some ascii art then
 # Also print a Bro quote
 quote, from_film = get_quote()
 cprint('  >> %s  (%s)\n' % (quote, from_film), color='grey')
-
-what = 'Installing' if not is_update else 'Updating'
-cprint('%s   ' % ('*' * 20), end='')
-cprint('%s' % what, color='magenta', end='')
-cprint(' OpsBro to version ', end='')
-cprint('%s' % VERSION, color='magenta', end='')
-cprint('     %s' % ('*' * 20))
 
 if is_update:
     cprint('  Previous OpsBro lib detected on this system (location:', end='')
@@ -294,7 +294,11 @@ for o in not_allowed_options:
         sys.argv.remove(o)
 
 ##################################       Look at prerequites, and if possible fix them with the system package instead of pip
-cprint('# %-30s  (1/3)' % 'Checking prerequites')
+
+print ''
+title = 'Checking prerequites ' + sprintf('(1/3)', color='magenta', end='')
+print_h1(title, raw_title=True)
+
 # Maybe we won't be able to setup with packages, if so, switch to pip :(
 install_from_pip = []
 
@@ -358,7 +362,7 @@ for (m, d) in mod_need.iteritems():
     sys.stdout.flush()
     try:
         __import__(m)
-        cprint('OK', color='green')
+        cprint('%s' % CHARACTERS.check, color='green')
     except ImportError:
         cprint('MISSING', color='cyan')
         packages = d['packages']
@@ -377,7 +381,7 @@ for (m, d) in mod_need.iteritems():
                 sys.stdout.flush()
                 try:
                     systepacketmgr.install_package(pkg)
-                    cprint('OK', color='green')
+                    cprint('%s' % CHARACTERS.check, color='green')
                     # __import__(m)
                 except Exception, exp:
                     cprint('(missing in package)', color='cyan')
@@ -407,14 +411,17 @@ except ImportError:
         cprint(' * You are missing the python setuptools, trying to install it with system package:', end='')
         sys.stdout.flush()
         systepacketmgr.install_package('python-setuptools')
-        cprint(' OK', color='green')
+        cprint(' %s' % CHARACTERS.check, color='green')
         from setuptools import setup, find_packages
     except Exception, exp:
         cprint('Cannot install python setuptools from system (%s). Cannot continue the installation. Please install python-setuptools before re-run the installation.' % exp, color='red')
         sys.exit(2)
 
+print '\n'
 ##################################       Go install the python part
-cprint('\n\n# %-30s  (2/3)' % 'Python lib installation')
+title = 'Python lib installation ' + sprintf('(2/3)', color='magenta', end='')
+print_h1(title, raw_title=True)
+
 cprint('  * %s opsbro python lib in progress...' % what, end='')
 sys.stdout.flush()
 
@@ -478,7 +485,7 @@ setup_phase_is_done = True
 # printing it to everyone unless we want to fear them
 unhook_stdout()
 
-cprint('  OK', color='green')
+cprint('  %s' % CHARACTERS.check, color='green')
 
 installation_log = '/tmp/opsbro.setup.log'
 with open(installation_log, 'w') as f:
@@ -486,13 +493,15 @@ with open(installation_log, 'w') as f:
     cprint('   - Raw python setup lib (and possible depndencies) installation log at: %s' % installation_log, color='grey')
 
 ##################################       Install init.d script, the daemon script and bash completion part
-cprint('\n\n# %-30s  (3/3)' % 'Utility script installation')
+print '\n'
+title = 'Utility script installation ' + sprintf('(3/3)', color='magenta', end='')
+print_h1(title, raw_title=True)
 
 
 # Just a print with aligned test over : OK
 def __print_sub_install_part(p):
     cprint('   - %-30s :' % p, color='grey', end='')
-    cprint(' OK', color='green')
+    cprint(' %s' % CHARACTERS.check, color='green')
 
 
 # if root is set, it's for package, so NO chown
@@ -518,8 +527,8 @@ if not root and is_install:
         __print_sub_install_part('bash completion rule')
 
 print ''
-cprint('*' * 40)
+print_h1('End', raw_title=True)
 cprint('OpsBro ', end='')
 cprint(what, color='magenta', end='')
 cprint(' : ', end='')
-cprint(' OK', color='green')
+cprint(' %s' % CHARACTERS.check, color='green')
