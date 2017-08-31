@@ -1,4 +1,6 @@
 check:
+    apply_on: linux
+
     ok_output: "'OK: memory is at %s%%' % {{collector.memory.phys_used}}"
     
     critical_if: "{{collector.memory.phys_used}} > {{configuration.threshold.memory.critical}}"

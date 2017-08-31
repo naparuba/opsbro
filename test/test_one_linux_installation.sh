@@ -22,7 +22,7 @@ sleep 60
 
 
 echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Info           ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
-opsbro info
+opsbro agent info
 if [ $? != 0 ]; then
    echo "ERROR: information get failed!"
    cat /var/log/opsbro/daemon.log
@@ -31,10 +31,10 @@ fi
 
 echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Address?       ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
 # Is there an address used by the daemon?
-ADDR=$(opsbro info | grep Addr | awk '{print $2}')
+ADDR=$(opsbro agent info | grep Addr | awk '{print $2}')
 if [ "$ADDR" == "None" ]; then
    echo "The opsbro daemon do not have a valid address."
-   echo `opsbro info`
+   echo `opsbro agent info`
    exit 2
 fi
 

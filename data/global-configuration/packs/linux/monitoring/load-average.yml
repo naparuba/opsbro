@@ -1,6 +1,8 @@
 check:
     apply_on: linux
-    
+
+    display_name: System Load Average
+
     ok_output: "'OK: load is at %s' % {{collector.loadaverage.load1}}"
     
     critical_if: "{{collector.loadaverage.load1}} > {{collector.system.cpucount}}"

@@ -34,7 +34,7 @@ if os.name == 'nt':
     from opsbro.windows_service.windows_service import Service
 
 from opsbro.characters import CHARACTERS
-from opsbro.log import cprint, logger
+from opsbro.log import cprint, logger, sprintf
 from opsbro.info import VERSION
 from opsbro.launcher import Launcher
 from opsbro.unixclient import get_json, get_local, request_errors
@@ -78,9 +78,8 @@ def do_members(detail=False):
         if not z:
             z_display = NO_ZONE_DEFAULT
         z_display = z_display.ljust(15)
-        cprint('Zone: [', end='')
-        cprint(z_display, color='magenta', end='')
-        cprint(']')
+        title_s = '%s: %s' % (sprintf('Zone', color='yellow', end=''), sprintf(z_display, color='blue', end=''))
+        print_h1(title_s, raw_title=True)
         for m in members:
             zone = m.get('zone', NO_ZONE_DEFAULT)
             if zone != z:
@@ -94,11 +93,13 @@ def do_members(detail=False):
             state = m['state']
             is_proxy = m.get('is_proxy', False)
             if not detail:
-                cprint('\t%s  ' % name.ljust(max_name_size), end='')
+                cprint('  - %s > ' % zone, color='blue', end='')
+                cprint('%s  ' % name.ljust(max_name_size), color='magenta', end='')
             else:
                 cprint(' %s  %s  ' % (m['uuid'], name.ljust(max_name_size)), end='')
             c = {'alive': 'green', 'dead': 'red', 'suspect': 'yellow', 'leave': 'cyan'}.get(state, 'cyan')
-            cprint(state.ljust(7), color=c, end='')  # 7 for the maximum state string
+            state_prefix = {'alive': CHARACTERS.check, 'dead': CHARACTERS.cross, 'suspect': CHARACTERS.double_exclamation, 'leave': CHARACTERS.arrow_bottom}.get(state, CHARACTERS.double_exclamation)
+            cprint(('%s %s' % (state_prefix, state)).ljust(9), color=c, end='')  # 7 for the maximum state string + 2 for prefix
             s = ' %s:%s ' % (addr, port)
             s = s.ljust(max_addr_size + 2)  # +2 for the spaces
             cprint(s, end='')
@@ -150,36 +151,56 @@ def do_state(name=''):
         logger.error('Bad return from the server %s' % exp)
         return
     
-    print 'Services:'
-    for (sname, service) in d['services'].iteritems():
-        state = service['state_id']
-        cprint('\t%s ' % sname.ljust(20), end='')
-        c = {0: 'green', 2: 'red', 1: 'yellow', 3: 'cyan'}.get(state, 'cyan')
-        state = {0: 'OK', 2: 'CRITICAL', 1: 'WARNING', 3: 'UNKNOWN'}.get(state, 'UNKNOWN')
-        cprint('%s - ' % state.ljust(8), color=c, end='')
-        output = service['check']['output']
-        cprint(output.strip(), color='grey')
+    services = d['services']
+    print_h1('Services')
+    if len(services) == 0:
+        cprint('No services', color='grey')
+    else:
+        for (sname, service) in services.iteritems():
+            state = service['state_id']
+            cprint('\t%s ' % sname.ljust(20), end='')
+            c = {0: 'green', 2: 'red', 1: 'yellow', 3: 'cyan'}.get(state, 'cyan')
+            state = {0: 'OK', 2: 'CRITICAL', 1: 'WARNING', 3: 'UNKNOWN'}.get(state, 'UNKNOWN')
+            cprint('%s - ' % state.ljust(8), color=c, end='')
+            output = service['check']['output']
+            cprint(output.strip(), color='grey')
     
-    print "Checks:"
-    cnames = d['checks'].keys()
-    cnames.sort()
-    part = ''
-    for cname in cnames:
-        check = d['checks'][cname]
-        state = check['state_id']
-        # Show like aggregation like, so look at the first name before /
-        cpart = cname.split('/', 1)[0]
-        if cpart == part:
-            lname = cname.replace(part, ' ' * len(part))
-            cprint('\t%s ' % lname.ljust(20), end='')
-        else:
-            cprint('\t%s ' % cname.ljust(20), end='')
-        part = cpart
-        c = {0: 'green', 2: 'red', 1: 'yellow', 3: 'cyan'}.get(state, 'cyan')
-        state = {0: 'OK', 2: 'CRITICAL', 1: 'WARNING', 3: 'UNKNOWN'}.get(state, 'UNKNOWN')
-        cprint('%s - ' % state.ljust(8), color=c, end='')
-        output = check['output']
-        cprint(output.strip(), color='grey')
+    checks = d['checks']
+    if len(checks) == 0:
+        cprint('No checks', color='grey')
+        return  # nothing to do more
+    
+    print_h1('Checks')
+    packs = {}
+    for (cname, check) in checks.iteritems():
+        pack_name = check['pack_name']
+        if pack_name not in packs:
+            packs[pack_name] = {}
+        packs[pack_name][cname] = check
+    pnames = packs.keys()
+    pnames.sort()
+    for pname in pnames:
+        pack_entries = packs[pname]
+        cprint('* Pack %s' % pname, color='blue')
+        cnames = pack_entries.keys()
+        cnames.sort()
+        for cname in cnames:
+            check = pack_entries[cname]
+            check_display_name = check['display_name']
+            
+            cprint('  - %s' % pname, color='blue', end='')
+            cprint(' > checks > ', color='grey', end='')
+            cprint('%s ' % (check_display_name.ljust(30)), color='magenta', end='')
+            
+            state = check['state_id']
+            c = {0: 'green', 2: 'red', 1: 'yellow', 3: 'cyan'}.get(state, 'cyan')
+            state = {0: '%s OK' % CHARACTERS.check, 2: '%s CRITICAL' % CHARACTERS.cross, 1: '%s WARNING' % CHARACTERS.double_exclamation, 3: '%s UNKNOWN' % CHARACTERS.double_exclamation}.get(state, 'UNKNOWN')
+            cprint('%s' % state.ljust(10), color=c)
+            # Now print output the line under
+            output = check['output']
+            output_lines = output.strip().splitlines()
+            for line in output_lines:
+                cprint(' ' * 4 + '| ' + line, color='grey')
 
 
 def do_version():
@@ -699,7 +720,7 @@ def do_agent_parameters_show():
 
 exports = {
     do_members              : {
-        'keywords'   : ['members'],
+        'keywords'   : ['gossip', 'members'],
         'args'       : [
             {'name': '--detail', 'type': 'bool', 'default': False, 'description': 'Show detail mode for the cluster members'},
         ],
@@ -722,13 +743,13 @@ exports = {
     },
     
     do_service_install      : {
-        'keywords'   : ['agent', 'service-install'],
+        'keywords'   : ['agent', 'windows', 'service-install'],
         'args'       : [],
         'description': 'Install windows service'
     },
     
     do_service_remove       : {
-        'keywords'   : ['agent', 'service-remove'],
+        'keywords'   : ['agent', 'windows', 'service-remove'],
         'args'       : [],
         'description': 'Remove windows service'
     },
@@ -740,7 +761,7 @@ exports = {
     },
     
     do_info                 : {
-        'keywords'   : ['info'],
+        'keywords'   : ['agent', 'info'],
         'args'       : [
             {'name': '--show-logs', 'default': False, 'description': 'Dump last warning & error logs', 'type': 'bool'},
         ],
@@ -748,13 +769,13 @@ exports = {
     },
     
     do_keygen               : {
-        'keywords'   : ['keygen'],
+        'keywords'   : ['agent', 'keygen'],
         'args'       : [],
         'description': 'Generate a encryption key'
     },
     
     do_exec                 : {
-        'keywords'   : ['exec'],
+        'keywords'   : ['executors', 'exec'],
         'args'       : [
             {'name': 'tag', 'default': '', 'description': 'Name of the node tag to execute command on'},
             {'name': 'cmd', 'default': 'uname -a', 'description': 'Command to run on the nodes'},
@@ -763,7 +784,7 @@ exports = {
     },
     
     do_join                 : {
-        'keywords'   : ['join'],
+        'keywords'   : ['gossip', 'join'],
         'description': 'Join another node cluster',
         'args'       : [
             {'name': 'seed', 'default': '', 'description': 'Other node to join. For example 192.168.0.1:6768'},
@@ -771,7 +792,7 @@ exports = {
     },
     
     do_leave                : {
-        'keywords'   : ['leave'],
+        'keywords'   : ['gossip', 'leave'],
         'description': 'Put in leave a cluster node',
         'args'       : [
             {'name'       : 'name', 'default': '',
@@ -780,7 +801,7 @@ exports = {
     },
     
     do_state                : {
-        'keywords'   : ['state'],
+        'keywords'   : ['monitoring', 'state'],
         'description': 'Print the state of a node',
         'args'       : [
             {'name'       : 'name', 'default': '',
@@ -789,7 +810,7 @@ exports = {
     },
     
     do_zone_change          : {
-        'keywords'   : ['zone', 'change'],
+        'keywords'   : ['gossip', 'zone', 'change'],
         'args'       : [
             {'name': 'name', 'default': '', 'description': 'Change to the zone'},
         ],
@@ -797,7 +818,7 @@ exports = {
     },
     
     do_detect_nodes         : {
-        'keywords'   : ['agent', 'detect'],
+        'keywords'   : ['gossip', 'detect'],
         'args'       : [
             {'name': '--auto-join', 'default': False, 'description': 'Try to join the first detected proxy node. If no proxy is founded, join the first one.', 'type': 'bool'},
         ],
@@ -805,21 +826,21 @@ exports = {
     },
     
     do_show_threads         : {
-        'keywords'   : ['agent', 'show-threads'],
+        'keywords'   : ['agent', 'internal', 'show-threads'],
         'args'       : [],
         'description': 'List all internal threads of the agent.'
     },
     
     do_follow_log           : {
-        'keywords'   : ['agent', 'follow-log'],
+        'keywords'   : ['agent', 'log', 'follow'],
         'args'       : [
-            {'name': '--part', 'default': '', 'description': 'Follow log part (with debug)'},
+            {'name': 'part', 'default': '', 'description': 'Follow log part (with debug)'},
         ],
         'description': 'Show info af a daemon'
     },
     
     do_list_follow_log      : {
-        'keywords'   : ['agent', 'list-follow-log'],
+        'keywords'   : ['agent', 'log', 'list'],
         'args'       : [
         ],
         'description': 'List available logs parts to follow'

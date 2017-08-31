@@ -167,7 +167,7 @@ echo_failure() {
 # Display status
 #
 do_status() {
-    out=$(opsbro info)
+    out=$(opsbro agent info)
     rc=$?
     if [ $rc != 0 ]; then
         echo "$NAME NOT RUNNING (cannot contact unix socket server)"

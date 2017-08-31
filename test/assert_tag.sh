@@ -8,7 +8,7 @@ RES=$(opsbro evaluator eval "have_tag('$TAG')" | tail -n 1)
 
 if [ $RES != "True" ]; then
     echo "Fail: check if tag is set: have_tag('$TAG') ==> $RES"
-    opsbro info | grep Tags
+    opsbro agent info | grep Tags
     exit 2
 fi
 

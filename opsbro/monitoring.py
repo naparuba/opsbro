@@ -63,6 +63,10 @@ class MonitoringManager(object):
             if not apply_on:
                 apply_on = '*'
             check['apply_on'] = apply_on
+        if 'display_name' in check:
+            check['display_name'] = '[%s]' % check.get('display_name')
+        else:
+            check['display_name'] = name.split('/')[-1]
         check['modification_time'] = mod_time
         check['state'] = 'pending'
         check['state_id'] = 3

@@ -18,6 +18,8 @@ This is a first release of the opsbro project about a service discovery / monito
 You will need:
 
   * python 2.6 or 2.7 (python 3 is not managed currently)
+
+It will automatically install:
   * python-leveldb
   * python-requests
   * python-jinja2 
@@ -67,7 +69,7 @@ Or use the init.d script:
 #### Display opsbro information
 Just launch:
 
-    opsbro info
+    opsbro agent info
 
 You will have several information about the current opsbro agent state:
 
@@ -83,7 +85,7 @@ First you need to install and launch the node in another server.
 
 Then in this other server you can launch:
   
-    opsbro join  OTHER-IP
+    opsbro gossip join  OTHER-IP
 
 ##### Auto discover LAN nodes (UDP broadcast detection)
 
@@ -92,14 +94,14 @@ If your nodes are on the same LAN, you can use the UDP auto-detection to list ot
 NOTE: if you are using an encryption key (recommanded) then you must already have set it. If not, the other node won't answer to your query.
 
 
-    opsbro agent detect
+    opsbro gossip detect
 
 If the other nodes are present, they will be list by the command.
 
 
 If you want to auto-join the other node cluster, then you can use the --auto-join parameter:
 
-    opsbro agent detect --auto-join
+    opsbro gossip detect --auto-join
 
 It will try to join nodes based on:
  * first try to a proxy node if present
@@ -109,7 +111,7 @@ It will try to join nodes based on:
 ##### List your opsbro cluster members
 You can list the cluster members on all nodes with :
 
-    opsbro  members
+    opsbro  gossip members
 
 ![Agent](images/members.png) 
 

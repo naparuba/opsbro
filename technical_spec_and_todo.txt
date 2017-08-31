@@ -1,9 +1,19 @@
 ################ This document
-This document is only a todo/don't forget document for Jean Gabès, opsbro author
+This document is only a todo/don't forget document for Jean Gabès, opsbro author because he have a small fish memory, really ┻━┻︵ \(°□°)/ ︵ ┻━┻
 
-You don't need to read it unless you want to give a look at the internal of "think" such a tool, how it's defined
+As a user, you don't have to read it.
+But if you want to start a project (or help this one), you can give a look at the internal of "think" such a tool, how it's defined and why in adding a feature, 60% of the time is spec, 40% doing. (and another 40% debugging).
 
 
+
+
+############# BIG PARTS
+
+* service discovery (gossip / detectors / groups)
+* monitoring (collectors / checks / handlers)
+* application performances (statsd / graphite)
+* automation/compliance (compliance / system driver)
+* configuration automation (generator / executor / KV)
 
 
 
@@ -14,12 +24,12 @@ opsbro agent start
 
 
 #### List commands
-opsbro -l
+opsbro
 
 ### Show agent state
-opsbro info
+opsbro agent info
 # avec logs:
-opsbro info --show-logs
+opsbro agent info --show-logs
 
 #### Detect other nodes on the network
 opsbro agent detect
@@ -294,6 +304,123 @@ Besoins:
      * si pas de if, True, (donc closera la liste)
 
 
+installor:
+    name: mysql
+    note: This installer will install the mysql server if you set the server into the mysql user defined group. Support debian (8 and lower) and centos/redhat platforms.
+    if:   "is_in_defined_group('mysql')"
+    # You can set variables in order to not repeat yourself in the if rules
+    variables:
+        is_debian: "{{collector.system.os.linux.distribution}} == 'debian'"
+        is_centos: "{{collector.system.os.linux.distribution}} == 'centos'"
+        is_redhat: "{{collector.system.os.linux.distribution}} == 'redhat'"
+    environments:
+        - name: debian 8
+          if: "{{variables.is_debian}} and {{collector.system.os.linux.major_version}} == 8"
+          packages:
+              - mysql-server-5.5
+        - name: debian
+          if: "{{variables.is_debian}}"
+          packages:
+              - mysql-server
+        - name: centos
+          if: "{{variables.is_centos}} or {{variables.is_redhat}}"
+          packages:
+              - mysql
+
+
+####### Exemple de cas d'usage:
+* on juste check, ou on fix si on peux (audit / enforce)
+* est-ce que le fichier /etc/passwd est bien:
+    * en 644 (rw,r,r)
+    * user=root
+    * group=root
+
+compliance:
+   display_name: passwd is root/644
+   if:   "is_in_group('linux')"
+   mode: enforce
+   rules:
+      - file-rights:
+           file: /etc/passwd
+           owner: root
+           group: root
+           permissions: 644
+
+* entrée dans /etc/hosts
+* routing ipv4
+* routing ipv6
+* nfs client
+* nfs server
+
+* services
+compliance:
+   display_name: mysql is started
+   if:   "is_in_defined_group('mysql')"
+   mode: audit
+   rules:
+      - services:
+           name: /etc/passwd
+           status: started
+
+* ssh auth keys
+* ssh parameters
+
+* (security) file integrity
+* cron jobs
+* file system mounts points
+* motd and pre-login banner
+
+compliance:
+   displayçname: motd is deployed
+   if:   "is_in_group('linux')"
+   mode: enforce
+   rules:
+      - motd:
+           text: "Welcome on server {{}}"
+
+* user crées et valide
+* groups crées et valide
+* entrée sudoers
+* le paquet X:
+  * doit être installé
+  * ne doit PAS être installé (exemple: pas de gcc sur les machines de production)
+
+compliance:
+   display_name: gcc not in production
+   if:   "is_in_defined_group('production')"
+   mode: audit
+   rules:
+      - packages:
+           name: gcc
+           status: not-installed
+
+
+* logout automatique: fichier ou clé de registre
+
+
+compliance:
+    display_name:
+    note: This installer will install the mysql server if you set the server into the mysql user defined group. Support debian (8 and lower) and centos/redhat platforms.
+    if:   "is_in_defined_group('mysql')"
+    # You can set variables in order to not repeat yourself in the if rules
+    variables:
+        is_debian: "{{collector.system.os.linux.distribution}} == 'debian'"
+        is_centos: "{{collector.system.os.linux.distribution}} == 'centos'"
+        is_redhat: "{{collector.system.os.linux.distribution}} == 'redhat'"
+    environments:
+        - name: debian 8
+          if: "{{variables.is_debian}} and {{collector.system.os.linux.major_version}} == 8"
+          packages:
+              - mysql-server-5.5
+        - name: debian
+          if: "{{variables.is_debian}}"
+          packages:
+              - mysql-server
+        - name: centos
+          if: "{{variables.is_centos}} or {{variables.is_redhat}}"
+          packages:
+              - mysql
+
 
 
 
@@ -314,7 +441,7 @@ Besoins:
 
 
 ### Checks:
-  * Add a way to have a display_name
+  * revoir la gestion des paramètres, faire que ça colle vraiment à ceux des collectors & autre modules, même chemin d'appel
 
 
 ### TESTS
@@ -359,7 +486,7 @@ Besoins:
 
 
 ### Gossip/Members
-  * appel à leave doit comporter la clé master/auth si distant
+  * LEAVE appel à leave doit comporter la clé master/auth si distant
 
 
 ### Packs
@@ -384,9 +511,9 @@ Besoins:
      * opsbro packs copy local.shinken  monitoring-generic
   * DELETE d'un pack sur un level particulier
      * opsbro packs delete local.shinken
-  * EDIT d'un paramètre comme par exemple:
-     * opsbro packs parameters set local.nagios.socket_path  /var/local/blabla.cmd
-     * opsbro packs parameters get local.nagios.enable
+  * ✔ EDIT d'un paramètre comme par exemple:
+     * ✔ opsbro packs parameters set local.nagios.socket_path  /var/local/blabla.cmd
+     * ✔ opsbro packs parameters get local.nagios.enable
        => True
 
 
@@ -411,3 +538,4 @@ Besoins:
 ### Handlers:
   * faire que ce soit des modules spécifiques qui exportent leur capacité au handler, donc qu'ils implémentent une sous classe de Module (jouable avec celle déjà existante?)
     * exporter ensuite emails et slack en tant que handler modules
+  * faire des handlers pour autre chose que les checks (installers, compliance, detectors)

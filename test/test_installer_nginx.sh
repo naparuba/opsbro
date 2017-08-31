@@ -20,7 +20,7 @@ if [ $? != 0 ]; then
 fi
 
 
-opsbro info | grep Tags
+opsbro agent info | grep Tags
 echo "Nginx installer is OK"
 
 
