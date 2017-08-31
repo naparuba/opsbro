@@ -44,8 +44,6 @@ if os.name != 'nt':
     def put_opsbro_json(uri, data):
         local_socket = get_local_socket()
         return get_json(uri, local_socket, params=data, method='PUT')
-
-
 else:
     def get_opsbro_json(uri):
         r = requests.get('http://127.0.0.1:6770%s' % uri)
@@ -69,11 +67,7 @@ else:
 
 
 def print_info_title(title):
-    # t = title.ljust(15)
-    # s = '=================== %s ' % t
-    # s += '='*(50 - len(s))
-    # cprint(s)
-    cprint('========== [%s]:' % title)
+    print_h1(title)
 
 
 def print_2tab(e, capitalize=True, col_size=20):
@@ -81,7 +75,7 @@ def print_2tab(e, capitalize=True, col_size=20):
         label = k
         if capitalize:
             label = label.capitalize()
-        s = '%s: ' % label
+        s = ' - %s: ' % label
         s = s.ljust(col_size)
         cprint(s, end='', color='blue')
         # If it's a dict, we got additionnal data like color or type
@@ -93,18 +87,52 @@ def print_2tab(e, capitalize=True, col_size=20):
         else:
             cprint(v, color='green')
 
+
 # raw_title means do not format it, use it's own color
-def print_h1(title, raw_title=False):
-    p1 = 4
+def print_h1(title, raw_title=False, only_first_part=False, line_color='cyan', title_color='yellow'):
+    p1 = 12
     p2 = len(title) + 2  # +2 for spaces around the title
     p3 = 80 - p1 - p2
     
-    cprint(u'─' * p1, color='cyan', end='')
+    cprint(u'─' * p1, color=line_color, end='')
     if not raw_title:
-        cprint(' %s ' % title, color='yellow', end='')
+        cprint(' %s ' % title, color=title_color, end='')
     else:
-        cprint(' '+title+' ', end='')
-    cprint(u'─' * p3, color='cyan')
+        cprint(' ' + title + ' ', end='')
+    if not only_first_part:
+        cprint(u'─' * p3, color=line_color)
+    else:
+        cprint('')
+
+
+# raw_title means do not format it, use it's own color
+def print_h2(title, raw_title=False):
+    cprint(u'᠁' * 12, color='cyan', end='')
+    if not raw_title:
+        cprint(' %s ' % title, color='yellow')
+    else:
+        cprint(' ' + title + ' ')
+
+
+# raw_title means do not format it, use it's own color
+def print_h3(title, raw_title=False):
+    cprint(u'*', color='cyan', end='')
+    if not raw_title:
+        cprint(' %s ' % title, color='yellow')
+    else:
+        cprint(' ' + title + ' ')
+
+
+def print_element_breadcumb(pack_name, pack_level, what, name=''):
+    cprint('  * ', end='')
+    cprint(pack_level, color='blue', end='')
+    cprint(' > ', end='')
+    cprint(pack_name, color='yellow', end='')
+    cprint(' > ', end='')
+    cprint(what, color='cyan', end='')
+    if name:
+        cprint(' > ', end='')
+        cprint(name, color='magenta', end='')
 
 
 class Dummy():
@@ -430,7 +458,8 @@ class CLICommander(object):
             if prefix:
                 s = '%s %s' % (prefix, k)
                 s = s.ljust(25)
-            cprint('\t%s ' % s, 'green', end='')
+            cprint('  opsbro ', color='grey', end='')
+            cprint('%s ' % s, 'green', end='')
             cprint(': %s' % entry.description)
     
     
@@ -450,6 +479,6 @@ class CLICommander(object):
             if cmd == 'global':
                 prefix = ''
             d = self.keywords[cmd]
-            cprint('[%s]' % cmd, color='blue')
+            print_h1(cmd, only_first_part=True, line_color='blue', title_color='magenta')
             self.__print_sub_level_tree(d, prefix)
         return

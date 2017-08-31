@@ -33,12 +33,14 @@ if os.name == 'nt':
     import win32api
     from opsbro.windows_service.windows_service import Service
 
+from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger
 from opsbro.info import VERSION
 from opsbro.launcher import Launcher
 from opsbro.unixclient import get_json, get_local, request_errors
-from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, print_2tab, CONFIG, put_opsbro_json
+from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, print_2tab, CONFIG, put_opsbro_json, print_h1, print_h2
 from opsbro.defaultpaths import DEFAULT_LOCK_PATH
+from opsbro.configurationmanager import configmgr
 
 # If not requests we should exit because the
 # daemon cannot be in a good shape at all
@@ -678,8 +680,25 @@ def do_follow_log(part=''):
             pass
 
 
+def do_agent_parameters_show():
+    logger.setLevel('ERROR')
+    # We should already have load the configuration, so just dump it
+    # now we read them, set it in our object
+    parameters_from_local_configuration = configmgr.get_parameters_for_cluster_from_configuration()
+    # print "Local parameters", parameters_from_local_configuration
+    print_h1('Local agent parameters')
+    key_names = parameters_from_local_configuration.keys()
+    key_names.sort()
+    for k in key_names:
+        v = parameters_from_local_configuration[k]
+        cprint('  * ', end='')
+        cprint('%-15s' % k, color='magenta', end='')
+        cprint(' %s ' % CHARACTERS.arrow_left, end='')
+        cprint('%s\n' % v, color='green', end='')
+
+
 exports = {
-    do_members        : {
+    do_members              : {
         'keywords'   : ['members'],
         'args'       : [
             {'name': '--detail', 'type': 'bool', 'default': False, 'description': 'Show detail mode for the cluster members'},
@@ -687,7 +706,7 @@ exports = {
         'description': 'List the cluster members'
     },
     
-    do_start          : {
+    do_start                : {
         'keywords'   : ['agent', 'start'],
         'args'       : [
             {'name': '--daemon', 'type': 'bool', 'default': False, 'description': 'Start opsbro into the background'},
@@ -696,31 +715,31 @@ exports = {
         'description': 'Start the opsbro daemon'
     },
     
-    do_stop           : {
+    do_stop                 : {
         'keywords'   : ['agent', 'stop'],
         'args'       : [],
         'description': 'Stop the opsbro daemon'
     },
     
-    do_service_install: {
+    do_service_install      : {
         'keywords'   : ['agent', 'service-install'],
         'args'       : [],
         'description': 'Install windows service'
     },
     
-    do_service_remove : {
+    do_service_remove       : {
         'keywords'   : ['agent', 'service-remove'],
         'args'       : [],
         'description': 'Remove windows service'
     },
     
-    do_version        : {
+    do_version              : {
         'keywords'   : ['version'],
         'args'       : [],
         'description': 'Print the daemon version'
     },
     
-    do_info           : {
+    do_info                 : {
         'keywords'   : ['info'],
         'args'       : [
             {'name': '--show-logs', 'default': False, 'description': 'Dump last warning & error logs', 'type': 'bool'},
@@ -728,13 +747,13 @@ exports = {
         'description': 'Show info af a daemon'
     },
     
-    do_keygen         : {
+    do_keygen               : {
         'keywords'   : ['keygen'],
         'args'       : [],
         'description': 'Generate a encryption key'
     },
     
-    do_exec           : {
+    do_exec                 : {
         'keywords'   : ['exec'],
         'args'       : [
             {'name': 'tag', 'default': '', 'description': 'Name of the node tag to execute command on'},
@@ -743,7 +762,7 @@ exports = {
         'description': 'Execute a command (default to uname -a) on a group of node of the good tag (default to all)'
     },
     
-    do_join           : {
+    do_join                 : {
         'keywords'   : ['join'],
         'description': 'Join another node cluster',
         'args'       : [
@@ -751,7 +770,7 @@ exports = {
         ],
     },
     
-    do_leave          : {
+    do_leave                : {
         'keywords'   : ['leave'],
         'description': 'Put in leave a cluster node',
         'args'       : [
@@ -760,7 +779,7 @@ exports = {
         ],
     },
     
-    do_state          : {
+    do_state                : {
         'keywords'   : ['state'],
         'description': 'Print the state of a node',
         'args'       : [
@@ -769,7 +788,7 @@ exports = {
         ],
     },
     
-    do_zone_change    : {
+    do_zone_change          : {
         'keywords'   : ['zone', 'change'],
         'args'       : [
             {'name': 'name', 'default': '', 'description': 'Change to the zone'},
@@ -777,7 +796,7 @@ exports = {
         'description': 'Change the zone of the node'
     },
     
-    do_detect_nodes   : {
+    do_detect_nodes         : {
         'keywords'   : ['agent', 'detect'],
         'args'       : [
             {'name': '--auto-join', 'default': False, 'description': 'Try to join the first detected proxy node. If no proxy is founded, join the first one.', 'type': 'bool'},
@@ -785,13 +804,13 @@ exports = {
         'description': 'Try to detect (broadcast) others nodes in the network'
     },
     
-    do_show_threads   : {
+    do_show_threads         : {
         'keywords'   : ['agent', 'show-threads'],
         'args'       : [],
         'description': 'List all internal threads of the agent.'
     },
     
-    do_follow_log     : {
+    do_follow_log           : {
         'keywords'   : ['agent', 'follow-log'],
         'args'       : [
             {'name': '--part', 'default': '', 'description': 'Follow log part (with debug)'},
@@ -799,10 +818,17 @@ exports = {
         'description': 'Show info af a daemon'
     },
     
-    do_list_follow_log: {
+    do_list_follow_log      : {
         'keywords'   : ['agent', 'list-follow-log'],
         'args'       : [
         ],
         'description': 'List available logs parts to follow'
+    },
+    
+    do_agent_parameters_show: {
+        'keywords'   : ['agent', 'parameters', 'show'],
+        'args'       : [
+        ],
+        'description': 'Show the agent parameters (pid, ...)'
     },
 }

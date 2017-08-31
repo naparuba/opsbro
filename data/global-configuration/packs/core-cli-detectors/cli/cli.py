@@ -16,9 +16,10 @@ try:
 except ImportError:
     pygments = None
 
+from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger
 from opsbro.unixclient import get_json, get_local, request_errors
-from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, print_2tab
+from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, print_2tab, print_element_breadcumb
 
 
 def do_detect_list():
@@ -27,20 +28,26 @@ def do_detect_list():
     except request_errors, exp:
         logger.error(exp)
         return
-
+    
     try:
         d = json.loads(r)
     except ValueError, exp:  # bad json
         logger.error('Bad return from the server %s' % exp)
         return
-
-    e = []
-    for i in d:
-        e.append((i['name'], ','.join(i['tags'])))
-
-    # Normal agent information
     print_info_title('Detectors')
-    print_2tab(e)
+    
+    logger.debug(str(d))
+    e = []
+    d = sorted(d, key=lambda i: i['name'])
+    for i in d:
+        name = i['name'].split('/')[-1]
+        tags = i['tags']
+        pack_level = i['pack_level']
+        pack_name = i['pack_name']
+        
+        print_element_breadcumb(pack_name, pack_level, 'detector', name)
+        cprint(' %s ' % CHARACTERS.arrow_left, end='')
+        cprint(','.join(tags), color='green')
 
 
 def do_detect_run():
@@ -49,13 +56,13 @@ def do_detect_run():
     except request_errors, exp:
         logger.error(exp)
         return
-
+    
     try:
         d = json.loads(r)
     except ValueError, exp:  # bad json
         logger.error('Bad return from the server %s' % exp)
         return
-
+    
     print_info_title('Detectors results')
     all_tags = []
     new_tags = []
@@ -74,7 +81,7 @@ exports = {
         ],
         'description': 'Show detectors list'
     },
-
+    
     do_detect_run : {
         'keywords'   : ['detectors', 'run'],
         'args'       : [

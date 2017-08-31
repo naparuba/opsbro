@@ -17,25 +17,21 @@ try:
 except ImportError:
     pygments = None
 
+from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, sprintf, logger
-from opsbro.configurationmanager import configmgr
 from opsbro.yamlmgr import yamler
-from opsbro.cli import print_h1
+from opsbro.cli import print_h1, print_h2, print_h3, print_element_breadcumb
 
 
 def __print_pack_breadcumb(pack_name, pack_level, end='\n'):
-    cprint('%-6s' % pack_level, color='blue', end='')
-    cprint(' > ', end='')
-    cprint('%-15s' % pack_name, color='yellow', end=end)
+    cprint(__get_pack_breadcumb(pack_name, pack_level, end=end), end='')
 
 
-def __print_element_breadcumb(pack_name, pack_level, what):
-    cprint('  * ', end='')
-    cprint(pack_level, color='blue', end='')
-    cprint(' > ', end='')
-    cprint(pack_name, color='yellow', end='')
-    cprint(' > ', end='')
-    cprint(what, color='cyan', end='')
+def __get_pack_breadcumb(pack_name, pack_level, end=''):
+    res = sprintf('%-6s' % pack_level, color='blue', end='') + sprintf(' > ', end='') + sprintf('%-15s' % pack_name, color='yellow', end='') + end
+    return res
+
+
 
 
 def __print_element_parameters(elt, pack_name, pack_level, what):
@@ -43,12 +39,12 @@ def __print_element_parameters(elt, pack_name, pack_level, what):
     if config_snapshot['state'] == 'OK':
         cprint('OK', color='green')
     else:
-        cprint('%s  => %s' % (config_snapshot['state'], config_snapshot['errors']), color='red')
+        cprint('%s  %s %s' % (config_snapshot['state'], CHARACTERS.arrow_left, config_snapshot['errors']), color='red')
     for parameter_name, parameter_snap in config_snapshot['parameters'].iteritems():
         cprint('    - ', end='')
         cprint('%s.packs.%s.%s.' % (pack_level, pack_name, what), color='grey', end='')
         cprint('%-15s' % parameter_name, color='magenta', end='')
-        cprint(' => ', color='grey', end='')
+        cprint(' %s ' % CHARACTERS.arrow_left, color='grey', end='')
         is_valid = parameter_snap['is_valid']
         is_missing = parameter_snap['is_missing']
         is_default = parameter_snap['is_default']
@@ -104,17 +100,6 @@ def do_packs_show():
     logger.setLevel('ERROR')
     # We should already have load the configuration, so just dump it
     # now we read them, set it in our object
-    parameters_from_local_configuration = configmgr.get_parameters_for_cluster_from_configuration()
-    # print "Local parameters", parameters_from_local_configuration
-    print_h1('Local agent parameters')
-    key_names = parameters_from_local_configuration.keys()
-    key_names.sort()
-    for k in key_names:
-        v = parameters_from_local_configuration[k]
-        cprint('  * ', end='')
-        cprint('%-15s' % k, color='magenta', end='')
-        cprint(' => ', end='')
-        cprint('%s\n' % v, color='green', end='')
     
     from opsbro.packer import packer
     packs = {'global': {}, 'zone': {}, 'local': {}}
@@ -165,20 +150,17 @@ def do_packs_show():
         pack_level = installator.pack_level
         packs[pack_level][pack_name]['installors'][iname] = installator
     
-    print_h1('Packs')
-    
     for level in ('global', 'zone', 'local'):
-        cprint('========== Level ', end='')
-        cprint(level, color='blue')
+        print_h1('Packs at level %s' % level)
         pack_names = packs[level].keys()
         pack_names.sort()
         if len(pack_names) == 0:
-            cprint('  No packs are available', color='grey')
+            cprint('  No packs are available at the level %s' % level, color='grey')
             continue
         for pack_name in pack_names:
             pack_entry = packs[level][pack_name]
-            cprint('==== Pack ', end='')
-            __print_pack_breadcumb(pack_name, level)
+            pack_breadcumb_s = __get_pack_breadcumb(pack_name, level)
+            print_h2(pack_breadcumb_s, raw_title=True)
             
             #### Now loop over objects
             # * checks
@@ -192,7 +174,7 @@ def do_packs_show():
             if len(checks) == 0:
                 no_such_objects.append('checks')
             else:
-                __print_element_breadcumb(pack_name, pack_level, 'checks')
+                print_element_breadcumb(pack_name, pack_level, 'checks')
                 cprint(' (%d)' % len(checks), color='magenta')
                 for cname, check in checks.iteritems():
                     cprint('    - [', end='')
@@ -204,7 +186,7 @@ def do_packs_show():
             if module is None:
                 no_such_objects.append('module')
             else:
-                __print_element_breadcumb(pack_name, pack_level, 'module')
+                print_element_breadcumb(pack_name, pack_level, 'module')
                 cprint(' : configuration=', end='')
                 __print_element_parameters(module, pack_name, pack_level, 'parameters')
             
@@ -213,7 +195,7 @@ def do_packs_show():
             if len(collectors) == 0:
                 no_such_objects.append('collectors')
             else:
-                __print_element_breadcumb(pack_name, pack_level, 'collectors')
+                print_element_breadcumb(pack_name, pack_level, 'collectors')
                 cprint(' (%d)' % len(collectors), color='magenta')
                 for colname, collector_d in collectors.iteritems():
                     collector = collector_d['inst']
@@ -227,7 +209,7 @@ def do_packs_show():
             if len(handlers) == 0:
                 no_such_objects.append('handlers')
             else:
-                __print_element_breadcumb(pack_name, pack_level, 'handlers')
+                print_element_breadcumb(pack_name, pack_level, 'handlers')
                 cprint(' (%d)' % len(handlers), color='magenta')
                 for hname, handler in handlers.iteritems():
                     cprint('    - [', end='')
@@ -239,7 +221,7 @@ def do_packs_show():
             if len(generators) == 0:
                 no_such_objects.append('generators')
             else:
-                __print_element_breadcumb(pack_name, pack_level, 'generators')
+                print_element_breadcumb(pack_name, pack_level, 'generators')
                 cprint(' (%d)' % len(generators), color='magenta')
                 for gname, generator in generators.iteritems():
                     cprint('    - [', end='')
@@ -251,7 +233,7 @@ def do_packs_show():
             if len(installors) == 0:
                 no_such_objects.append('installors')
             else:
-                __print_element_breadcumb(pack_name, pack_level, 'installors')
+                print_element_breadcumb(pack_name, pack_level, 'installors')
                 cprint(' (%d)' % len(installors), color='magenta')
                 for iname, installor in installors.iteritems():
                     cprint('    - [', end='')
@@ -284,7 +266,7 @@ def do_packs_list():
             if pname in packs[level]:
                 (pack, _) = packs[level][pname]
                 if present_before:
-                    cprint('(overloaded by =>) ', color='green', end='')
+                    cprint('(overloaded by %s) ' % CHARACTERS.arrow_left, color='green', end='')
                 __print_pack_breadcumb(pname, level, end='')
                 keywords = pack['keywords']
             present_before = True
@@ -348,7 +330,7 @@ def do_parameters_set(parameter_full_path, value):
     # Add a change history entry
     # BEWARE: only a oneliner!
     value_str = value.replace('\n', ' ')
-    change_line = '# CHANGE: (%s) SET %s => %s' % (datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), parameter_name, value_str)
+    change_line = '# CHANGE: (%s) SET %s %s %s' % (datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), parameter_name, CHARACTERS.arrow_left, value_str)
     yamler.add_document_ending_comment(o, change_line, ENDING_SUFFIX)
     
     result_str = yamler.dumps(o)
@@ -362,7 +344,7 @@ def do_parameters_set(parameter_full_path, value):
     cprint('%s (%s)' % (parameter_full_path, parameters_file_path), color='magenta', end='')
     cprint(' SET ', end='')
     cprint(parameter_name, color='magenta', end='')
-    cprint(' => ', end='')
+    cprint(' %s ' % CHARACTERS.arrow_left, end='')
     cprint(value, color='green')
 
 
@@ -404,7 +386,7 @@ def do_parameters_get(parameter_full_path):
     
     value_string = '\n'.join(lines)
     cprint('%s' % parameter_full_path, color='magenta', end='')
-    cprint(' => ', end='')
+    cprint(' %s ' % CHARACTERS.arrow_left, end='')
     cprint(value_string, color='green')
     
     # Now if there are, get the comments
