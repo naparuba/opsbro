@@ -12,7 +12,7 @@ fi
 
 # Case 1: try to detect and join other node
 
-opsbro agent gossip detect --auto-join
+opsbro gossip detect --auto-join
 
 NB_MEMBERS=$(opsbro members | grep 'docker-container' | wc -l)
 
