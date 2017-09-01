@@ -454,6 +454,12 @@ compliance:
   * CLI: rajouter un option --explain sur l'appel eval afin de voir la transformation et idéalement d'où vient l'info
 
 
+
+### Monitoring
+  * gérer les expressions d'ensembles sur les groupes ( & | ! )
+  * redéfinir les "services" en autre choses qui se base sur une expression de dispo des checks
+
+
 ### Collectors
   * permettre un meilleur export des docs des functions de l'evaluater
   * fonction pour get les données du collecter
@@ -466,17 +472,6 @@ compliance:
   * collectors : avoir un moyen de choper X informations par exemple {{collectors.mongodb.dbstats.*.datasize}} renvoit une liste avec les valeurs, qu'on peux alors max().
   * sortir les data importantes en "spec" genre distribution, CPUs ou Country
   *
-
-
-
-
-### Monitoring
-  * gérer les expressions d'ensembles sur les groupes ( & | ! )
-  * redéfinir les "services" en autre choses qui se base sur une expression de dispo des checks
-
-
-### Export HTTP
-  * permettre un meilleur export des docs/specs des appels HTTP
 
 
 ### Gossip/Members
@@ -540,3 +535,6 @@ compliance:
   * query dns
 
 
+
+### Export HTTP
+  * permettre un meilleur export des docs/specs des appels HTTP

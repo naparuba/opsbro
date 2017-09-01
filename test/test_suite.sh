@@ -4,7 +4,7 @@
 # Travis: only need to run the installation once, it it not link to a specific python version. They don't need to use CPU for nothing ;)
 if [ "$TEST_SUITE" == "PYTHON" ]; then
    echo "Installing dependencies for TESTING"
-   pip install -r dependencies
+   pip install -r ../dependencies
    pip install coveralls
    pip install nose-cov
    pip install unittest2
