@@ -424,31 +424,28 @@ compliance:
 
 
 
-####################### TODO
-### GROUPES
-  * renommer les tags en groupes
-    * defined_groups
-    * detected_groups
-  * séparer à l'affichage les groupes configurés et les auto-groups détectés
-
-
-### Drivers:
-  * gérer les cas "out of the box"
-    * opensuse (zipper)
-    * fedora (dnf)
-    * alpine (pkg)
-    * windows (va falloir livrer des msi)
-
+####################### TODO par ordre de priorité
 
 ### Checks:
   * revoir la gestion des paramètres, faire que ça colle vraiment à ceux des collectors & autre modules, même chemin d'appel
 
 
-### TESTS
-  * tester l'installation version setup.py sur:
-    * windows 2008 R2 (bundeliser les libs?)
-    * core os
+### GROUPES
+  ✔ renommer les tags en groupes
+    * defined_groups
+    * detected_groups
+  * séparer à l'affichage les groupes configurés et les auto-groups détectés
 
+
+### Handlers:
+  * faire que ce soit des modules spécifiques qui exportent leur capacité au handler, donc qu'ils implémentent une sous classe de Module (jouable avec celle déjà existante?)
+    * exporter ensuite emails et slack en tant que handler modules
+  * faire des handlers pour autre chose que les checks (installers, compliance, detectors)
+
+
+### Installers
+  * renommer les en un truc + général (compliance?)
+  * exporter leur états dans le CLI
 
 ### Nouvelle CLI
   * définir une CLI pour les KV (put/list/get/delete)
@@ -468,12 +465,9 @@ compliance:
     * ??
   * collectors : avoir un moyen de choper X informations par exemple {{collectors.mongodb.dbstats.*.datasize}} renvoit une liste avec les valeurs, qu'on peux alors max().
   * sortir les data importantes en "spec" genre distribution, CPUs ou Country
-  * rabbitmq: prendre exemple sur les endpoints listés sur https://github.com/nagios-plugins-rabbitmq/nagios-plugins-rabbitmq/tree/master/scripts
+  *
 
 
-### Installers
-  * renommer les en un truc + général (compliance?)
-  * exporter leur états dans le CLI
 
 
 ### Monitoring
@@ -495,6 +489,7 @@ compliance:
   * ipmi (hardware stuff)
   * smart (disques)
   * raid linux (md)
+  * rabbitmq: prendre exemple sur les endpoints listés sur https://github.com/nagios-plugins-rabbitmq/nagios-plugins-rabbitmq/tree/master/scripts
 
 
 ### PACKS CLI
@@ -518,6 +513,16 @@ compliance:
 
 
 
+
+### Drivers:
+  * gérer les cas "out of the box"
+    * opensuse (zipper)
+    * fedora (dnf)
+    * alpine (pkg)
+    * windows (va falloir livrer des msi)
+    * core os
+
+
 ### Core
   * enlever la dépendance à psutil sur les linux (/proc c'est pas là pour faire joli)
 
@@ -535,7 +540,3 @@ compliance:
   * query dns
 
 
-### Handlers:
-  * faire que ce soit des modules spécifiques qui exportent leur capacité au handler, donc qu'ils implémentent une sous classe de Module (jouable avec celle déjà existante?)
-    * exporter ensuite emails et slack en tant que handler modules
-  * faire des handlers pour autre chose que les checks (installers, compliance, detectors)

@@ -9,12 +9,12 @@ services:
 
 # command to install dependencies
 # some are only used for travis/coveralls so we are installing them here only
-install:
-  - "pip install -r dependencies"
-  - "pip install coveralls"
-  - "pip install nose-cov"
-  - "pip install unittest2"
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install ordereddict; fi
+#install:
+#  - "pip install -r dependencies"
+#  - "pip install coveralls"
+#  - "pip install nose-cov"
+#  - "pip install unittest2"
+#  - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install ordereddict; fi
 
 env:
 - TEST_SUITE=API
@@ -43,10 +43,6 @@ script:
   - cd test
   - chmod a+x *sh
   - ./test_suite.sh
-#  - ./test_installation.sh
-#  - nosetests -xv --processes=1 --process-timeout=300 --process-restartworker --with-cov --cov=opsbro --exe
-#  - coverage combine
-#  - cd ..
 
 
 # specific call to launch coverage data into coveralls.io
