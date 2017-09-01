@@ -14,7 +14,7 @@ fi
 
 opsbro gossip detect --auto-join
 
-NB_MEMBERS=$(opsbro members | grep 'docker-container' | wc -l)
+NB_MEMBERS=$(opsbro gossip members | grep 'docker-container' | wc -l)
 
 if [ $NB_MEMBERS != 2 ]; then
    echo "BAD number of members: $NB_MEMBERS"
