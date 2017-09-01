@@ -339,7 +339,7 @@ class KVBackend:
         key = ukey
         
         hkey = hashlib.sha1(key).hexdigest()
-        nuuid = gossiper.find_tag_node('kv', hkey)
+        nuuid = gossiper.find_group_node('kv', hkey)
         logger.debug('KV: DELETE node that manage the key %s' % nuuid)
         # that's me :)
         if nuuid == gossiper.uuid:
@@ -367,7 +367,7 @@ class KVBackend:
         # we have to compute our internal key mapping. For user key it's: /data/KEY
         key = ukey
         hkey = hashlib.sha1(key).hexdigest()
-        nuuid = gossiper.find_tag_node('kv', hkey)
+        nuuid = gossiper.find_group_node('kv', hkey)
         logger.info('KV: key %s is managed by %s' % (ukey, nuuid))
         # that's me :)
         if nuuid == gossiper.uuid:
@@ -400,7 +400,7 @@ class KVBackend:
         
         hkey = hashlib.sha1(key).hexdigest()
         
-        nuuid = gossiper.find_tag_node('kv', hkey)
+        nuuid = gossiper.find_group_node('kv', hkey)
         
         _node = gossiper.get(nuuid)
         _name = ''
@@ -461,7 +461,7 @@ class KVBackend:
     
     # I try to get the nodes before myself in the nodes list
     def get_my_replicats(self):
-        kv_nodes = gossiper.find_tag_nodes('kv')
+        kv_nodes = gossiper.find_group_nodes('kv')
         kv_nodes.sort()
         
         # Maybe soneone ask us a put but we are not totally joined

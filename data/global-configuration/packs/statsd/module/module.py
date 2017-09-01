@@ -230,7 +230,7 @@ class StatsdModule(ListenerModule):
                 
                 # Two cases: it's for me or not
                 hkey = hashlib.sha1(mname).hexdigest()
-                ts_node_manager = gossiper.find_tag_node('ts', hkey)
+                ts_node_manager = gossiper.find_group_node('ts', hkey)
                 # if it's me that manage this key, I add it in my backend
                 if ts_node_manager != gossiper.uuid:
                     node = gossiper.get(ts_node_manager)

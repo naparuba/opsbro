@@ -1,0 +1,6 @@
+detector:
+    groups:
+        - docker-container
+    apply_if: "file_exists('/.dockerenv')"
+    interval: "10s"
+

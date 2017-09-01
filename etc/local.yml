@@ -1,12 +1,12 @@
 ################## Local node configuration ############
 
 
-# You can set this node in a specific tag/group and so enable specific:
+# You can set this node in a specific group and so enable specific:
 # * checks
 # * asserters
 # * collectors
 # * answer in specific DNS queries
-tags: []
+groups: []
 
 
 # By default the node name will be it's hostname. I can be quite random

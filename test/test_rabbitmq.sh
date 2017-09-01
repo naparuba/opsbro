@@ -6,9 +6,9 @@ rabbitmq-server &
 
 sleep 20
 
-test/assert_tag.sh "rabbitmq"
+test/assert_group.sh "rabbitmq"
 if [ $? != 0 ]; then
-    echo "ERROR: rabbitmq tag is not set"
+    echo "ERROR: rabbitmq group is not set"
 fi
 
 

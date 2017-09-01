@@ -14,5 +14,5 @@ ADD        . /root/opsbro-oss
 WORKDIR       /root/opsbro-oss
 
 
-ENTRYPOINT    test/test_one_linux_installation.sh  && test/assert_tag.sh "opensuse"
+ENTRYPOINT    test/test_one_linux_installation.sh  && test/assert_group.sh "opensuse"
 

@@ -19,20 +19,20 @@ def get_os():
 
 
 @export_evaluater_function
-def have_tag(tag):
-    """**have_tag(tag)** -> return True if the node have the tag, False otherwise.
+def have_group(group):
+    """**have_group(group)** -> return True if the node have the group, False otherwise.
 
- * tag: (string) tag to check.
+ * group: (string) group to check.
 
 
 <code>
     Example:
-        have_tag('linux')
+        have_group('linux')
     Returns:
         True
 </code>
     """
-    return gossiper.have_tag(tag)
+    return gossiper.have_group(group)
 
 
 

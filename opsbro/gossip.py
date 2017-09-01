@@ -35,7 +35,7 @@ class Gossip(object):
         pass
     
     
-    def init(self, nodes, nodes_lock, addr, port, name, display_name, incarnation, uuid, tags, seeds, bootstrap, zone, is_proxy):
+    def init(self, nodes, nodes_lock, addr, port, name, display_name, incarnation, uuid, groups, seeds, bootstrap, zone, is_proxy):
         self.nodes = nodes
         self.nodes_lock = nodes_lock
         self.addr = addr
@@ -44,8 +44,8 @@ class Gossip(object):
         self.display_name = display_name
         self.incarnation = incarnation
         self.uuid = uuid
-        self.tags = tags  # finally computed tags
-        self.detected_tags = set()  # tags from detectors, used to detect which to add/remove
+        self.groups = groups  # finally computed groups
+        self.detected_groups = set()  # groups from detectors, used to detect which to add/remove
         self.seeds = seeds
         self.bootstrap = bootstrap
         self.zone = zone
@@ -139,36 +139,36 @@ class Gossip(object):
         self.set_alive(myself, bootstrap=True)
     
     
-    def have_tag(self, tag):
-        return tag in self.tags
+    def have_group(self, group):
+        return group in self.groups
     
     
-    # find all nearly alive nodes with a specific tag
-    def find_tag_nodes(self, tag):
+    # find all nearly alive nodes with a specific group
+    def find_group_nodes(self, group):
         nodes = []
         with self.nodes_lock:
             for (uuid, node) in self.nodes.iteritems():
                 if node['state'] in ['dead', 'leave']:
                     continue
-                tags = node['tags']
-                if tag in tags:
+                groups = node['groups']
+                if group in groups:
                     nodes.append(uuid)
         return nodes
     
     
-    # find the good ring node for a tag and for a key
-    def find_tag_node(self, tag, hkey):
-        tag_nodes = self.find_tag_nodes(tag)
+    # find the good ring node for a group and for a key
+    def find_group_node(self, group, hkey):
+        group_nodes = self.find_group_nodes(group)
         
         # No kv nodes? oups, set myself so
-        if len(tag_nodes) == 0:
+        if len(group_nodes) == 0:
             return self.uuid
         
-        tag_nodes.sort()
+        group_nodes.sort()
         
-        idx = bisect.bisect_right(tag_nodes, hkey) - 1
+        idx = bisect.bisect_right(group_nodes, hkey) - 1
         # logger.debug("IDX %d" % idx, hkey, kv_nodes, len(kv_nodes))
-        nuuid = tag_nodes[idx]
+        nuuid = group_nodes[idx]
         return nuuid
     
     
@@ -180,30 +180,30 @@ class Gossip(object):
                 return len(self.nodes)
     
     
-    # Another module/part did give a new tag, take it and warn others node about this
+    # Another module/part did give a new group, take it and warn others node about this
     # change if there is really a change
-    def update_detected_tags(self, detected_tags):
+    def update_detected_groups(self, detected_groups):
         # if no change, we finish, job done
-        if self.detected_tags == detected_tags:
+        if self.detected_groups == detected_groups:
             return
-        logger.debug('We have an update for the detected tags. TAGS=%s  old-detected_tags=%s new-detected_tags=%s' % (self.tags, self.detected_tags, detected_tags))
+        logger.debug('We have an update for the detected groups. GROUPS=%s  old-detected_groups=%s new-detected_groups=%s' % (self.groups, self.detected_groups, detected_groups))
         # ok here we will change things
         did_change = False
-        new_tags = detected_tags - self.detected_tags
-        deleted_tags = self.detected_tags - detected_tags
+        new_groups = detected_groups - self.detected_groups
+        deleted_groups = self.detected_groups - detected_groups
         # ok now we can take the new values
-        self.detected_tags = detected_tags
+        self.detected_groups = detected_groups
         
-        for tag in new_tags:
-            if tag not in self.tags:
+        for group in new_groups:
+            if group not in self.groups:
                 did_change = True
-                self.tags.append(tag)
-                logger.info("New tag detected from detector for this node: %s" % tag)
-        for tag in deleted_tags:
-            if tag in self.tags:
+                self.groups.append(group)
+                logger.info("New group detected from detector for this node: %s" % group)
+        for group in deleted_groups:
+            if group in self.groups:
                 did_change = True
-                self.tags.remove(tag)
-                logger.info("Tag was lost from the previous detection for this node: %s" % tag)
+                self.groups.remove(group)
+                logger.info("Group was lost from the previous detection for this node: %s" % group)
         # warn other parts only if need
         if did_change:
             self.node_did_change(self.uuid)  # a node did change: ourselve
@@ -248,7 +248,7 @@ class Gossip(object):
     # get my own node entry
     def get_boostrap_node(self):
         node = {'addr'       : self.addr, 'port': self.port, 'name': self.name, 'display_name': self.display_name,
-                'incarnation': self.incarnation, 'uuid': self.uuid, 'state': 'alive', 'tags': self.tags,
+                'incarnation': self.incarnation, 'uuid': self.uuid, 'state': 'alive', 'groups': self.groups,
                 'services'   : {}, 'checks': {}, 'zone': self.zone, 'is_proxy': self.is_proxy}
         return node
     
@@ -882,10 +882,10 @@ class Gossip(object):
         message = ''
         to_del = []
         stack = []
-        tags = dest['tags']
+        groups = dest['groups']
         for b in broadcaster.broadcasts:
             # not a valid node for this message, skip it
-            if 'tag' in b and b['tag'] not in tags:
+            if 'group' in b and b['group'] not in groups:
                 continue
             old_message = message
             # only delete message if we consume it (our zone)
@@ -1090,7 +1090,7 @@ class Gossip(object):
         return {
             'name'       : node['name'], 'display_name': node.get('display_name', ''),
             'addr'       : node['addr'], 'port': node['port'], 'uuid': node['uuid'],
-            'incarnation': node['incarnation'], 'tags': node['tags'],
+            'incarnation': node['incarnation'], 'groups': node['groups'],
             'services'   : node['services'], 'checks': node['checks'],
             'zone'       : node.get('zone', ''), 'is_proxy': node.get('is_proxy', False),
         }
@@ -1152,7 +1152,7 @@ class Gossip(object):
     
     def stack_new_ts_broadcast(self, key):
         msg = self.create_new_ts_msg(key)
-        b = {'send': 0, 'msg': msg, 'tags': 'ts'}
+        b = {'send': 0, 'msg': msg, 'groups': 'ts'}
         broadcaster.broadcasts.append(b)
         return
     

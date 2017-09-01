@@ -63,7 +63,7 @@ logger_gossip = LoggerFactory.create_logger('gossip')
 
 
 class Cluster(object):
-    def __init__(self, port=6768, name='', bootstrap=False, seeds='', tags='', cfg_dir='', libexec_dir=''):
+    def __init__(self, port=6768, name='', bootstrap=False, seeds='', groups='', cfg_dir='', libexec_dir=''):
         self.set_exit_handler()
         
         # Launch the now-update thread
@@ -95,7 +95,7 @@ class Cluster(object):
         self.hostname = socket.gethostname()
         if not self.name:
             self.name = '%s' % self.hostname
-        tags = [s.strip() for s in tags.split(',') if s.strip()]
+        groups = [s.strip() for s in groups.split(',') if s.strip()]
         
         self.bootstrap = bootstrap
         self.seeds = [s.strip() for s in seeds.split(',')]
@@ -326,9 +326,9 @@ class Cluster(object):
         dockermgr.launch()
         
         # Our main object for gossip managment
-        gossiper.init(nodes, nodes_lock, self.addr, self.port, self.name, self.display_name, self.incarnation, self.uuid, tags, self.seeds, self.bootstrap, self.zone, self.is_proxy)
+        gossiper.init(nodes, nodes_lock, self.addr, self.port, self.name, self.display_name, self.incarnation, self.uuid, groups, self.seeds, self.bootstrap, self.zone, self.is_proxy)
         
-        # About detecting tags and such things
+        # About detecting groups and such things
         detecter.export_http()
         
         # Let the modules prepare themselve
@@ -515,7 +515,7 @@ class Cluster(object):
                  'port'      : self.port, 'addr': self.addr, 'socket': self.socket_path, 'zone': gossiper.zone,
                  'uuid'      : gossiper.uuid,
                  'threads'   : threader.get_info(),
-                 'version'   : VERSION, 'tags': gossiper.tags,
+                 'version'   : VERSION, 'groups': gossiper.groups,
                  'docker'    : dockermgr.get_info(),
                  'collectors': collectormgr.get_info(),
                  'kv'        : kvmgr.get_info(),
@@ -720,7 +720,7 @@ class Cluster(object):
     # The first sync thread will ask to our replicats for their lately changed value
     # and we will get the key/value from it
     def do_replication_first_sync_thread(self):
-        if 'kv' not in gossiper.tags:
+        if 'kv' not in gossiper.groups:
             logger.log('SYNC no need, I am not a KV node')
             return
         logger.log('SYNC thread launched')

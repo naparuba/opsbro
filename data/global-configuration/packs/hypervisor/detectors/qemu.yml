@@ -1,0 +1,6 @@
+detector:
+    groups:
+        - qemu
+    apply_if: "grep_file('/proc/cpuinfo', 'QEMU')"
+    interval: "10s"
+

@@ -33,7 +33,7 @@ class DNSQuery:
         return s
     
     
-    # We look in the nodes for the good tag
+    # We look in the nodes for the good group
     def lookup_for_nodes(self, dom):
         with gossiper.nodes_lock:
             nodes = copy.copy(gossiper.nodes)
@@ -50,7 +50,7 @@ class DNSQuery:
             return []
         dc = elts[2]
         _type = elts[1]
-        tag = elts[0]
+        group = elts[0]
         logger.debug('Looking in %s nodes' % len(nodes))
         r = []
         for n in nodes.values():
@@ -58,11 +58,11 @@ class DNSQuery:
             if n['state'] != 'alive':
                 logger.debug('Skipping node %s, state=%s != alive' % (n['name'], n['state']))
                 continue
-            if tag in n['tags']:
+            if group in n['groups']:
                 services = n.get('services', {})
                 state_id = 0
-                if tag in services:
-                    service = services[tag]
+                if group in services:
+                    service = services[group]
                     state_id = service.get('state_id')
                 logger.debug('current state id : %s' % state_id)
                 # Skip bad nodes

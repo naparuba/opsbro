@@ -39,19 +39,19 @@ if [ "$ADDR" == "None" ]; then
 fi
 
 
-echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Linux TAG      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
-# Check if linux tag is set
-test/assert_tag.sh "linux"
+echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Linux GROUP      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
+# Check if linux group is set
+test/assert_group.sh "linux"
 if [ $? != 0 ]; then
-   echo "ERROR: the tag linux is missing!"
+   echo "ERROR: the group linux is missing!"
    exit 2
 fi
 
 
-echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Docker-container TAG      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
-# Check if docker-container tag is set
-test/assert_tag.sh "docker-container"
+echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Docker-container GROUP      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
+# Check if docker-container group is set
+test/assert_group.sh "docker-container"
 if [ $? != 0 ]; then
-   echo "ERROR: the tag docker-container is missing!"
+   echo "ERROR: the group docker-container is missing!"
    exit 2
 fi

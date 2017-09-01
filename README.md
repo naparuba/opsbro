@@ -134,12 +134,12 @@ You should declare a json object like:
     detector:
         interval: 10s
         apply_if: "grep('centos', '/etc/redhat-release')"
-        tags: ["linux", "centos"]
+        groups: ["linux", "centos"]
 
 
  * Execute every 10 seconds
  * If there is the strong centos in the file /etc/redhat-release
- * Then add the tags "linux" and centos" to the local agent
+ * Then add the group "linux" and centos" to the local agent
 
 
 ## Collect your server metrics (cpu, kernel, databases metrics, etc)
@@ -167,7 +167,7 @@ You can execute checks on your agent by two means:
 Some parameters are common on the two check types you can defined.
 
   * interval: how much seconds the checks will be scheduled
-  * apply_on: if present, will declare and execute the check only if the agent tag is present
+  * apply_on: if present, will declare and execute the check only if the agent group is present
 
 
 ### Evaluate check rule on collectors data
@@ -288,7 +288,7 @@ Then your handler must be registered into your checks, in the "handlers" list.
 
 You can export all your nodes informations (new, deleted or change node) into your Shinken installation. It will automatically:
   * create new host when you start a new node
-  * change the host configuration (host templates) when a new tag is add/removed on your agent
+  * change the host configuration (host templates) when a new group is add/removed on your agent
   * remove your host when you delete your agent (by terminating your Cloud instance for example)
 
 You must add in the agent installed on your shinken arbiter daemon the following local configuration:
@@ -300,7 +300,7 @@ You must add in the agent installed on your shinken arbiter daemon the following
 
 Currently it also use hard path to manage your shinken communication:
   * the unix socket */var/lib/shinken/nagios.cmd* should be created by your shinken arbiter/receiver [named-pipe](http://shinken.io/package/named-pipe) module.
-  * it call the "/etc/init.d/shinken reload" command when a node configuration is changed(new, removed or tag/template change) 
+  * it call the "/etc/init.d/shinken reload" command when a node configuration is changed(new, removed or group/template change) 
 
 
 ## Access your nodes informations by DNS
@@ -321,11 +321,11 @@ You must define a dns object in your local configuration to enable this interfac
 
 You will be able to query it with dig for test:
 
-    $dig -p 6766 @localhost redis.tag.dc1.opsbro  +short
+    $dig -p 6766 @localhost redis.group.dc1.opsbro  +short
     192.168.56.103
     192.168.56.105
 
-It list all available node with the "tag" redis.
+It list all available node with the "group" redis.
 
 
 TODO: document the local dns redirect to link into resolv.conf
@@ -350,7 +350,7 @@ In order to enable the statsd listener, you must define the statsd in your local
   * port: UDP port to listen
   * interval: store metrics into memory for X seconds, then export them into graphite for storing
 
-**TODO**: change the ts tag that enable this feature to real *role*/addons
+**TODO**: change the ts group that enable this feature to real *role*/addons
 
 
 ### Store your metrics for long term into Graphite
@@ -379,7 +379,7 @@ In order to enable the graphite system, you must declare a graphite object in yo
 
 ## Get notified when there is a node change (websocket)
 
-You can get notified about a node change (new node, deleted node or new tag or check state change) with a websocket interface on your local agent.
+You can get notified about a node change (new node, deleted node or new group or check state change) with a websocket interface on your local agent.
 
 All you need is to enable it on your local node configuration:
 
@@ -408,7 +408,7 @@ The API is:
   * **/kv/KEY-NAME** *(DELETE)* : delete a key
   
 
-**TODO**: change the KV store from tag to a role in the configuration
+**TODO**: change the KV store from group to a role in the configuration
 
 ## Use your node states and data/configuration (KV) to keep your application configuration up-to-date
 

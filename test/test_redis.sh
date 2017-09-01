@@ -5,9 +5,9 @@ redis-server&
 
 sleep 20
 
-test/assert_tag.sh "redis"
+test/assert_group.sh "redis"
 if [ $? != 0 ]; then
-    echo "ERROR: redis tag is not set"
+    echo "ERROR: redis group is not set"
 fi
 
 

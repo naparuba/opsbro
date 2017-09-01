@@ -117,17 +117,17 @@ class Executer(object):
     
     
     # Launch an exec thread and save its uuid so we can keep a look at it then
-    def launch_exec(self, cmd, tag):
+    def launch_exec(self, cmd, group):
         uid = libuuid.uuid1().get_hex()
         logger.debug('EXEC ask for launching command', cmd)
         all_uuids = []
-        with gossiper.nodes_lock:  # get the nodes that follow the tag (or all in *)
+        with gossiper.nodes_lock:  # get the nodes that follow the group (or all in *)
             for (uuid, n) in gossiper.nodes.iteritems():
-                if (tag == '*' or tag in n['tags']) and n['state'] == 'alive':
+                if (group == '*' or group in n['groups']) and n['state'] == 'alive':
                     exec_id = libuuid.uuid1().get_hex()  # to get back execution id
                     all_uuids.append((uuid, exec_id))
         
-        e = {'cmd': cmd, 'tag': tag, 'thread': None, 'res': {}, 'nodes': all_uuids, 'ctime': int(time.time())}
+        e = {'cmd': cmd, 'group': group, 'thread': None, 'res': {}, 'nodes': all_uuids, 'ctime': int(time.time())}
         self.execs[uid] = e
         threader.create_and_launch(self.do_exec_thread, name='exec-%s' % uid, args=(e,), essential=True, part='executer')
         return e
@@ -263,13 +263,13 @@ class Executer(object):
     # we must have the self object
     def export_http(self):
         
-        @http_export('/exec/:tag')
-        def launch_exec(tag='*'):
+        @http_export('/exec/:group')
+        def launch_exec(group='*'):
             response.content_type = 'application/json'
             if self.mfkey_priv is None:
                 return abort(400, 'No master private key')
             cmd = request.GET.get('cmd', 'uname -a')
-            uid = self.launch_exec(cmd, tag)
+            uid = self.launch_exec(cmd, group)
             return uid
         
         

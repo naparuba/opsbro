@@ -1,6 +1,6 @@
 {
     "service": {
-        "tags": ["master"],
+        "groups": ["master"],
         "port": 80,
         "apply_on": "http",
         "check": {

@@ -42,13 +42,13 @@ def do_detect_list():
     d = sorted(d, key=lambda i: i['name'])
     for i in d:
         name = i['name'].split('/')[-1]
-        tags = i['tags']
+        groups = i['groups']
         pack_level = i['pack_level']
         pack_name = i['pack_name']
         
         print_element_breadcumb(pack_name, pack_level, 'detector', name)
         cprint(' %s ' % CHARACTERS.arrow_left, end='')
-        cprint(','.join(tags), color='green')
+        cprint(','.join(groups), color='green')
 
 
 def do_detect_run():
@@ -65,13 +65,13 @@ def do_detect_run():
         return
     
     print_info_title('Detectors results')
-    all_tags = []
-    new_tags = []
+    all_groups = []
+    new_groups = []
     for (k, v) in d.iteritems():
-        all_tags.extend(v['tags'])
-        new_tags.extend(v['new_tags'])
-    e = [('Tags', ','.join(all_tags))]
-    e.append(('New tags', {'value': ','.join(new_tags), 'color': 'green'}))
+        all_groups.extend(v['groups'])
+        new_groups.extend(v['new_groups'])
+    e = [('Groups', ','.join(all_groups))]
+    e.append(('New groups', {'value': ','.join(new_groups), 'color': 'green'}))
     print_2tab(e)
 
 

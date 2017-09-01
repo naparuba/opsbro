@@ -3,5 +3,5 @@ MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 ADD        . /root/opsbro-oss
 
-ENTRYPOINT    test/test_one_linux_installation.sh  && test/assert_tag.sh "oracle-linux"
+ENTRYPOINT    test/test_one_linux_installation.sh  && test/assert_group.sh "oracle-linux"
 WORKDIR       /root/opsbro-oss

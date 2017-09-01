@@ -1,6 +1,6 @@
 {
     "service": {
-        "tags": ["master"],
+        "groups": ["master"],
         "port": 6379,
 	"apply_on": "redis",
 	

@@ -1,8 +1,0 @@
-{
-    "detector": {
-        "tags": ["vmware"],
-        "apply_if": "{{collector.hypervisor.hypervisor}} == 'VMwareVMware'",
-        "interval": "10s"
-    }
-}
-

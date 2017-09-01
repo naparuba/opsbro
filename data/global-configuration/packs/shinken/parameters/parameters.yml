@@ -15,7 +15,7 @@ cfg_path: /etc/shinken/agent
 reload_command: /etc/init.d/shinken reload
 
 # Let expose the monitoring tool you are using. Feature will vary:
-# * shinken: will let you set all you node tags as templates
+# * shinken: will let you set all you node groups as templates
 # * nagios: won't allow a unknown template, so only generic-host is set
 monitoring_tool: shinken
 

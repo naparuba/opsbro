@@ -1,5 +1,5 @@
 detector:
-    tags:
+    groups:
         - mysql
     apply_if: "file_exists('/etc/my.cnf')"
     interval: 10s

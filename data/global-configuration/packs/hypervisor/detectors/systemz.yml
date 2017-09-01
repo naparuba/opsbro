@@ -1,0 +1,6 @@
+detector:
+    groups:
+        - systemz
+    apply_if: "grep_file('/proc/cpuinfo', '^vendor_id.*IBM/S390', regexp=True)"
+    interval: "10s"
+

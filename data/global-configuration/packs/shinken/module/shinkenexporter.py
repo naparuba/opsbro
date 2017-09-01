@@ -133,7 +133,7 @@ class ShinkenExporter(object):
             except Exception, exp:
                 self.logger.error('Cannot read old sha file value at %s: %s' % (shap, exp))
         
-        tpls = n.get('tags', [])[:]  # make a copy, because we will modify it
+        tpls = n.get('groups', [])[:]  # make a copy, because we will modify it
         zone = n.get('zone', '')
         if zone:
             tpls.append(zone)
@@ -248,7 +248,7 @@ class ShinkenExporter(object):
     # a self entry
     def main_thread(self):
         
-        # If the detector did not run, we are not sure about the tags of the local node
+        # If the detector did not run, we are not sure about the groups of the local node
         # so wait for it to be run, so we can generate shinken file ok from start
         while detecter.did_run == False:
             time.sleep(1)

@@ -167,7 +167,7 @@ class GraphiteModule(ListenerModule):
                 return
             mname, value, timestamp = elts[0], elts[1], elts[2]
             hkey = hashlib.sha1(mname).hexdigest()
-            ts_node_manager = gossiper.find_tag_node('ts', hkey)
+            ts_node_manager = gossiper.find_group_node('ts', hkey)
             # if it's me that manage this key, I add it in my backend
             if ts_node_manager == gossiper.uuid:
                 self.logger.debug("I am the TS node manager")
@@ -323,7 +323,7 @@ class GraphiteModule(ListenerModule):
             res = []
             for target in targets:
                 
-                nuuid = gossiper.find_tag_node('ts', target)
+                nuuid = gossiper.find_group_node('ts', target)
                 n = None
                 if nuuid:
                     n = gossiper.get(nuuid)

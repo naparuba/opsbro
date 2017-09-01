@@ -5,9 +5,9 @@ mongod -f /etc/mongod.conf
 
 sleep 15
 
-test/assert_tag.sh "mongodb"
+test/assert_group.sh "mongodb"
 if [ $? != 0 ]; then
-    echo "ERROR: Mongodb tag is not set"
+    echo "ERROR: Mongodb group is not set"
     exit 2
 fi
 

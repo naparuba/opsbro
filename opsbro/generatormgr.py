@@ -64,10 +64,10 @@ class GeneratorMgr(object):
         while not stopper.interrupted:
             logger.debug('Looking for %d generators' % len(self.generators))
             for (gname, gen) in self.generators.iteritems():
-                logger.debug('LOOK AT GENERATOR', gen, 'to be apply on', gen['apply_on'], 'with our tags', gossiper.tags)
+                logger.debug('LOOK AT GENERATOR', gen, 'to be apply on', gen['apply_on'], 'with our groups', gossiper.groups)
                 apply_on = gen['apply_on']
                 # Maybe this generator is not for us...
-                if apply_on != '*' and apply_on not in gossiper.tags:
+                if apply_on != '*' and apply_on not in gossiper.groups:
                     continue
                 logger.debug('Generator %s will runs' % gname)
                 g = Generator(gen)

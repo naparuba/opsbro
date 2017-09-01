@@ -21,9 +21,9 @@ opsbro packs show
 
 sleep 20
 
-test/assert_tag.sh "mysql"
+test/assert_group.sh "mysql"
 if [ $? != 0 ]; then
-    echo "ERROR: mysql tag is not set"
+    echo "ERROR: mysql group is not set"
     exit 2
 fi
 

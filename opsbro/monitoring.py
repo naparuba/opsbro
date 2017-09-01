@@ -30,7 +30,7 @@ class MonitoringManager(object):
         self.checks = {}
         self.services = {}
         
-        # keep a list of the checks names that match our tags
+        # keep a list of the checks names that match our groups
         self.active_checks = []
         
         # Compile the macro pattern once
@@ -246,27 +246,27 @@ class MonitoringManager(object):
     
     
     # Look at our services dict and link the one we are apply_on
-    # so the other nodes are aware about our tags/service
+    # so the other nodes are aware about our groups/service
     def link_services(self):
         logger.debug('LINK my services and my node entry')
         node = gossiper.get(gossiper.uuid)
-        tags = node['tags']
+        groups = node['groups']
         for (sname, service) in self.services.iteritems():
             apply_on = service.get('apply_on', '')
-            if apply_on and apply_on in tags:
+            if apply_on and apply_on in groups:
                 node['services'][sname] = service
     
     
     # For checks we will only populate our active_checks list
     # with the name of the checks we are apply_on about
     def link_checks(self):
-        logger.debug('LOOKING FOR our checks that match our tags')
+        logger.debug('LOOKING FOR our checks that match our groups')
         node = gossiper.get(gossiper.uuid)
-        tags = node['tags']
+        groups = node['groups']
         active_checks = []
         for (cname, check) in self.checks.iteritems():
             apply_on = check.get('apply_on', '*')
-            if apply_on == '*' or apply_on in tags:
+            if apply_on == '*' or apply_on in groups:
                 active_checks.append(cname)
         self.active_checks = active_checks
         # Also update our checks list in KV space
@@ -529,7 +529,7 @@ class MonitoringManager(object):
         for e in datas:
             mname, value, timestamp = e['mname'], e['value'], e['timestamp']
             hkey = hashlib.sha1(mname).hexdigest()
-            ts_node_manager = gossiper.find_tag_node('ts', hkey)
+            ts_node_manager = gossiper.find_group_node('ts', hkey)
             # if it's me that manage this key, I add it in my backend
             if ts_node_manager == gossiper.uuid:
                 logger.debug("I am the TS node manager")

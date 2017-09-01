@@ -27,7 +27,7 @@ class ConfigurationManager(object):
         'log_level'      : {'type': 'string', 'mapto': 'log_level'},
         'bootstrap'      : {'type': 'bool', 'mapto': 'bootstrap'},
         'seeds'          : {'type': 'list', 'mapto': 'seeds'},
-        'tags'           : {'type': 'list', 'mapto': 'tags'},
+        'groups'           : {'type': 'list', 'mapto': 'groups'},
         'encryption_key' : {'type': 'string', 'mapto': 'encryption_key'},
         'master_key_priv': {'type': 'string', 'mapto': 'master_key_priv'},
         'master_key_pub' : {'type': 'string', 'mapto': 'master_key_pub'},

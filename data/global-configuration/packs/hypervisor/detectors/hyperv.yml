@@ -1,0 +1,6 @@
+detector:
+    groups:
+        - hyperv
+    apply_if: "{{collector.hypervisor.hypervisor}} == 'Microsoft Hv'"
+    interval: "10s"
+

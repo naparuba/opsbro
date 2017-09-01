@@ -5,6 +5,6 @@ RUN        yum --nogpgcheck  -y  upgrade
 ADD        . /root/opsbro-oss
 
 WORKDIR    /root/opsbro-oss
-ENTRYPOINT        test/test_one_linux_installation.sh  && test/assert_tag.sh "centos"
+ENTRYPOINT        test/test_one_linux_installation.sh  && test/assert_group.sh "centos"
 
 

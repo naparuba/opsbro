@@ -88,7 +88,7 @@ def do_members(detail=False):
             name = m['name']
             if m.get('display_name', ''):
                 name = '[ ' + m.get('display_name') + ' ]'
-            tags = m['tags']
+            groups = m['groups']
             port = m['port']
             addr = m['addr']
             state = m['state']
@@ -110,7 +110,7 @@ def do_members(detail=False):
                 cprint('      ', end='')
             if detail:
                 cprint('%5d' % m['incarnation'])
-            cprint(' %s ' % ','.join(tags))
+            cprint(' %s ' % ','.join(groups))
 
 
 def do_leave(nuuid=''):
@@ -261,11 +261,11 @@ def do_info(show_logs):
     statsd = d.get('statsd')
     websocket = d.get('websocket')
     dns = d.get('dns')
-    tags = ','.join(d.get('tags'))
+    groups = ','.join(d.get('groups'))
     _docker = d.get('docker')
     collectors = d.get('collectors')
     
-    e = [('name', name), ('display name', display_name), ('uuid', _uuid), ('tags', tags), ('version', version), ('pid', pid), ('port', port), ('addr', addr),
+    e = [('name', name), ('display name', display_name), ('uuid', _uuid), ('groups', groups), ('version', version), ('pid', pid), ('port', port), ('addr', addr),
          ('zone', zone_value), ('socket', socket_path), ('threads', nb_threads)]
     
     # Normal agent information
@@ -456,12 +456,12 @@ def do_keygen():
     print ''
 
 
-def do_exec(tag='*', cmd='uname -a'):
+def do_exec(group='*', cmd='uname -a'):
     if cmd == '':
         logger.error('Missing command')
         return
     try:
-        (code, r) = get_opsbro_local('/exec/%s?cmd=%s' % (tag, cmd))
+        (code, r) = get_opsbro_local('/exec/%s?cmd=%s' % (group, cmd))
     except request_errors, exp:
         logger.error(exp)
         return
@@ -520,9 +520,9 @@ def do_detect_nodes(auto_join):
         print "Cannot detect (broadcast UDP) other nodes."
         sys.exit(1)
     print "Other network nodes detected on this network:"
-    print '  Name                                 Zone        Address:port          Proxy    Tags'
+    print '  Name                                 Zone        Address:port          Proxy    Groups'
     for node in network_nodes:
-        print '  %-35s  %-10s  %s:%d  %5s     %s' % (node['name'], node['zone'], node['addr'], node['port'], node['is_proxy'], ','.join(node['tags']))
+        print '  %-35s  %-10s  %s:%d  %5s     %s' % (node['name'], node['zone'], node['addr'], node['port'], node['is_proxy'], ','.join(node['groups']))
     if not auto_join:
         print "Auto join (--auto-join) is not enabled, so don't try to join theses nodes"
         return
@@ -778,10 +778,10 @@ exports = {
     do_exec                 : {
         'keywords'   : ['executors', 'exec'],
         'args'       : [
-            {'name': 'tag', 'default': '', 'description': 'Name of the node tag to execute command on'},
+            {'name': 'group', 'default': '', 'description': 'Name of the node group to execute command on'},
             {'name': 'cmd', 'default': 'uname -a', 'description': 'Command to run on the nodes'},
         ],
-        'description': 'Execute a command (default to uname -a) on a group of node of the good tag (default to all)'
+        'description': 'Execute a command (default to uname -a) on a group of node of the good group (default to all)'
     },
     
     do_join                 : {
