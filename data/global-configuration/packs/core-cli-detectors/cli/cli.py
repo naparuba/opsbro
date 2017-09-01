@@ -19,7 +19,8 @@ except ImportError:
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger
 from opsbro.unixclient import get_json, get_local, request_errors
-from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, print_2tab, print_element_breadcumb
+from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, print_2tab
+from opsbro.cli_display import print_element_breadcumb
 
 
 def do_detect_list():
