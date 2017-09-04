@@ -1,0 +1,14 @@
+FROM debian:7
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+RUN        apt-get update && apt-get install -y python
+RUN        apt-get install -y python-pip
+
+ADD        . /root/opsbro-oss
+
+WORKDIR     /root
+RUN     tar cfz opsbro-0.1.tar.gz opsbro-oss
+
+# local pip install
+#ENTRYPOINT     DEBUG_INSTALL=1 pip -vvv install opsbro --no-index --find-links file://opsbro-0.1.tar.gz && cd opsbro-oss && test/test_one_linux_installation.sh && test/assert_group.sh "debian"
+ENTRYPOINT     DEBUG_INSTALL=0 pip install opsbro-0.1.tar.gz && cd opsbro-oss && test/test_one_linux_installation.sh && test/assert_group.sh "debian"

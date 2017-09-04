@@ -11,6 +11,14 @@ if [ "$TEST_SUITE" == "PYTHON" ]; then
 
    echo "Test launch for Python"
    if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install ordereddict; fi
+   # notice: the nose-cov is used because it is compatible with --processes, but produce a .coverage by process
+   # so we must combine them in the end
+   # * -x : stop at first error
+   # * --exe : allow to launch test py that are executable
+   # * --process : use 1 sub process
+   # * --process-timeout: at max 5min for a test to run
+   # * --process-resttartworker: one sub process by test, to avoid mix between libs
+   # NOTE: I don't kow why, byt process options are failing, with endless run
    nosetests -xv --processes=1 --process-timeout=300 --process-restartworker --with-cov --cov=opsbro --exe
    exit $?
 fi

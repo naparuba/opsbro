@@ -39,6 +39,11 @@ class Characters(object):
     small_8 = u'₈'
     small_9 = u'₉'
     small_close = u'₎'
+    
+    # Gun
+    higer_gun = u'߹'
+    middle_gun = u'█'
+    lower_gun = u'߸'
 
 
 CHARACTERS = Characters()

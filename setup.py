@@ -23,6 +23,29 @@ elif python_version >= (3,):
 
 package_data = ['*.py']
 
+# Is this setup.py call for a pypi interaction? if true, won't hook lot of things
+is_pypi_register_upload = ('register' in sys.argv or ('sdist' in sys.argv and 'upload' in sys.argv))
+if is_pypi_register_upload:
+    print "Pypi specal mode activated, skipping some black magic"
+    if '-v' not in sys.argv:
+        sys.argv.append('-v')
+
+# Is it a first step installation for pip? (egg_info stuff)
+is_pip_first_step = 'egg_info' in sys.argv
+# Last step for pip insta an install one (at least in pip 9.0.1)
+is_pip_real_install_step = 'bdist_wheel' in sys.argv
+
+# Black magic install:
+# * copy /etc
+# * look for dependencies from system packages
+# * hide setup.py part
+# If not blac kmagic (like in pip first step, or pypi interaction (upload, etc)
+# we do not want any black magic thing, and we try to behave like a standard python package ^^
+# By default we love black magic, but if we are in a pip special call or pypi, we disable it
+allow_black_magic = not is_pypi_register_upload and not is_pip_first_step
+
+# We will need to allow a debug of the orig_sys_argv
+orig_sys_argv = sys.argv[:]
 
 ##################################       Utility functions for files
 # helper function to read the README file
@@ -60,6 +83,9 @@ stderr_orig_bkp = None
 
 def hook_stdout():
     global stderr_redirect
+    # Do not hook if we are uploading to pypi
+    if not allow_black_magic:
+        return
     sys.stdout = stdout_catched
     sys.stderr = stdout_catched
     # Also hook raw stderr
@@ -70,6 +96,9 @@ def hook_stdout():
 # Unhook stdout, put back fd=0
 def unhook_stdout():
     global stderr_redirect
+    # For pypi, we did not hook it
+    if not allow_black_magic:
+        return
     # If we have something in the file descriptor 2, reinject into stderr
     stderr_redirect.close()
     # with open(stderr_redirect_path, 'r') as f:
@@ -131,42 +160,53 @@ except ImportError, exp:  # great, first install so
 my_dir = os.path.dirname(os.path.abspath(__file__))
 opsbro = imp.load_module('opsbro', *imp.find_module('opsbro', [os.path.realpath(my_dir)]))
 from opsbro.info import VERSION, BANNER, TXT_BANNER
-from opsbro.log import cprint, is_tty, sprintf
+from opsbro.log import cprint, is_tty, sprintf, logger
 from opsbro.misc.bro_quotes import get_quote
 from opsbro.systempacketmanager import systepacketmgr
 from opsbro.cli_display import print_h1
 from opsbro.characters import CHARACTERS
+
 
 ##################################       Only root as it's a global system tool.
 if os.getuid() != 0:
     cprint('Setup must be launched as root.', color='red')
     sys.exit(2)
 
+# By default logger should not print anything
+logger.setLevel('ERROR')
+# By maybe we are in verbose more?
+if '-v' in sys.argv or os.environ.get('DEBUG_INSTALL', '0') == '1':
+    logger.setLevel('DEBUG')
+
+logger.debug('SCRIPT: install/update script was call with arguments: %s' % orig_sys_argv)
+
 what = 'Installing' if not is_update else 'Updating'
 title = sprintf('%s' % what, color='magenta', end='') + sprintf(' OpsBro to version ', end='') + sprintf('%s' % VERSION, color='magenta', end='')
 
-print_h1(title, raw_title=False)
+if allow_black_magic:
+    print_h1(title, raw_title=False)
 
 ##################################       Start to print to the user
-# If we have a real tty, we can print the delicious banner with lot of BRO
-if is_tty():
-    cprint(BANNER)
-else:  # ok you are poor, just got some ascii art then
-    cprint(TXT_BANNER)
-
-# Also print a Bro quote
-quote, from_film = get_quote()
-cprint('  >> %s  (%s)\n' % (quote, from_film), color='grey')
-
-if is_update:
-    cprint('  Previous OpsBro lib detected on this system (location:', end='')
-    cprint(prev_path, color='blue', end='')
-    cprint(')(version:', end='')
-    cprint('%s' % prev_version, color='blue', end='')
-    cprint('), using the ', end='')
-    cprint('update process', color='magenta')
-
-print ''
+if allow_black_magic:
+    # If we have a real tty, we can print the delicious banner with lot of BRO
+    if is_tty():
+        cprint(BANNER)
+    else:  # ok you are poor, just got some ascii art then
+        cprint(TXT_BANNER)
+    
+    # Also print a Bro quote
+    quote, from_film = get_quote()
+    cprint('  >> %s  (%s)\n' % (quote, from_film), color='grey')
+if allow_black_magic:
+    if is_update:
+        cprint('  Previous OpsBro lib detected on this system (location:', end='')
+        cprint(prev_path, color='blue', end='')
+        cprint(')(version:', end='')
+        cprint('%s' % prev_version, color='blue', end='')
+        cprint('), using the ', end='')
+        cprint('update process', color='magenta')
+    
+    print ''
 
 if '--update' in args or opts.upgrade or '--upgrade' in args:
     if 'update' in args:
@@ -178,8 +218,9 @@ if '--update' in args or opts.upgrade or '--upgrade' in args:
         sys.argv.remove('--upgrade')
     is_update = True
 
+# install: if we are with setupy.py install, or maybe with pip launch (last step)
 is_install = False
-if 'install' in args:
+if not is_update and 'install' in args or is_pip_real_install_step:
     is_install = True
 
 install_scripts = opts.install_scripts or ''
@@ -205,8 +246,10 @@ if '-v' not in sys.argv and '--quiet' not in sys.argv and '-q' not in sys.argv:
     sys.argv.insert(1, '--quiet')
 
 ##################################       Prepare the list of files that will be installed
-# compute scripts
-scripts = [s for s in glob('bin/opsbro*') if not s.endswith('.py')]
+
+
+data_files = []
+configuration_files = []
 
 # Define files
 if 'win' in sys.platform:
@@ -234,7 +277,6 @@ elif 'linux' in sys.platform or 'sunos5' in sys.platform:
             ['init.d/opsbro']
         )
     ]
-
 elif 'bsd' in sys.platform or 'dragonfly' in sys.platform:
     default_paths = {
         'bin'    : install_scripts or "/usr/local/bin",
@@ -255,6 +297,8 @@ else:
     data_files = []
 
 # Beware to install scripts in the bin dir
+# compute scripts
+scripts = [s for s in glob('bin/opsbro*') if not s.endswith('.py')]
 data_files.append((default_paths['bin'], scripts))
 
 if not is_update:
@@ -262,17 +306,17 @@ if not is_update:
     for path, subdirs, files in os.walk('etc'):
         # for void directories
         if len(files) == 0:
-            data_files.append((os.path.join(default_paths['etc'], re.sub(r"^(etc\/|etc$)", "", path)), []))
+            configuration_files.append((os.path.join(default_paths['etc'], re.sub(r"^(etc\/|etc$)", "", path)), []))
         for name in files:
-            data_files.append((os.path.join(default_paths['etc'], re.sub(r"^(etc\/|etc$)", "", path)),
-                               [os.path.join(path, name)]))
+            configuration_files.append((os.path.join(default_paths['etc'], re.sub(r"^(etc\/|etc$)", "", path)),
+                                        [os.path.join(path, name)]))
     ## get all files + under-files in etc/ except daemons folder
     for path, subdirs, files in os.walk('data'):
         # for void directories
         if len(files) == 0:
-            data_files.append((os.path.join(default_paths['var'], re.sub(r"^(data\/|data$)", "", path)), []))
+            configuration_files.append((os.path.join(default_paths['var'], re.sub(r"^(data\/|data$)", "", path)), []))
         for name in files:
-            data_files.append((os.path.join(default_paths['var'], re.sub(r"^(data\/|data$)", "", path)), [os.path.join(path, name)]))
+            configuration_files.append((os.path.join(default_paths['var'], re.sub(r"^(data\/|data$)", "", path)), [os.path.join(path, name)]))
 
 # Libexec is always installed
 for path, subdirs, files in os.walk('libexec'):
@@ -295,9 +339,10 @@ for o in not_allowed_options:
 
 ##################################       Look at prerequites, and if possible fix them with the system package instead of pip
 
-print ''
-title = 'Checking prerequites ' + sprintf('(1/3)', color='magenta', end='')
-print_h1(title, raw_title=True)
+if allow_black_magic:
+    print ''
+    title = 'Checking prerequites ' + sprintf('(1/3)', color='magenta', end='')
+    print_h1(title, raw_title=True)
 
 # Maybe we won't be able to setup with packages, if so, switch to pip :(
 install_from_pip = []
@@ -344,16 +389,21 @@ if os.name != 'nt':
         },
     }
 
+# If we are uploading to pypi, we just don't want to install/update packages here
+if not allow_black_magic:
+    mod_need.clear()
+
 # We will have to look in which distro we are
 is_managed_system = systepacketmgr.is_managed_system()
 system_distro, system_distroversion, _ = systepacketmgr.get_distro()
-if is_managed_system:
-    cprint(' * Your system ', end='')
-    cprint('%s (version %s) ' % (system_distro, system_distroversion), color='magenta', end='')
-    cprint('is managed by this installer and will be able to use system package manager to install dependencies.')
-else:
-    cprint(
-        " * NOTICE: your system (%s - %s) is not a tested system, it won't use the package system to install dependencies and will use the python pip dependency system instead (internet connection is need)." % (system_distro, system_distroversion))
+if allow_black_magic:
+    if is_managed_system:
+        cprint(' * Your system ', end='')
+        cprint('%s (version %s) ' % (system_distro, system_distroversion), color='magenta', end='')
+        cprint('is managed by this installer and will be able to use system package manager to install dependencies.')
+    else:
+        cprint(
+            " * NOTICE: your system (%s - %s) is not a tested system, it won't use the package system to install dependencies and will use the python pip dependency system instead (internet connection is need)." % (system_distro, system_distroversion))
 
 for (m, d) in mod_need.iteritems():
     cprint(' * checking dependency for ', end='')
@@ -403,6 +453,10 @@ for (m, d) in mod_need.iteritems():
                             # Remove duplicate from pip install
 install_from_pip = set(install_from_pip)
 
+# if we are uploading to pypi, we don't want to have dependencies, I don't want pip to do black magic. I already do black magic.
+if not allow_black_magic:
+    install_from_pip = set()
+
 # Try to import setup tools, and if not, switch to
 try:
     from setuptools import setup, find_packages
@@ -419,10 +473,11 @@ except ImportError:
 
 print '\n'
 ##################################       Go install the python part
-title = 'Python lib installation ' + sprintf('(2/3)', color='magenta', end='')
-print_h1(title, raw_title=True)
+if allow_black_magic:
+    title = 'Python lib installation ' + sprintf('(2/3)', color='magenta', end='')
+    print_h1(title, raw_title=True)
 
-cprint('  * %s opsbro python lib in progress...' % what, end='')
+    cprint('  * %s opsbro python lib in progress...' % what, end='')
 sys.stdout.flush()
 
 hook_stdout()
@@ -472,7 +527,9 @@ try:
             'Topic :: System :: Distributed Computing',
         ],
         install_requires=[install_from_pip],
-        data_files=data_files,
+        # data_files=data_files,
+        # include_package_data=True,  # we need to let setup() install data files, becwause we must give it AND say it's ok to install....
+        # TODO: add some more black magic here! I really hate python packaging!
     )
 except Exception, exp:
     print_fail_setup(exp)
@@ -485,38 +542,69 @@ setup_phase_is_done = True
 # printing it to everyone unless we want to fear them
 unhook_stdout()
 
-cprint('  %s' % CHARACTERS.check, color='green')
+if allow_black_magic:
+    cprint('  %s' % CHARACTERS.check, color='green')
 
 installation_log = '/tmp/opsbro.setup.log'
 with open(installation_log, 'w') as f:
     f.write(stdout_catched.getvalue())
-    cprint('   - Raw python setup lib (and possible depndencies) installation log at: %s' % installation_log, color='grey')
+    if allow_black_magic:
+        cprint('   - Raw python setup lib (and possible depndencies) installation log at: %s' % installation_log, color='grey')
 
 ##################################       Install init.d script, the daemon script and bash completion part
-print '\n'
-title = 'Utility script installation ' + sprintf('(3/3)', color='magenta', end='')
-print_h1(title, raw_title=True)
+if allow_black_magic:
+    print '\n'
+    title = 'Utility script installation ' + sprintf('(3/3)', color='magenta', end='')
+    print_h1(title, raw_title=True)
 
 
 # Just a print with aligned test over : OK
 def __print_sub_install_part(p):
-    cprint('   - %-30s :' % p, color='grey', end='')
-    cprint(' %s' % CHARACTERS.check, color='green')
+    if allow_black_magic:
+        cprint('   - %-40s :' % p, color='grey', end='')
+        cprint(' %s' % CHARACTERS.check, color='green')
 
 
-# if root is set, it's for package, so NO chown
-if not root and is_install:
-    cprint(' * Installing utility scripts (init.d, daemon, bash completion, etc)')
+def __do_install_files(lst):
+    # * dir : dest_directory
+    # * lfiles : local files in this archive
+    for (dir, lfiles) in lst:
+        # Be sute the directory do exist
+        if not os.path.exists(dir):
+            # ==> mkdir -p
+            logger.debug('The directory %s is missing, creating it' % dir)
+            os.makedirs(dir)
+        for lfile in lfiles:
+            lfile_name = os.path.basename(lfile)
+            destination = os.path.join(dir, lfile_name)
+            logger.debug("Copying local file %s into %s" % (lfile, destination))
+            shutil.copy2(lfile, destination)
+
+
+# Always install standard directories (log, run, etc)
+if allow_black_magic:
+    __do_install_files(data_files)
+    __print_sub_install_part('OpsBro scripts & directories')
+    
     # Also change the rights of the opsbro- scripts
     for s in scripts:
         bs = os.path.basename(s)
         _chmodplusx(os.path.join(default_paths['bin'], bs))
-    __print_sub_install_part('daemon')
+    __print_sub_install_part('Check daemon file rights')
     _chmodplusx(default_paths['libexec'])
     
     # If not exists, won't raise an error there
     _chmodplusx('/etc/init.d/opsbro')
-    __print_sub_install_part('init.d script')
+    __print_sub_install_part('Check init.d script execution rights')
+
+# if root is set, it's for package, so NO chown
+# if pypi upload, don't need this
+if not root and is_install and allow_black_magic:
+    cprint(' * Installing data & scripts (sample configuration, init.d, daemon, bash completion)')
+    
+    # Install configuration, packs
+    __do_install_files(configuration_files)
+    __print_sub_install_part('Sample configuration & core packs')
     
     # Also install the bash completion part if there is such a directory
     bash_completion_dir = '/etc/bash_completion.d/'
@@ -526,9 +614,10 @@ if not root and is_install:
         _chmodplusx(dest)
         __print_sub_install_part('bash completion rule')
 
-print ''
-print_h1('End', raw_title=True)
-cprint('OpsBro ', end='')
-cprint(what, color='magenta', end='')
-cprint(' : ', end='')
-cprint(' %s' % CHARACTERS.check, color='green')
+if allow_black_magic:
+    print ''
+    print_h1('End', raw_title=True)
+    cprint('OpsBro ', end='')
+    cprint(what, color='magenta', end='')
+    cprint(' : ', end='')
+    cprint(' %s' % CHARACTERS.check, color='green')

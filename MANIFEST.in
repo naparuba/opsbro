@@ -1,6 +1,7 @@
 recursive-include opsbro *.*
 recursive-include etc *
 recursive-include bin *
+recursive-include data *
 recursive-include test *.*
 include MANIFEST.in
 include LICENSE README.md

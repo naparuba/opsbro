@@ -2,19 +2,32 @@
 This document is only a todo/don't forget document for Jean Gabès, opsbro author because he have a small fish memory, really ┻━┻︵ \(°□°)/ ︵ ┻━┻
 
 As a user, you don't have to read it.
-But if you want to start a project (or help this one), you can give a look at the internal of "think" such a tool, how it's defined and why in adding a feature, 60% of the time is spec, 40% doing. (and another 40% debugging).
+But if you want to start a project (or help this one (/.__.)/ \(.__.\) ), you can give a look at the internal of "think" such a tool, how it's defined and why in adding a feature, 60% of the time is spec, 40% doing. (and another 40% debugging).
 
 
 
 
 ############# BIG PARTS
+All the configuration / deployment is model based (aka into packs)
 
 * service discovery (gossip / detectors / groups)
+  * automatically detect new node in few seconds
+  * detect what your server is and automatically set it into groups
 * monitoring (collectors / checks / handlers)
-* application performances (statsd / graphite)
-* automation/compliance (compliance / system driver)
-* configuration automation (generator / executor / KV)
+  * based on groups, collects metrics/data from your system & applications (by queries or statsd / graphite)
+  * checks theses metrics/data if they are OK
+  * if they are not OK, raise alerts (mails, slack, other)
+* configuration automation / system compliance (compliance / system driver / generator / executor / KV)
 
+
+################# Pypi
+cat ~/.pypirc
+[server-login]
+repository: https://upload.pypi.org/legacy/
+username: naparuba
+password: XXXXXXXX
+
+python setup.py register sdist upload
 
 
 ################################# CLI SPEC
@@ -423,118 +436,115 @@ compliance:
 
 
 
+#### ROADMAP:
 
-####################### TODO par ordre de priorité
-
-### Checks:
-  * revoir la gestion des paramètres, faire que ça colle vraiment à ceux des collectors & autre modules, même chemin d'appel
+# 0.2: version actuelle
 
 
-### GROUPES
-  ✔ renommer les tags en groupes
-    * defined_groups
-    * detected_groups
-  * séparer à l'affichage les groupes configurés et les auto-groups détectés
+# 0.3: monitoring cohérent, avec alerting modulaire (modules)
+    * CHECKS revoir la gestion des paramètres, faire que ça colle vraiment à ceux des collectors & autre modules, même chemin d'appel
+      * {{parameters.mysql_user}}
+    * CHECKS-HANDLERS: le check ne doit plus spécifier l'handler qu'il souhaite, il les prévient tous, fin de l'histoire
+    * HANDLERS faire que ce soit des modules spécifiques qui exportent leur capacité au handler, donc qu'ils implémentent une sous classe de Module (jouable avec celle déjà existante?)
+       * exporter ensuite emails et slack en tant que handler modules
+    * HANDLERS faire des handlers pour autre chose que les checks (installers, compliance, detectors)
+    * CLI: setter un parameter la conf locale
 
 
-### Handlers:
-  * faire que ce soit des modules spécifiques qui exportent leur capacité au handler, donc qu'ils implémentent une sous classe de Module (jouable avec celle déjà existante?)
-    * exporter ensuite emails et slack en tant que handler modules
-  * faire des handlers pour autre chose que les checks (installers, compliance, detectors)
+# 0.X: remise à niveau des zones, avec rajout des clés par zone
+    * GOSSIP LEAVE appel à leave doit comporter la clé master/auth si distant
+    * CLI: setter un paramètre de la conf locale (daemon & node, parameters c'est déjà fait)
 
 
-### Installers
-  * renommer les en un truc + général (compliance?)
-  * exporter leur états dans le CLI
-
-### Nouvelle CLI
-  * définir une CLI pour les KV (put/list/get/delete)
-  * définir une cli pour les TS (put/dump)
-  * CLI: setter un paramètre de la conf locale
-  * CLI: rajouter un option --explain sur l'appel eval afin de voir la transformation et idéalement d'où vient l'info
+# 0.4: UI remise à niveau, avec affichage mode "Bro"
+    * UI: affichage clean & Bro
+    * UI: affichage des checks
+    * UI: affichage de "agent info"
+    * UI voir si http://qrohlf.com/trianglify/#gettingstarted ne ferais pas un fond interessant
 
 
-
-### Monitoring
-  * gérer les expressions d'ensembles sur les groupes ( & | ! )
-  * redéfinir les "services" en autre choses qui se base sur une expression de dispo des checks
-
-
-### Collectors
-  * permettre un meilleur export des docs des functions de l'evaluater
-  * fonction pour get les données du collecter
-  * collectors : rajouter + d'états pour signaler si l'utilisateur a raté nun truc dans la conf ou s'il manque la discovery
-    * missing configuration
-    * not detected
-    * error
-    * ok
-    * ??
-  * collectors : avoir un moyen de choper X informations par exemple {{collectors.mongodb.dbstats.*.datasize}} renvoit une liste avec les valeurs, qu'on peux alors max().
-  * sortir les data importantes en "spec" genre distribution, CPUs ou Country
-  *
+# 0.5: Rajout de la partie compliance
+    * COMPLIANCE rajouter les objets et les modules de compliance
+    * Installers exporter leur états dans le CLI
+    * Compliance exporter leur états dans le CLI
 
 
-### Gossip/Members
-  * LEAVE appel à leave doit comporter la clé master/auth si distant
+# 0.X: Services/roles des nodes est disponible et utilisé côté UI
+    * ROLES: redéfinir les "services" en autre choses qui se base sur une expression de dispo des checks
+    * UI les roles sont visibles
 
 
-### Packs
-  * Pack Azure
-  * linux: enlever la dépendance à sysstat
-  * ipmi (hardware stuff)
-  * smart (disques)
-  * raid linux (md)
-  * rabbitmq: prendre exemple sur les endpoints listés sur https://github.com/nagios-plugins-rabbitmq/nagios-plugins-rabbitmq/tree/master/scripts
+# 0.X: Replication de l'installation & sharing/sync des packs
+    * REPLICANT: installer: allow to keep the tar-ball of my own installation to allow another node to install myself
+    * REPLICANT: installer: execute the tar-ball installer on another node (ssh based)
+    * PACKS: permettre de synchronizer sa configuration globale avec les autres noeuds
+    * PACKS: permettre de synchronizer sa configuration zone avec les autres nodes
+    * PACKS: permettre de copier la configuration locale d'une autre noeud
+    * PACKS UPDATE: permettre de mettre à jour tout ce qui est autre que paramètres d'un pack d'un niveau vers un autre niveau
+    * CLI PACKS LIST des packs et leurs composants (même ceux pas pris, mais on montre qui gagne suivant le level)
+       * ✔ opsbro pack list
+       * opsbro pack list --level=global  (donc que global et en dessous)
+    * ✔ CLI PACKS SHOW des packs finalement pris en compte et affichage de ce qu'il y a dedans et le paramétrage associé (paramètre par défaut/manquant, etc etc)
+    * ✔ CLI PACKS OVERLOAD : prends un pack d'un niveau supérieur vers un niveau inférieur.
+        * opsbro packs overload global.shinken --to-local (default)   ou --to-zone
+    * CLI PACKS PROMOTE : prends un pack d'un niveau bas et l'augmente vers un niveau + haut
+       * opsbro packs promote local.shinken --to-zone (defult niveau +1) ou --to-global
+       * attention: nécessite la clé maitre de la zone/global pour être autoriser à faire ça
+    * CLI PACKS COPY d'un pack sur un autre mais au même niveau
+       * opsbro packs copy local.shinken  monitoring-generic
+    * CLI PACKS DELETE d'un pack sur un level particulier
+       * opsbro packs delete local.shinken
+    * ✔ CLI PACKS EDIT d'un paramètre comme par exemple:
+       * ✔ opsbro packs parameters set local.nagios.socket_path  /var/local/blabla.cmd
+       * ✔ opsbro packs parameters get local.nagios.enable => true
 
 
-### PACKS CLI
-  * LIST des packs et leurs composants (même ceux pas pris, mais on montre qui gagne suivant le level)
-     * ✔ opsbro pack list
-     * opsbro pack list --level=global  (donc que global et en dessous)
-  * ✔ SHOW des packs finalement pris en compte et affichage de ce qu'il y a dedans et le paramétrage associé (paramètre par défaut/manquant, etc etc)
-  * ✔ OVERLOAD : prends un pack d'un niveau supérieur vers un niveau inférieur.
-     * opsbro packs overload global.shinken --to-local (default)   ou --to-zone
-  * PROMOTE : prends un pack d'un niveau bas et l'augmente vers un niveau + haut
-     * opsbro packs promote local.shinken --to-zone (defult niveau +1) ou --to-global
-     * attention: nécessite la clé maitre de la zone/global pour être autoriser à faire ça
-  * COPY d'un pack sur un autre mais au même niveau
-     * opsbro packs copy local.shinken  monitoring-generic
-  * DELETE d'un pack sur un level particulier
-     * opsbro packs delete local.shinken
-  * ✔ EDIT d'un paramètre comme par exemple:
-     * ✔ opsbro packs parameters set local.nagios.socket_path  /var/local/blabla.cmd
-     * ✔ opsbro packs parameters get local.nagios.enable
-       => True
+# 0.X: Collectors : + de visibilité et de documentation
+    * COLLECTORS : rajouter + d'états pour signaler si l'utilisateur a raté nun truc dans la conf ou s'il manque la discovery
+       * missing configuration
+       * not detected
+       * error
+       * ok
+       * ??
+
+    * COLLECTORS permettre un meilleur export des docs des functions de l'evaluater
+    * COLLECTORS fonction pour get les données du collecter
+    * COLLECTORS : avoir un moyen de choper X informations par exemple {{collectors.mongodb.dbstats.*.datasize}} renvoit une liste avec les valeurs, qu'on peux alors max().
+    * COLLECTORS sortir les data importantes en "spec" genre distribution, CPUs ou Country
+    * CLI définir une cli pour les TS (put/dump)
 
 
+# 0.X: Fonctionnement sous windows
+    * DRIVER windows (va falloir livrer des msi)
 
 
-### Drivers:
-  * gérer les cas "out of the box"
-    * opensuse (zipper)
-    * fedora (dnf)
-    * alpine (pkg)
-    * windows (va falloir livrer des msi)
-    * core os
-
-
-### Core
-  * enlever la dépendance à psutil sur les linux (/proc c'est pas là pour faire joli)
-
-
-### Raft
-  * avoir une valeur sure de stabilisation, et voir les indicateurs sur ce qui aide/diminue la stabilisation
-
-
-### UI
-  * voir si http://qrohlf.com/trianglify/#gettingstarted ne ferais pas un fond interessant
-
-
-### Slack
-  * bot de commande
-  * query dns
+# 0.X: Meilleur développement des users avec accès en ligne à la doc
+    * API permettre un meilleur export des docs/specs des appels HTTP
+    * CLI: rajouter un option --explain sur l'appel eval afin de voir la transformation et idéalement d'où vient l'info
 
 
 
-### Export HTTP
-  * permettre un meilleur export des docs/specs des appels HTTP
+# 1.0: tout ce qu'il y a au dessus
+
+
+# X.X A discuter/MISC:
+    * CLI définir une CLI pour les KV (put/list/get/delete)
+    * MONITORING gérer les expressions d'application d'ensembles sur les groupes ( & | ! )
+    * GROUPS séparer à l'affichage/fonctions les groupes configurés et les auto-groups détectés
+        * defined_groups
+        * detected_groups
+    * RAFT avoir une valeur sure de stabilisation, et voir les indicateurs sur ce qui aide/diminue la stabilisation
+    * PACK Azure
+    * PACK linux: enlever la dépendance à sysstat
+    * PACK ipmi (hardware stuff)
+    * PACK smart (disques)
+    * PACK raid linux (md)
+    * PACK rabbitmq: prendre exemple sur les endpoints listés sur https://github.com/nagios-plugins-rabbitmq/nagios-plugins-rabbitmq/tree/master/scripts
+    * SLACK bot de commande (écoute slack pour des ordres)
+    * SLACK query dns (écoute slack pour des ordres)
+    * DRIVER opensuse (zipper)
+    * DRIVER fedora (dnf)
+    * DRIVER alpine (pkg)
+    * DRIVER core os
+    * CORE enlever la dépendance à psutil sur les linux (/proc c'est pas là pour faire joli)
+   * les fonctions non encore disponibles/exportées

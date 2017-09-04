@@ -8,13 +8,9 @@ services:
   - docker
 
 # command to install dependencies
-# some are only used for travis/coveralls so we are installing them here only
 #install:
 #  - "pip install -r dependencies"
-#  - "pip install coveralls"
-#  - "pip install nose-cov"
-#  - "pip install unittest2"
-#  - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install ordereddict; fi
+
 
 env:
 - TEST_SUITE=API
@@ -31,14 +27,6 @@ env:
 
 
 # command to run tests
-# notice: the nose-cov is used because it is compatible with --processes, but produce a .coverage by process
-# so we must combine them in the end
-# * -x : stop at first error
-# * --exe : allow to launch test py that are executable
-# * --process : use 1 sub process
-# * --process-timeout: at max 5min for a test to run
-# * --process-resttartworker: one sub process by test, to avoid mix between libs
-# NOTE: I don't kow why, byt process options are failing, with endless run
 script:
   - cd test
   - chmod a+x *sh

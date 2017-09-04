@@ -261,7 +261,10 @@ def do_info(show_logs):
     statsd = d.get('statsd')
     websocket = d.get('websocket')
     dns = d.get('dns')
-    groups = ','.join(d.get('groups'))
+    # Get groups as sorted
+    groups = d.get('groups')
+    groups.sort()
+    groups = ','.join(groups)
     _docker = d.get('docker')
     collectors = d.get('collectors')
     

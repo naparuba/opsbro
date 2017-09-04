@@ -56,11 +56,3 @@ log_level: INFO
 
 # Place to store nagios compatible plugins
 libexec: /var/lib/opsbro/libexec/
-
-
-
-# node specific data
-
-load:
-    warning: 1
-    critical: 2
