@@ -1,5 +1,5 @@
 detector:
-    groups:
+    add_groups:
         - redis
     apply_if: "file_exists('/etc/redis/redis.conf') or file_exists('/etc/redis.conf')"
     interval: "10s"

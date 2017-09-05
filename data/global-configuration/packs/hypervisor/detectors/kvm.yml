@@ -1,6 +1,7 @@
 detector:
-    groups:
-        - kvm
-    apply_if: "{{collector.hypervisor.hypervisor}} == 'KVMKVMKVM'"
     interval: "10s"
+    apply_if: "{{collector.hypervisor.hypervisor}} == 'KVMKVMKVM'"
+    add_groups:
+        - kvm
+
 

@@ -177,7 +177,7 @@ def do_packs_show():
                 for cname, check in checks.iteritems():
                     cprint('    - [', end='')
                     cprint('check.%-15s' % cname, color='cyan', end='')
-                    cprint('] apply_on=%s' % (check['apply_on']))
+                    cprint('] if_group=%s' % (check['if_group']))
             
             # Module
             module = pack_entry['module']
@@ -224,7 +224,7 @@ def do_packs_show():
                 for gname, generator in generators.iteritems():
                     cprint('    - [', end='')
                     cprint('generator.%-15s' % gname, color='cyan', end='')
-                    cprint('] apply_on=%s' % (generator['apply_on']))
+                    cprint('] if_group=%s' % (generator['if_group']))
             
             # installors
             installors = pack_entry['installors']

@@ -7,7 +7,6 @@
 import optparse
 import sys
 import os
-import json
 
 import signal
 
@@ -19,6 +18,7 @@ from opsbro.cli import CLICommander
 from opsbro.info import VERSION, BANNER, TXT_BANNER
 from opsbro.misc.bro_quotes import get_quote
 from opsbro.defaultpaths import DEFAULT_CFG_FILE
+from opsbro.yamlmgr import yamler
 
 logger.setLevel('WARNING')
 
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     parser.add_option('--proxy', dest="proxy", help="""Proxy URI. Like http://user:password@proxy-server:3128""")
     parser.add_option('-l', '--list', action='store_true', dest="do_list", help=("List available commands"))
     parser.add_option('-D', action='store_true', dest="do_debug", help=("Enable the debug mode"))
-    parser.add_option('-c', '--config', dest="jsonconfig", default=DEFAULT_CFG_FILE, help=("Path to your local.json file. Default: %s" % DEFAULT_CFG_FILE))
+    parser.add_option('-c', '--config', dest="ymlconfig", default=DEFAULT_CFG_FILE, help=("Path to your local.yml file. Default: %s" % DEFAULT_CFG_FILE))
     parser.add_option('-v', action='store_true', dest="do_verbose", help=("Be more verbose"))
     parser.add_option('-h', '--help', action='store_true', dest="do_help", help=("Print help"))
     
@@ -76,15 +76,16 @@ if __name__ == '__main__':
         logger.setLevel('DEBUG', force=True)
     
     cfg = None
-    if not os.path.exists(opts.jsonconfig):
+    if not os.path.exists(opts.ymlconfig):
         logger.debug('Missing configuration file!')
     else:
         try:
-            with open(opts.jsonconfig, 'r') as f:
-                CONFIG = json.load(f)
-            logger.debug("Loaded configuration file %s : %s" % (opts.jsonconfig, CONFIG))
+            with open(opts.ymlconfig, 'r') as f:
+                buf = f.read()
+                CONFIG = yamler.loads(buf)
+            logger.debug("Loaded configuration file %s : %s" % (opts.ymlconfig, CONFIG))
         except Exception, exp:
-            logger.error('Cannot load configuration file %s: %s' % (opts.jsonconfig, exp))
+            logger.error('Cannot load configuration file %s: %s' % (opts.ymlconfig, exp))
             sys.exit(2)
     
     CLI = CLICommander(CONFIG, opts)

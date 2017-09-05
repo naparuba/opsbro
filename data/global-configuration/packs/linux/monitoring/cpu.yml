@@ -1,6 +1,6 @@
 check:
     interval: 10s
-    apply_on: linux
+    if_group: linux
     
     ok_output: "'OK: cpu is great: %s%%' % (100-{{collector.cpustats.cpuall.%idle}})"
     

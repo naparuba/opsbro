@@ -1,6 +1,6 @@
 detector:
     # Which groups to set
-    groups:
+    add_groups:
         - 'country::{{collector.geoloc.country}}'
     # will be set onl if
     apply_if: '{{collector.geoloc.country}} != ""'

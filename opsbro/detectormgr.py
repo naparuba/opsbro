@@ -29,14 +29,14 @@ class DetectorMgr(object):
         detector['name'] = detector['id'] = gname
         if 'notes' not in detector:
             detector['notes'] = ''
-        if 'apply_on' not in detector:
-            detector['apply_on'] = detector['name']
+        if 'if_group' not in detector:
+            detector['if_group'] = detector['name']
         
-        for prop in ['groups', 'apply_if']:
+        for prop in ['add_groups', 'apply_if']:
             if prop not in detector:
                 logger.warning('Bad detector, missing property %s in the detector %s' % (prop, gname))
                 return
-        if not isinstance(detector['groups'], list):
+        if not isinstance(detector['add_groups'], list):
             logger.warning('Bad detector, groups is not a list in the detector %s' % gname)
             return
         
@@ -75,7 +75,7 @@ class DetectorMgr(object):
                         do_apply = False
                     gen['do_apply'] = do_apply
                     if do_apply:
-                        groups = gen['groups']
+                        groups = gen['add_groups']
                         try:
                             # Try to evaluate the group if need (can be an expression {} )
                             # NOTE: to_string=True to not have a json object with 'value' but directly the string value
@@ -130,7 +130,7 @@ class DetectorMgr(object):
                     logger.error('Cannot execute detector %s: %s' % (gname, exp))
                     res[gname]['matched'] = False
                 if res[gname]['matched']:
-                    res[gname]['groups'] = gen['groups']
+                    res[gname]['groups'] = gen['add_groups']
                     for group in res[gname]['groups']:
                         if group not in gossiper.groups:
                             res[gname]['new_groups'].append(group)

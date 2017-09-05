@@ -1,5 +1,5 @@
 generator:
-    apply_on:      linux
+    if_group:      linux
     path:          /tmp/authorized_keys.txt
     template:      ssh_keys.txt
     partial_start: '###### SSH Key deploy start'

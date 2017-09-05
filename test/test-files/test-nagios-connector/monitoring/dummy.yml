@@ -1,5 +1,5 @@
 check:
-    apply_on: linux
+    if_group: linux
     script: "/usr/lib/nagios/plugins/check_dummy $exit_status$ '$exit_text$'"
     interval: 10s
     exit_status: 1

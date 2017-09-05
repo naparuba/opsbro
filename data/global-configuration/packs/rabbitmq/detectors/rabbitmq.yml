@@ -1,5 +1,5 @@
 detector:
-    groups:
+    add_groups:
         - rabbitmq
     apply_if: "file_exists('/etc/rabbitmq/rabbitmq.config')"
     interval: 10s

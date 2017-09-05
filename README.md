@@ -167,7 +167,7 @@ You can execute checks on your agent by two means:
 Some parameters are common on the two check types you can defined.
 
   * interval: how much seconds the checks will be scheduled
-  * apply_on: if present, will declare and execute the check only if the agent group is present
+  * if_group: if present, will declare and execute the check only if the agent group is present
 
 
 ### Evaluate check rule on collectors data
@@ -189,7 +189,7 @@ For example here is a cpu check on a linux server:
 
     check:
         interval:          10s
-        apply_on:          linux
+        if_group:          linux
             
         ok_output:         "'OK: cpu is great: %s%%' % (100-{collector.cpustats.cpuall.%idle})"
             
@@ -216,7 +216,7 @@ The parameter for this is:
   Here is an example 
   
     check:
-        apply_on: linux
+        if_group: linux
         script:   "$nagiosplugins$/check_mailq -w $mailq.warning$ -c $mailq.critical$"
         interval: 60s
     
@@ -452,5 +452,4 @@ You can ask your node cluster system to elect a node for a specific task or appl
 
 ## Is there an UI available?
 
-Yes. There is a UI available in the */var/lib/opsbro/ui/* directory. It's just flat files and so you can just export the directory with apache/nginx and play with it.
-
+Yes. There is a UI available in opsbro.io wbesite (SaaS).

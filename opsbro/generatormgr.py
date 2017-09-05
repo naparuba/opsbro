@@ -28,8 +28,8 @@ class GeneratorMgr(object):
         generator['name'] = generator['id'] = gname
         if 'notes' not in generator:
             generator['notes'] = ''
-        if 'apply_on' not in generator:
-            generator['apply_on'] = generator['name']
+        if 'if_group' not in generator:
+            generator['if_group'] = generator['name']
         
         for prop in ['path', 'template']:
             if prop not in generator:
@@ -64,10 +64,10 @@ class GeneratorMgr(object):
         while not stopper.interrupted:
             logger.debug('Looking for %d generators' % len(self.generators))
             for (gname, gen) in self.generators.iteritems():
-                logger.debug('LOOK AT GENERATOR', gen, 'to be apply on', gen['apply_on'], 'with our groups', gossiper.groups)
-                apply_on = gen['apply_on']
+                logger.debug('LOOK AT GENERATOR', gen, 'to be apply on', gen['if_group'], 'with our groups', gossiper.groups)
+                if_group = gen['if_group']
                 # Maybe this generator is not for us...
-                if apply_on != '*' and apply_on not in gossiper.groups:
+                if if_group != '*' and if_group not in gossiper.groups:
                     continue
                 logger.debug('Generator %s will runs' % gname)
                 g = Generator(gen)

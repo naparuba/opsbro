@@ -1,5 +1,5 @@
 check:
-    apply_on: linux
+    if_group: linux
 
     display_name: System Load Average
 

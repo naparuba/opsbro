@@ -1,5 +1,5 @@
 detector:
-    groups:
+    add_groups:
         - dns-server
     apply_if: "get_os() == 'windows' and 'DNS Server' in {{collector.system.windows.features||[]}}"
     interval: 10s

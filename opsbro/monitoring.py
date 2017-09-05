@@ -56,13 +56,13 @@ class MonitoringManager(object):
                 check[k] = v
         if service:
             check['service'] = service
-        if 'apply_on' not in check:
-            # we take the basename of this check directory for the apply_on
+        if 'if_group' not in check:
+            # we take the basename of this check directory for the if_group
             # and if /, take *  (aka means all)
-            apply_on = os.path.basename(os.path.dirname(name))
-            if not apply_on:
-                apply_on = '*'
-            check['apply_on'] = apply_on
+            if_group = os.path.basename(os.path.dirname(name))
+            if not if_group:
+                if_group = '*'
+            check['if_group'] = if_group
         if 'display_name' in check:
             check['display_name'] = '[%s]' % check.get('display_name')
         else:
@@ -132,19 +132,19 @@ class MonitoringManager(object):
         service['name'] = service['id'] = sname
         if 'notes' not in service:
             service['notes'] = ''
-        if 'apply_on' not in service:
-            # we take the basename of this check directory for the apply_on
+        if 'if_group' not in service:
+            # we take the basename of this check directory for the if_group
             # and if /, take the service name
-            apply_on = os.path.basename(os.path.dirname(sname))
-            if not apply_on:
-                apply_on = service['name']
-            service['apply_on'] = service['name']
-        apply_on = service['apply_on']
+            if_group = os.path.basename(os.path.dirname(sname))
+            if not if_group:
+                if_group = service['name']
+            service['if_group'] = service['name']
+        if_group = service['if_group']
         if 'check' in service:
             check = service['check']
             cname = 'service:%s' % sname
-            # for the same apply_on of the check as ourself
-            check['apply_on'] = apply_on
+            # for the same if_group of the check as ourself
+            check['if_group'] = if_group
             self.import_check(check, fr, cname, mod_time=mod_time, service=service['id'], pack_name=pack_name, pack_level=pack_level)
         
         # Put the default state to unknown, retention will load
@@ -243,28 +243,28 @@ class MonitoringManager(object):
         gossiper.increase_incarnation_and_broadcast('alive')
     
     
-    # Look at our services dict and link the one we are apply_on
+    # Look at our services dict and link the one we are if_group
     # so the other nodes are aware about our groups/service
     def link_services(self):
         logger.debug('LINK my services and my node entry')
         node = gossiper.get(gossiper.uuid)
         groups = node['groups']
         for (sname, service) in self.services.iteritems():
-            apply_on = service.get('apply_on', '')
-            if apply_on and apply_on in groups:
+            if_group = service.get('if_group', '')
+            if if_group and if_group in groups:
                 node['services'][sname] = service
     
     
     # For checks we will only populate our active_checks list
-    # with the name of the checks we are apply_on about
+    # with the name of the checks we are if_group about
     def link_checks(self):
         logger.debug('LOOKING FOR our checks that match our groups')
         node = gossiper.get(gossiper.uuid)
         groups = node['groups']
         active_checks = []
         for (cname, check) in self.checks.iteritems():
-            apply_on = check.get('apply_on', '*')
-            if apply_on == '*' or apply_on in groups:
+            if_group = check.get('if_group', '*')
+            if if_group == '*' or if_group in groups:
                 active_checks.append(cname)
         self.active_checks = active_checks
         # Also update our checks list in KV space
@@ -427,7 +427,7 @@ class MonitoringManager(object):
         self.analyse_check(check, did_change)
         
         # Launch the handlers, some need the data if the element did change or not
-        handlermgr.launch_handlers(check, did_change)
+        handlermgr.launch_check_handlers(check, did_change)
     
     
     # get a check return and look it it did change a service state. Also save

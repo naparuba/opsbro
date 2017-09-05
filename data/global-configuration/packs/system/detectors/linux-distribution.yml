@@ -1,6 +1,6 @@
 detector:
     # directly set the linux distribution as group name
-    groups:
+    add_groups:
         - '{{collector.system.os.linux.distribution}}'
     
     # but only if really set

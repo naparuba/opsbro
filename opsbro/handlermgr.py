@@ -43,7 +43,7 @@ class HandlerManager(object):
         self.handlers[handler['id']] = handler
     
     
-    def launch_handlers(self, check, did_change):
+    def launch_check_handlers(self, check, did_change):
         logger.debug('Launch handlers: %s (didchange=%s)' % (check['name'], did_change))
         
         for (hname, handler) in self.handlers.iteritems():

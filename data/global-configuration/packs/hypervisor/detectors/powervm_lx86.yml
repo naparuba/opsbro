@@ -1,5 +1,5 @@
 detector:
-    groups:
+    add_groups:
         - powervm_lx86
     apply_if: "grep_file('/proc/cpuinfo', '^vendor_id.*PowerVM Lx86', regexp=True)"
     interval: "10s"

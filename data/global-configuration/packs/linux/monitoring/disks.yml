@@ -1,5 +1,5 @@
 check:
-    apply_on: "linux"
+    if_group: "linux"
     
     ok_output: "'OK: / is at %s%%' % {{collector.diskusage./.pct_used}}"
     
