@@ -1,0 +1,10 @@
+
+diskuse_warning: 90
+diskuse_critical: 95
+
+
+cpu_critical: 90
+
+
+diskuse_critical: 95
+diskuse_warning: 90

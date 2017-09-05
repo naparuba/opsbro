@@ -95,8 +95,8 @@ class Evaluater(object):
                         v = self.compile(default_s, check=check, to_string=to_string)
                 logger.debug('Ask', s, 'got', v)
                 changes.append((orig_p, v))
-            elif p.startswith('configuration.'):
-                s = p[len('configuration.'):]
+            elif p.startswith('parameters.'):
+                s = p[len('parameters.'):]
                 v = self._found_params(s, check)
                 changes.append((orig_p, v))
             elif p.startswith('variables.'):
@@ -190,18 +190,24 @@ class Evaluater(object):
             raise TypeError(node)
     
     
-    # Try to find the params for a macro in the foloowing objets, in that order:
-    # * check
-    # * service
-    # * main configuration
+    # Try to find the params for a macro pack parameters
     def _found_params(self, m, check):
         # only import it now because if not will do an import loop
-        from opsbro.monitoring import monitoringmgr
+        from opsbro.configurationmanager import configmgr
         parts = [m]
         # if we got a |, we got a default value somewhere
         if '|' in m:
             parts = m.split('|', 1)
         change_to = ''
+        
+        if not check:
+            logger.error('Cannot find parameters: %s as we dont have a check' % m)
+            return change_to
+        
+        pack_name = check['pack_name']
+        pack_parameters = configmgr.get_parameters_from_pack(pack_name)
+        
+        logger.debug('Looking for parameter %s into pack %s parameters: %s' % (m, pack_name, pack_parameters))
         
         for p in parts:
             elts = [p]
@@ -211,36 +217,12 @@ class Evaluater(object):
             
             # we will try to grok into our cfg_data for the k1.k2.k3 =>
             # self.cfg_data[k1][k2][k3] entry if exists
-            d = None
-            founded = False
-            
-            # if we got a check, we can look into it, and maybe the
-            # linked service
-            if check:
-                # We will look into the check>service>global order
-                # but skip serviec if it's not related with the check
-                sname = check.get('service', '')
-                find_into = [check, self.cfg_data]
-                if sname and sname in monitoringmgr.services:
-                    service = monitoringmgr.services.get(sname)
-                    find_into = [check, service, self.cfg_data]
-            # if not, just the global configuration will be ok :)
-            else:
-                find_into = [self.cfg_data]
-            
-            for tgt in find_into:
-                (lfounded, ld) = self._found_params_inside(elts, tgt)
-                if not lfounded:
-                    continue
-                if lfounded:
-                    founded = True
-                    d = ld
-                    break
-            if not founded:
-                continue
-            change_to = str(d)
-            break
-        return change_to
+            (founded, ld) = self._found_params_inside(elts, pack_parameters)
+            logger.debug('Did find or not %s into parameters: %s => %s (%s)' % (elts, pack_parameters, founded, ld))
+            ld = str(ld)
+            if founded:
+                return ld
+        return ''
     
     
     # Try to found a elts= k1.k2.k3 => d[k1][k2][k3] entry
