@@ -1,0 +1,6 @@
+[server-login]
+repository: https://upload.pypi.org/legacy/
+username: naparuba
+password: XXXXXXXX
+
+#python setup.py register sdist upload
