@@ -17,8 +17,6 @@ from opsbro.log import LoggerFactory
 logger = LoggerFactory.create_logger('handler')
 
 
-# TODO: finish the email part
-
 class HandlerManager(object):
     def __init__(self):
         self.handlers = {}
@@ -147,13 +145,7 @@ class HandlerManager(object):
     def launch_handlers(self, check, did_change):
         logger.debug('Launch handlers: %s (didchange=%s)' % (check['name'], did_change))
         
-        for hname in check['handlers']:
-            handler = self.handlers.get(hname, None)
-            # maybe some one did atomize this handler? if so skip it :)
-            if handler is None:
-                logger.warning('Asking for handler %s by check %s but it is not found in my handlers: %s' % (hname, check['name'], self.handlers.keys()))
-                continue
-            logger.debug('Handler is founded: %s' % handler)
+        for (hname, handler) in self.handlers.iteritems():
             # Look at the state and should match severities
             if check['state'] not in handler['severities']:
                 continue

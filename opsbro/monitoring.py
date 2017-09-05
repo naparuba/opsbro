@@ -71,8 +71,6 @@ class MonitoringManager(object):
         check['state'] = 'pending'
         check['state_id'] = 3
         check['output'] = ''
-        if 'handlers' not in check:
-            check['handlers'] = ['default']
         self.checks[check['id']] = check
     
     
