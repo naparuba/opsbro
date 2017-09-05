@@ -32,6 +32,11 @@ WORKDIR       /root/opsbro-oss
 # install to allow the directory to exists
 RUN       python setup.py install
 
+# Copy the mail pack into a local one to enable modification
+RUN        opsbro  packs overload global.mail
+# Modify the value
+RUN        opsbro packs parameters set local.mail.enabled true
+
 # Copy the new checks
 ADD        test/test-files/test-mail-handlers   /var/lib/opsbro/global-configuration/packs/
 

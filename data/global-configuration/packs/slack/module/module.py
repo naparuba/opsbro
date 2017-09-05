@@ -1,4 +1,5 @@
 import time
+import os
 
 try:
     import jinja2
@@ -9,15 +10,18 @@ from slacker import Slacker
 
 from opsbro.module import HandlerModule
 from opsbro.gossip import gossiper
+from opsbro.parameters import BoolParameter, StringParameter, StringListParameter
 
 
 class SlackHandlerModule(HandlerModule):
     implement = 'slack'
     
     parameters = {
-        # 'enabled': BoolParameter(default=False),
-        # 'port'   : IntParameter(default=53),
-        # 'domain' : StringParameter(default=''),
+        'enabled'   : BoolParameter(default=False),
+        'severities': StringListParameter(default=['ok', 'warning', 'critical', 'unknown']),
+        'contacts'  : StringListParameter(default=['admin@mydomain.com']),
+        'token'     : StringParameter(default=''),
+        'channel'   : StringParameter(default='#alerts'),
     }
     
     
@@ -31,13 +35,17 @@ class SlackHandlerModule(HandlerModule):
     
     
     def send_slack(self, handler, check):
-        if not handler['token']:
+        token = self.get_parameter('token')
+        if not token:
+            token = os.environ.get('SLACK_TOKEN', '')
+        
+        if token:
             self.logger.error('[SLACK] token is not configured on the handler %s skipping slack messages.' % handler['name'])
             return
-        slack = Slacker(handler['token'])
+        slack = Slacker(token)
         # title = '{date_num} {time_secs} [node:`%s`][addr:`%s`] Check `%s` is going %s' % (gossiper.display_name, gossiper.addr, check['name'], check['state'])
         content = check['output']
-        channel = handler['channel']
+        channel = self.get_parameter('channel')
         colors = {'ok': 'good', 'warning': 'warning', 'critical': 'danger'}
         node_name = '%s (%s)' % (gossiper.name, gossiper.addr)
         if gossiper.display_name:
@@ -69,6 +77,11 @@ class SlackHandlerModule(HandlerModule):
     
     
     def handle(self, handler, obj, event):
+        enabled = self.get_parameter('enabled')
+        if not enabled:
+            self.logger.debug('Mail module is not enabled, skipping check alert sent')
+            return
+        
         self.logger.info('Manage an obj event: %s (event=%s)' % (obj, event))
         
         evt_type = event['evt_type']

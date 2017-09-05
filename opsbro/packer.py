@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import json
 import os
+
 from opsbro.yamlmgr import yamler
 from opsbro.log import LoggerFactory
 from opsbro.httpdaemon import http_export, response
@@ -28,6 +29,13 @@ class PackManager(object):
             return None
         
         self.packs[level][pname] = (package, os.path.dirname(file_path))
+    
+    
+    def get_pack_directory(self, pack_level, pack_name):
+        try:
+            return self.packs[pack_level][pack_name][1]
+        except IndexError:  # no such pack
+            return ''
     
     
     def load_pack_descriptions(self, root_dir, level):

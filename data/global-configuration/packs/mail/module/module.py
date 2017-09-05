@@ -10,16 +10,21 @@ except ImportError:
     jinja2 = None
 
 from opsbro.module import HandlerModule
-
+from opsbro.parameters import BoolParameter, StringParameter, StringListParameter
 
 
 class MailHandlerModule(HandlerModule):
     implement = 'mail'
     
     parameters = {
-        # 'enabled': BoolParameter(default=False),
-        # 'port'   : IntParameter(default=53),
-        # 'domain' : StringParameter(default=''),
+        'enabled'               : BoolParameter(default=False),
+        'severities'            : StringListParameter(default=['ok', 'warning', 'critical', 'unknown']),
+        'contacts'              : StringListParameter(default=['admin@mydomain.com']),
+        'addr_from'             : StringParameter(default='opsbro@mydomain.com'),
+        'smtp_server'           : StringParameter(default='localhost'),
+        'smtps'                 : BoolParameter(default=False),
+        'check_subject_template': StringParameter(default='mail-check-subject.tpl'),
+        'check_text_template'   : StringParameter(default='mail-check-text.tpl'),
     }
     
     
@@ -29,13 +34,13 @@ class MailHandlerModule(HandlerModule):
     
     def send_mail(self, handler, check):
         
-        addr_from = handler.get('addr_from', 'opsbro@mydomain.com')
-        smtp_server = handler.get("smtp_server", "localhost")
-        smtps = handler.get("smtps", False)
-        contacts = handler.get('contacts', ['admin@mydomain.com'])
-        subject_p = handler.get('subject_template', 'mail.subject.tpl')
-        text_p = handler.get('text_template', 'mail.text.tpl')
-        templates_dir = os.path.join(handler.get('configuration_dir', ''), 'templates')
+        addr_from = self.get_parameter('addr_from')
+        smtp_server = self.get_parameter("smtp_server")
+        smtps = self.get_parameter("smtps")
+        contacts = self.get_parameter('contacts')
+        subject_p = self.get_parameter('check_subject_template')
+        text_p = self.get_parameter('check_text_template')
+        templates_dir = os.path.join(self.pack_directory, 'templates')
         
         # go connect now
         try:
@@ -79,6 +84,11 @@ class MailHandlerModule(HandlerModule):
     
     
     def handle(self, handler, obj, event):
+        enabled = self.get_parameter('enabled')
+        if not enabled:
+            self.logger.debug('Mail module is not enabled, skipping check alert sent')
+            return
+        
         self.logger.info('Manage an obj event: %s (event=%s)' % (obj, event))
         
         evt_type = event['evt_type']

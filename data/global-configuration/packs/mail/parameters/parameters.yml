@@ -1,0 +1,25 @@
+
+# By default mail alerts are not enabled
+enabled: false
+
+# which check severities to send to mail
+severities:
+    - ok
+    - warning
+    - critical
+    - unknown
+
+# Who to notify
+contacts:
+    - admin@mydomain.com
+
+# The addr to send email from
+addr_from: opsbro@mydomain.com
+
+# Address of your smtp server. Can be localhost if you did install & configure a local postfix
+smtp_server: localhost
+
+
+# Templates for the check alerts (mail subject & mail text)
+check_subject_template: mail-check-subject.tpl
+check_text_template: mail-check-text.tpl

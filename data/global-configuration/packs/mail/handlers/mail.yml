@@ -1,15 +1,15 @@
 handler:
     id: mail
     type: mail
-    severities:
-        - ok
-        - warning
-        - critical
-        - unknown
-    contacts:
-        - admin@mydomain.com
-    addr_from: opsbro@mydomain.com
-    smtp_server: localhost
-    subject_template: mail.subject.tpl
-    text_template: mail.text.tpl
+#    severities:
+#        - ok
+#        - warning
+#        - critical
+#        - unknown
+#    contacts:
+#        - admin@mydomain.com
+#    addr_from: opsbro@mydomain.com
+#    smtp_server: localhost
+#    subject_template: mail.subject.tpl
+#    text_template: mail.text.tpl
 

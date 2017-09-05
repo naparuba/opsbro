@@ -1,0 +1,16 @@
+
+# By default slack is not enabled
+enabled: false
+
+# which check severities to send to slack
+severities:
+        - ok
+        - warning
+        - critical
+        - unknown
+
+# Set your slack token here.
+token: ''
+
+# Which channel to post to. If missing, will try to create it. You can get it at https://api.slack.com/custom-integrations/legacy-tokens
+channel: '#alerts'

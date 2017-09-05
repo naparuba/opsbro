@@ -212,7 +212,7 @@ def do_packs_show():
                 for hname, handler in handlers.iteritems():
                     cprint('    - [', end='')
                     cprint('handler.%-15s' % hname, color='cyan', end='')
-                    cprint('] type=%s  severities=%s' % (handler['type'], ','.join(handler['severities'])))
+                    cprint('] type=%s  ' % (handler['type']))
             
             # generators
             generators = pack_entry['generators']

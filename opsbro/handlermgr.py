@@ -26,16 +26,12 @@ class HandlerManager(object):
         if 'notes' not in handler:
             handler['notes'] = ''
         handler['modification_time'] = mod_time
-        if 'severities' not in handler:
-            handler['severities'] = ['ok', 'warning', 'critical', 'unknown']
         # look at types now
         if 'type' not in handler:
             handler['type'] = 'none'
         _type = handler['type']
-        if _type == 'mail':
-            if 'email' not in handler:
-                handler['email'] = 'root@localhost'
-        elif _type == 'slack':
+
+        if _type == 'slack':
             handler['slack_token'] = handler.get('slack_token', os.environ.get('SLACK_TOKEN', ''))
             handler['channel'] = handler.get('channel', '#general')
         
@@ -47,10 +43,6 @@ class HandlerManager(object):
         logger.debug('Launch handlers: %s (didchange=%s)' % (check['name'], did_change))
         
         for (hname, handler) in self.handlers.iteritems():
-            # Look at the state and should match severities
-            if check['state'] not in handler['severities']:
-                continue
-            
             htype = handler['type']
             logger.info('LAUNCH HANDLERS BASED ON %s/%s' % (htype, self.handler_modules))
             if htype in self.handler_modules:

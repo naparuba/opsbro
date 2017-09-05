@@ -1,5 +1,6 @@
 from opsbro.parameters import ParameterBasedType
 from opsbro.log import LoggerFactory
+from opsbro.packer import packer
 
 
 class Module(ParameterBasedType):
@@ -34,6 +35,11 @@ class Module(ParameterBasedType):
         self.daemon = None
         # Global logger for this part
         self.logger = LoggerFactory.create_logger('module.%s' % self.__class__.pack_name)
+        
+        if hasattr(self, 'pack_level') and hasattr(self, 'pack_name'):
+            self.pack_directory = packer.get_pack_directory(self.pack_level, self.pack_name)
+        else:
+            self.pack_directory = ''
     
     
     def get_info(self):
@@ -67,6 +73,7 @@ class ListenerModule(Module):
 class HandlerModule(Module):
     module_type = 'handler'
     
+    
     def __init__(self):
         super(HandlerModule, self).__init__()
         from opsbro.handlermgr import handlermgr
@@ -75,5 +82,3 @@ class HandlerModule(Module):
             self.logger.error('Unknown implement type for module, cannot load it.')
             return
         handlermgr.register_handler_module(implement, self)
-        
-    
