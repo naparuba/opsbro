@@ -62,3 +62,18 @@ class ConnectorModule(Module):
 
 class ListenerModule(Module):
     module_type = 'listener'
+
+
+class HandlerModule(Module):
+    module_type = 'handler'
+    
+    def __init__(self):
+        super(HandlerModule, self).__init__()
+        from opsbro.handlermgr import handlermgr
+        implement = self.implement
+        if not implement:
+            self.logger.error('Unknown implement type for module, cannot load it.')
+            return
+        handlermgr.register_handler_module(implement, self)
+        
+    

@@ -1,5 +1,5 @@
 handler:
-    id: default
+    id: mail
     type: mail
     severities:
         - ok
@@ -10,6 +10,6 @@ handler:
         - admin@mydomain.com
     addr_from: opsbro@mydomain.com
     smtp_server: localhost
-    subject_template: email.subject.tpl
-    text_template: email.text.tpl
+    subject_template: mail.subject.tpl
+    text_template: mail.text.tpl
 
