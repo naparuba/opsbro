@@ -20,6 +20,15 @@ All the configuration / deployment is model based (aka into packs)
 * configuration automation / system compliance (compliance / system driver / generator / executor / KV)
 
 
+service discovery
+automatic detection
+monitoring
+metrology
+configuration automation
+system compliance
+
+
+
 ################# Pypi
 cat ~/.pypirc
 [server-login]
@@ -451,30 +460,30 @@ compliance:
     * CLI: setter un parameter la conf locale
 
 
-# 0.X: remise à niveau des zones, avec rajout des clés par zone
+# 0.4: remise à niveau des zones, avec rajout des clés par zone
     * GOSSIP LEAVE appel à leave doit comporter la clé master/auth si distant
     * CLI: setter un paramètre de la conf locale (daemon & node, parameters c'est déjà fait)
 
 
-# 0.4: UI remise à niveau, avec affichage mode "Bro"
+# 0.5: UI remise à niveau, avec affichage mode "Bro"
     * UI: affichage clean & Bro
     * UI: affichage des checks
     * UI: affichage de "agent info"
     * UI voir si http://qrohlf.com/trianglify/#gettingstarted ne ferais pas un fond interessant
 
 
-# 0.5: Rajout de la partie compliance
+# 0.6: Rajout de la partie compliance
     * COMPLIANCE rajouter les objets et les modules de compliance
     * Installers exporter leur états dans le CLI
     * Compliance exporter leur états dans le CLI
 
 
-# 0.X: Services/roles des nodes est disponible et utilisé côté UI
+# 0.7: Services/roles des nodes est disponible et utilisé côté UI
     * ROLES: redéfinir les "services" en autre choses qui se base sur une expression de dispo des checks
     * UI les roles sont visibles
 
 
-# 0.X: Replication de l'installation & sharing/sync des packs
+# 0.8: Replication de l'installation & sharing/sync des packs
     * REPLICANT: installer: allow to keep the tar-ball of my own installation to allow another node to install myself
     * REPLICANT: installer: execute the tar-ball installer on another node (ssh based)
     * PACKS: permettre de synchronizer sa configuration globale avec les autres noeuds
@@ -499,7 +508,7 @@ compliance:
        * ✔ opsbro packs parameters get local.nagios.enable => true
 
 
-# 0.X: Collectors : + de visibilité et de documentation
+# 0.9: Collectors : + de visibilité et de documentation
     * COLLECTORS : rajouter + d'états pour signaler si l'utilisateur a raté nun truc dans la conf ou s'il manque la discovery
        * missing configuration
        * not detected
@@ -514,11 +523,11 @@ compliance:
     * CLI définir une cli pour les TS (put/dump)
 
 
-# 0.X: Fonctionnement sous windows
+# 0.10: Fonctionnement sous windows
     * DRIVER windows (va falloir livrer des msi)
 
 
-# 0.X: Meilleur développement des users avec accès en ligne à la doc
+# 0.11: Meilleur développement des users avec accès en ligne à la doc
     * API permettre un meilleur export des docs/specs des appels HTTP
     * CLI: rajouter un option --explain sur l'appel eval afin de voir la transformation et idéalement d'où vient l'info
 

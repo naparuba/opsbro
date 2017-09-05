@@ -1,0 +1,6 @@
+check:
+    apply_on: redis
+    ok_output: "'OK: Redis is available'"
+    critical_if: "{collector.redis.available} == False"
+    critical_output: "'CRITICAL: Redis is down!'"
+    interval: "10s"

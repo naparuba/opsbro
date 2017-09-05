@@ -1,0 +1,4 @@
+check:
+    script: "/root/tanuki/libexec/check_mysql.py -p $port$ -w $load.warning$ -c $load.critical$ bla$load.moncul | load.critical$bla "
+    interval: "1000s"
+
