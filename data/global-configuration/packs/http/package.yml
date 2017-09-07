@@ -1,4 +1,6 @@
 name: http
+topics:
+    - monitoring
 types:
     - pack
 version: "1.0"

@@ -1,6 +1,8 @@
 name: core-cli-gossip
 types:
     - cli
+topics:
+    - service discovery
 version: "1.0"
 homepage: ""
 author: Shinken Solutions

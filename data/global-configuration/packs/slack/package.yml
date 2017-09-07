@@ -1,4 +1,6 @@
 name: slack
+topics:
+    - generic
 types:
     - pack
 version: "1.0"

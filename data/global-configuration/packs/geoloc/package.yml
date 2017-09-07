@@ -1,4 +1,6 @@
 name: geoloc
+topics:
+    - automatic detection
 types:
     - pack
 version: "1.0"

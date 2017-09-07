@@ -1,4 +1,6 @@
 name: shinken
+topics:
+    - monitoring
 types:
     - pack
 version: "1.0"

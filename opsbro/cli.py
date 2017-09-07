@@ -17,6 +17,7 @@ from opsbro.log import cprint, logger
 from opsbro.defaultpaths import DEFAULT_LOG_DIR, DEFAULT_CFG_DIR, DEFAULT_DATA_DIR
 from opsbro.info import VERSION
 from opsbro.cli_display import print_h1
+from opsbro.topic import topiker
 from opsbro.characters import CHARACTERS
 from opsbro.misc.lolcat import lolcat
 
@@ -97,10 +98,11 @@ class Dummy():
 
 
 class CLIEntry(object):
-    def __init__(self, f, args, description):
+    def __init__(self, f, args, description, topic):
         self.f = f
         self.args = args
         self.description = description
+        self.topic = topic
 
 
 # Commander is the main class for managing the CLI session and behavior
@@ -207,11 +209,16 @@ class CLICommander(object):
         ptr[entry_last_key] = e
     
     
-    def create_cli_entry(self, f, raw_entry):
+    def _create_cli_entry(self, f, raw_entry, topics):
+        # We need to have only one topic for this entry, so take the most significative one
+        if not topics:
+            main_topic = 'generic'
+        else:
+            main_topic = topics[0]
         m_keywords = raw_entry.get('keywords', [])
         args = raw_entry.get('args', [])
         description = raw_entry.get('description', '')
-        e = CLIEntry(f, args, description)
+        e = CLIEntry(f, args, description, main_topic)
         # Finally save it
         self.insert_keywords_entry(m_keywords, e)
     
@@ -245,7 +252,7 @@ class CLICommander(object):
         for (pname, level, dir) in pack_directories:
             cli_directory = os.path.join(dir, 'cli')
             if os.path.exists(cli_directory):
-                cli_mods_dirs.append(cli_directory)
+                cli_mods_dirs.append((pname, cli_directory))
         
         logger.debug("Loading the cli directories %s" % cli_mods_dirs)
         
@@ -253,20 +260,22 @@ class CLICommander(object):
         # cli mod
         CONFIG = self.config
         
-        for d in cli_mods_dirs:
-            f = os.path.join(d, 'cli.py')
+        for (pname, dir) in cli_mods_dirs:
+            f = os.path.join(dir, 'cli.py')
             if os.path.exists(f):
-                dname = os.path.split(d)[1]
+                dname = os.path.split(dir)[1]
                 # Let's load it, but first att it to sys.path
-                sys.path.insert(0, d)
+                sys.path.insert(0, dir)
                 # Load this PATH/cli.py file
                 m = imp.load_source(dname, f)
                 # Unset this sys.path hook, we do not need anymore
                 sys.path = sys.path[1:]
                 
                 exports = getattr(m, 'exports', {})
+                # get the topics from the pack definition
+                topics = packer.get_pack_topics(pname)
                 for (f, raw_entry) in exports.iteritems():
-                    self.create_cli_entry(f, raw_entry)
+                    self._create_cli_entry(f, raw_entry, topics)
         
         logger.debug('We load the keywords %s' % self.keywords)
     
@@ -414,8 +423,9 @@ class CLICommander(object):
             if prefix:
                 s = '%s %s' % (prefix, k)
                 s = s.ljust(25)
-            #topic_prefix = '%s' % (lolcat.get_line(CHARACTERS.topic_display_prefix, 26, spread=None))
-            #cprint(topic_prefix, end='')
+            topic_color_ix = topiker.get_color_id_by_topic_string(entry.topic)
+            topic_prefix = '%s' % (lolcat.get_line(CHARACTERS.topic_display_prefix, topic_color_ix, spread=None))
+            cprint(topic_prefix, end='')
             cprint('  opsbro ', color='grey', end='')
             cprint('%s ' % s, 'green', end='')
             cprint(': %s' % entry.description)
@@ -439,4 +449,5 @@ class CLICommander(object):
             d = self.keywords[cmd]
             print_h1(cmd, only_first_part=True, line_color='blue', title_color='magenta')
             self.__print_sub_level_tree(d, prefix)
+            cprint('')
         return

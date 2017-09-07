@@ -1,6 +1,8 @@
 name: core-cli-global
 types:
     - cli
+topics:
+    - generic
 version: "1.0"
 homepage: ""
 author: Shinken Solutions

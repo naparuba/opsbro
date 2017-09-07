@@ -1,4 +1,8 @@
 name: redis
+topics:
+    - service discovery
+    - metrology
+    - monitoring
 types:
     - pack
 version: "1.0"

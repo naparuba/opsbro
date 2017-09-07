@@ -1,4 +1,7 @@
 name: nginx
+topics:
+    - service discovery
+    - monitoring
 types:
     - pack
 version: "1.0"

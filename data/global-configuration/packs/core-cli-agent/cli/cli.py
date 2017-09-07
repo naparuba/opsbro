@@ -442,8 +442,7 @@ def do_agent_parameters_show():
         cprint('%s\n' % v, color='green', end='')
 
 
-exports = {
-    
+export = {
     do_start                : {
         'keywords'   : ['agent', 'start'],
         'args'       : [

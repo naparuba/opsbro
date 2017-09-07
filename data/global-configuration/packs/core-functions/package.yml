@@ -1,4 +1,6 @@
 name: core-functions
+topics:
+    - generic
 types:
     - module
 version: "1.0"

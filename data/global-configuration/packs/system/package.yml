@@ -1,4 +1,7 @@
 name: system
+topics:
+    - automatic detection
+    - metrology
 types:
     - pack
 version: "1.0"

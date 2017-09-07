@@ -1,6 +1,9 @@
 name: "apache"
 types:
     - pack
+topics:
+    - metrology
+    - monitoring
 version: "1.0"
 homepage: ""
 author: Shinken Solutions

@@ -1,6 +1,8 @@
 name: core-cli-collectors
 types:
     - cli
+topics:
+    - metrology
 version: "1.0"
 homepage: ""
 author: Shinken Solutions

@@ -1,4 +1,8 @@
 name: postfix
+topics:
+    - service discovery
+    - monitoring
+    - metrology
 types:
     - pack
 version: "1.0"

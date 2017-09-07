@@ -1,4 +1,6 @@
 name: core-cli-packs
+topics:
+    - generic
 types:
     - cli
 version: "1.0"

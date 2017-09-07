@@ -1,4 +1,6 @@
 name: websocket
+topics:
+    - generic
 types:
     - pack
 version: "1.0"

@@ -1,6 +1,8 @@
 name: core-cli-executor
 types:
     - cli
+topics:
+    - configuration automation
 version: "1.0"
 homepage: ""
 author: Shinken Solutions

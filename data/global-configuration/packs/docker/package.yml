@@ -1,4 +1,7 @@
 name: docker
+topics:
+    - service discovery
+    - metrology
 types:
     - module
     - cli

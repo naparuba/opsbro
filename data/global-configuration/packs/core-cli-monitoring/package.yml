@@ -1,4 +1,6 @@
 name: core-cli-monitoring
+topics:
+    - monitoring
 types:
     - cli
 version: "1.0"

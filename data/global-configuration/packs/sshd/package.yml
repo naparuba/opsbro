@@ -1,4 +1,6 @@
 name: sshd
+topics:
+    - service discovery
 types:
     - pack
 version: "1.0"

@@ -1,6 +1,8 @@
 name: core-cli-detectors
 types:
     - cli
+topics:
+    - automatic detection
 version: "1.0"
 homepage: ""
 author: Shinken Solutions

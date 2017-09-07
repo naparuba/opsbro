@@ -1,4 +1,6 @@
 name: hypervisor
+topics:
+    - automatic detection
 types:
     - pack
 version: "1.0"

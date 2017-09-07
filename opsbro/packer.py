@@ -81,6 +81,17 @@ class PackManager(object):
         return self.packs
     
     
+    def get_pack_topics(self, pname):
+        for level in ('local', 'zone', 'global'):
+            pack = self.packs[level].get(pname, None)
+            if not pack:
+                continue
+            package, dir = pack
+            topics = package.get('topics', [])
+            return topics
+        return []
+    
+    
     # main method to export http interface. Must be in a method that got
     # a self entry
     def export_http(self):

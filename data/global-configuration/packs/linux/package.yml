@@ -1,4 +1,7 @@
 name: linux
+topics:
+    - automatic detection
+    - monitoring
 types:
     - pack
 version: "1.0"

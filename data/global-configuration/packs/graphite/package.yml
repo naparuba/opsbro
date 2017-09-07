@@ -1,4 +1,6 @@
 name: graphite
+topics:
+    - metrology
 types:
     - pack
 version: "1.0"

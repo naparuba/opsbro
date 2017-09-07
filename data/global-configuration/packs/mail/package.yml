@@ -1,4 +1,6 @@
 name: mail
+topics:
+    - monitoring
 types:
     - pack
     - module

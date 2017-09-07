@@ -1,4 +1,6 @@
 name: openports
+topics:
+    - metrology
 types:
     - pack
 version: "1.0"
