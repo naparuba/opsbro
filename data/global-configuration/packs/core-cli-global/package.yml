@@ -1,0 +1,17 @@
+name: core-cli-global
+types:
+    - cli
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description:  CLI for global opsbro commands (like version and such stuff)
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - cli
+    - global
+
+dependencies:
+    core: ">=1.0"
+license: ""

@@ -134,7 +134,7 @@ You should declare a json object like:
     detector:
         interval: 10s
         apply_if: "grep('centos', '/etc/redhat-release')"
-        groups: ["linux", "centos"]
+        add_groups: ["linux", "centos"]
 
 
  * Execute every 10 seconds
@@ -199,10 +199,6 @@ For example here is a cpu check on a linux server:
         warning_if:        "{collector.cpustats.cpuall.%idle} < {configuration.thresholds.cpuidle.warning}"
         warning_output:    "'Warning: cpu is very high: %s%%' % (100-{collector.cpustats.cpuall.%idle})"
             
-        thresholds :
-               cpuidle :
-                    warning: 5
-                    critical: 1
 
 
 

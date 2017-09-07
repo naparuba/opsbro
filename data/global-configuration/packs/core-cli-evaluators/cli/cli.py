@@ -9,18 +9,9 @@
 import json
 import base64
 
-# try pygments for pretty printing if available
-try:
-    import pygments
-    import pygments.lexers
-    import pygments.formatters
-except ImportError:
-    pygments = None
-import pprint
-
 from opsbro.log import cprint, logger
-from opsbro.unixclient import get_json, get_local, request_errors
-from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, print_2tab, post_opsbro_json
+from opsbro.unixclient import request_errors
+from opsbro.cli import get_opsbro_local, print_info_title, post_opsbro_json
 
 
 def do_evaluator_list():
@@ -38,7 +29,7 @@ def do_evaluator_list():
     
     print_info_title('Functions')
     for f in d:
-        cprint('*'*80, color='magenta')
+        cprint('*' * 80, color='magenta')
         name = f['name']
         prototype = f['prototype']
         doc = f['doc']
@@ -58,7 +49,6 @@ def do_evaluator_list():
         cprint("Documentation:", color='green')
         print doc
         print ''
-        
 
 
 def do_evaluator_eval(expr):

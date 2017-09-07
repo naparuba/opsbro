@@ -17,6 +17,8 @@ from opsbro.log import cprint, logger
 from opsbro.defaultpaths import DEFAULT_LOG_DIR, DEFAULT_CFG_DIR, DEFAULT_DATA_DIR
 from opsbro.info import VERSION
 from opsbro.cli_display import print_h1
+from opsbro.characters import CHARACTERS
+from opsbro.misc.lolcat import lolcat
 
 # Will be populated by the opsbro CLI command
 CONFIG = None
@@ -87,7 +89,6 @@ def print_2tab(e, capitalize=True, col_size=20):
             cprint(value, color=color)
         else:
             cprint(v, color='green')
-
 
 
 class Dummy():
@@ -413,6 +414,8 @@ class CLICommander(object):
             if prefix:
                 s = '%s %s' % (prefix, k)
                 s = s.ljust(25)
+            #topic_prefix = '%s' % (lolcat.get_line(CHARACTERS.topic_display_prefix, 26, spread=None))
+            #cprint(topic_prefix, end='')
             cprint('  opsbro ', color='grey', end='')
             cprint('%s ' % s, 'green', end='')
             cprint(': %s' % entry.description)

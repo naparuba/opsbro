@@ -6,27 +6,11 @@
 #    Gabes Jean, naparuba@gmail.com
 
 
-
 import sys
 import base64
 import uuid
 import time
-import json
 import os
-import pprint
-
-try:
-    import requests as rq
-except ImportError:
-    rq = None
-
-# try pygments for pretty printing if available
-try:
-    import pygments
-    import pygments.lexers
-    import pygments.formatters
-except ImportError:
-    pygments = None
 
 if os.name == 'nt':
     import win32serviceutil
@@ -34,178 +18,19 @@ if os.name == 'nt':
     from opsbro.windows_service.windows_service import Service
 
 from opsbro.characters import CHARACTERS
-from opsbro.log import cprint, logger, sprintf
-from opsbro.info import VERSION
+from opsbro.log import cprint, logger
 from opsbro.launcher import Launcher
-from opsbro.unixclient import get_json, get_local, request_errors
-from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, print_2tab, CONFIG, put_opsbro_json
-from opsbro.cli_display import print_h1, print_h2
+from opsbro.unixclient import request_errors
+from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, print_2tab, CONFIG
+from opsbro.cli_display import print_h1
 from opsbro.defaultpaths import DEFAULT_LOCK_PATH
 from opsbro.configurationmanager import configmgr
-
-# If not requests we should exit because the
-# daemon cannot be in a good shape at all
-if rq is None:
-    logger.error('Missing python-requests lib, please install it')
-    sys.exit(2)
 
 NO_ZONE_DEFAULT = '(no zone)'
 
 
 ############# ********************        MEMBERS management          ****************###########
 
-def do_members(detail=False):
-    try:
-        members = get_opsbro_json('/agent/members').values()
-    except request_errors, exp:
-        logger.error('Cannot join opsbro agent: %s' % exp)
-        sys.exit(1)
-    members = sorted(members, key=lambda e: e['name'])
-    logger.debug('Raw members: %s' % (pprint.pformat(members)))
-    # If there is a display_name, use it
-    max_name_size = max([max(len(m['name']), len(m.get('display_name', '')) + 4) for m in members])
-    max_addr_size = max([len(m['addr']) + len(str(m['port'])) + 1 for m in members])
-    zones = set()
-    for m in members:
-        mzone = m.get('zone', '')
-        if mzone == '':
-            mzone = NO_ZONE_DEFAULT
-        m['zone'] = mzone  # be sure to fix broken zones
-        zones.add(mzone)
-    zones = list(zones)
-    zones.sort()
-    for z in zones:
-        z_display = z
-        if not z:
-            z_display = NO_ZONE_DEFAULT
-        z_display = z_display.ljust(15)
-        title_s = '%s: %s' % (sprintf('Zone', color='yellow', end=''), sprintf(z_display, color='blue', end=''))
-        print_h1(title_s, raw_title=True)
-        for m in members:
-            zone = m.get('zone', NO_ZONE_DEFAULT)
-            if zone != z:
-                continue
-            name = m['name']
-            if m.get('display_name', ''):
-                name = '[ ' + m.get('display_name') + ' ]'
-            groups = m['groups']
-            port = m['port']
-            addr = m['addr']
-            state = m['state']
-            is_proxy = m.get('is_proxy', False)
-            if not detail:
-                cprint('  - %s > ' % zone, color='blue', end='')
-                cprint('%s  ' % name.ljust(max_name_size), color='magenta', end='')
-            else:
-                cprint(' %s  %s  ' % (m['uuid'], name.ljust(max_name_size)), end='')
-            c = {'alive': 'green', 'dead': 'red', 'suspect': 'yellow', 'leave': 'cyan'}.get(state, 'cyan')
-            state_prefix = {'alive': CHARACTERS.check, 'dead': CHARACTERS.cross, 'suspect': CHARACTERS.double_exclamation, 'leave': CHARACTERS.arrow_bottom}.get(state, CHARACTERS.double_exclamation)
-            cprint(('%s %s' % (state_prefix, state)).ljust(9), color=c, end='')  # 7 for the maximum state string + 2 for prefix
-            s = ' %s:%s ' % (addr, port)
-            s = s.ljust(max_addr_size + 2)  # +2 for the spaces
-            cprint(s, end='')
-            if is_proxy:
-                cprint('proxy ', end='')
-            else:
-                cprint('      ', end='')
-            if detail:
-                cprint('%5d' % m['incarnation'])
-            cprint(' %s ' % ','.join(groups))
-
-
-def do_leave(nuuid=''):
-    # Lookup at the localhost name first
-    if not nuuid:
-        try:
-            (code, r) = get_opsbro_local('/agent/uuid')
-        except request_errors, exp:
-            logger.error(exp)
-            return
-        nuuid = r
-    try:
-        (code, r) = get_opsbro_local('/agent/leave/%s' % nuuid)
-    except request_errors, exp:
-        logger.error(exp)
-        return
-    
-    if code != 200:
-        logger.error('Node %s is missing' % nuuid)
-        print r
-        return
-    cprint('Node %s is set to leave state' % nuuid, end='')
-    cprint(': OK', color='green')
-
-
-def do_state(name=''):
-    uri = '/agent/state/%s' % name
-    if not name:
-        uri = '/agent/state'
-    try:
-        (code, r) = get_opsbro_local(uri)
-    except request_errors, exp:
-        logger.error(exp)
-        return
-    
-    try:
-        d = json.loads(r)
-    except ValueError, exp:  # bad json
-        logger.error('Bad return from the server %s' % exp)
-        return
-    
-    services = d['services']
-    print_h1('Services')
-    if len(services) == 0:
-        cprint('No services', color='grey')
-    else:
-        for (sname, service) in services.iteritems():
-            state = service['state_id']
-            cprint('\t%s ' % sname.ljust(20), end='')
-            c = {0: 'green', 2: 'red', 1: 'yellow', 3: 'cyan'}.get(state, 'cyan')
-            state = {0: 'OK', 2: 'CRITICAL', 1: 'WARNING', 3: 'UNKNOWN'}.get(state, 'UNKNOWN')
-            cprint('%s - ' % state.ljust(8), color=c, end='')
-            output = service['check']['output']
-            cprint(output.strip(), color='grey')
-    
-    checks = d['checks']
-    if len(checks) == 0:
-        cprint('No checks', color='grey')
-        return  # nothing to do more
-    
-    print_h1('Checks')
-    packs = {}
-    for (cname, check) in checks.iteritems():
-        pack_name = check['pack_name']
-        if pack_name not in packs:
-            packs[pack_name] = {}
-        packs[pack_name][cname] = check
-    pnames = packs.keys()
-    pnames.sort()
-    for pname in pnames:
-        pack_entries = packs[pname]
-        cprint('* Pack %s' % pname, color='blue')
-        cnames = pack_entries.keys()
-        cnames.sort()
-        for cname in cnames:
-            check = pack_entries[cname]
-            check_display_name = check['display_name']
-            
-            cprint('  - %s' % pname, color='blue', end='')
-            cprint(' > checks > ', color='grey', end='')
-            cprint('%s ' % (check_display_name.ljust(30)), color='magenta', end='')
-            
-            state = check['state_id']
-            c = {0: 'green', 2: 'red', 1: 'yellow', 3: 'cyan'}.get(state, 'cyan')
-            state = {0: '%s OK' % CHARACTERS.check, 2: '%s CRITICAL' % CHARACTERS.cross, 1: '%s WARNING' % CHARACTERS.double_exclamation, 3: '%s UNKNOWN' % CHARACTERS.double_exclamation}.get(state, 'UNKNOWN')
-            cprint('%s' % state.ljust(10), color=c)
-            # Now print output the line under
-            output = check['output']
-            output_lines = output.strip().splitlines()
-            for line in output_lines:
-                cprint(' ' * 4 + '| ' + line, color='grey')
-
-
-def do_version():
-    cprint(VERSION)
 
 
 def __call_service_handler():
@@ -416,27 +241,6 @@ def do_stop():
     cprint(r, color='green')
 
 
-def do_join(seed=''):
-    if seed == '':
-        logger.error('Missing target argument. For example 192.168.0.1:6768')
-        return
-    try:
-        (code, r) = get_opsbro_local('/agent/join/%s' % seed)
-    except request_errors, exp:
-        logger.error(exp)
-        return
-    try:
-        b = json.loads(r)
-    except ValueError, exp:  # bad json
-        logger.error('Bad return from the server %s' % exp)
-        return
-    cprint('Joining %s : ' % seed, end='')
-    if b:
-        cprint('OK', color='green')
-    else:
-        cprint('FAILED', color='red')
-
-
 def do_keygen():
     k = uuid.uuid1().hex[:16]
     cprint('UDP Encryption key: (aka encryption_key)', end='')
@@ -457,90 +261,6 @@ def do_keygen():
     s_pubkey = pubkey.save_pkcs1()
     cprint(s_pubkey, color='green')
     print ''
-
-
-def do_exec(group='*', cmd='uname -a'):
-    if cmd == '':
-        logger.error('Missing command')
-        return
-    try:
-        (code, r) = get_opsbro_local('/exec/%s?cmd=%s' % (group, cmd))
-    except request_errors, exp:
-        logger.error(exp)
-        return
-    print r
-    cid = r
-    print "Command group launch as cid", cid
-    time.sleep(5)  # TODO: manage a real way to get the result..
-    try:
-        (code, r) = get_opsbro_local('/exec-get/%s' % cid)
-    except request_errors, exp:
-        logger.error(exp)
-        return
-    j = json.loads(r)
-    
-    res = j['res']
-    for (uuid, e) in res.iteritems():
-        node = e['node']
-        nname = node['name']
-        color = {'alive': 'green', 'dead': 'red', 'suspect': 'yellow', 'leave': 'cyan'}.get(node['state'], 'cyan')
-        cprint(nname, color=color)
-        cprint('Return code:', end='')
-        color = {0: 'green', 1: 'yellow', 2: 'red'}.get(e['rc'], 'cyan')
-        cprint(e['rc'], color=color)
-        cprint('Output:', end='')
-        cprint(e['output'].strip(), color=color)
-        if e['err']:
-            cprint('Error:', end='')
-            cprint(e['err'].strip(), color='red')
-        print ''
-
-
-def do_zone_change(name=''):
-    if not name:
-        print "Need a zone name"
-        return
-    print "Switching to zone", name
-    try:
-        r = put_opsbro_json('/agent/zone', name)
-    except request_errors, exp:
-        logger.error(exp)
-        return
-    print_info_title('Result')
-    print r
-
-
-def do_detect_nodes(auto_join):
-    print "Trying to detect other nodes on the network thanks to a UDP broadcast. Will last 3s."
-    # Send UDP broadcast packets from the daemon
-    try:
-        network_nodes = get_opsbro_json('/agent/detect')
-    except request_errors, exp:
-        logger.error('Cannot join opsbro agent: %s' % exp)
-        sys.exit(1)
-    print "Detection is DONE.\nDetection result:"
-    if len(network_nodes) == 0:
-        print "Cannot detect (broadcast UDP) other nodes."
-        sys.exit(1)
-    print "Other network nodes detected on this network:"
-    print '  Name                                 Zone        Address:port          Proxy    Groups'
-    for node in network_nodes:
-        print '  %-35s  %-10s  %s:%d  %5s     %s' % (node['name'], node['zone'], node['addr'], node['port'], node['is_proxy'], ','.join(node['groups']))
-    if not auto_join:
-        print "Auto join (--auto-join) is not enabled, so don't try to join theses nodes"
-        return
-    # try to join theses nodes so :)
-    all_proxys = [node for node in network_nodes if node['is_proxy']]
-    not_proxys = [node for node in network_nodes if not node['is_proxy']]
-    if all_proxys:
-        node = all_proxys.pop()
-        print "A proxy node is detected, using it: %s (%s:%d)" % (node['name'], node['addr'], node['port'])
-        to_connect = '%s:%d' % (node['addr'], node['port'])
-    else:
-        node = not_proxys.pop()
-        print "No proxy node detected. Using a standard one: %s (%s:%d)" % (node['name'], node['addr'], node['port'])
-        to_connect = '%s:%d' % (node['addr'], node['port'])
-    do_join(to_connect)
 
 
 # Sort threads by user time, if same, sort by name
@@ -723,13 +443,6 @@ def do_agent_parameters_show():
 
 
 exports = {
-    do_members              : {
-        'keywords'   : ['gossip', 'members'],
-        'args'       : [
-            {'name': '--detail', 'type': 'bool', 'default': False, 'description': 'Show detail mode for the cluster members'},
-        ],
-        'description': 'List the cluster members'
-    },
     
     do_start                : {
         'keywords'   : ['agent', 'start'],
@@ -758,12 +471,6 @@ exports = {
         'description': 'Remove windows service'
     },
     
-    do_version              : {
-        'keywords'   : ['version'],
-        'args'       : [],
-        'description': 'Print the daemon version'
-    },
-    
     do_info                 : {
         'keywords'   : ['agent', 'info'],
         'args'       : [
@@ -776,57 +483,6 @@ exports = {
         'keywords'   : ['agent', 'keygen'],
         'args'       : [],
         'description': 'Generate a encryption key'
-    },
-    
-    do_exec                 : {
-        'keywords'   : ['executors', 'exec'],
-        'args'       : [
-            {'name': 'group', 'default': '', 'description': 'Name of the node group to execute command on'},
-            {'name': 'cmd', 'default': 'uname -a', 'description': 'Command to run on the nodes'},
-        ],
-        'description': 'Execute a command (default to uname -a) on a group of node of the good group (default to all)'
-    },
-    
-    do_join                 : {
-        'keywords'   : ['gossip', 'join'],
-        'description': 'Join another node cluster',
-        'args'       : [
-            {'name': 'seed', 'default': '', 'description': 'Other node to join. For example 192.168.0.1:6768'},
-        ],
-    },
-    
-    do_leave                : {
-        'keywords'   : ['gossip', 'leave'],
-        'description': 'Put in leave a cluster node',
-        'args'       : [
-            {'name'       : 'name', 'default': '',
-             'description': 'UUID of the node to force leave. If void, leave our local node'},
-        ],
-    },
-    
-    do_state                : {
-        'keywords'   : ['monitoring', 'state'],
-        'description': 'Print the state of a node',
-        'args'       : [
-            {'name'       : 'name', 'default': '',
-             'description': 'Name of the node to print state. If void, take our localhost one'},
-        ],
-    },
-    
-    do_zone_change          : {
-        'keywords'   : ['gossip', 'zone', 'change'],
-        'args'       : [
-            {'name': 'name', 'default': '', 'description': 'Change to the zone'},
-        ],
-        'description': 'Change the zone of the node'
-    },
-    
-    do_detect_nodes         : {
-        'keywords'   : ['gossip', 'detect'],
-        'args'       : [
-            {'name': '--auto-join', 'default': False, 'description': 'Try to join the first detected proxy node. If no proxy is founded, join the first one.', 'type': 'bool'},
-        ],
-        'description': 'Try to detect (broadcast) others nodes in the network'
     },
     
     do_show_threads         : {

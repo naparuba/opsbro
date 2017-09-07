@@ -93,18 +93,21 @@ class LolCat(object):
             self.output.write('\x1b[?25h')
     
     
-    def get_line(self, s, offset):
-        s = s.rstrip()
+    def get_line(self, s, offset, spread=3.0):
+        if spread is None:
+            spread = 99999.0
+
         # if options.force or self.output.isatty():
         s = STRIP_ANSI.sub('', s)
         r = ''
         if isinstance(s, str):
             s = s.decode('utf-8', 'replace')
         for i, c in enumerate(s):
-            rgb = self.rainbow(0.1, offset + i / 3.0)
+            rgb = self.rainbow(0.1, offset + i / spread)
             if isinstance(c, str):
                 c = c.encode('utf-8', 'replace')
             r += u''.join([self.wrap(self.ansi(rgb)), c if PY3 else c, ])
+        r += '\x1b[0m'
         return r
     
     

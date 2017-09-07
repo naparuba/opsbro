@@ -8,18 +8,12 @@
 
 import json
 
-# try pygments for pretty printing if available
-try:
-    import pygments
-    import pygments.lexers
-    import pygments.formatters
-except ImportError:
-    pygments = None
+
 
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger
-from opsbro.unixclient import get_json, get_local, request_errors
-from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, print_2tab
+from opsbro.unixclient import request_errors
+from opsbro.cli import get_opsbro_local, print_info_title, print_2tab
 from opsbro.cli_display import print_element_breadcumb
 
 

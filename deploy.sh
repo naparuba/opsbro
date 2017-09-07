@@ -3,8 +3,6 @@
 cd /root
 tar cfz opsbro-oss.tar.gz opsbro-oss
 
-/bin/cp -frp /root/opsbro-oss/ui/* /var/www/ui/
-
 
 do_deploy() {
     if [[ "X" == "X$1" ]]; then

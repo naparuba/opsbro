@@ -20,8 +20,8 @@ except ImportError:
     pygments = None
 
 from opsbro.log import cprint, logger
-from opsbro.unixclient import get_json, get_local, request_errors
-from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, print_2tab
+from opsbro.unixclient import request_errors
+from opsbro.cli import get_opsbro_json, print_info_title
 from opsbro.collectormanager import collectormgr
 
 

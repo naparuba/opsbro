@@ -1,0 +1,17 @@
+name: core-cli-monitoring
+types:
+    - cli
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description:  CLI for view the node monitoring state
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - cli
+    - monitoring
+
+dependencies:
+    core: ">=1.0"
+license: ""

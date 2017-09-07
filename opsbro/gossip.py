@@ -150,7 +150,7 @@ class Gossip(object):
             for (uuid, node) in self.nodes.iteritems():
                 if node['state'] in ['dead', 'leave']:
                     continue
-                groups = node['groups']
+                groups = node.get('groups', [])
                 if group in groups:
                     nodes.append(uuid)
         return nodes
@@ -882,7 +882,7 @@ class Gossip(object):
         message = ''
         to_del = []
         stack = []
-        groups = dest['groups']
+        groups = dest.get('groups', [])
         for b in broadcaster.broadcasts:
             # not a valid node for this message, skip it
             if 'group' in b and b['group'] not in groups:
@@ -1090,7 +1090,7 @@ class Gossip(object):
         return {
             'name'       : node['name'], 'display_name': node.get('display_name', ''),
             'addr'       : node['addr'], 'port': node['port'], 'uuid': node['uuid'],
-            'incarnation': node['incarnation'], 'groups': node['groups'],
+            'incarnation': node['incarnation'], 'groups': node.get('groups', []),
             'services'   : node['services'], 'checks': node['checks'],
             'zone'       : node.get('zone', ''), 'is_proxy': node.get('is_proxy', False),
         }

@@ -447,18 +447,8 @@ compliance:
 
 #### ROADMAP:
 
-# 0.2: version actuelle
 
-
-# 0.3: monitoring cohérent, avec alerting modulaire (modules)
-    * CHECKS revoir la gestion des paramètres, faire que ça colle vraiment à ceux des collectors & autre modules, même chemin d'appel
-      * {{parameters.mysql_user}}
-    * CHECKS-HANDLERS: le check ne doit plus spécifier l'handler qu'il souhaite, il les prévient tous, fin de l'histoire
-    * HANDLERS faire que ce soit des modules spécifiques qui exportent leur capacité au handler, donc qu'ils implémentent une sous classe de Module (jouable avec celle déjà existante?)
-       * exporter ensuite emails et slack en tant que handler modules
-    * HANDLERS faire des handlers pour autre chose que les checks (installers, compliance, detectors)
-    * CLI: setter un parameter la conf locale
-
+# 0.3: version actuelle
 
 # 0.4: remise à niveau des zones, avec rajout des clés par zone
     * GOSSIP LEAVE appel à leave doit comporter la clé master/auth si distant
