@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import random
+import itertools
+
 TOPIC_SERVICE_DISCOVERY = 0x1 << 0
 TOPIC_AUTOMATIC_DECTECTION = 0x1 << 1
 TOPIC_MONITORING = 0x1 << 2
@@ -77,6 +80,10 @@ TOPICS_COLORS = {
     # Other?
     TOPIC_GENERIC                 : DEFAULT_COLOR_ID,
 }
+
+_TOPICS_COLORS_VALUES = TOPICS_COLORS.values()
+random.shuffle(_TOPICS_COLORS_VALUES)
+TOPICS_COLORS_RANDOM_VALUES_LOOP = itertools.cycle(_TOPICS_COLORS_VALUES)
 
 
 # Yes, there is a pokemon word play with a french pokemon. I love pokemon and my son too. Deal with it ( •_•)      ( •_•)>⌐■-■       (⌐■_■)

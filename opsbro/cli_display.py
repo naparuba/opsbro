@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from opsbro.log import cprint, logger
-
+from opsbro.characters import CHARACTERS
 
 # raw_title means do not format it, use it's own color
 def print_h1(title, raw_title=False, only_first_part=False, line_color='cyan', title_color='yellow'):
@@ -11,20 +11,20 @@ def print_h1(title, raw_title=False, only_first_part=False, line_color='cyan', t
     p2 = l_title + 2  # +2 for spaces around the title
     p3 = 80 - p1 - p2
     
-    cprint(u'─' * p1, color=line_color, end='')
+    cprint(CHARACTERS.hbar * p1, color=line_color, end='')
     if not raw_title:
         cprint(' %s ' % title, color=title_color, end='')
     else:
         cprint(' ' + title + ' ', end='')
     if not only_first_part:
-        cprint(u'─' * p3, color=line_color)
+        cprint(CHARACTERS.hbar * p3, color=line_color)
     else:
         cprint('')
 
 
 # raw_title means do not format it, use it's own color
 def print_h2(title, raw_title=False):
-    cprint(u'᠁' * 12, color='cyan', end='')
+    cprint(CHARACTERS.hbar_dotted * 12, color='cyan', end='')
     if not raw_title:
         cprint(' %s ' % title, color='yellow')
     else:

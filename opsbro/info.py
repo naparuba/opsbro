@@ -3,7 +3,7 @@
 
 from .characters import CHARACTERS
 from .misc.lolcat import lolcat
-from .topic import TOPICS, TOPICS_LABELS, TOPICS_LABEL_BANNER, TOPICS_COLORS, TOPICS_SUB_TITLES, MAX_TOPICS_LABEL_SIZE
+from .topic import TOPICS, TOPICS_LABELS, TOPICS_LABEL_BANNER, TOPICS_COLORS, TOPICS_SUB_TITLES, MAX_TOPICS_LABEL_SIZE, TOPICS_COLORS_RANDOM_VALUES_LOOP
 from .log import sprintf
 
 VERSION = '0.4b1'
@@ -69,16 +69,31 @@ line = banner_lines[_idx].rstrip()
 line_before = banner_lines[_idx - 1].rstrip()
 line_after = banner_lines[_idx + 1].rstrip()
 
+
+def _lolify(s):
+    l = []
+    chunk_size = 5
+    for i in xrange(0, len(s), chunk_size):
+        chunk = s[i:i + chunk_size]
+        _color_idx = TOPICS_COLORS_RANDOM_VALUES_LOOP.next()
+        l.append(lolcat.get_line(u'%s' % chunk, _color_idx, spread=3))
+    return u''.join(l)
+
+
 _OPS = '%s%s%s%sOps%s' % ('', _BOLD, '', _BLUE, _RESET)
 _STAR = '%s%s%s%s*%s' % ('', _BOLD, '', _WHITE, _RESET)
 _BRO = '%s%s%s%sBro%s' % ('', '', _BOLD, _RED, _RESET)
-_title = (u'%s%s%s   %s%s%s   %s%s%s   Version:%s%s%s' % (_REVERSE, CHARACTERS.vbar, _RESET, _OPS, _STAR, _BRO, _REVERSE, CHARACTERS.vbar, _RESET, _MAGENTA, VERSION, _RESET))
+_title = (u'%s   %s%s%s   %s   Version:%s%s%s' % (_lolify(CHARACTERS.vbar), _OPS, _STAR, _BRO, _lolify(CHARACTERS.vbar), _MAGENTA, VERSION, _RESET))
 
-line_before += (u'  %s%s%s%s%s' % (_REVERSE, CHARACTERS.corner_top_left, CHARACTERS.hbar * 13, CHARACTERS.corner_top_right, _RESET))
+before_add = (u'  %s%s%s' % (CHARACTERS.corner_top_left, CHARACTERS.hbar * 13, CHARACTERS.corner_top_right))
+before_add = _lolify(before_add)
+line_before += before_add
 banner_lines[_idx - 1] = line_before
 line += (u'  %s' % _title)
 banner_lines[_idx] = line
-line_after += (u'  %s%s%s%s%s' % (_REVERSE, CHARACTERS.corner_bottom_left, CHARACTERS.hbar * 13, CHARACTERS.corner_bottom_right, _RESET))
+after_add = (u'  %s%s%s' % (CHARACTERS.corner_bottom_left, CHARACTERS.hbar * 13, CHARACTERS.corner_bottom_right))
+after_add = _lolify(after_add)
+line_after += after_add
 banner_lines[_idx + 1] = line_after
 
 _idx_topics = 5

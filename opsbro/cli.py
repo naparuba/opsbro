@@ -13,7 +13,7 @@ from opsbro.collectormanager import collectormgr
 from opsbro.modulemanager import modulemanager
 from opsbro.packer import packer
 from opsbro.unixclient import get_json, get_local
-from opsbro.log import cprint, logger
+from opsbro.log import cprint, logger, sprintf
 from opsbro.defaultpaths import DEFAULT_LOG_DIR, DEFAULT_CFG_DIR, DEFAULT_DATA_DIR
 from opsbro.info import VERSION
 from opsbro.cli_display import print_h1
@@ -109,6 +109,7 @@ class CLIEntry(object):
 class CLICommander(object):
     def __init__(self, config, opts):
         self.keywords = {}
+        self.keywords_topics = {}
         
         self.config = config
         
@@ -197,9 +198,18 @@ class CLICommander(object):
     
     # For some keywords, find (and create if need) the keywords entry in the keywords tree
     def insert_keywords_entry(self, keywords, e):
+        
         # Simulate 'global' entry before top level entries
         if len(keywords) == 1:
             keywords = ['global', keywords[0]]
+        
+        # Take the first keyword and save the topics from it
+        keyword = keywords[0]
+        if keyword not in self.keywords_topics:
+            self.keywords_topics[keyword] = set()
+        self.keywords_topics[keyword].add(e.topic)
+        
+        # Go for save as tree
         ptr = self.keywords
         for keyword in keywords[:-1]:
             if keyword not in ptr:
@@ -244,6 +254,7 @@ class CLICommander(object):
         global CONFIG
         # Main list of keywords for the first parameter
         self.keywords.clear()
+        self.keywords_topics.clear()
         
         # CLI are load from the packs
         cli_mods_dirs = []
@@ -424,7 +435,7 @@ class CLICommander(object):
                 s = '%s %s' % (prefix, k)
                 s = s.ljust(25)
             topic_color_ix = topiker.get_color_id_by_topic_string(entry.topic)
-            topic_prefix = '%s' % (lolcat.get_line(CHARACTERS.topic_display_prefix, topic_color_ix, spread=None))
+            topic_prefix = '%s' % (lolcat.get_line(CHARACTERS.vbar, topic_color_ix, spread=None))
             cprint(topic_prefix, end='')
             cprint('  opsbro ', color='grey', end='')
             cprint('%s ' % s, 'green', end='')
@@ -432,7 +443,7 @@ class CLICommander(object):
     
     
     def print_list(self, keyword=''):
-        print "Available commands:"
+        print "\nAvailable commands:"
         sub_cmds = self.keywords.keys()
         sub_cmds.remove('global')
         sub_cmds.sort()
@@ -447,7 +458,13 @@ class CLICommander(object):
             if cmd == 'global':
                 prefix = ''
             d = self.keywords[cmd]
-            print_h1(cmd, only_first_part=True, line_color='blue', title_color='magenta')
+            topics_strings = list(self.keywords_topics[cmd])
+            topics_strings.sort()
+            topic_string = topics_strings[0]
+            topic_color = topiker.get_color_id_by_topic_string(topic_string)
+            cprint(lolcat.get_line(u'%s%s ' % (CHARACTERS.corner_top_left, CHARACTERS.hbar * 10), topic_color, spread=None), end='')
+            cprint(u'%-15s' % cmd, color='magenta', end='')
+            cprint(' (%s)' % (', '.join([topic_string for topic_string in topics_strings])), color='grey')
             self.__print_sub_level_tree(d, prefix)
             cprint('')
         return
