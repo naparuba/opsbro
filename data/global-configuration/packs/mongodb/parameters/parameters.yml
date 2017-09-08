@@ -8,3 +8,7 @@ user: ''
 
 # password to use for your mondb connection
 password: ''
+
+
+# is a mongodb with a replicat set
+replicat_set: false

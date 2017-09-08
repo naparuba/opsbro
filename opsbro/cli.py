@@ -284,7 +284,7 @@ class CLICommander(object):
                 
                 exports = getattr(m, 'exports', {})
                 # get the topics from the pack definition
-                topics = packer.get_pack_topics(pname)
+                topics = packer.get_pack_all_topics(pname)
                 for (f, raw_entry) in exports.iteritems():
                     self._create_cli_entry(f, raw_entry, topics)
         
@@ -443,7 +443,8 @@ class CLICommander(object):
     
     
     def print_list(self, keyword=''):
-        print "\nAvailable commands:"
+        cprint('')
+        print_h1('Available commands')
         sub_cmds = self.keywords.keys()
         sub_cmds.remove('global')
         sub_cmds.sort()
@@ -464,7 +465,8 @@ class CLICommander(object):
             topic_color = topiker.get_color_id_by_topic_string(topic_string)
             cprint(lolcat.get_line(u'%s%s ' % (CHARACTERS.corner_top_left, CHARACTERS.hbar * 10), topic_color, spread=None), end='')
             cprint(u'%-15s' % cmd, color='magenta', end='')
-            cprint(' (%s)' % (', '.join([topic_string for topic_string in topics_strings])), color='grey')
+            numerical = 's' if len(topics_strings) > 1 else ''
+            cprint(' (topic%s: %s)' % (numerical, ', '.join([topic_string for topic_string in topics_strings])), color='grey')
             self.__print_sub_level_tree(d, prefix)
             cprint('')
         return

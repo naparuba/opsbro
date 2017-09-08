@@ -1,6 +1,6 @@
 name: windows
 topics:
-    - service discovery
+    - automatic detection
     - metrology
     - monitoring
 types:

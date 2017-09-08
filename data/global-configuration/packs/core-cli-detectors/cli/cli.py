@@ -8,8 +8,6 @@
 
 import json
 
-
-
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger
 from opsbro.unixclient import request_errors
@@ -30,19 +28,24 @@ def do_detect_list():
         logger.error('Bad return from the server %s' % exp)
         return
     print_info_title('Detectors')
-    
     logger.debug(str(d))
     e = []
     d = sorted(d, key=lambda i: i['name'])
     for i in d:
-        name = i['name'].split('/')[-1]
-        groups = i['groups']
-        pack_level = i['pack_level']
-        pack_name = i['pack_name']
+        # aligne name too
+        name = '%-20s' % i['name'].split('/')[-1]
+        groups = i['add_groups']
+        # align pack level
+        pack_level = '%-6s' % i['pack_level']
+        # Aligne pack name
+        pack_name = '%-10s' % i['pack_name']
         
-        print_element_breadcumb(pack_name, pack_level, 'detector', name)
-        cprint(' %s ' % CHARACTERS.arrow_left, end='')
-        cprint(','.join(groups), color='green')
+        print_element_breadcumb(pack_name, pack_level, 'detector', name, set_pack_color=True)
+        cprint('')
+        cprint('   if:         ', color='grey', end='')
+        cprint(i['apply_if'], color='green')
+        cprint('   add groups: ', color='grey', end='')
+        cprint(','.join(groups), color='magenta')
 
 
 def do_detect_run():

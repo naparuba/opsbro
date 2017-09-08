@@ -9,37 +9,51 @@ import os
 import time
 import datetime
 
-# try pygments for pretty printing if available
-try:
-    import pygments
-    import pygments.lexers
-    import pygments.formatters
-except ImportError:
-    pygments = None
-
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, sprintf, logger
 from opsbro.yamlmgr import yamler
 from opsbro.cli_display import print_h1, print_h2, print_h3, print_element_breadcumb
+from opsbro.packer import packer
+from opsbro.misc.lolcat import lolcat
+from opsbro.topic import topiker, VERY_ALL_TOPICS, TOPICS_LABELS
 
 
-def __print_pack_breadcumb(pack_name, pack_level, end='\n'):
-    cprint(__get_pack_breadcumb(pack_name, pack_level, end=end), end='')
+def __print_pack_breadcumb(pack_name, pack_level, end='\n', topic_picto='large'):
+    cprint(__get_pack_breadcumb(pack_name, pack_level, end=end, topic_picto=topic_picto), end='')
 
 
-def __get_pack_breadcumb(pack_name, pack_level, end=''):
-    res = sprintf('%-6s' % pack_level, color='blue', end='') + sprintf(' > ', end='') + sprintf('%-15s' % pack_name, color='yellow', end='') + end
+def __get_pack_breadcumb(pack_name, pack_level, end='', topic_picto='large'):
+    pack_topics = packer.get_pack_all_topics(pack_name)
+    pack_main_topic = 'generic'
+    if len(pack_topics) != 0:
+        pack_main_topic = pack_topics[0]
+    topic_color = topiker.get_color_id_by_topic_string(pack_main_topic)
+    if topic_picto == 'large':
+        picto = u'%s%s ' % (CHARACTERS.corner_top_left, CHARACTERS.hbar * 2)
+    else:
+        picto = u'%s ' % CHARACTERS.topic_small_picto
+    res = lolcat.get_line(picto, topic_color, spread=None) \
+          + sprintf('%-6s' % pack_level, color='blue', end='') \
+          + sprintf(' > ', end='') \
+          + sprintf('%-15s' % pack_name, color='yellow', end='') \
+          + end
+    
     return res
 
 
-def __print_element_parameters(elt, pack_name, pack_level, what):
+def __print_element_parameters(elt, pack_name, pack_level, main_topic_color, what, offset):
+    __print_line_header(main_topic_color)
+    cprint('   %sParameters: ' % (' ' * offset), color='grey', end='')
     config_snapshot = elt.get_configuration_snapshot()
-    if config_snapshot['state'] == 'OK':
-        cprint('OK', color='green')
+    if len(config_snapshot['parameters']) == 0:
+        cprint('(none)', color='grey')
+    elif config_snapshot['state'] == 'OK':
+        cprint(CHARACTERS.check, color='green')
     else:
         cprint('%s  %s %s' % (config_snapshot['state'], CHARACTERS.arrow_left, config_snapshot['errors']), color='red')
     for parameter_name, parameter_snap in config_snapshot['parameters'].iteritems():
-        cprint('    - ', end='')
+        __print_line_header(main_topic_color)
+        cprint('   %s- ' % (' ' * offset), end='')
         cprint('%s.packs.%s.%s.' % (pack_level, pack_name, what), color='grey', end='')
         cprint('%-15s' % parameter_name, color='magenta', end='')
         cprint(' %s ' % CHARACTERS.arrow_left, color='grey', end='')
@@ -92,6 +106,10 @@ def __get_pack_directory(pack_level, pack_name):
     data_dir = configmgr.data_dir
     pdir = os.path.join(data_dir, '%s-configuration' % pack_level, 'packs', pack_name)
     return pdir
+
+
+def __print_line_header(main_topic_color):
+    cprint(lolcat.get_line(CHARACTERS.vbar, main_topic_color, spread=None), end='')
 
 
 def do_packs_show():
@@ -149,7 +167,9 @@ def do_packs_show():
         packs[pack_level][pack_name]['installors'][iname] = installator
     
     for level in ('global', 'zone', 'local'):
-        print_h1('Packs at level %s' % level)
+        s1 = sprintf('Packs at level ', color='yellow', end='')
+        s2 = sprintf(level, color='blue', end='')
+        print_h1(s1 + s2, raw_title=True)
         pack_names = packs[level].keys()
         pack_names.sort()
         if len(pack_names) == 0:
@@ -158,7 +178,21 @@ def do_packs_show():
         for pack_name in pack_names:
             pack_entry = packs[level][pack_name]
             pack_breadcumb_s = __get_pack_breadcumb(pack_name, level)
-            print_h2(pack_breadcumb_s, raw_title=True)
+            cprint(pack_breadcumb_s)
+            
+            main_topic, secondary_topics = packer.get_pack_main_and_secondary_topics(pack_name)
+            main_topic_color = topiker.get_color_id_by_topic_string(main_topic)
+            if main_topic != 'generic':
+                
+                __print_line_header(main_topic_color)
+                cprint(u' * Main topic: ', color='grey', end='')
+                s = lolcat.get_line(main_topic, main_topic_color, spread=None)
+                cprint(s)
+            if secondary_topics:
+                _numeral = 's' if len(secondary_topics) > 1 else ''
+                s = u' * Secondary topic%s: %s' % (_numeral, ', '.join(secondary_topics))
+                __print_line_header(main_topic_color)
+                cprint(s, color='grey')
             
             #### Now loop over objects
             # * checks
@@ -172,75 +206,90 @@ def do_packs_show():
             if len(checks) == 0:
                 no_such_objects.append('checks')
             else:
+                __print_line_header(main_topic_color)
                 print_element_breadcumb(pack_name, pack_level, 'checks')
                 cprint(' (%d)' % len(checks), color='magenta')
                 for cname, check in checks.iteritems():
-                    cprint('    - [', end='')
-                    cprint('check.%-15s' % cname, color='cyan', end='')
-                    cprint('] if_group=%s' % (check['if_group']))
+                    __print_line_header(main_topic_color)
+                    cprint('  - ', end='')
+                    cprint('checks > %-15s' % cname.split(os.sep)[-1], color='cyan', end='')
+                    cprint(' if_group=%s' % (check['if_group']))
             
             # Module
             module = pack_entry['module']
             if module is None:
                 no_such_objects.append('module')
             else:
+                __print_line_header(main_topic_color)
                 print_element_breadcumb(pack_name, pack_level, 'module')
-                cprint(' : configuration=', end='')
-                __print_element_parameters(module, pack_name, pack_level, 'parameters')
+                # cprint(' : configuration=', end='')
+                cprint('')
+                offset = 0
+                __print_element_parameters(module, pack_name, pack_level, main_topic_color, 'parameters', offset)
             
             # collectors
             collectors = pack_entry['collectors']
             if len(collectors) == 0:
                 no_such_objects.append('collectors')
             else:
+                __print_line_header(main_topic_color)
                 print_element_breadcumb(pack_name, pack_level, 'collectors')
                 cprint(' (%d)' % len(collectors), color='magenta')
                 for colname, collector_d in collectors.iteritems():
+                    __print_line_header(main_topic_color)
                     collector = collector_d['inst']
-                    cprint('    - [', end='')
-                    cprint('collectors.%-15s' % colname, end='', color='cyan')
-                    cprint('] configuration=', end='')
-                    __print_element_parameters(collector, pack_name, pack_level, 'parameters')
+                    cprint('  - ', end='')
+                    cprint('collectors > %-15s' % colname, end='', color='cyan')
+                    cprint('')
+                    offset = 1
+                    __print_element_parameters(collector, pack_name, pack_level, main_topic_color, 'parameters', offset)
             
             # handlers
             handlers = pack_entry['handlers']
             if len(handlers) == 0:
                 no_such_objects.append('handlers')
             else:
+                __print_line_header(main_topic_color)
                 print_element_breadcumb(pack_name, pack_level, 'handlers')
                 cprint(' (%d)' % len(handlers), color='magenta')
                 for hname, handler in handlers.iteritems():
-                    cprint('    - [', end='')
-                    cprint('handler.%-15s' % hname, color='cyan', end='')
-                    cprint('] type=%s  ' % (handler['type']))
+                    __print_line_header(main_topic_color)
+                    cprint('  - ', end='')
+                    cprint('handlers > %-15s' % hname, color='cyan', end='')
+                    cprint(' type=%s  ' % (handler['type']))
             
             # generators
             generators = pack_entry['generators']
             if len(generators) == 0:
                 no_such_objects.append('generators')
             else:
+                __print_line_header(main_topic_color)
                 print_element_breadcumb(pack_name, pack_level, 'generators')
                 cprint(' (%d)' % len(generators), color='magenta')
                 for gname, generator in generators.iteritems():
-                    cprint('    - [', end='')
-                    cprint('generator.%-15s' % gname, color='cyan', end='')
-                    cprint('] if_group=%s' % (generator['if_group']))
+                    __print_line_header(main_topic_color)
+                    cprint('  - ', end='')
+                    cprint('generators > %-15s' % gname.split(os.sep)[-1], color='cyan', end='')
+                    cprint(' if_group=%s' % (generator['if_group']))
             
             # installors
             installors = pack_entry['installors']
             if len(installors) == 0:
                 no_such_objects.append('installors')
             else:
+                __print_line_header(main_topic_color)
                 print_element_breadcumb(pack_name, pack_level, 'installors')
                 cprint(' (%d)' % len(installors), color='magenta')
                 for iname, installor in installors.iteritems():
-                    cprint('    - [', end='')
-                    cprint('installor.%-15s' % iname, color='cyan', end='')
-                    cprint(']')
+                    __print_line_header(main_topic_color)
+                    cprint('  - ', end='')
+                    cprint('installors > %-15s' % iname, color='cyan', end='')
+                    cprint('')
             
             # Display what the pack do not manage (for info)
             if no_such_objects:
-                cprint('  * The pack do not provide such objects: %s' % ','.join(no_such_objects), color='grey')
+                __print_line_header(main_topic_color)
+                cprint(' * The pack do not provide objects: %s' % ','.join(no_such_objects), color='grey')
             print ''
 
 
@@ -252,6 +301,14 @@ def do_packs_list():
         for (pname, _) in packs_in_level.iteritems():
             all_pack_names.add(pname)
     
+    print_h2('Legend (topics)')
+    for topic_id in VERY_ALL_TOPICS:
+        color_id = topiker.get_color_id_by_topic_id(topic_id)
+        label = TOPICS_LABELS[topic_id]
+        s = u'%s %s %s' % (CHARACTERS.topic_small_picto, CHARACTERS.arrow_left, label)
+        color_s = lolcat.get_line(s, color_id, spread=None)
+        cprint(color_s)
+    
     print_h1('Packs')
     
     pnames = list(all_pack_names)
@@ -259,13 +316,12 @@ def do_packs_list():
     for pname in pnames:
         present_before = False
         keywords = []  # useless but make lint code check happy
-        cprint(' * ', end='')
         for level in ('global', 'zone', 'local'):
             if pname in packs[level]:
                 (pack, _) = packs[level][pname]
                 if present_before:
                     cprint('(overloaded by %s) ' % CHARACTERS.arrow_left, color='green', end='')
-                __print_pack_breadcumb(pname, level, end='')
+                __print_pack_breadcumb(pname, level, end='', topic_picto='small')
                 keywords = pack['keywords']
             present_before = True
         cprint('[keywords: %s]' % (','.join(keywords)), color='magenta')
@@ -415,7 +471,7 @@ exports = {
             {'name': 'pack_full_id', 'description': 'Pack full id (of the form LEVEL.pack_name, for example global.dns) that will be overload to a lower level'},
             {'name': '--to-level', 'default': 'local', 'description': 'Level to overload the pack, local or zone, default to local.'},
         ],
-        'description': 'Overload (copy in a more priotiry pack level) a pack. For example copy a pack from the global level to the local one.'
+        'description': 'Overload (copy in a more priority pack level) a pack. For example copy a pack from the global level to the local one.'
     },
     
     do_parameters_set: {

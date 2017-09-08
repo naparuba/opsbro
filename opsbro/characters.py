@@ -42,6 +42,7 @@ class Characters(object):
     
     # Topic display prefix
     topic_display_prefix = u'¦'
+    topic_small_picto = u'█'
     
     # Gun
     higer_gun = u'߹'

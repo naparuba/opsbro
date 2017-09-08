@@ -1,6 +1,6 @@
 name: mysql
 topics:
-    - service discovery
+    - automatic detection
     - monitoring
     - metrology
 types:

@@ -1,6 +1,6 @@
 name: rabbitmq
 topics:
-    - service discovery
+    - automatic detection
     - metrology
     - monitoring
 types:

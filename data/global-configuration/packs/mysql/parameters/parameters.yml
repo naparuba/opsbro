@@ -15,3 +15,5 @@ port: 3306
 # Socket: if set, will try to use this unix socket if the TCP port is not available
 socket: /var/lib/mysql/mysql.sock
 
+# Is the mysql server a cluster member
+replication_enabled: false

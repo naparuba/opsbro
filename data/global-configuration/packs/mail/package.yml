@@ -1,6 +1,6 @@
 name: mail
 topics:
-    - monitoring
+    - generic
 types:
     - pack
     - module

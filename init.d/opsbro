@@ -121,36 +121,6 @@ CMD=$1
 
 
 
-### This bloc part is for debian and redhat things, because they
-### are not able to be ok in the most common part: boot
-# cross debian/redhat thing
-# To be replaced by LSB functions
-# Defined here for distributions that don't define
-# log_daemon_msg
-log_failure_msg () {
-    echo_failure $*
-}
-log_daemon_msg () {
-    echo $@
-}
-# To be replaced by LSB functions
-# Defined here for distributions that don't define
-# log_end_msg
-log_end_msg () {
-    retval=$1
-    if [ $retval -eq 0 ]; then
-        echo "."
-    else
-        echo " failed!"
-    fi
-    return $retval
-}
-echo_success() {
-   log_end_msg 0 $*
-}
-echo_failure() {
-    log_end_msg 1 $*
-}
 # Load the VERBOSE setting and other rcS variables
 [ -f /etc/default/rcS ] && . /etc/default/rcS
 
@@ -160,6 +130,63 @@ echo_failure() {
 [ -f /lib/lsb/init-functions ] && . /lib/lsb/init-functions
 
 
+OPSBRO_COLOR="\\033[94mOps\\033[0;39m*\\033[91mBro\\033[0;39m"
+
+COLOR_MAGENTA="\\033[95m"
+COLOR_RESET="\\033[0;39m"
+
+# Have a special started output to show that we did launch but it's not currently finished yet
+echo_started() {
+  RES_COL=60
+  MOVE_TO_COL="echo -en \\033[${RES_COL}G"
+  SETCOLOR_SUCCESS="echo -en \\033[32m"
+  SETCOLOR_NORMAL="echo -en \\033[0;39m"
+  $MOVE_TO_COL
+  echo -n "["
+  $SETCOLOR_SUCCESS
+  echo -n $"√ OK"
+  $SETCOLOR_NORMAL
+  echo -n "]"
+  printf "\n"
+  return 0
+}
+
+# Have a special started output to show that we did launch but it's not currently finished yet
+echo_already_started() {
+  RES_COL=60
+  MOVE_TO_COL="echo -en \\033[${RES_COL}G"
+  SETCOLOR_WARNING="echo -en \\033[33m"
+  SETCOLOR_NORMAL="echo -en \\033[0;39m"
+  $MOVE_TO_COL
+  echo -n "["
+  $SETCOLOR_WARNING
+  echo -n $"‼ WARNING: Already running"
+  $SETCOLOR_NORMAL
+  echo -n "]"
+  printf "\n"
+  return 0
+}
+
+# Have a special started output to show that we did launch but it's not currently finished yet
+echo_failed() {
+  error_msg="$1"
+  RES_COL=60
+  MOVE_TO_COL="echo -en \\033[${RES_COL}G"
+  SETCOLOR_ERROR="echo -en \\033[31m"
+  SETCOLOR_NORMAL="echo -en \\033[0;39m"
+  $MOVE_TO_COL
+  echo -n "["
+  $SETCOLOR_ERROR
+  echo -n $"Х ERROR"
+  $SETCOLOR_NORMAL
+  echo -n "]"
+  echo ""
+  $SETCOLOR_ERROR
+  echo $error_msg
+  $SETCOLOR_NORMAL
+  printf "\n"
+  return 0
+}
 
 ################################################
 
@@ -214,26 +241,26 @@ do_stop() {
 ############################
 
 do_start_() {
-    echo  "Starting opsbro"
+    printf "$COLOR_MAGENTA""Starting$COLOR_RESET $OPSBRO_COLOR: "
     status=$(do_status)
     rc=$?
     if [ $rc -eq 0 ]; then
-        log_warning_msg "Already running"
+        echo_already_started
         return
     fi
     startoutput=$(do_start)
     rc=$?
     if [ $rc -eq 0 ]; then
-        echo_success
+        echo_started
     else
-        log_failure_msg "$startoutput"	
+        echo_failed "$startoutput"
     fi
     return $rc
 }
 
 
 do_stop_() {
-    echo  "Stopping opsbro"
+    printf "$COLOR_MAGENTA""Stopping$COLOR_RESET $OPSBRO_COLOR: "
     statusoutput=$(do_status)
     rc=$?
     if [ $rc -ne 0 ]; then
@@ -244,22 +271,22 @@ do_stop_() {
         [ $rc -ne 0 ] && failuremsg="Couldn't stop opsbro: $stopoutput"
     fi
     if [ $rc -ne 0 ]; then
-        log_failure_msg "$failuremsg"
+        echo_failed "$failuremsg"
     else
-        echo_success
+        echo_started
     fi
     return $rc
 }
 
 do_restart_() {
-    echo "Restarting opsbro"
+    printf "$COLOR_MAGENTA""Restarting$COLOR_RESET $OPSBRO_COLOR: "
     stopoutput=$(do_stop)
     startoutput=$(do_start)
     rc=$?
     if [ $rc -eq 0 ]; then
-        echo_success
+        echo_started
     else
-        log_failure_msg "$startoutput"
+        echo_failed "$startoutput"
     fi
     return $rc
 }
@@ -271,27 +298,27 @@ do_force-reload_() {
 
 do_reload_() {
     mod="$1"
-    echo "Reloading opsbro"
+    printf "$COLOR_MAGENTA""Reloading$COLOR_RESET $OPSBRO_COLOR: "
     stopoutput=$(do_stop)
     startoutput=$(do_start)
     rc=$?
     if [ $rc -eq 0 ]; then
-        echo_success
+        echo_started
     else
-        log_failure_msg "$startoutput"
+        echo_failed "$startoutput"
     fi
     return $rc
 }
 
 
 do_status_() {
-    echo "Checking status of opsbro"
+    printf "$COLOR_MAGENTA""Checking status of$COLOR_RESET $OPSBRO_COLOR: "
     output=$(do_status)
     rc=$?
     if [ $rc -eq 0 ]; then
-        echo_success $output
+        echo_started
     else
-	log_failure_msg "$output"
+	echo_failed "$output"
     fi
 
 }

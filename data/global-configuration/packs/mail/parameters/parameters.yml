@@ -19,6 +19,8 @@ addr_from: opsbro@mydomain.com
 # Address of your smtp server. Can be localhost if you did install & configure a local postfix
 smtp_server: localhost
 
+# enable if the SMTP server with SSL
+smtps: false
 
 # Templates for the check alerts (mail subject & mail text)
 check_subject_template: mail-check-subject.tpl

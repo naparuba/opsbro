@@ -1,6 +1,6 @@
 name: sshd
 topics:
-    - service discovery
+    - automatic detection
 types:
     - pack
 version: "1.0"

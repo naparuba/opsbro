@@ -7,7 +7,6 @@
 import optparse
 import sys
 import os
-
 import signal
 
 sys.path.append('.')
@@ -48,14 +47,14 @@ def print_full_help():
     
     parser.print_help()
     CLI.print_list()
-    sys.exit(0)
 
 
 if __name__ == '__main__':
     parser = optparse.OptionParser('', version="%prog " + VERSION, add_help_option=False)
-    parser.add_option('--proxy', dest="proxy", help="""Proxy URI. Like http://user:password@proxy-server:3128""")
-    parser.add_option('-l', '--list', action='store_true', dest="do_list", help=("List available commands"))
     parser.add_option('-D', action='store_true', dest="do_debug", help=("Enable the debug mode"))
+    # parser.add_option('--proxy', dest="proxy", help="""Proxy URI. Like http://user:password@proxy-server:3128""")
+    parser.add_option('-l', '--list', action='store_true', dest="do_list", help=("List available commands"))
+    
     parser.add_option('-c', '--config', dest="ymlconfig", default=DEFAULT_CFG_FILE, help=("Path to your local.yml file. Default: %s" % DEFAULT_CFG_FILE))
     parser.add_option('-v', action='store_true', dest="do_verbose", help=("Be more verbose"))
     parser.add_option('-h', '--help', action='store_true', dest="do_help", help=("Print help"))
@@ -74,6 +73,9 @@ if __name__ == '__main__':
     
     if opts.do_debug:
         logger.setLevel('DEBUG', force=True)
+    
+    do_help = opts.do_help
+    do_list = opts.do_list
     
     cfg = None
     if not os.path.exists(opts.ymlconfig):
@@ -107,10 +109,10 @@ if __name__ == '__main__':
         CLI.print_completion(args)
         sys.exit(0)
     
-    if opts.do_help:
+    if do_help:
         if len(command_args) == 0:
-            logger.error("Cannot find any help for you")
-            sys.exit(1)
+            print_full_help()
+            sys.exit(0)
         if len(command_args) == 1:
             sub_cmd = 'global'
         else:
@@ -129,13 +131,18 @@ if __name__ == '__main__':
         sys.exit(0)
     
     # Maybe he/she just want to list our commands?
-    if opts.do_list:
+    if do_list:
         CLI.print_list(' '.join(command_args))
         sys.exit(0)
     
-    # if just call opsbro, we must show the available commands
+    # if no matching commands, can e=be just void (print help) or a unknown command (error)
     if len(command_args) == 0:
         print_full_help()
+        # not matching command? error
+        if len(sys.argv) != 0:
+            logger.error('Unknown arguments: %s' % (' '.join(sys.argv)))
+            sys.exit(2)
+        sys.exit(0)
     
     # If it's just a one call shot, do it!
     CLI.one_loop(command_args)

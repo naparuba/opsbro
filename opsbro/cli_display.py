@@ -3,6 +3,7 @@
 from opsbro.log import cprint, logger
 from opsbro.characters import CHARACTERS
 
+
 # raw_title means do not format it, use it's own color
 def print_h1(title, raw_title=False, only_first_part=False, line_color='cyan', title_color='yellow'):
     p1 = 12
@@ -40,11 +41,21 @@ def print_h3(title, raw_title=False):
         cprint(' ' + title + ' ')
 
 
-def print_element_breadcumb(pack_name, pack_level, what, name=''):
-    cprint('  * ', end='')
-    cprint(pack_level, color='blue', end='')
-    cprint(' > ', end='')
-    cprint(pack_name, color='yellow', end='')
+def print_element_breadcumb(pack_name, pack_level, what, name='', set_pack_color=False):
+    star = ' * '
+    if set_pack_color:
+        cprint(star, end='')
+    else:
+        cprint(star, color='grey', end='')
+    level_color = 'blue' if set_pack_color else 'grey'
+    cprint(pack_level, color=level_color, end='')
+    dash = ' > '
+    if set_pack_color:
+        cprint(dash, end='')
+    else:
+        cprint(dash, color='grey', end='')
+    name_color = 'yellow' if set_pack_color else 'grey'
+    cprint(pack_name, color=name_color, end='')
     cprint(' > ', end='')
     cprint(what, color='cyan', end='')
     if name:

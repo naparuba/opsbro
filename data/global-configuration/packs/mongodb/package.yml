@@ -1,6 +1,6 @@
 name: mongodb
 topics:
-    - service discovery
+    - automatic detection
     - monitoring
     - metrology
 types:

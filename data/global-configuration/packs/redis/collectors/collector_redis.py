@@ -44,7 +44,7 @@ class Redis(Collector):
                  'total_commands_processed']
     
     parameters = {
-        'server'  : StringParameter(default='127.0.0.1'),
+        'server'  : StringParameter(default='localhost'),
         'port'    : IntParameter(default=6379),
     }
 

@@ -81,15 +81,22 @@ class PackManager(object):
         return self.packs
     
     
-    def get_pack_topics(self, pname):
+    def get_pack_all_topics(self, pname):
         for level in ('local', 'zone', 'global'):
             pack = self.packs[level].get(pname, None)
             if not pack:
                 continue
             package, dir = pack
-            topics = package.get('topics', [])
+            topics = package.get('topics', [])[:]  # get a copy, do not direct link it
             return topics
         return []
+    
+    
+    def get_pack_main_and_secondary_topics(self, pname):
+        topics = self.get_pack_all_topics(pname)
+        if not topics:
+            return ('generic', [])
+        return (topics[0], topics[1:])
     
     
     # main method to export http interface. Must be in a method that got

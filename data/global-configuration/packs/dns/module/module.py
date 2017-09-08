@@ -13,8 +13,8 @@ class DNSModule(Module):
     
     parameters = {
         'enabled': BoolParameter(default=False),
-        'port'   : IntParameter(default=53),
-        'domain' : StringParameter(default=''),
+        'port'   : IntParameter(default=6766),
+        'domain' : StringParameter(default='.opsbro'),
     }
     
     

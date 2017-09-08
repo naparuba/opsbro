@@ -2,6 +2,7 @@
 
 import random
 import itertools
+from opsbro.misc.lolcat import lolcat
 
 TOPIC_SERVICE_DISCOVERY = 0x1 << 0
 TOPIC_AUTOMATIC_DECTECTION = 0x1 << 1
@@ -13,6 +14,9 @@ TOPIC_GENERIC = 0x1 << 6  # hidden one, for other stuff
 
 TOPICS = [TOPIC_SERVICE_DISCOVERY, TOPIC_AUTOMATIC_DECTECTION, TOPIC_MONITORING, TOPIC_METROLOGY,
           TOPIC_CONFIGURATION_AUTOMATION, TOPIC_SYSTEM_COMPLIANCE]
+
+VERY_ALL_TOPICS = TOPICS[:]
+VERY_ALL_TOPICS.append(TOPIC_GENERIC)
 
 TOPICS_LABELS = {
     TOPIC_SERVICE_DISCOVERY       : u'service discovery',
@@ -31,7 +35,7 @@ TOPIC_ID_BY_STRING = {
     u'metrology'               : TOPIC_METROLOGY,
     u'configuration automation': TOPIC_CONFIGURATION_AUTOMATION,
     u'system compliance'       : TOPIC_SYSTEM_COMPLIANCE,
-    u'generice'                : TOPIC_GENERIC,
+    u'generic'                 : TOPIC_GENERIC,
 }
 
 # Size of configuration automation for aligment display
@@ -94,6 +98,17 @@ class Topiker(object):
         topic_id = TOPIC_ID_BY_STRING[topic_s]
         color_id = TOPICS_COLORS[topic_id]
         return color_id
+    
+    
+    def get_color_id_by_topic_id(self, topic_id):
+        color_id = TOPICS_COLORS[topic_id]
+        return color_id
+    
+    
+    def get_colorized_topic_from_string(self, topic_s):
+        color_id = self.get_color_id_by_topic_string(topic_s)
+        r = lolcat.get_line(topic_s, color_id, spread=None)
+        return r
 
 
 topiker = Topiker()

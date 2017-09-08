@@ -19,7 +19,6 @@ class SlackHandlerModule(HandlerModule):
     parameters = {
         'enabled'   : BoolParameter(default=False),
         'severities': StringListParameter(default=['ok', 'warning', 'critical', 'unknown']),
-        'contacts'  : StringListParameter(default=['admin@mydomain.com']),
         'token'     : StringParameter(default=''),
         'channel'   : StringParameter(default='#alerts'),
     }
