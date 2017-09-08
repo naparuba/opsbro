@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
-echo "Starting to test config show"
+echo "Starting to test agent parameters show"
 
-opsbro config show
+opsbro agent parameters show
 
 if [ $? != 0 ]; then
-    echo "The opsbro config show did fail"
+    echo "The opsbro agent parameters show show did fail"
     exit 2
 fi
 
 
-echo "opsbro config show OK"
+echo "opsbro agent parameters show OK"
