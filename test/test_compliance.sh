@@ -13,19 +13,19 @@ sleep 10
 OUT=$(ls -la /etc/passwd)
 
 
-grep -- "-rw-r--r--" "$OUT"
+echo "$OUT" | grep -- "-rw-r--r--"
 if [ $? != 0 ]; then
     echo "ERROR: rights are not valid, compliance enforcing is failing."
-    echo "$out"
+    echo "$OUT"
     exit 2
 fi
 
-grep -- "root root" "$OUT"
+echo "$OUT" | grep -- "root root"
 if [ $? != 0 ]; then
     echo "ERROR: rights are not valid, compliance enforcing is failing."
-    echo "$out"
+    echo "$OUT"
     exit 2
 fi
 
 
-echo "OK:  Compliance in enforcing mode is working: $out is 644/root/root"
+echo "OK:  Compliance in enforcing mode is working: $OUT is 644/root/root"
