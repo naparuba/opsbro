@@ -1,0 +1,13 @@
+compliance:
+   display_name: passwd is root/644
+   verify_if:   "is_in_group('linux')"
+   # We force to get back the file rights
+   mode: enforcing
+   interval: 60s
+   rule:
+      type: file-rights
+      parameters:
+           file: /etc/passwd
+           owner: root
+           group: root
+           permissions: 644

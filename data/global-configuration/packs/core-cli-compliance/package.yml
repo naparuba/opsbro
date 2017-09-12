@@ -1,0 +1,19 @@
+name: core-cli-compliance
+topics:
+    - system compliance
+types:
+    - cli
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description:  CLI for view the node system compliance
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - cli
+    - system compliance
+
+dependencies:
+    core: ">=1.0"
+license: ""

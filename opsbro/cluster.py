@@ -55,6 +55,7 @@ from opsbro.modulemanager import modulemanager
 from opsbro.executer import executer
 from opsbro.monitoring import monitoringmgr
 from opsbro.installermanager import installormgr
+from opsbro.compliancemgr import compliancemgr
 from opsbro.defaultpaths import DEFAULT_LIBEXEC_DIR, DEFAULT_LOCK_PATH, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR, DEFAULT_CFG_DIR
 
 # Global logger for this part
@@ -347,6 +348,9 @@ class Cluster(object):
         # And the configuration
         configmgr.export_http()
         
+        # Compliance too
+        compliancemgr.export_http()
+        
         # get the message in a pub-sub way
         pubsub.sub('manage-message', self.manage_message_pub)
     
@@ -415,6 +419,10 @@ class Cluster(object):
     def launch_detector_thread(self):
         self.detector_thread = threader.create_and_launch(detecter.do_detector_thread, name='Detector scheduling', essential=True, part='detector')
     
+
+    def launch_compliance_thread(self):
+        threader.create_and_launch(compliancemgr.do_compliance_thread, name='System compliance', essential=True, part='compliance')
+
     
     def launch_installor_thread(self):
         threader.create_and_launch(installormgr.do_installer_thread, name='Installor scheduling', essential=True, part='installor')

@@ -27,7 +27,7 @@ class ConfigurationManager(object):
         'log_level'      : {'type': 'string', 'mapto': 'log_level'},
         'bootstrap'      : {'type': 'bool', 'mapto': 'bootstrap'},
         'seeds'          : {'type': 'list', 'mapto': 'seeds'},
-        'groups'           : {'type': 'list', 'mapto': 'groups'},
+        'groups'         : {'type': 'list', 'mapto': 'groups'},
         'encryption_key' : {'type': 'string', 'mapto': 'encryption_key'},
         'master_key_priv': {'type': 'string', 'mapto': 'master_key_priv'},
         'master_key_pub' : {'type': 'string', 'mapto': 'master_key_pub'},
@@ -39,7 +39,7 @@ class ConfigurationManager(object):
     def __init__(self):
         # Keep a list of the knowns cfg objects type we will encounter
         # NOTE: will be extend once with the modules types
-        self.known_types = set(['check', 'service', 'handler', 'generator', 'zone', 'installor'])
+        self.known_types = set(['check', 'service', 'handler', 'compliance', 'generator', 'zone', 'installor'])
         
         # The cluster starts with defualt parameters, but of course configuration can set them too
         # so we will load them (in the local.yaml file) and give it back to the cluster when it will need it
@@ -64,6 +64,11 @@ class ConfigurationManager(object):
     def get_handlermgr(self):
         from opsbro.handlermgr import handlermgr
         return handlermgr
+    
+    
+    def get_compliancemgr(self):
+        from opsbro.compliancemgr import compliancemgr
+        return compliancemgr
     
     
     def get_zonemgr(self):
@@ -128,6 +133,8 @@ class ConfigurationManager(object):
                     self.load_installor_object(obj, fp, pack_name=pack_name, pack_level=pack_level)
                 elif load_focus == 'parameter':
                     self.load_pack_parameters(obj, pack_name=pack_name, pack_level=pack_level)
+                elif load_focus == 'compliance':
+                    self.load_compliance_object(obj, fp, pack_name=pack_name, pack_level=pack_level)
                 else:
                     raise Exception('Unknown load focus type! %s' % load_focus)
     
@@ -231,8 +238,20 @@ class ConfigurationManager(object):
             hname = os.path.splitext(os.path.basename(fname))[0]
             handlermgr = self.get_handlermgr()
             handlermgr.import_handler(handler, fp, hname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
-    
-    
+
+
+    # Monitoring objects: check, service and handler
+    def load_compliance_object(self, o, fp, pack_name, pack_level):
+        if 'compliance' in o:
+            compliance = o['compliance']
+        
+            mod_time = int(os.path.getmtime(fp))
+            fname = fp
+            hname = os.path.splitext(os.path.basename(fname))[0]
+            compliancemgr = self.get_compliancemgr()
+            compliancemgr.import_compliance(compliance, fp, hname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
+
+
     def load_generator_object(self, o, fp, pack_name, pack_level):
         if 'generator' in o:
             generator = o['generator']
@@ -311,6 +330,7 @@ class ConfigurationManager(object):
             _types = [('monitoring', 'monitoring'), ('handlers', 'monitoring'),
                       ('generators', 'generator'), ('parameters', 'parameter'),
                       ('detectors', 'detector'), ('installors', 'installor'),
+                      ('compliance', 'compliance')
                       ]
             for sub_dir, load_focus in _types:
                 full_sub_dir = os.path.join(dir, sub_dir)

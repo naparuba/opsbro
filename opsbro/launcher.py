@@ -230,6 +230,7 @@ class Launcher(object):
         c.launch_generator_thread()
         c.launch_detector_thread()
         c.launch_installor_thread()
+        c.launch_compliance_thread()
         
         if 'kv' in gossiper.groups:
             c.launch_replication_backlog_thread()
