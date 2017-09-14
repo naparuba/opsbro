@@ -98,7 +98,7 @@ banner_lines[_idx + 1] = line_after
 
 _idx_topics = 5
 
-banner_lines[_idx_topics] += '  Topics:'
+banner_lines[_idx_topics] += '  %sOps%s*%sBro%s goal: solve most common use cases of theses %s%s6%s Topics' % (_BLUE,_RESET, _RED, _RESET, _BOLD, _MAGENTA, _RESET)
 for (i, topic) in enumerate(TOPICS):
     _color_id = TOPICS_COLORS[topic]
     topic_label = lolcat.get_line(TOPICS_LABEL_BANNER[topic].ljust(MAX_TOPICS_LABEL_SIZE), _color_id, spread=None)

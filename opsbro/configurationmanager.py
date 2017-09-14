@@ -39,7 +39,7 @@ class ConfigurationManager(object):
     def __init__(self):
         # Keep a list of the knowns cfg objects type we will encounter
         # NOTE: will be extend once with the modules types
-        self.known_types = set(['check', 'service', 'handler', 'compliance', 'generator', 'zone', 'installor'])
+        self.known_types = set(['check', 'service', 'compliance', 'generator', 'zone', 'installor'])
         
         # The cluster starts with defualt parameters, but of course configuration can set them too
         # so we will load them (in the local.yaml file) and give it back to the cluster when it will need it
@@ -229,29 +229,20 @@ class ConfigurationManager(object):
             sname = os.path.splitext(fname)[0]
             monitoringmgr = self.get_monitoringmgr()
             monitoringmgr.import_service(service, 'file:%s' % fname, sname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
-        
-        if 'handler' in o:
-            handler = o['handler']
-            
-            mod_time = int(os.path.getmtime(fp))
-            fname = fp
-            hname = os.path.splitext(os.path.basename(fname))[0]
-            handlermgr = self.get_handlermgr()
-            handlermgr.import_handler(handler, fp, hname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
-
-
-    # Monitoring objects: check, service and handler
+    
+    
+    # Compliance object
     def load_compliance_object(self, o, fp, pack_name, pack_level):
         if 'compliance' in o:
             compliance = o['compliance']
-        
+            
             mod_time = int(os.path.getmtime(fp))
             fname = fp
             hname = os.path.splitext(os.path.basename(fname))[0]
             compliancemgr = self.get_compliancemgr()
             compliancemgr.import_compliance(compliance, fp, hname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
-
-
+    
+    
     def load_generator_object(self, o, fp, pack_name, pack_level):
         if 'generator' in o:
             generator = o['generator']
@@ -327,7 +318,7 @@ class ConfigurationManager(object):
             # We load the sub directories, but we don't want to have a big mess of objects
             # so must respect for each type
             # dir, load_focus
-            _types = [('monitoring', 'monitoring'), ('handlers', 'monitoring'),
+            _types = [('monitoring', 'monitoring'),
                       ('generators', 'generator'), ('parameters', 'parameter'),
                       ('detectors', 'detector'), ('installors', 'installor'),
                       ('compliance', 'compliance')

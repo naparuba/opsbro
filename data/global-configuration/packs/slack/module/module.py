@@ -33,13 +33,13 @@ class SlackHandlerModule(HandlerModule):
         self.logger.debug('[SLACK] return of the send: %s %s %s' % (r.successful, r.__dict__['body']['channel'], r.__dict__['body']['ts']))
     
     
-    def send_slack(self, handler, check):
+    def send_slack(self, check):
         token = self.get_parameter('token')
         if not token:
             token = os.environ.get('SLACK_TOKEN', '')
         
         if token:
-            self.logger.error('[SLACK] token is not configured on the handler %s skipping slack messages.' % handler['name'])
+            self.logger.error('[SLACK] token is not configured on the slack module. skipping slack messages.')
             return
         slack = Slacker(token)
         # title = '{date_num} {time_secs} [node:`%s`][addr:`%s`] Check `%s` is going %s' % (gossiper.display_name, gossiper.addr, check['name'], check['state'])
@@ -75,7 +75,7 @@ class SlackHandlerModule(HandlerModule):
                     self.logger.error('[SLACK] Did create channel %s but we still cannot send the message: %s' % (channel, exp))
     
     
-    def handle(self, handler, obj, event):
+    def handle(self, obj, event):
         enabled = self.get_parameter('enabled')
         if not enabled:
             self.logger.debug('Mail module is not enabled, skipping check alert sent')
@@ -88,4 +88,4 @@ class SlackHandlerModule(HandlerModule):
             evt_data = event['evt_data']
             check_did_change = evt_data['check_did_change']
             if check_did_change:
-                self.send_slack(handler, obj)
+                self.send_slack(obj)

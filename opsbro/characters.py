@@ -2,13 +2,14 @@
 
 class Characters(object):
     # Box drawing
-    vbar = u'┃'
-    hbar = u'━'
+    # NOTE: if you have more heavy chars, I'm interested, because all I did found is ┏ but the vertical sign is not continue (space in putty at least)
+    vbar = u'│'
+    hbar = u'─'
     hbar_light = u'─'
-    corner_top_left = u'┏'
-    corner_top_right = u'┓'
-    corner_bottom_left = u'┗'
-    corner_bottom_right = u'┛'
+    corner_top_left = u'┌'
+    corner_top_right = u'┐'
+    corner_bottom_left = u'└'
+    corner_bottom_right = u'┘'
     
     # Others
     hbar_dotted = u'᠁'

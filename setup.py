@@ -199,11 +199,12 @@ if allow_black_magic:
     cprint('  >> %s  (%s)\n' % (quote, from_film), color='grey')
 if allow_black_magic:
     if is_update:
-        cprint('  Previous OpsBro lib detected on this system (location:', end='')
-        cprint(prev_path, color='blue', end='')
-        cprint(')(version:', end='')
-        cprint('%s' % prev_version, color='blue', end='')
-        cprint('), using the ', end='')
+        cprint('  Previous OpsBro lib detected on this system:')
+        cprint('    * location: ', end='')
+        cprint(prev_path, color='blue')
+        cprint('    * version : ', end='')
+        cprint('%s' % prev_version, color='blue')
+        cprint('    * Using the ', end='')
         cprint('update process', color='magenta')
     
     print ''
@@ -400,10 +401,17 @@ if allow_black_magic:
     if is_managed_system:
         cprint(' * Your system ', end='')
         cprint('%s (version %s) ' % (system_distro, system_distroversion), color='magenta', end='')
-        cprint('is managed by this installer and will be able to use system package manager to install dependencies.')
+        cprint(u'is managed by this installer: ', end='')
+        cprint(CHARACTERS.check, color='green')
+        cprint('   - it will be able to use system package manager to install dependencies.', color='grey')
     else:
-        cprint(
-            " * NOTICE: your system (%s - %s) is not a tested system, it won't use the package system to install dependencies and will use the python pip dependency system instead (internet connection is need)." % (system_distro, system_distroversion))
+        cprint(" * ", end='')
+        cprint("%s NOTICE" % CHARACTERS.double_exclamation, color='yellow', end='')
+        cprint(": your system ", end='')
+        cprint('(%s - %s) ' % (system_distro, system_distroversion), color='magenta', end='')
+        cprint('is not a managed/tested system:')
+        cprint("   - it won't use the package system to install dependencies")
+        cprint("   - and so it will use the python pip dependency system instead (internet connection is need).")
 
 for (m, d) in mod_need.iteritems():
     cprint(' * checking dependency for ', end='')

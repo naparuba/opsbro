@@ -32,7 +32,7 @@ class MailHandlerModule(HandlerModule):
         super(MailHandlerModule, self).__init__()
     
     
-    def send_mail(self, handler, check):
+    def send_mail(self, check):
         
         addr_from = self.get_parameter('addr_from')
         smtp_server = self.get_parameter("smtp_server")
@@ -64,9 +64,9 @@ class MailHandlerModule(HandlerModule):
                 text_buf = f.read()
             
             subject_tpl = jinja2.Template(subject_buf)
-            subject_m = subject_tpl.render(handler=handler, check=check, _time=_time)
+            subject_m = subject_tpl.render(check=check, _time=_time)
             text_tpl = jinja2.Template(text_buf)
-            text_m = text_tpl.render(handler=handler, check=check, _time=_time)
+            text_m = text_tpl.render(check=check, _time=_time)
             
             msg = '''\
     From: %s
@@ -83,7 +83,7 @@ class MailHandlerModule(HandlerModule):
             self.logger.error('Cannot send mail: %s' % traceback.format_exc())
     
     
-    def handle(self, handler, obj, event):
+    def handle(self, obj, event):
         enabled = self.get_parameter('enabled')
         if not enabled:
             self.logger.debug('Mail module is not enabled, skipping check alert sent')
@@ -96,4 +96,4 @@ class MailHandlerModule(HandlerModule):
             evt_data = event['evt_data']
             check_did_change = evt_data['check_did_change']
             if check_did_change:
-                self.send_mail(handler, obj)
+                self.send_mail(obj)

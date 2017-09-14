@@ -361,14 +361,16 @@ compliance:
    display_name: passwd is root/644
    if:   "is_in_group('linux')"
    mode: enforce
-   rules:
-      - file-rights:
+   rule:
+      file-rights:
            file: /etc/passwd
            owner: root
            group: root
            permissions: 644
 
 * entrée dans /etc/hosts
+  * https://github.com/jonhadfield/python-hosts
+  * & https://github.com/hickeroar/win_inet_pton
 * routing ipv4
 * routing ipv6
 * nfs client
@@ -379,9 +381,9 @@ compliance:
    display_name: mysql is started
    if:   "is_in_defined_group('mysql')"
    mode: audit
-   rules:
-      - services:
-           name: /etc/passwd
+   rule:
+      services:
+           name: mysql
            status: started
 
 * ssh auth keys
@@ -396,8 +398,8 @@ compliance:
    displayçname: motd is deployed
    if:   "is_in_group('linux')"
    mode: enforce
-   rules:
-      - motd:
+   rule:
+      motd:
            text: "Welcome on server {{}}"
 
 * user crées et valide
@@ -411,8 +413,8 @@ compliance:
    display_name: gcc not in production
    if:   "is_in_defined_group('production')"
    mode: audit
-   rules:
-      - packages:
+   rule:
+      packages:
            name: gcc
            status: not-installed
 
@@ -515,6 +517,7 @@ compliance:
 
 # 0.10: Fonctionnement sous windows
     * DRIVER windows (va falloir livrer des msi)
+      ** ==> https://github.com/pahaz/sshtunnel/blob/master/appveyor.yml
 
 
 # 0.11: Meilleur développement des users avec accès en ligne à la doc

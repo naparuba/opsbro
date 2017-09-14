@@ -228,6 +228,8 @@ NOTE: the $$ evaluation is not matching the previous checks, we will fix it in a
 
 You can be notified about check state changed with handlers. currently 2 are managed: email & slack
 
+TODO: describe mail & slack modules
+
 You must define it in your local configuration:
 
     handler:
