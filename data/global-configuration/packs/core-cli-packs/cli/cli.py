@@ -121,7 +121,7 @@ def do_packs_show():
     packs = {'global': {}, 'zone': {}, 'local': {}}
     for level in packer.packs:
         for pname in packer.packs[level]:
-            packs[level][pname] = {'checks': {}, 'module': None, 'collectors': {}, 'handlers': {}, 'generators': {}, 'installors': {}}
+            packs[level][pname] = {'checks': {}, 'module': None, 'collectors': {}, 'generators': {}, 'installors': {}}
     
     from opsbro.monitoring import monitoringmgr
     checks = monitoringmgr.checks
@@ -145,11 +145,11 @@ def do_packs_show():
         packs[pack_level][pack_name]['collectors'][colname] = collector
     
     from opsbro.handlermgr import handlermgr
-    handlers = handlermgr.handlers
-    for hname, handler in handlers.iteritems():
-        pack_name = handler['pack_name']
-        pack_level = handler['pack_level']
-        packs[pack_level][pack_name]['handlers'][hname] = handler
+    #handlers = handlermgr.handlers
+    #for hname, handler in handlers.iteritems():
+    #    pack_name = handler['pack_name']
+    #    pack_level = handler['pack_level']
+    #    packs[pack_level][pack_name]['handlers'][hname] = handler
     
     from opsbro.generatormgr import generatormgr
     generators = generatormgr.generators
@@ -243,7 +243,7 @@ def do_packs_show():
                     cprint('')
                     offset = 1
                     __print_element_parameters(collector, pack_name, pack_level, main_topic_color, 'parameters', offset)
-            
+            '''
             # handlers
             handlers = pack_entry['handlers']
             if len(handlers) == 0:
@@ -257,6 +257,7 @@ def do_packs_show():
                     cprint('  - ', end='')
                     cprint('handlers > %-15s' % hname, color='cyan', end='')
                     cprint(' type=%s  ' % (handler['type']))
+            '''
             
             # generators
             generators = pack_entry['generators']

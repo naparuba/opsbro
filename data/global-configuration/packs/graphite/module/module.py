@@ -221,8 +221,9 @@ class GraphiteModule(ListenerModule):
     
     # Export end points to get/list TimeSeries
     def export_http(self):
-        
+    
         @http_export('/metrics/find/')
+        @http_export('/metrics/find')
         def get_graphite_metrics_find():
             response.content_type = 'application/json'
             key = request.GET.get('query', '*')
@@ -297,12 +298,21 @@ class GraphiteModule(ListenerModule):
             past = divmod(pastraw, 3600)[0] * 3600
             
             found = False
+            # Try -Xd
+            m = re.match(r'-(\d*)d', _from, re.M | re.I)
+            if m:
+                found = True
+                nbdays = int(m.group(1))
+                pastraw = int(time.time()) - (nbdays * 86400)
+                past = divmod(pastraw, 86400)[0] * 86400
+            # Try -Xh
             m = re.match(r'-(\d*)h', _from, re.M | re.I)
             if m:
                 found = True
                 nbhours = int(m.group(1))
                 pastraw = int(time.time()) - (nbhours * 3600)
                 past = divmod(pastraw, 3600)[0] * 3600
+            # Try -Xhours
             if not found:
                 m = re.match(r'-(\d*)hours', _from, re.M | re.I)
                 if m:
@@ -310,7 +320,16 @@ class GraphiteModule(ListenerModule):
                     nbhours = int(m.group(1))
                     pastraw = int(time.time()) - (nbhours * 3600)
                     past = divmod(pastraw, 3600)[0] * 3600
-            if not found:  # absolute value maybe?
+            # Try -Xmin
+            if not found:
+                m = re.match(r'-(\d*)min', _from, re.M | re.I)
+                if m:
+                    found = True
+                    nbminutes = int(m.group(1))
+                    pastraw = int(time.time()) - (nbminutes * 60)
+                    past = divmod(pastraw, 60)[0] * 60
+            # absolute value maybe?
+            if not found:
                 m = re.match(r'(\d*)', _from, re.M | re.I)
                 if m:
                     found = True
@@ -332,7 +351,7 @@ class GraphiteModule(ListenerModule):
                     nname = n['name']
                 self.logger.debug('HTTP ts: target %s is managed by %s(%s)' % (target, nname, nuuid))
                 # that's me or the other is no more there?
-                if nuuid == self.uuid or n is None:
+                if nuuid == gossiper.uuid or n is None:
                     self.logger.debug('HTTP ts: /render, my job to manage %s' % target)
                     
                     # Maybe I am also the TS manager of these data? if so, get the TS backend data for this
