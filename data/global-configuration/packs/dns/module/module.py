@@ -60,7 +60,7 @@ class DNSModule(Module):
     
     def do_launch(self):
         if not self.enabled:
-            self.logger.error('No dns object defined in the configuration or not enabled, skipping it')
+            self.logger.debug('DNS module is not enabled, skipping it')
             return
         
         while not stopper.interrupted:

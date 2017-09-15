@@ -100,14 +100,14 @@ OPSBRO_DEFAULT_FILE="/etc/default/opsbro"
 
 usage() {
     cat << END
-Usage: $NAME [ -d ] {start|stop|status|restart|reload|force-reload}
+Usage: $NAME [ --debug ] {start|stop|status|restart|reload|force-reload}
 
- -d  start the daemon in debug mode, only useful with start|restart
+ --debug  start the daemon in debug mode, only useful with start|restart
 
 END
 }
 
-if [ "$1" = "-d" ]; then
+if [ "$1" = "--debug" ]; then
     DEBUG="1"
     shift
 fi
@@ -208,8 +208,8 @@ do_status() {
 # starts our modules
 #
 do_start() {
-    [ "$DEBUG" = 1 ] && DEBUGCMD="--debug "$(getdebugfile "$mod")
-    output=$(opsbro agent start --daemon $DEBUGCMD 2>&1)
+    [ "$DEBUG" = 1 ] && DEBUGCMD="--debug "
+    output=$(opsbro $DEBUGCMD agent start --daemon  2>&1)
     rc=$?
     
     if [ $rc != 0 ]; then

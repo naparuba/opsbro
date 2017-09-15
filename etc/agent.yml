@@ -1,0 +1,28 @@
+################## Agent parameters, used if you launch OpsBro as an agent
+
+# Port to listen for UDP/HTTP connections
+port: 6768
+
+
+# Where to store the daemon data
+data: /var/lib/opsbro
+lock: /var/run/opsbro.lock
+
+# Internal CLI => agent communication channel
+socket: /var/lib/opsbro/opsbro.sock
+
+
+########## Log
+
+# Log storing path
+log: /var/log/opsbro
+# Which level is the daemon running. Possible values are:
+# * ERROR
+# * WARNING
+# * INFO
+# * DEBUG
+log_level: INFO
+
+
+# Place to store nagios compatible plugins (deprecated)
+libexec: /var/lib/opsbro/libexec/

@@ -54,11 +54,9 @@ class Rule(object):
     def launch(self, mode):
         # Reset previous errors
         self.reset()
-        print "Launch", self.rule
         logger.debug('Execute compliance rule: %s' % self.rule)
         _type = self.rule.get('type', '')
         parameters = self.rule.get('parameters', {})
-        print "TYPE", _type
         if _type == 'file-rights':
             self.do_file_rights(parameters, mode)
     
@@ -68,7 +66,6 @@ class Rule(object):
     # group: root
     # permissions: 644
     def do_file_rights(self, parameters, mode):
-        print "FILE RIGHS", parameters, mode
         rule = parameters
         file_path = rule.get('file', '')
         owner = rule.get('owner', '')
@@ -173,7 +170,6 @@ class ComplianceManager(object):
     
     def launch_compliances(self):
         for (compliance_id, compliance) in self.compliances.iteritems():
-            print "FUCK" * 20, "loaded", self.compliances
             mode = compliance['mode']
             rule = compliance['rule']
             if rule is not None:

@@ -18,7 +18,6 @@ class ConfigurationManager(object):
     cluster_parameters = {
         'display_name'   : {'type': 'string', 'mapto': 'display_name'},
         'port'           : {'type': 'int', 'mapto': 'port'},
-        'datacenters'    : {'type': 'list', 'mapto': 'datacenters'},
         'data'           : {'type': 'path', 'mapto': 'data_dir'},
         'libexec'        : {'type': 'path', 'mapto': 'libexec_dir'},
         'log'            : {'type': 'path', 'mapto': 'log_dir'},
