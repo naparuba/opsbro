@@ -1,12 +1,22 @@
 
 
 
-This is a first release of the opsbro project about a service discovery / monitoring / light cfg management / command execution tool.
-
 [![Build Status](https://travis-ci.org/naparuba/opsbro.svg)](https://travis-ci.org/naparuba/opsbro)
 
 
-## **OpsBro**: monitoring and service discovery
+## **OpsBro**
+
+OpsBro is a tool focus on the top 6 topics forr nowaday Ops:
+
+service discovery
+automatic detection
+monitoring
+metrology
+configuration automation
+system compliance
+
+All the configuration / deployment is model based (aka into packs)
+
 
 ![Agent](images/agent.png)
 

@@ -1,0 +1,59 @@
+FROM debian:9
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+RUN        apt-get update && apt-get install -y python
+# Setup test env, "standard" installation is test with other tests ^^
+RUN        apt-get install -y python-pip
+RUN        pip install jinja2
+RUN        pip install leveldb
+RUN        pip install pyOpenSSL
+RUN        pip install pycrypto
+RUN        pip install requests
+RUN        pip install Crypto
+RUN        pip install pygments
+RUN        pip install coveralls
+RUN        pip install nose-cov
+RUN        pip install unittest2
+RUN        apt-get install -y python-cherrypy3
+RUN        pip install rsa
+# The internal yaml seems to not be used, thanks nose
+RUN        pip install ruamel.yaml==0.11.15
+RUN        apt-get install -y sysstat
+
+
+# Grafana: setup its repo for debian (same for all debian releases)
+RUN        apt-get install -y curl
+RUN        apt-get install -y apt-transport-https
+RUN        printf "\ndeb https://packagecloud.io/grafana/stable/debian/ jessie main\n" >> /etc/apt/sources.list
+RUN        curl https://packagecloud.io/gpg.key | apt-key add -
+RUN        apt-get update
+RUN        apt-get install -y grafana
+RUN        apt-get install -y procps
+RUN        apt-get install -y net-tools
+RUN        apt-get install -y sqlite
+
+ADD        . /root/opsbro-oss
+WORKDIR       /root/opsbro-oss
+
+RUN       python setup.py install
+
+# We will modify a pack, so overload it first
+RUN        opsbro  packs overload global.grafana
+
+# Then copy our files to the new pack overloaded (monitoring plugin + parameters)
+# TODO: remove the parameter copy, should be with CLI calls
+#ADD        test/test-files/test-nagios-connector   /var/lib/opsbro/local-configuration/packs/shinken/
+
+
+
+# Change module parameters for Grafana
+RUN        opsbro  packs parameters set local.grafana.enabled               true
+RUN        opsbro  packs parameters set local.grafana.api_key               'eyJrIjoibmhIR0FuRnB0MTN6dFBMTlNMZDZKWjJXakFuR0I2Wk4iLCJuIjoiT3BzQnJvIiwiaWQiOjF9'
+
+
+
+
+EXPOSE    3000:3000
+
+
+ENTRYPOINT     test/test_grafana_connector.sh

@@ -1,0 +1,20 @@
+name: grafana
+topics:
+    - service discovery
+types:
+    - pack
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description:  Module to allow your daemon to automatically create a data source un grafana for all your nodes
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - module
+    - grafana
+
+dependencies:
+    core: ">=1.0"
+license: ""
