@@ -156,6 +156,7 @@ class GrafanaModule(ConnectorModule):
             self.logger.debug('Grafana loop')
             
             if not self.enabled:
+                time.sleep(1)
                 continue
             
             nodes_in_grafana = self.get_data_sources_from_grafana()

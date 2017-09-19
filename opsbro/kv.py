@@ -79,11 +79,11 @@ class TTLDatabase(object):
     
     # We already droped all entry in a db, so drop it from our cache
     def drop_db(self, h):
-        # now demove the database
+        # now remove the database
         with self.lock:
             try:
                 del self.dbs[h]
-            except IndexError:  # if not there, not a problem...
+            except (IndexError, KeyError):  # if not there, not a problem...
                 pass
         
         # And remove the files of this database
