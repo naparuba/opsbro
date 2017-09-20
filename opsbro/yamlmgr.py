@@ -1,6 +1,11 @@
 import os
 import sys
 from cStringIO import StringIO
+import shutil
+import datetime
+import time
+
+from opsbro.characters import CHARACTERS
 import opsbro.misc
 
 p = os.path.join(os.path.dirname(opsbro.misc.__file__), 'internalyaml')
@@ -13,11 +18,56 @@ from opsbro.log import LoggerFactory
 logger = LoggerFactory.create_logger('yaml')
 
 
+ENDING_SUFFIX = '#___ENDING___'
+
+
 # Class to wrap several things to json, like manage some utf8 things and such things
 class YamlMgr(object):
     def __init__(self):
         # To allow some libs to directly call ruaml.yaml. FOR DEBUGING PURPOSE ONLY!
         self.yaml = yaml
+    
+    
+    def get_object_from_parameter_file(self, parameters_file_path, suffix=''):
+        if not os.path.exists(parameters_file_path):
+            logger.error('The parameters file %s is missing' % parameters_file_path)
+            sys.exit(2)
+        with open(parameters_file_path, 'r') as f:
+            buf = f.read()
+        # If we want to suffix the file, be sure to only add a line
+        # and beware of the void file too
+        if suffix:
+            if buf:
+                if buf.endswith('\n'):
+                    buf += '%s\n' % suffix
+                else:
+                    buf += '\n%s\n' % suffix
+            else:  # void file
+                buf = '%s\n' % suffix
+        
+        # As we have a parameter style, need to insert dummy key entry to have all comments, even the first key one
+        o = self.loads(buf, force_document_comment_to_first_entry=True)
+        return o
+    
+    
+    def set_value_in_parameter_file(self, parameters_file_path, parameter_name, python_value, str_value):
+        o = yamler.get_object_from_parameter_file(parameters_file_path, suffix=ENDING_SUFFIX)
+        
+        # Set the value into the original object
+        o[parameter_name] = python_value
+        
+        # Add a change history entry
+        # BEWARE: only a oneliner!
+        value_str = str_value.replace('\n', ' ')
+        change_line = '# CHANGE: (%s) SET %s %s %s' % (datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), parameter_name, CHARACTERS.arrow_left, value_str)
+        yamler.add_document_ending_comment(o, change_line, ENDING_SUFFIX)
+        
+        result_str = yamler.dumps(o)
+        tmp_file = '%s.tmp' % parameters_file_path
+        f = open(tmp_file, 'w')
+        f.write(result_str)
+        f.close()
+        shutil.move(tmp_file, parameters_file_path)
     
     
     def dumps(self, o):
@@ -80,8 +130,8 @@ class YamlMgr(object):
             res.append(same_line_ct.value)
         
         return ''.join(res).strip()
-
-
+    
+    
     def add_document_ending_comment(self, doc, s, what_to_replace):
         if not isinstance(doc, yaml.comments.CommentedMap):
             logger.error('Cannot set comments to document because it is not a CommentedMap object (%s)' % type(doc))
@@ -95,7 +145,6 @@ class YamlMgr(object):
             if what_to_replace in ct.value:
                 ct.value = s
                 return
-            
-        
+
 
 yamler = YamlMgr()

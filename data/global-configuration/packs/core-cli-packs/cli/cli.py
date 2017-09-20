@@ -6,8 +6,6 @@
 import sys
 import shutil
 import os
-import time
-import datetime
 
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, sprintf, logger
@@ -144,13 +142,6 @@ def do_packs_show():
         pack_level = collector['inst'].pack_level
         packs[pack_level][pack_name]['collectors'][colname] = collector
     
-    from opsbro.handlermgr import handlermgr
-    #handlers = handlermgr.handlers
-    #for hname, handler in handlers.iteritems():
-    #    pack_name = handler['pack_name']
-    #    pack_level = handler['pack_level']
-    #    packs[pack_level][pack_name]['handlers'][hname] = handler
-    
     from opsbro.generatormgr import generatormgr
     generators = generatormgr.generators
     for gname, generator in generators.iteritems():
@@ -243,21 +234,6 @@ def do_packs_show():
                     cprint('')
                     offset = 1
                     __print_element_parameters(collector, pack_name, pack_level, main_topic_color, 'parameters', offset)
-            '''
-            # handlers
-            handlers = pack_entry['handlers']
-            if len(handlers) == 0:
-                no_such_objects.append('handlers')
-            else:
-                __print_line_header(main_topic_color)
-                print_element_breadcumb(pack_name, pack_level, 'handlers')
-                cprint(' (%d)' % len(handlers), color='magenta')
-                for hname, handler in handlers.iteritems():
-                    __print_line_header(main_topic_color)
-                    cprint('  - ', end='')
-                    cprint('handlers > %-15s' % hname, color='cyan', end='')
-                    cprint(' type=%s  ' % (handler['type']))
-            '''
             
             # generators
             generators = pack_entry['generators']
@@ -364,36 +340,19 @@ def do_overload(pack_full_id, to_level='local'):
     cprint(' %s (%s)' % (pack_level, dest_dir), color='magenta')
 
 
-ENDING_SUFFIX = '#___ENDING___'
-
-
 def do_parameters_set(parameter_full_path, value):
-    pack_level, pack_name, parameter_name = __split_parameter_full_path(parameter_full_path)
-    pack_root_dir = __get_pack_directory(pack_level, pack_name)
-    parameters_file_path = os.path.join(pack_root_dir, 'parameters', 'parameters.yml')
-    o = __get_object_from_parameter_file(parameters_file_path, suffix=ENDING_SUFFIX)
-    
     try:
         python_value = yamler.loads('%s' % value)
     except Exception, exp:
         logger.error('Cannot load the value %s as a valid parameter: %s' % (value, exp))
         sys.exit(2)
     
-    # Get the value as from yaml
-    o[parameter_name] = python_value
+    pack_level, pack_name, parameter_name = __split_parameter_full_path(parameter_full_path)
+    pack_root_dir = __get_pack_directory(pack_level, pack_name)
+    parameters_file_path = os.path.join(pack_root_dir, 'parameters', 'parameters.yml')
     
-    # Add a change history entry
-    # BEWARE: only a oneliner!
-    value_str = value.replace('\n', ' ')
-    change_line = '# CHANGE: (%s) SET %s %s %s' % (datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), parameter_name, CHARACTERS.arrow_left, value_str)
-    yamler.add_document_ending_comment(o, change_line, ENDING_SUFFIX)
-    
-    result_str = yamler.dumps(o)
-    tmp_file = '%s.tmp' % parameters_file_path
-    f = open(tmp_file, 'w')
-    f.write(result_str)
-    f.close()
-    shutil.move(tmp_file, parameters_file_path)
+    # Ok write it
+    yamler.set_value_in_parameter_file(parameters_file_path, parameter_name, python_value, value)
     
     cprint('OK: ', color='green', end='')
     cprint('%s (%s)' % (parameter_full_path, parameters_file_path), color='magenta', end='')
@@ -403,33 +362,11 @@ def do_parameters_set(parameter_full_path, value):
     cprint(value, color='green')
 
 
-def __get_object_from_parameter_file(parameters_file_path, suffix=''):
-    if not os.path.exists(parameters_file_path):
-        logger.error('The parameters file %s is missing' % parameters_file_path)
-        sys.exit(2)
-    with open(parameters_file_path, 'r') as f:
-        buf = f.read()
-    # If we want to suffix the file, be sure to only add a line
-    # and beware of the void file too
-    if suffix:
-        if buf:
-            if buf.endswith('\n'):
-                buf += '%s\n' % suffix
-            else:
-                buf += '\n%s\n' % suffix
-        else:  # void file
-            buf = '%s\n' % suffix
-    
-    # As we have a parameter style, need to insert dummy key entry to have all comments, even the first key one
-    o = yamler.loads(buf, force_document_comment_to_first_entry=True)
-    return o
-
-
 def do_parameters_get(parameter_full_path):
     pack_level, pack_name, parameter_name = __split_parameter_full_path(parameter_full_path)
     pack_root_dir = __get_pack_directory(pack_level, pack_name)
     parameters_file_path = os.path.join(pack_root_dir, 'parameters', 'parameters.yml')
-    o = __get_object_from_parameter_file(parameters_file_path)
+    o = yamler.get_object_from_parameter_file(parameters_file_path)
     if parameter_name not in o:
         logger.error('Cannot find the parameter %s in the parameters file %s' % (parameter_name, parameters_file_path))
         sys.exit(2)
