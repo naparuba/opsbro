@@ -9,6 +9,9 @@ RUN        apt-get install -y python-jinja2
 RUN        apt-get install -y python-crypto
 RUN        apt-get install -y python-leveldb
 
+# For nagios checks, we need nagios plugins
+RUN        apt-get install -y nagios-plugins-standard
+
 ADD        . /root/opsbro-oss
 
 
