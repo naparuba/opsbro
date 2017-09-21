@@ -4,14 +4,14 @@ import copy
 
 from opsbro.gossip import gossiper
 
-# Global logger will be set by the module
-logger = None
 
 pattern = r"((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)([ (\[]?(\.|dot)[ )\]]?(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3})"
 ipv4pattern = re.compile(pattern)
 
 
 class DNSQuery:
+    # Global logger will be set by the module
+    logger = None
     def __init__(self, data):
         self.data = data
         self.domain = ''
@@ -35,28 +35,29 @@ class DNSQuery:
     
     # We look in the nodes for the good group
     def lookup_for_nodes(self, dom):
+        # TODO: copy nodes can be huge, maybe ask gossip to have a static list?
         with gossiper.nodes_lock:
             nodes = copy.copy(gossiper.nodes)
-        logger.debug('Querying %s for managed domaine: %s' % (dom, self.domain))
+        self.logger.debug('Querying %s for managed domaine: %s' % (dom, self.domain))
         if not self.domain.endswith(dom):
-            logger.debug('Domain %s is not matching managed domain: %s' % (dom, self.domain))
+            self.logger.debug('Domain %s is not matching managed domain: %s' % (dom, self.domain))
             return []
         search = self.domain[:-len(dom)]
         # split into sname.service.datacenter
-        logger.debug("Lookup for search %s" % search)
+        self.logger.debug("Lookup for search %s" % search)
         elts = search.split('.', 2)
         if len(elts) != 3:
-            logger.debug('Bad query, not 3 dots in %s' % search)
+            self.logger.debug('Bad query, not 3 dots in %s' % search)
             return []
         dc = elts[2]
         _type = elts[1]
         group = elts[0]
-        logger.debug('Looking in %s nodes' % len(nodes))
+        self.logger.debug('Looking in %s nodes' % len(nodes))
         r = []
         for n in nodes.values():
             # skip non alive nodes
             if n['state'] != 'alive':
-                logger.debug('Skipping node %s, state=%s != alive' % (n['name'], n['state']))
+                self.logger.debug('Skipping node %s, state=%s != alive' % (n['name'], n['state']))
                 continue
             if group in n['groups']:
                 services = n.get('services', {})
@@ -64,10 +65,10 @@ class DNSQuery:
                 if group in services:
                     service = services[group]
                     state_id = service.get('state_id')
-                logger.debug('current state id : %s' % state_id)
+                self.logger.debug('current state id : %s' % state_id)
                 # Skip bad nodes
                 if state_id != 0:
-                    logger.debug('Skipping node %s' % n['name'])
+                    self.logger.debug('Skipping node %s' % n['name'])
                     continue
                 
                 addr = n['addr']
@@ -82,7 +83,7 @@ class DNSQuery:
                         print 'DNS cannot find the hotname ip', addr
                         # skip this node
         
-        logger.debug('DNS return %s' % r)
+        self.logger.debug('DNS return %s' % r)
         return r
     
     
@@ -111,5 +112,5 @@ class DNSQuery:
                 packet += '\x00\x01\x00\x01\x00\x00\x00\x3c\x00\x04'  # Response type, ttl (60s) and resource data length -> 4 bytes
                 packet += str.join('', map(lambda x: chr(int(x)), ip.split('.')))  # 4bytes of IP
         
-        logger.debug("Returning size: %s for nb ips:%s" % (len(packet), len(r)))
+        self.logger.debug("Returning size: %s for nb ips:%s" % (len(packet), len(r)))
         return packet

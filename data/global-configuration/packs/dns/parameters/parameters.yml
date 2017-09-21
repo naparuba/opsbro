@@ -1,7 +1,7 @@
 
-# If set to true, the DNS listener will be enabled,
-# default to not enable it
-enabled: false
+# Set which group the node must be to automatically enabled (or not)
+# this module
+enabled_if_group: dns-listener
 
 
 port: 6766  # UDP port to listen for DNS requests

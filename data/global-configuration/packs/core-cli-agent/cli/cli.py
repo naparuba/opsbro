@@ -126,7 +126,7 @@ def do_info(show_logs):
         cprint('No dns configured')
     else:
         w = dns['dns_configuration']
-        e = [('enabled', w['enabled']), ('port', w['port']), ('domain', w['domain'])]
+        e = [('enabled_if_group', w['enabled_if_group']), ('port', w['port']), ('domain', w['domain'])]
         print_2tab(e)
     
     # Now websocket part

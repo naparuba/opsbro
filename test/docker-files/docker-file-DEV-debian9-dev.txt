@@ -23,6 +23,8 @@ RUN        apt-get install -y curl
 RUN        apt-get install -y vim
 RUN        apt-get install -y procps
 RUN        apt-get install -y wget
+RUN        apt-get install -y net-tools
+RUN        apt-get install -y dnsutils
 
 
 ADD        . /root/opsbro-oss
