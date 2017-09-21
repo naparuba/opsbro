@@ -8,6 +8,7 @@ import requests as rq
 import copy
 import sys
 import bisect
+import threading
 
 # some singleton :)
 from opsbro.log import LoggerFactory
@@ -45,6 +46,7 @@ class Gossip(object):
         self.incarnation = incarnation
         self.uuid = uuid
         self.groups = groups  # finally computed groups
+        self.groups_lock = threading.RLock()
         self.detected_groups = set()  # groups from detectors, used to detect which to add/remove
         self.seeds = seeds
         self.bootstrap = bootstrap
@@ -140,7 +142,40 @@ class Gossip(object):
     
     
     def have_group(self, group):
-        return group in self.groups
+        with self.groups_lock:
+            return group in self.groups
+    
+    
+    def add_group(self, group, broadcast_when_change=True):
+        did_change = False
+        with self.groups_lock:
+            if group not in self.groups:
+                self.groups.append(group)
+                # let the caller known that we did work
+                did_change = True
+                logger.info('The group %s was added.' % group)
+            # If our groups did change and we did allow to broadcast here (like in CLI call but not in
+            # auto discovery because we want to send only 1 network packet), we can broadcast it
+            if did_change and broadcast_when_change:
+                self.node_did_change(self.uuid)  # a node did change: ourselve
+                self.increase_incarnation_and_broadcast(broadcast_type='alive')
+        return did_change
+    
+    
+    def remove_group(self, group, broadcast_when_change=True):
+        did_change = False
+        with self.groups_lock:
+            if group in self.groups:
+                self.groups.remove(group)
+                # let the caller known that we did work
+                logger.info('The group %s was removed.' % group)
+                did_change = True
+            # If our groups did change and we did allow to broadcast here (like in CLI call but not in
+            # auto discovery because we want to send only 1 network packet), we can broadcast it
+            if did_change and broadcast_when_change:
+                self.node_did_change(self.uuid)  # a node did change: ourselve
+                self.increase_incarnation_and_broadcast(broadcast_type='alive')
+        return did_change
     
     
     # find all nearly alive nodes with a specific group
@@ -195,16 +230,20 @@ class Gossip(object):
         self.detected_groups = detected_groups
         
         for group in new_groups:
-            if group not in self.groups:
+            if not self.have_group(group):
                 did_change = True
-                self.groups.append(group)
+                # We do not want to send a boardcast now, we have still other group to manage
+                # and send only one change
+                self.add_group(group, broadcast_when_change=False)
                 logger.info("New group detected from detector for this node: %s" % group)
         for group in deleted_groups:
-            if group in self.groups:
+            if self.have_group(group):
                 did_change = True
-                self.groups.remove(group)
+                # We do not want to send a boardcast now, we have still other group to manage
+                # and send only one change
+                self.remove_group(group, broadcast_when_change=False)
                 logger.info("Group was lost from the previous detection for this node: %s" % group)
-        # warn other parts only if need
+        # warn other parts only if need, and do it only once even for lot of groups
         if did_change:
             self.node_did_change(self.uuid)  # a node did change: ourselve
             self.increase_incarnation_and_broadcast(broadcast_type='alive')
@@ -1261,6 +1300,22 @@ class Gossip(object):
             response.content_type = 'application/json'
             nodes = self.launch_gossip_detect_ping()
             return json.dumps(nodes)
+        
+        
+        # Add a group should only be allowed by unix socket (local)
+        @http_export('/agent/parameters/add/groups/:gname', protected=True)
+        def agent_add_group(gname):
+            response.content_type = 'application/json'
+            r = self.add_group(gname)
+            return json.dumps(r)
+        
+        
+        # Add a group should only be allowed by unix socket (local)
+        @http_export('/agent/parameters/remove/groups/:gname', protected=True)
+        def agent_remove_group(gname):
+            response.content_type = 'application/json'
+            r = self.remove_group(gname)
+            return json.dumps(r)
 
 
 gossiper = Gossip()
