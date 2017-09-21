@@ -557,7 +557,7 @@ installation_log = '/tmp/opsbro.setup.log'
 with open(installation_log, 'w') as f:
     f.write(stdout_catched.getvalue())
     if allow_black_magic:
-        cprint('   - Raw python setup lib (and possible depndencies) installation log at: %s' % installation_log, color='grey')
+        cprint('   - Raw python setup lib (and possible dependencies) installation log at: %s' % installation_log, color='grey')
 
 ##################################       Install init.d script, the daemon script and bash completion part
 if allow_black_magic:
