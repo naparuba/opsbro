@@ -17,7 +17,6 @@ from opsbro.log import LoggerFactory
 
 logger = LoggerFactory.create_logger('yaml')
 
-
 ENDING_SUFFIX = '#___ENDING___'
 
 
@@ -50,7 +49,7 @@ class YamlMgr(object):
         return o
     
     
-    def set_value_in_parameter_file(self, parameters_file_path, parameter_name, python_value, str_value):
+    def set_value_in_parameter_file(self, parameters_file_path, parameter_name, python_value, str_value, change_type='SET'):
         o = yamler.get_object_from_parameter_file(parameters_file_path, suffix=ENDING_SUFFIX)
         
         # Set the value into the original object
@@ -59,7 +58,7 @@ class YamlMgr(object):
         # Add a change history entry
         # BEWARE: only a oneliner!
         value_str = str_value.replace('\n', ' ')
-        change_line = '# CHANGE: (%s) SET %s %s %s' % (datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), parameter_name, CHARACTERS.arrow_left, value_str)
+        change_line = '# CHANGE: (%s) %s %s %s %s' % (datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), change_type, parameter_name, CHARACTERS.arrow_left, value_str)
         yamler.add_document_ending_comment(o, change_line, ENDING_SUFFIX)
         
         result_str = yamler.dumps(o)

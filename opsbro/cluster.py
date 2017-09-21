@@ -96,7 +96,7 @@ class Cluster(object):
         self.hostname = socket.gethostname()
         if not self.name:
             self.name = '%s' % self.hostname
-        groups = [s.strip() for s in groups.split(',') if s.strip()]
+        self.groups = [s.strip() for s in groups.split(',') if s.strip()]
         
         self.bootstrap = bootstrap
         self.seeds = [s.strip() for s in seeds.split(',')]
@@ -327,7 +327,7 @@ class Cluster(object):
         dockermgr.launch()
         
         # Our main object for gossip managment
-        gossiper.init(nodes, nodes_lock, self.addr, self.port, self.name, self.display_name, self.incarnation, self.uuid, groups, self.seeds, self.bootstrap, self.zone, self.is_proxy)
+        gossiper.init(nodes, nodes_lock, self.addr, self.port, self.name, self.display_name, self.incarnation, self.uuid, self.groups, self.seeds, self.bootstrap, self.zone, self.is_proxy)
         
         # About detecting groups and such things
         detecter.export_http()

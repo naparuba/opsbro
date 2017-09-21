@@ -22,8 +22,8 @@ from opsbro.log import cprint, logger
 from opsbro.launcher import Launcher
 from opsbro.unixclient import request_errors
 from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, print_2tab, CONFIG
-from opsbro.cli_display import print_h1
-from opsbro.defaultpaths import DEFAULT_LOCK_PATH
+from opsbro.cli_display import print_h1, yml_parameter_set, yml_parameter_get, yml_parameter_add, yml_parameter_remove
+from opsbro.defaultpaths import DEFAULT_LOCK_PATH, DEFAULT_CFG_FILE
 from opsbro.configurationmanager import configmgr
 
 NO_ZONE_DEFAULT = '(no zone)'
@@ -442,8 +442,34 @@ def do_agent_parameters_show():
         cprint('%s\n' % v, color='green', end='')
 
 
+def do_agent_parameters_set(parameter_name, str_value):
+    parameters_file_path = DEFAULT_CFG_FILE
+    
+    yml_parameter_set(parameters_file_path, parameter_name, str_value, file_display='agent.%s' % parameter_name)
+    return
+
+
+def do_agent_parameters_get(parameter_name):
+    parameters_file_path = DEFAULT_CFG_FILE
+    
+    yml_parameter_get(parameters_file_path, parameter_name, file_display='agent.%s' % parameter_name)
+    return
+
+
+def do_agent_parameters_add(parameter_name, str_value):
+    parameters_file_path = DEFAULT_CFG_FILE
+    yml_parameter_add(parameters_file_path, parameter_name, str_value, file_display='agent.%s' % parameter_name)
+    return
+
+
+def do_agent_parameters_remove(parameter_name, str_value):
+    parameters_file_path = DEFAULT_CFG_FILE
+    yml_parameter_remove(parameters_file_path, parameter_name, str_value, file_display='agent.%s' % parameter_name)
+    return
+
+
 exports = {
-    do_start                : {
+    do_start                  : {
         'keywords'   : ['agent', 'start'],
         'args'       : [
             {'name': '--daemon', 'type': 'bool', 'default': False, 'description': 'Start opsbro into the background'},
@@ -452,25 +478,25 @@ exports = {
         'description': 'Start the opsbro daemon'
     },
     
-    do_stop                 : {
+    do_stop                   : {
         'keywords'   : ['agent', 'stop'],
         'args'       : [],
         'description': 'Stop the opsbro daemon'
     },
     
-    do_service_install      : {
+    do_service_install        : {
         'keywords'   : ['agent', 'windows', 'service-install'],
         'args'       : [],
         'description': 'Install windows service'
     },
     
-    do_service_remove       : {
+    do_service_remove         : {
         'keywords'   : ['agent', 'windows', 'service-remove'],
         'args'       : [],
         'description': 'Remove windows service'
     },
     
-    do_info                 : {
+    do_info                   : {
         'keywords'   : ['agent', 'info'],
         'args'       : [
             {'name': '--show-logs', 'default': False, 'description': 'Dump last warning & error logs', 'type': 'bool'},
@@ -478,19 +504,19 @@ exports = {
         'description': 'Show info af a daemon'
     },
     
-    do_keygen               : {
+    do_keygen                 : {
         'keywords'   : ['agent', 'keygen'],
         'args'       : [],
         'description': 'Generate a encryption key'
     },
     
-    do_show_threads         : {
+    do_show_threads           : {
         'keywords'   : ['agent', 'internal', 'show-threads'],
         'args'       : [],
         'description': 'List all internal threads of the agent.'
     },
     
-    do_follow_log           : {
+    do_follow_log             : {
         'keywords'   : ['agent', 'log', 'follow'],
         'args'       : [
             {'name': 'part', 'default': '', 'description': 'Follow log part (with debug)'},
@@ -498,17 +524,51 @@ exports = {
         'description': 'Show info af a daemon'
     },
     
-    do_list_follow_log      : {
+    do_list_follow_log        : {
         'keywords'   : ['agent', 'log', 'list'],
         'args'       : [
         ],
         'description': 'List available logs parts to follow'
     },
     
-    do_agent_parameters_show: {
+    do_agent_parameters_show  : {
         'keywords'   : ['agent', 'parameters', 'show'],
         'args'       : [
         ],
         'description': 'Show the agent parameters (pid, ...)'
+    },
+    
+    do_agent_parameters_set   : {
+        'keywords'   : ['agent', 'parameters', 'set'],
+        'args'       : [
+            {'name': 'parameter_name', 'description': 'Parameter name to set'},
+            {'name': 'value', 'description': 'Value to set for this parameter'},
+        ],
+        'description': 'Set a new value to the agent parameter'
+    },
+    
+    do_agent_parameters_get   : {
+        'keywords'   : ['agent', 'parameters', 'get'],
+        'args'       : [
+            {'name': 'parameter_name', 'description': 'Parameter name to get'},
+        ],
+        'description': 'Get a value from the agent parameter'
+    },
+    
+    do_agent_parameters_add   : {
+        'keywords'   : ['agent', 'parameters', 'add'],
+        'args'       : [
+            {'name': 'parameter_name', 'description': 'Parameter name to add a new value'},
+            {'name': 'value', 'description': 'Value to set for this parameter'},
+        ],
+        'description': 'Add a new value to a agent parameter value (must be a list)'
+    },
+    
+    do_agent_parameters_remove: {
+        'keywords'   : ['agent', 'parameters', 'remove'],
+        'args'       : [
+            {'name': 'parameter_name', 'description': 'Parameter name to remove a value.'},
+        ],
+        'description': 'Remove a new value to a agent parameter value (must be a list)'
     },
 }

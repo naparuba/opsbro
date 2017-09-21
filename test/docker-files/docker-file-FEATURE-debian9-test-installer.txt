@@ -2,10 +2,12 @@ FROM debian:9
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 RUN        apt-get update && apt-get install -y python
-# allow fast install (docker cache)
-RUN        apt-get install -y python-pip
-RUN        apt-get install -y python-leveldb
+# All need for debian, so faster test (we are testging feature here, not install)
+RUN        apt-get install -y python-requests
 RUN        apt-get install -y python-cherrypy3
+RUN        apt-get install -y python-jinja2
+RUN        apt-get install -y python-crypto
+RUN        apt-get install -y python-leveldb
 
 
 ADD        . /root/opsbro-oss

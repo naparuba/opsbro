@@ -10,7 +10,7 @@ import os
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, sprintf, logger
 from opsbro.yamlmgr import yamler
-from opsbro.cli_display import print_h1, print_h2, print_h3, print_element_breadcumb
+from opsbro.cli_display import print_h1, print_h2, print_h3, print_element_breadcumb, yml_parameter_get, yml_parameter_set
 from opsbro.packer import packer
 from opsbro.misc.lolcat import lolcat
 from opsbro.topic import topiker, VERY_ALL_TOPICS, TOPICS_LABELS
@@ -340,53 +340,25 @@ def do_overload(pack_full_id, to_level='local'):
     cprint(' %s (%s)' % (pack_level, dest_dir), color='magenta')
 
 
-def do_parameters_set(parameter_full_path, value):
-    try:
-        python_value = yamler.loads('%s' % value)
-    except Exception, exp:
-        logger.error('Cannot load the value %s as a valid parameter: %s' % (value, exp))
-        sys.exit(2)
-    
+def __get_path_pname_from_parameter_full_path(parameter_full_path):
     pack_level, pack_name, parameter_name = __split_parameter_full_path(parameter_full_path)
     pack_root_dir = __get_pack_directory(pack_level, pack_name)
     parameters_file_path = os.path.join(pack_root_dir, 'parameters', 'parameters.yml')
+    return parameters_file_path, parameter_name
+
+
+def do_parameters_set(parameter_full_path, str_value):
+    parameters_file_path, parameter_name = __get_path_pname_from_parameter_full_path(parameter_full_path)
     
-    # Ok write it
-    yamler.set_value_in_parameter_file(parameters_file_path, parameter_name, python_value, value)
-    
-    cprint('OK: ', color='green', end='')
-    cprint('%s (%s)' % (parameter_full_path, parameters_file_path), color='magenta', end='')
-    cprint(' SET ', end='')
-    cprint(parameter_name, color='magenta', end='')
-    cprint(' %s ' % CHARACTERS.arrow_left, end='')
-    cprint(value, color='green')
+    yml_parameter_set(parameters_file_path, parameter_name, str_value, file_display=parameter_full_path)
+    return
 
 
 def do_parameters_get(parameter_full_path):
-    pack_level, pack_name, parameter_name = __split_parameter_full_path(parameter_full_path)
-    pack_root_dir = __get_pack_directory(pack_level, pack_name)
-    parameters_file_path = os.path.join(pack_root_dir, 'parameters', 'parameters.yml')
-    o = yamler.get_object_from_parameter_file(parameters_file_path)
-    if parameter_name not in o:
-        logger.error('Cannot find the parameter %s in the parameters file %s' % (parameter_name, parameters_file_path))
-        sys.exit(2)
+    parameters_file_path, parameter_name = __get_path_pname_from_parameter_full_path(parameter_full_path)
     
-    # yaml is putting us a ugly '...' as last line, remove it
-    lines = yamler.dumps(o[parameter_name]).splitlines()
-    if '...' in lines:
-        lines.remove('...')
-    
-    value_string = '\n'.join(lines)
-    cprint('%s' % parameter_full_path, color='magenta', end='')
-    cprint(' %s ' % CHARACTERS.arrow_left, end='')
-    cprint(value_string, color='green')
-    
-    # Now if there are, get the comments
-    comment = yamler.get_key_comment(o, parameter_name)
-    if comment is not None:
-        lines = comment.splitlines()
-        for line in lines:
-            cprint('  | %s' % line, color='grey')
+    yml_parameter_get(parameters_file_path, parameter_name, file_display=parameter_full_path)
+    return
 
 
 exports = {

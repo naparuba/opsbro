@@ -13,4 +13,4 @@ else:
     DEFAULT_LIBEXEC_DIR = r'/var/lib/opsbro/libexec'
     DEFAULT_CFG_DIR = r'/etc/opsbro'
 
-DEFAULT_CFG_FILE = os.path.join(DEFAULT_CFG_DIR, 'local.yml')
+DEFAULT_CFG_FILE = os.path.join(DEFAULT_CFG_DIR, 'agent.yml')
