@@ -170,15 +170,13 @@ class KVBackend:
             # print "UPDATE DB CACHE HIT"
             return self.update_db
         else:  # not the good time
-            with self.lock:  # protect to not have flush and close mixed in different threads
-                # print "UPDATE DB CACHE MISS"
-                if self.update_db:
-                    logger.debug("FLUSINH PREVIOUS DB")
-                    t0 = time.time()
-                    self.update_db.flush()
-                    logger.debug("FLUSH TIME: %.4f" % (time.time() - t0))
-                    self.update_db.close()
-                    self.update_db = None
+            if self.update_db:
+                logger.debug("FLUSINH PREVIOUS DB")
+                t0 = time.time()
+                self.update_db.flush()
+                logger.debug("FLUSH TIME: %.4f" % (time.time() - t0))
+                self.update_db.close()
+                self.update_db = None
             db_dir = os.path.join(self.data_dir, 'updates')
             db_path = os.path.join(db_dir, '%d.lst' % cmin)
             if not os.path.exists(db_dir):
@@ -225,9 +223,9 @@ class KVBackend:
             self.ttldb.set_ttl(key, dead_t)
         
         # also put an entry to the update_db
-        f = self.get_update_db(mtime)
-        t0 = time.time()
-        f.write('%s\n' % key)
+        with self.lock:  # protect to not have flush and close mixed in different threads
+            f = self.get_update_db(mtime)
+            f.write('%s\n' % key)
         # print "write", time.time() - t0
         
         t0 = time.time()
