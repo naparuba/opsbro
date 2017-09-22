@@ -14,12 +14,9 @@ import urllib
 import httplib
 from urlparse import urlsplit
 
-try:
-    import requests as rq
-except ImportError:
-    rq = None
 
 from opsbro.log import logger
+from opsbro.library import libstore
 
 #### For local socket handling
 DEFAULT_SOCKET_TIMEOUT = 5
@@ -71,9 +68,6 @@ class UnixSocketHandler(urllib2.AbstractHTTPHandler):
     unix_request = urllib2.AbstractHTTPHandler.do_request_
 
 
-request_errors = (urllib2.URLError, rq.exceptions.ConnectionError,)
-
-
 # Get on the local socket. Beware to monkeypatch the get
 def get_local(u, local_socket, params={}, method='GET'):
     UnixHTTPConnection.socket_timeout = 5
@@ -109,11 +103,17 @@ def get_local(u, local_socket, params={}, method='GET'):
     return (code, response)
 
 
+def get_request_errors():
+    rq = libstore.get_requests()
+    request_errors = (urllib2.URLError, rq.exceptions.ConnectionError,)
+    return request_errors
+
+
 # get a json on the local server, and parse the result    
 def get_json(uri, local_socket='', params={}, multi=False, method='GET'):
     try:
         (code, r) = get_local(uri, local_socket=local_socket, params=params, method=method)
-    except request_errors:
+    except get_request_errors():
         raise
     
     if r == '':

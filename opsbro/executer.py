@@ -6,7 +6,7 @@ import os
 import time
 import subprocess
 
-from opsbro.encrypter import encrypter, RSA
+from opsbro.library import libstore
 from opsbro.log import LoggerFactory
 from opsbro.threadmgr import threader
 from opsbro.gossip import gossiper
@@ -45,6 +45,8 @@ class Executer(object):
         self.challenges[cid] = e
         # return a tuple with only the first element useful (str)
         # TOCLEAN:: _c = self.mfkey_pub.encrypt(challenge, 0)[0] # encrypt 0=dummy param not used
+        encrypter = libstore.get_encrypter()
+        RSA = encrypter.get_RSA()
         _c = RSA.encrypt(challenge, self.mfkey_pub)  # encrypt 0=dummy param not used
         echallenge = base64.b64encode(_c)
         ping_payload = {'type': '/exec/challenge/proposal', 'fr': gossiper.uuid, 'challenge': echallenge, 'cid': cid}
@@ -106,6 +108,7 @@ class Executer(object):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         payload = {'type': '/exec/done', 'exec_id': exec_id, 'cid': cid}
         packet = json.dumps(payload)
+        encrypter = libstore.get_encrypter()
         enc_packet = encrypter.encrypt(packet)
         logger.debug('EXEC: sending a exec done packet to %s:%s' % addr)
         logger.debug('EXEC: sending a exec done for the execution %s and the challenge id %s' % (exec_id, cid))
@@ -154,6 +157,7 @@ class Executer(object):
             
             payload = {'type': '/exec/challenge/ask', 'fr': gossiper.uuid, 'exec_id': exec_id}
             packet = json.dumps(payload)
+            encrypter = libstore.get_encrypter()
             enc_packet = encrypter.encrypt(packet)
             logger.debug('EXEC: sending a challenge request to %s' % node['name'])
             sock.sendto(enc_packet, (node['addr'], node['port']))
@@ -197,6 +201,7 @@ class Executer(object):
             logger.debug('EXEC got a return from challenge ask from %s: %s' % (node['name'], cid))
             try:
                 ##TOCLEAN:: response = self.mfkey_priv.decrypt(challenge)
+                RSA = encrypter.get_RSA()
                 response = RSA.decrypt(challenge, self.mfkey_priv)
             except Exception, exp:
                 logger.error('EXEC bad challenge encoding from %s:%s' % (node['name'], exp))

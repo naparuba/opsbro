@@ -20,7 +20,7 @@ except ImportError:
     pygments = None
 
 from opsbro.log import cprint, logger
-from opsbro.unixclient import request_errors
+from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_json, print_info_title
 from opsbro.collectormanager import collectormgr
 
@@ -76,7 +76,7 @@ def pretty_print(d):
 def do_collectors_show(name='', all=False):
     try:
         collectors = get_opsbro_json('/collectors')
-    except request_errors, exp:
+    except get_request_errors(), exp:
         logger.error(exp)
         return
     
@@ -97,7 +97,7 @@ def do_collectors_show(name='', all=False):
 def do_collectors_list():
     try:
         collectors = get_opsbro_json('/collectors')
-    except request_errors, exp:
+    except get_request_errors(), exp:
         logger.error(exp)
         return
     cnames = collectors.keys()

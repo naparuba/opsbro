@@ -57,7 +57,7 @@ class DetectorMgr(object):
     def do_detector_thread(self):
         # if the collector manager did not run, our evaluation can be invalid, so wait for all collectors to run at least once
         while collectormgr.did_run == False:
-            time.sleep(1)
+            time.sleep(0.25)
         # Ok we can use collector data :)
         logger.log('DETECTOR thread launched')
         while not stopper.interrupted:

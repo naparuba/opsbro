@@ -14,9 +14,9 @@
 
 import json
 
-import requests
+from opsbro.library import libstore
 
-__version__ = '0.9.50'
+__version__ = '0.9.50-MODIFIED'
 
 API_BASE_URL = 'https://slack.com/api/{api}'
 DEFAULT_TIMEOUT = 10
@@ -92,6 +92,7 @@ class BaseAPI(object):
     
     
     def get(self, api, **kwargs):
+        requests = libstore.get_requests()
         return self._request(
             self._session_get if self.session else requests.get,
             api, **kwargs
@@ -99,6 +100,7 @@ class BaseAPI(object):
     
     
     def post(self, api, **kwargs):
+        requests = libstore.get_requests()
         return self._request(
             self._session_post if self.session else requests.post,
             api, **kwargs
@@ -1001,7 +1003,7 @@ class IncomingWebhook(object):
         """
         if not self.url:
             raise Error('URL for incoming webhook is undefined')
-        
+        requests = libstore.get_requests()
         return requests.post(self.url, data=json.dumps(data),
                              timeout=self.timeout, proxies=self.proxies)
 

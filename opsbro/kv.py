@@ -4,10 +4,9 @@ import time
 import threading
 import shutil
 import hashlib
-import requests as rq
 import socket
 
-from opsbro.httpclient import HTTP_EXCEPTIONS
+from opsbro.httpclient import get_http_exceptions
 from opsbro.stats import STATS
 from opsbro.log import LoggerFactory
 from opsbro.threadmgr import threader
@@ -15,7 +14,7 @@ from opsbro.now import NOW
 from opsbro.dbwrapper import dbwrapper
 from opsbro.httpdaemon import response, http_export, abort, request
 from opsbro.gossip import gossiper
-from opsbro.encrypter import encrypter
+from opsbro.library import libstore
 from opsbro.stop import stopper
 
 REPLICATS = 1
@@ -354,10 +353,11 @@ class KVBackend:
             uri = 'http://%s:%s/kv/%s' % (n['addr'], n['port'], ukey)
             try:
                 logger.debug('KV: DELETE relaying to %s: %s' % (n['name'], uri))
+                rq = libstore.get_requests()
                 r = rq.delete(uri)
                 logger.debug('KV: DELETE return %s' % r.status_code)
                 return None
-            except HTTP_EXCEPTIONS, exp:
+            except get_http_exceptions(), exp:
                 logger.debug('KV: DELETE error asking to %s: %s' % (n['name'], str(exp)))
                 return None
     
@@ -383,13 +383,14 @@ class KVBackend:
             uri = 'http://%s:%s/kv/%s' % (n['addr'], n['port'], ukey)
             try:
                 logger.info('KV: (get) relaying to %s: %s' % (n['name'], uri))
+                rq = libstore.get_requests()
                 r = rq.get(uri)
                 if r.status_code == 404:
                     logger.info("GET KEY %s return a 404" % ukey)
                     return None
                 logger.info('KV: get founded (%d)' % len(r.text))
                 return r.text
-            except HTTP_EXCEPTIONS, exp:
+            except get_http_exceptions(), exp:
                 logger.error('KV: error asking to %s: %s' % (n['name'], str(exp)))
                 return None
     
@@ -437,6 +438,7 @@ class KVBackend:
                 try:
                     payload = {'type': '/kv/put', 'k': ukey, 'v': value, 'ttl': ttl, 'fw': True}
                     packet = json.dumps(payload)
+                    encrypter = libstore.get_encrypter()
                     enc_packet = encrypter.encrypt(packet)
                     logger.debug('KV: PUT(udp) asking %s: %s:%s' % (n['name'], n['addr'], n['port']))
                     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -451,10 +453,11 @@ class KVBackend:
             try:
                 logger.debug('KV: PUT asking %s: %s' % (n['name'], uri))
                 params = {'ttl': str(ttl)}
+                rq = libstore.get_requests()
                 r = rq.put(uri, data=value, params=params)
                 logger.debug('KV: PUT return %s' % r.status_code)
                 return None
-            except HTTP_EXCEPTIONS, exp:
+            except get_http_exceptions(), exp:
                 logger.debug('KV: PUT error asking to %s: %s' % (n['name'], str(exp)))
                 return None
     
@@ -518,9 +521,10 @@ class KVBackend:
                     try:
                         logger.debug('KV: PUT(force) asking %s: %s' % (n['name'], uri))
                         params = {'force': True, 'meta': json.dumps(bl['meta'])}
+                        rq = libstore.get_requests()
                         r = rq.put(uri, data=value, params=params)
                         logger.debug('KV: PUT(force) return %s' % r)
-                    except HTTP_EXCEPTIONS, exp:
+                    except get_http_exceptions(), exp:
                         logger.debug('KV: PUT(force) error asking to %s: %s' % (n['name'], str(exp)))
             time.sleep(1)
     

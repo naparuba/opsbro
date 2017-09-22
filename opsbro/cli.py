@@ -2,7 +2,6 @@
 
 import os
 import json
-import requests
 import imp
 import traceback
 import sys
@@ -13,13 +12,14 @@ from opsbro.collectormanager import collectormgr
 from opsbro.modulemanager import modulemanager
 from opsbro.packer import packer
 from opsbro.unixclient import get_json, get_local
-from opsbro.log import cprint, logger, sprintf
+from opsbro.log import cprint, logger
 from opsbro.defaultpaths import DEFAULT_LOG_DIR, DEFAULT_CFG_DIR, DEFAULT_DATA_DIR
 from opsbro.info import VERSION
 from opsbro.cli_display import print_h1
 from opsbro.topic import topiker
 from opsbro.characters import CHARACTERS
 from opsbro.misc.lolcat import lolcat
+from opsbro.library import libstore
 
 # Will be populated by the opsbro CLI command
 CONFIG = None
@@ -50,13 +50,15 @@ if os.name != 'nt':
         return get_json(uri, local_socket, params=data, method='PUT')
 else:
     def get_opsbro_json(uri):
-        r = requests.get('http://127.0.0.1:6770%s' % uri)
+        rq = libstore.get_requests()
+        r = rq.get('http://127.0.0.1:6770%s' % uri)
         obj = json.loads(r.text)
         return obj
     
     
     def get_opsbro_local(uri):
-        r = requests.get('http://127.0.0.1:6770%s' % uri)
+        rq = libstore.get_requests()
+        r = rq.get('http://127.0.0.1:6770%s' % uri)
         status = r.status_code
         text = r.text
         return (status, text)

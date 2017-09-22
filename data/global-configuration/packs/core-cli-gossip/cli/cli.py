@@ -14,7 +14,7 @@ import pprint
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger, sprintf
 
-from opsbro.unixclient import request_errors
+from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, put_opsbro_json
 from opsbro.cli_display import print_h1
 
@@ -26,7 +26,7 @@ NO_ZONE_DEFAULT = '(no zone)'
 def do_members(detail=False):
     try:
         members = get_opsbro_json('/agent/members').values()
-    except request_errors, exp:
+    except get_request_errors(), exp:
         logger.error('Cannot join opsbro agent: %s' % exp)
         sys.exit(1)
     members = sorted(members, key=lambda e: e['name'])
@@ -87,13 +87,13 @@ def do_leave(nuuid=''):
     if not nuuid:
         try:
             (code, r) = get_opsbro_local('/agent/uuid')
-        except request_errors, exp:
+        except get_request_errors(), exp:
             logger.error(exp)
             return
         nuuid = r
     try:
         (code, r) = get_opsbro_local('/agent/leave/%s' % nuuid)
-    except request_errors, exp:
+    except get_request_errors(), exp:
         logger.error(exp)
         return
     
@@ -111,7 +111,7 @@ def do_join(seed=''):
         return
     try:
         (code, r) = get_opsbro_local('/agent/join/%s' % seed)
-    except request_errors, exp:
+    except get_request_errors(), exp:
         logger.error(exp)
         return
     try:
@@ -133,7 +133,7 @@ def do_zone_change(name=''):
     print "Switching to zone", name
     try:
         r = put_opsbro_json('/agent/zone', name)
-    except request_errors, exp:
+    except get_request_errors(), exp:
         logger.error(exp)
         return
     print_info_title('Result')
@@ -145,7 +145,7 @@ def do_detect_nodes(auto_join):
     # Send UDP broadcast packets from the daemon
     try:
         network_nodes = get_opsbro_json('/agent/detect')
-    except request_errors, exp:
+    except get_request_errors(), exp:
         logger.error('Cannot join opsbro agent: %s' % exp)
         sys.exit(1)
     print "Detection is DONE.\nDetection result:"

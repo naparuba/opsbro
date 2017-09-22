@@ -5,7 +5,6 @@ import json
 import re
 import cPickle
 import base64
-import requests as rq
 
 # DO NOT FORGEET:
 # sysctl -w net.core.rmem_max=26214400
@@ -19,8 +18,9 @@ from opsbro.stats import STATS
 from opsbro.httpdaemon import http_export, response, request, abort
 from opsbro.util import to_best_int_float
 from opsbro.gossip import gossiper
-from opsbro.httpclient import HTTP_EXCEPTIONS
+from opsbro.httpclient import get_http_exceptions
 from opsbro.kv import kvmgr
+from opsbro.library import libstore
 from opsbro.parameters import BoolParameter, IntParameter
 
 
@@ -404,13 +404,14 @@ class GraphiteModule(ListenerModule):
                     uri = 'http://%s:%s/render/?target=%s&from=%s' % (n['addr'], n['port'], target, _from)
                     try:
                         self.logger.debug('TS: (get /render) relaying to %s: %s' % (n['name'], uri))
+                        rq = libstore.get_requests()
                         r = rq.get(uri)
                         self.logger.debug('TS: get /render founded (%d)' % len(r.text))
                         v = json.loads(r.text)
                         self.logger.debug("TS /render relay GOT RETURN", v, "AND RES", res)
                         res.extend(v)
                         self.logger.debug("TS /render res is now", res)
-                    except HTTP_EXCEPTIONS, exp:
+                    except get_http_exceptions(), exp:
                         self.logger.debug('TS: /render relay error asking to %s: %s' % (n['name'], str(exp)))
                         continue
             

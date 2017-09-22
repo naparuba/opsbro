@@ -7,19 +7,12 @@ import time
 import hashlib
 import signal
 import cStringIO
-import requests as rq
-
 import tempfile
 import tarfile
 import base64
 import shutil
 import zlib
 import copy
-
-try:
-    from Crypto.Cipher import AES
-except ImportError:
-    AES = None
 
 # DO NOT FORGET:
 # sysctl -w net.core.rmem_max=26214400
@@ -32,7 +25,7 @@ from opsbro.log import logger as raw_logger
 from opsbro.util import copy_dir, get_public_address, get_server_const_uuid, guess_server_const_uuid
 from opsbro.threadmgr import threader
 from opsbro.now import NOW
-from opsbro.httpclient import HTTP_EXCEPTIONS
+from opsbro.httpclient import get_http_exceptions
 
 # now singleton objects
 from opsbro.gossip import gossiper
@@ -42,7 +35,7 @@ from opsbro.broadcast import broadcaster
 from opsbro.httpdaemon import httpdaemon, http_export, response, request, abort, gserver
 from opsbro.pubsub import pubsub
 from opsbro.dockermanager import dockermgr
-from opsbro.encrypter import encrypter, RSA
+from opsbro.library import libstore
 from opsbro.collectormanager import collectormgr
 from opsbro.info import VERSION
 from opsbro.stop import stopper
@@ -131,7 +124,9 @@ class Cluster(object):
         raw_logger.export_http()
         
         # Look if our encryption key is valid or not
+        encrypter = libstore.get_encrypter()
         if self.encryption_key:
+            AES = encrypter.get_AES()
             if AES is None:
                 logger.error('You set an encryption key but cannot import python-crypto module, please install it. Exiting.')
                 sys.exit(2)
@@ -150,6 +145,7 @@ class Cluster(object):
             if not os.path.exists(self.master_key_priv):
                 logger.error('Cannot find the master key private file at %s' % self.master_key_priv)
             else:
+                RSA = encrypter.get_RSA()
                 if RSA is None:
                     logger.error('You set a master private key but but cannot import python-rsa module, please install it. Exiting.')
                     sys.exit(2)
@@ -170,6 +166,7 @@ class Cluster(object):
             if not os.path.exists(self.master_key_pub):
                 logger.error('Cannot find the master key public file at %s' % self.master_key_pub)
             else:
+                RSA = encrypter.get_RSA()
                 if RSA is None:
                     logger.error('You set a master public key but but cannot import python-crypto module, please install it. Exiting.')
                     sys.exit(2)
@@ -419,10 +416,10 @@ class Cluster(object):
     def launch_detector_thread(self):
         self.detector_thread = threader.create_and_launch(detecter.do_detector_thread, name='Detector scheduling', essential=True, part='detector')
     
-
+    
     def launch_compliance_thread(self):
         threader.create_and_launch(compliancemgr.do_compliance_thread, name='System compliance', essential=True, part='compliance')
-
+    
     
     def launch_installor_thread(self):
         threader.create_and_launch(installormgr.do_installer_thread, name='Installor scheduling', essential=True, part='installor')
@@ -702,7 +699,7 @@ class Cluster(object):
             return 'OK'
         
         
-        @http_export('/debug/memory')
+        @http_export('/debug/memory', protected=True)
         def do_memory_dump():
             response.content_type = 'application/json'
             from meliae import scanner
@@ -745,6 +742,7 @@ class Cluster(object):
                 logger.log('SYNC try to sync from %s since the time %s' % (repl['name'], self.last_alive))
                 uri = 'http://%s:%s/kv-meta/changed/%d' % (addr, port, self.last_alive)
                 try:
+                    rq = libstore.get_requests()
                     r = rq.get(uri)
                     logger.debug("SYNC kv-changed response from %s " % repl['name'], r)
                     try:
@@ -755,7 +753,7 @@ class Cluster(object):
                     kvmgr.do_merge(to_merge)
                     logger.debug("SYNC thread done, bailing out")
                     return
-                except HTTP_EXCEPTIONS, exp:
+                except get_http_exceptions(), exp:
                     logger.debug('SYNC : error asking to %s: %s' % (repl['name'], str(exp)))
                     continue
             time.sleep(1)

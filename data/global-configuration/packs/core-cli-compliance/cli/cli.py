@@ -11,7 +11,7 @@ import json
 
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger
-from opsbro.unixclient import request_errors
+from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_local
 from opsbro.cli_display import print_h1
 
@@ -20,7 +20,7 @@ def do_compliance_list():
     uri = '/compliance/'
     try:
         (code, r) = get_opsbro_local(uri)
-    except request_errors, exp:
+    except get_request_errors(), exp:
         logger.error(exp)
         return
     

@@ -6,11 +6,6 @@ import codecs
 import stat
 import shutil
 
-try:
-    import jinja2
-except Exception:
-    jinja2 = None
-
 from opsbro.log import LoggerFactory
 from opsbro.gossip import gossiper
 
@@ -39,12 +34,19 @@ class Generator(object):
         self.buf = None
         self.template = None
         self.output = None
+        
+        # Load jinja only if need
+        try:
+            import jinja2
+            self.jinja2 = jinja2
+        except Exception:
+            self.jinja2 = None
     
     
     # Open the template file and generate the output
     def generate(self):
         # If not jinja2, bailing out
-        if jinja2 is None:
+        if self.jinja2 is None:
             logger.debug('Generator: Error, no jinja2 librairy defined, please install it')
             return
         try:
@@ -63,10 +65,10 @@ class Generator(object):
         
         # Now try to make it a jinja template object
         try:
-            env = jinja2.Environment(trim_blocks=True, lstrip_blocks=True, keep_trailing_newline=True)
+            env = self.jinja2.Environment(trim_blocks=True, lstrip_blocks=True, keep_trailing_newline=True)
         except TypeError:  # old jinja2 version do not manage keep_trailing_newline nor
             # lstrip_blocks (like in redhat6)
-            env = jinja2.Environment(trim_blocks=True)
+            env = self.jinja2.Environment(trim_blocks=True)
         
         try:
             self.template = env.from_string(self.buf)

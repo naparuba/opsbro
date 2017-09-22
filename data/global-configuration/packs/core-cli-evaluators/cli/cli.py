@@ -10,14 +10,14 @@ import json
 import base64
 
 from opsbro.log import cprint, logger
-from opsbro.unixclient import request_errors
+from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_local, print_info_title, post_opsbro_json
 
 
 def do_evaluator_list():
     try:
         (code, r) = get_opsbro_local('/agent/evaluator/list')
-    except request_errors, exp:
+    except get_request_errors(), exp:
         logger.error(exp)
         return
     
@@ -56,7 +56,7 @@ def do_evaluator_eval(expr):
     expr_64 = base64.b64encode(expr)
     try:
         r = post_opsbro_json('/agent/evaluator/eval', {'expr': expr_64})
-    except request_errors, exp:
+    except get_request_errors(), exp:
         logger.error(exp)
         return
     

@@ -8,9 +8,8 @@
 
 import json
 
-from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger
-from opsbro.unixclient import request_errors
+from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_local, print_info_title, print_2tab
 from opsbro.cli_display import print_element_breadcumb
 
@@ -18,7 +17,7 @@ from opsbro.cli_display import print_element_breadcumb
 def do_detect_list():
     try:
         (code, r) = get_opsbro_local('/agent/detectors')
-    except request_errors, exp:
+    except get_request_errors(), exp:
         logger.error(exp)
         return
     
@@ -51,7 +50,7 @@ def do_detect_list():
 def do_detect_run():
     try:
         (code, r) = get_opsbro_local('/agent/detectors/run')
-    except request_errors, exp:
+    except get_request_errors(), exp:
         logger.error(exp)
         return
     

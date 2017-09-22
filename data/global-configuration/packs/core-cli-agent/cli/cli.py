@@ -20,7 +20,7 @@ if os.name == 'nt':
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger
 from opsbro.launcher import Launcher
-from opsbro.unixclient import request_errors
+from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, print_2tab, CONFIG
 from opsbro.cli_display import print_h1, yml_parameter_set, yml_parameter_get, yml_parameter_add, yml_parameter_remove
 from opsbro.defaultpaths import DEFAULT_LOCK_PATH, DEFAULT_CFG_FILE
@@ -57,7 +57,7 @@ def do_service_remove():
 def do_info(show_logs):
     try:
         d = get_opsbro_json('/agent/info')
-    except request_errors, exp:
+    except get_request_errors(), exp:
         logger.error('Cannot join opsbro agent: %s' % exp)
         sys.exit(1)
     logs = d.get('logs')
@@ -235,7 +235,7 @@ def do_start(daemon, cfg_dir):
 def do_stop():
     try:
         (code, r) = get_opsbro_local('/stop')
-    except request_errors, exp:
+    except get_request_errors(), exp:
         logger.error(exp)
         return
     cprint(r, color='green')
@@ -289,7 +289,7 @@ def __get_cpu_time_percent_display(t, age):
 def do_show_threads():
     try:
         data = get_opsbro_json('/threads/')
-    except request_errors, exp:
+    except get_request_errors(), exp:
         logger.error('Cannot join opsbro agent: %s' % exp)
         sys.exit(1)
     all_threads = data['threads']
@@ -361,7 +361,7 @@ def do_show_threads():
 def do_list_follow_log():
     try:
         parts = get_opsbro_json('/log/parts/')
-    except request_errors, exp:
+    except get_request_errors(), exp:
         logger.error('Cannot join opsbro agent: %s' % exp)
         sys.exit(1)
     parts.sort()
@@ -474,7 +474,7 @@ def do_agent_parameters_add(parameter_name, str_value):
     if parameter_name == 'groups':
         try:
             did_change = get_opsbro_json('/agent/parameters/add/groups/%s' % str_value)
-        except request_errors:
+        except get_request_errors():
             cprint('* The agent seems to not be started. Skipping hot group addition.', color='grey')
             return
         if did_change:
@@ -494,7 +494,7 @@ def do_agent_parameters_remove(parameter_name, str_value):
     if parameter_name == 'groups':
         try:
             did_change = get_opsbro_json('/agent/parameters/remove/groups/%s' % str_value)
-        except request_errors:
+        except get_request_errors():
             cprint('* The agent seems to not be started. Skipping hot group removing.', color='grey')
             return
         if did_change:

@@ -11,7 +11,7 @@ import json
 
 from opsbro.log import cprint, logger
 
-from opsbro.unixclient import request_errors
+from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_local
 
 
@@ -21,7 +21,7 @@ def do_exec(group='*', cmd='uname -a'):
         return
     try:
         (code, r) = get_opsbro_local('/exec/%s?cmd=%s' % (group, cmd))
-    except request_errors, exp:
+    except get_request_errors(), exp:
         logger.error(exp)
         return
     print r
@@ -30,7 +30,7 @@ def do_exec(group='*', cmd='uname -a'):
     time.sleep(5)  # TODO: manage a real way to get the result..
     try:
         (code, r) = get_opsbro_local('/exec-get/%s' % cid)
-    except request_errors, exp:
+    except get_request_errors(), exp:
         logger.error(exp)
         return
     j = json.loads(r)

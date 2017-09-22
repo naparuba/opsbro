@@ -2,12 +2,11 @@
 # Copyright (C) 2014:
 #    Gabes Jean, naparuba@gmail.com
 
-import copy
-import time
-import threading
 from opsbro_test import *
 
-from opsbro.encrypter import encrypter
+from opsbro.library import libstore
+
+encrypter = libstore.get_encrypter()
 
 
 class TestEncrypter(OpsBroTest):

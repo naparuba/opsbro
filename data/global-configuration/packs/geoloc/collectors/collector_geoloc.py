@@ -1,8 +1,7 @@
 import json
-import requests
 
 from opsbro.collector import Collector
-
+from opsbro.library import libstore
 
 class Geoloc(Collector):
     def __init__(self):
@@ -15,7 +14,8 @@ class Geoloc(Collector):
         if self.geodata:
             return self.geodata
         try:
-            r = requests.get('http://ipinfo.io/json')
+            rq = libstore.get_requests()
+            r = rq.get('http://ipinfo.io/json')
         except Exception, exp:
             self.logger.debug('[GEOLOC] error: %s' % exp)
             return None

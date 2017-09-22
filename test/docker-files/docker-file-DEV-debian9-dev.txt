@@ -25,6 +25,8 @@ RUN        apt-get install -y procps
 RUN        apt-get install -y wget
 RUN        apt-get install -y net-tools
 RUN        apt-get install -y dnsutils
+RUN        apt-get install -y python-apt
+RUN        apt-get install -y strace
 
 
 ADD        . /root/opsbro-oss

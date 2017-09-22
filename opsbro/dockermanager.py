@@ -7,7 +7,7 @@ from opsbro.log import LoggerFactory
 from opsbro.threadmgr import threader
 from opsbro.httpdaemon import http_export, response
 from opsbro.misc.cgroups import cgroupmgr
-from opsbro.unixclient import get_json, request_errors
+from opsbro.unixclient import get_json, get_request_errors
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('docker')
@@ -71,7 +71,7 @@ class DockerManager(object):
         if not self.con:
             try:
                 self.con = get_json('/version', local_socket='/var/run/docker.sock')
-            except request_errors:  # cannot connect
+            except get_request_errors():  # cannot connect
                 self.con = None
                 logger.debug('Cannot connect to docker')
                 return
@@ -90,7 +90,7 @@ class DockerManager(object):
     def load_container(self, _id):
         try:
             inspect = get_json('/containers/%s/json' % _id, local_socket='/var/run/docker.sock')
-        except request_errors, exp:
+        except get_request_errors(), exp:
             self.connect()
             return
         c = lower_dict(inspect)
@@ -103,7 +103,7 @@ class DockerManager(object):
             return
         try:
             conts = get_json('/containers/json', local_socket='/var/run/docker.sock')
-        except request_errors:
+        except get_request_errors():
             self.connect()
             return
         
@@ -119,7 +119,7 @@ class DockerManager(object):
             return
         try:
             self.images = get_json('/images/json', local_socket='/var/run/docker.sock')
-        except request_errors:
+        except get_request_errors():
             self.connect()
             return
     

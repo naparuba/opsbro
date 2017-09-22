@@ -12,14 +12,10 @@ try:
 except ImportError:
     fcntl = None
 
-try:
-    import requests as rq
-except ImportError:
-    rq = None
-
 from opsbro.misc.windows import windowser
 from opsbro.log import logger
-from opsbro.httpclient import HTTP_EXCEPTIONS
+from opsbro.library import libstore
+from opsbro.httpclient import get_http_exceptions
 
 
 def make_dir(path):
@@ -137,13 +133,14 @@ def _is_valid_local_addr(addr):
 # On EC2 need to get public IP from http://169.254.169.254/latest/meta-data/public-ipv4
 def _get_ec2_public_ip():
     uri = 'http://169.254.169.254/latest/meta-data/public-ipv4'
+    rq = libstore.get_requests()
     if rq is None:
         logger.error('Cannot load the python-requests lib. It is need to get public IP on your EC2 server. Exiting')
         sys.exit(2)
     try:
         r = rq.get(uri)
         addr = r.text
-    except HTTP_EXCEPTIONS, exp:
+    except get_http_exceptions(), exp:
         logger.error('Cannot get pubic IP for your EC2 instance from %s. Error: %s.Exiting' % (uri, exp))
         sys.exit(2)
     return addr

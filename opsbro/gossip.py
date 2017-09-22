@@ -4,7 +4,6 @@ import uuid as libuuid
 import time
 import random
 import math
-import requests as rq
 import copy
 import sys
 import bisect
@@ -17,8 +16,8 @@ from opsbro.broadcast import broadcaster
 from opsbro.websocketmanager import websocketmgr
 from opsbro.pubsub import pubsub
 from opsbro.httpdaemon import http_export, response, abort, request
-from opsbro.encrypter import encrypter
-from opsbro.httpclient import HTTP_EXCEPTIONS
+from opsbro.library import libstore
+from opsbro.httpclient import get_http_exceptions
 from opsbro.zonemanager import zonemgr
 from opsbro.stop import stopper
 
@@ -741,6 +740,7 @@ class Gossip(object):
         ping_payload = {'type': 'ping', 'seqno': 0, 'node': other['uuid'], 'from': self.uuid}
         # print "PREPARE PING", ping_payload, other
         message = json.dumps(ping_payload)
+        encrypter = libstore.get_encrypter()
         enc_message = encrypter.encrypt(message)
         addr = other['addr']
         port = other['port']
@@ -805,6 +805,7 @@ class Gossip(object):
         ack = {'type': 'ack', 'seqno': m['seqno']}
         ret_msg = json.dumps(ack)
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
+        encrypter = libstore.get_encrypter()
         enc_ret_msg = encrypter.encrypt(ret_msg)
         sock.sendto(enc_ret_msg, addr)
         sock.close()
@@ -834,6 +835,7 @@ class Gossip(object):
         tgtport = ntgt['port']
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
+            encrypter = libstore.get_encrypter()
             enc_message = encrypter.encrypt(message)
             sock.sendto(enc_message, (tgtaddr, tgtport))
             logger.debug('PING waiting %s ack message from a ping-relay' % ntgt['name'])
@@ -872,6 +874,7 @@ class Gossip(object):
         r = {'type': 'detect-pong', 'node': my_node_data}
         ret_msg = json.dumps(r)
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
+        encrypter = libstore.get_encrypter()
         enc_ret_msg = encrypter.encrypt(ret_msg)
         sock.sendto(enc_ret_msg, addr)
         sock.close()
@@ -885,6 +888,7 @@ class Gossip(object):
         s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         s.settimeout(3)
         p = '{"type":"detect-ping"}'
+        encrypter = libstore.get_encrypter()
         enc_p = encrypter.encrypt(p)
         s.sendto(enc_p, ('<broadcast>', 6768))
         try:
@@ -959,6 +963,7 @@ class Gossip(object):
         port = dest['port']
         # and go for it!
         try:
+            encrypter = libstore.get_encrypter()
             enc_message = encrypter.encrypt(message)
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
             sock.sendto(enc_message, (addr, port))
@@ -1033,6 +1038,7 @@ class Gossip(object):
         uri = 'http://%s:%s/agent/push-pull' % (addr, port)
         payload = {'msg': message}
         try:
+            rq = libstore.get_requests()
             r = rq.get(uri, params=payload)
             logger.debug("push-pull response", r)
             try:
@@ -1046,7 +1052,7 @@ class Gossip(object):
                 return False
             self.merge_nodes(back['nodes'])
             return True
-        except HTTP_EXCEPTIONS, exp:
+        except get_http_exceptions(), exp:
             logger.error('[push-pull] ERROR CONNECTING TO %s:%s' % other, exp)
             return False
     
