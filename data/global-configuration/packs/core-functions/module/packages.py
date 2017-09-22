@@ -1,5 +1,5 @@
 from opsbro.evaluater import export_evaluater_function
-from opsbro.systempacketmanager import systepacketmgr
+from opsbro.systempacketmanager import get_systepacketmgr
 
 
 @export_evaluater_function
@@ -15,4 +15,5 @@ def has_package(package):
         False
 </code>
     """
+    systepacketmgr = get_systepacketmgr()
     return systepacketmgr.has_package(package)

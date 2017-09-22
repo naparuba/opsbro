@@ -1,14 +1,9 @@
 import time
 import os
 import traceback
-import smtplib
 import datetime
 
-try:
-    import jinja2
-except ImportError:
-    jinja2 = None
-
+from opsbro.library import libstore
 from opsbro.module import HandlerModule
 from opsbro.parameters import BoolParameter, StringParameter, StringListParameter
 
@@ -30,6 +25,7 @@ class MailHandlerModule(HandlerModule):
     
     def __init__(self):
         super(MailHandlerModule, self).__init__()
+        self.jinja2 = libstore.get_jinja2()
     
     
     def send_mail(self, check):
@@ -45,6 +41,8 @@ class MailHandlerModule(HandlerModule):
         # go connect now
         try:
             self.logger.debug("Handler: MAIL connection to %s" % smtp_server)
+            # Lazy load smtplib
+            import smtplib
             s = smtplib.SMTP(smtp_server, timeout=30)
             
             _time = datetime.datetime.fromtimestamp(int(time.time())).strftime('%Y-%m-%d %H:%M:%S')
@@ -63,9 +61,9 @@ class MailHandlerModule(HandlerModule):
             with open(text_f) as f:
                 text_buf = f.read()
             
-            subject_tpl = jinja2.Template(subject_buf)
+            subject_tpl = self.jinja2.Template(subject_buf)
             subject_m = subject_tpl.render(check=check, _time=_time)
-            text_tpl = jinja2.Template(text_buf)
+            text_tpl = self.jinja2.Template(text_buf)
             text_m = text_tpl.render(check=check, _time=_time)
             
             msg = '''\

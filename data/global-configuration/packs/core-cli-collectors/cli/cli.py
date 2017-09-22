@@ -9,20 +9,13 @@
 
 import sys
 import json
-# try pygments for pretty printing if available
-import pprint
 
-try:
-    import pygments
-    import pygments.lexers
-    import pygments.formatters
-except ImportError:
-    pygments = None
 
 from opsbro.log import cprint, logger
 from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_json, print_info_title
 from opsbro.collectormanager import collectormgr
+from opsbro.library import libstore
 
 
 def _extract_data_from_results(d, prefix, res):
@@ -51,6 +44,7 @@ def pretty_print(d):
     
     # for pretty print in color, need to have both pygments and don't
     # be in a | or a file dump >, so we need to have a tty ^^
+    pygments = libstore.get_pygments()
     if pygments and sys.stdout.isatty():
         lexer = pygments.lexers.get_lexer_by_name("json", stripall=False)
         formatter = pygments.formatters.TerminalFormatter()
@@ -58,6 +52,7 @@ def pretty_print(d):
         result = pygments.highlight(code, lexer, formatter)
         print result
     else:
+        pprint = libstore.get_pprint()
         pprint.pprint(d)
     if len(flat_results) == 0:
         print "No collector data"

@@ -5,7 +5,7 @@ from opsbro.log import LoggerFactory
 from opsbro.stop import stopper
 from opsbro.httpdaemon import http_export, response
 from opsbro.evaluater import evaluater
-from opsbro.systempacketmanager import systepacketmgr
+from opsbro.systempacketmanager import get_systepacketmgr
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('installor')
@@ -31,6 +31,7 @@ class Environment(object):
     
     def which_packages_are_need_to_be_installed(self):
         res = []
+        systepacketmgr = get_systepacketmgr()
         for package in self.packages:
             is_installed = systepacketmgr.has_package(package)
             logger.debug('   Environnement:: (%s) is package %s already installed? => %s' % (self.name, package, is_installed))
@@ -86,6 +87,7 @@ class Installor(object):
             logger.error('Installor:: (%s) some variables did fail, cannot continue the evaluation' % self.name)
             return
         
+        systepacketmgr = get_systepacketmgr()
         for env in self.environments:
             do_match = env.do_match(variables)
             if do_match:

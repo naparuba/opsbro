@@ -9,16 +9,6 @@ from opsbro.log import LoggerFactory
 # Global logger for this part
 logger = LoggerFactory.create_logger('system-packages')
 
-try:
-    import apt
-except ImportError:
-    apt = None
-
-try:
-    import yum
-except ImportError:
-    yum = None
-
 
 class DummyBackend(object):
     def __init__(self):
@@ -46,6 +36,8 @@ class DummyBackend(object):
 # root@docker-host:~/opsbro-oss# systemctl get-default
 # graphical.target
 
+apt = None
+yum = None
 
 
 class AptBackend(object):
@@ -152,6 +144,18 @@ class YumBackend(object):
 # if cannot find a real backend, go to dummy that cannot find or install anything
 class SystemPacketMgr(object):
     def __init__(self):
+        global apt
+        global yum
+        
+        try:
+            import apt
+        except ImportError:
+            apt = None
+        
+        try:
+            import yum
+        except ImportError:
+            yum = None
         
         if os.name != 'nt':
             (distname, distversion, distid) = platform.linux_distribution()
@@ -247,4 +251,12 @@ class SystemPacketMgr(object):
         self.backend.install_package(package)
 
 
-systepacketmgr = SystemPacketMgr()
+systepacketmgr_ = None
+
+
+def get_systepacketmgr():
+    global systepacketmgr_
+    if systepacketmgr_ is None:
+        logger.debug('Lazy creation of the systepacketmgr class')
+        systepacketmgr_ = SystemPacketMgr()
+    return systepacketmgr_

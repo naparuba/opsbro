@@ -8,6 +8,7 @@ import shutil
 
 from opsbro.log import LoggerFactory
 from opsbro.gossip import gossiper
+from opsbro.library import libstore
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('generator')
@@ -34,13 +35,7 @@ class Generator(object):
         self.buf = None
         self.template = None
         self.output = None
-        
-        # Load jinja only if need
-        try:
-            import jinja2
-            self.jinja2 = jinja2
-        except Exception:
-            self.jinja2 = None
+        self.jinja2 = libstore.get_jinja2()
     
     
     # Open the template file and generate the output

@@ -27,6 +27,7 @@ RUN        apt-get install -y net-tools
 RUN        apt-get install -y dnsutils
 RUN        apt-get install -y python-apt
 RUN        apt-get install -y strace
+RUN        apt-get install -y less
 
 
 ADD        . /root/opsbro-oss

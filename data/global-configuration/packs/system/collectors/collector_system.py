@@ -1,12 +1,11 @@
 import os
 import sys
 import platform
-import multiprocessing
 import socket
 
 from opsbro.collector import Collector
 from opsbro.util import get_public_address
-from opsbro.systempacketmanager import systepacketmgr
+from opsbro.systempacketmanager import get_systepacketmgr
 
 try:
     import pwd
@@ -31,9 +30,11 @@ class System(Collector):
         res['os']['name'] = platform.system().lower()
         res['os']['platform'] = sys.platform
         res['architecture'] = platform.uname()[-1]
-        
+        # Lazy load multiprocessing
+        import multiprocessing
         res['cpucount'] = multiprocessing.cpu_count()
         
+        systepacketmgr = get_systepacketmgr()
         # Linux, directly ask python
         if res['os']['name'] == 'linux':
             (distname, version, _id) = systepacketmgr.get_distro()

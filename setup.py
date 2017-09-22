@@ -162,10 +162,10 @@ opsbro = imp.load_module('opsbro', *imp.find_module('opsbro', [os.path.realpath(
 from opsbro.info import VERSION, BANNER, TXT_BANNER
 from opsbro.log import cprint, is_tty, sprintf, logger
 from opsbro.misc.bro_quotes import get_quote
-from opsbro.systempacketmanager import systepacketmgr
+from opsbro.systempacketmanager import get_systepacketmgr
 from opsbro.cli_display import print_h1
 from opsbro.characters import CHARACTERS
-
+systepacketmgr = get_systepacketmgr()
 
 ##################################       Only root as it's a global system tool.
 if os.getuid() != 0:

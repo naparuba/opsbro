@@ -9,11 +9,11 @@
 
 import sys
 import json
-import pprint
+
 
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger, sprintf
-
+from opsbro.library import libstore
 from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, put_opsbro_json
 from opsbro.cli_display import print_h1
@@ -30,6 +30,7 @@ def do_members(detail=False):
         logger.error('Cannot join opsbro agent: %s' % exp)
         sys.exit(1)
     members = sorted(members, key=lambda e: e['name'])
+    pprint = libstore.get_pprint()
     logger.debug('Raw members: %s' % (pprint.pformat(members)))
     # If there is a display_name, use it
     max_name_size = max([max(len(m['name']), len(m.get('display_name', '')) + 4) for m in members])
