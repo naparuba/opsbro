@@ -5,7 +5,7 @@ import traceback
 from opsbro.threadmgr import threader
 from opsbro.module import Module
 from opsbro.stop import stopper
-from opsbro.parameters import StringParameter, BoolParameter, IntParameter
+from opsbro.parameters import StringParameter, IntParameter
 from opsbro.detectormgr import detecter
 from opsbro.gossip import gossiper
 
@@ -17,8 +17,8 @@ class DNSModule(Module):
     
     parameters = {
         'enabled_if_group': StringParameter(default='dns-listener'),
-        'port'   : IntParameter(default=6766),
-        'domain' : StringParameter(default='.opsbro'),
+        'port'            : IntParameter(default=6766),
+        'domain'          : StringParameter(default='.opsbro'),
     }
     
     
@@ -45,23 +45,6 @@ class DNSModule(Module):
         if not domain.startswith('.'):
             domain = '.' + domain
         return enabled, port, domain
-    
-    
-    # Prepare to open the UDP port
-    def prepare(self):
-        self.logger.debug('DNS: prepare phase')
-        enabled, port, domain = self.get_my_parameters()
-        self.enabled = enabled
-        self.port = port
-        self.domain = domain
-        if self.enabled:
-            self.logger.info('DNS is enabled, opening UDP port')
-            # Prepare the socket in the prepare phase because it's mandatory
-            self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            self.logger.info('DNS launched server port %d' % self.port)
-            self.sock.bind(('', self.port))
-        else:
-            self.logger.info('DNS is not enabled, skipping it')
     
     
     def get_info(self):

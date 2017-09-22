@@ -30,19 +30,11 @@ RUN       python setup.py install
 # We will modify a pack, so overload it first
 RUN        opsbro  packs overload global.grafana
 
-# Then copy our files to the new pack overloaded (monitoring plugin + parameters)
-# TODO: remove the parameter copy, should be with CLI calls
-#ADD        test/test-files/test-nagios-connector   /var/lib/opsbro/local-configuration/packs/shinken/
-
-
-
 # Change module parameters for Grafana
-RUN        opsbro  packs parameters set local.grafana.enabled               true
 RUN        opsbro  packs parameters set local.grafana.api_key               'eyJrIjoibmhIR0FuRnB0MTN6dFBMTlNMZDZKWjJXakFuR0I2Wk4iLCJuIjoiT3BzQnJvIiwiaWQiOjF9'
 
 
-
-
+# For manuel testing purpose only, not need by the automatic test
 EXPOSE    3000:3000
 
 

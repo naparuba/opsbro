@@ -5,7 +5,6 @@ import traceback
 
 from opsbro.log import logger
 from opsbro.module import Module
-from opsbro.configurationmanager import configmgr
 
 
 class ModuleManager(object):

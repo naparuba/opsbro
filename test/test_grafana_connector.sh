@@ -3,6 +3,12 @@
 
 echo "Starting to test Grafana"
 
+# We can start opsbro first, as the api_key is already configured
+# and we will add the group dynamically
+
+/etc/init.d/opsbro start
+
+
 # Create sqlite as the file is not created at setup
 /etc/init.d/grafana-server start
 sleep 1
@@ -23,17 +29,25 @@ fi
 sleep 1
 
 echo "Checking for authentification"
-curl -s -H "Authorization: Bearer eyJrIjoibmhIR0FuRnB0MTN6dFBMTlNMZDZKWjJXakFuR0I2Wk4iLCJuIjoiT3BzQnJvIiwiaWQiOjF9" http://localhost:3000/api/dashboards/home |grep --color timepicker
+OUT=$(curl -s -H "Authorization: Bearer eyJrIjoibmhIR0FuRnB0MTN6dFBMTlNMZDZKWjJXakFuR0I2Wk4iLCJuIjoiT3BzQnJvIiwiaWQiOjF9" http://localhost:3000/api/dashboards/home)
+
+printf "$OUT"|grep --color timepicker
 
 if [ $? != 0 ]; then
-    echo "ERROR: the grafana connector is not OK"
+    echo "ERROR: the grafana connector is not OK when check the auth with curl"
+    printf "$OUT"
     exit 2
 fi
 
+# We can now enable the grafana module y setting the valid group
+# Enable DNS module
+opsbro agent parameters add groups grafana-connector
+if [ $? != 0 ]; then
+    echo "ERROR: the grafana connector is not OK on data source insert"
+    exit 2
+fi
 
-/etc/init.d/opsbro start
-
-
+# Wait a bit for the module to work
 sleep 5
 
 echo "Checking if the data source is created, with NAME--opsbro--NODE_UUID as name"
@@ -43,8 +57,6 @@ if [ $? != 0 ]; then
     echo "ERROR: the grafana connector is not OK on data source insert"
     exit 2
 fi
-
-
 
 
 echo "OK:  grafana export is working"

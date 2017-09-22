@@ -1,4 +1,3 @@
-import os
 import json
 import time
 
@@ -8,14 +7,10 @@ except ImportError:
     rq = None
 
 from opsbro.module import ConnectorModule
-from opsbro.parameters import StringParameter, BoolParameter
-from opsbro.gossip import gossiper
-from opsbro.pubsub import pubsub
+from opsbro.parameters import StringParameter
 from opsbro.threadmgr import threader
 from opsbro.stop import stopper
-from opsbro.detectormgr import detecter
 from opsbro.gossip import gossiper
-from opsbro.kv import kvmgr
 from opsbro.httpclient import HTTP_EXCEPTIONS
 
 
@@ -23,45 +18,25 @@ class GrafanaModule(ConnectorModule):
     implement = 'grafana'
     
     parameters = {
-        'enabled': BoolParameter(default=False),
-        'uri'    : StringParameter(default='http://localhost:3000'),
-        'api_key': StringParameter(default=''),
+        'enabled_if_group': StringParameter(default='grafana-connector'),
+        'uri'             : StringParameter(default='http://localhost:3000'),
+        'api_key'         : StringParameter(default=''),
     }
     
     
     def __init__(self):
-        ConnectorModule.__init__(self)
+        super(GrafanaModule, self).__init__()
         self.enabled = False
+        self.enabled_if_group = 'grafana-connector'
         self.uri = 'http://localhost:3000'
         self.api_key = ''
-        self.node_changes = []
     
     
     def prepare(self):
         self.logger.info('Grafana: prepare phase')
-        self.enabled = self.get_parameter('enabled')
         self.uri = self.get_parameter('uri')
         self.api_key = self.get_parameter('api_key')
-        
-        if not self.enabled:
-            self.logger.debug('Grafana: export module is not enabled')
-            return
-        
-        if rq is None:
-            self.logger.error('Missing the python-requests librairy, please install it')
-            self.enabled = False
-            return
-            # register to node events
-            # pubsub.sub('new-node', self.new_node_callback)
-            # pubsub.sub('delete-node', self.delete_node_callback)
     
-    
-    # def new_node_callback(self, node_uuid=None):
-    #    self.node_changes.append(('new-node', node_uuid))
-    
-    
-    # def delete_node_callback(self, node_uuid=None):
-    #    self.node_changes.append(('delete-node', node_uuid))
     
     def __get_headers(self):
         return {'Content-Type': 'application/json;charset=UTF-8', 'Authorization': 'Bearer %s' % self.api_key}
@@ -111,7 +86,7 @@ class GrafanaModule(ConnectorModule):
             return None
         self.logger.debug("All data sources")
         self.logger.debug(str(all_data_sources))
-        # Error message is a dict with jsut a key: message
+        # Error message is a dict with just a key: message
         if isinstance(all_data_sources, dict):
             error_message = all_data_sources.get('message', '')
             if error_message:
@@ -155,11 +130,23 @@ class GrafanaModule(ConnectorModule):
         while not stopper.interrupted:
             self.logger.debug('Grafana loop')
             
+            # We go in enabled when, and only when our group is matching what we do expect
+            if_group = self.get_parameter('enabled_if_group')
+            self.enabled = gossiper.have_group(if_group)
+            
+            # Ok, if we are not enabled, so not even talk to grafana
             if not self.enabled:
                 time.sleep(1)
                 continue
             
+            if rq is None:
+                self.logger.error('The python requests librairy is mandatory for this module. Please install it')
+                time.sleep(1)
+                continue
+            
+            # Ok now time to work
             nodes_in_grafana = self.get_data_sources_from_grafana()
+            
             # If we have an issue to grafana, skip this loop
             if nodes_in_grafana is None:
                 time.sleep(1)
@@ -184,4 +171,5 @@ class GrafanaModule(ConnectorModule):
                 self.logger.debug("Node ", nuuid, "is no more need in grafana. Removing its data source")
                 self.remove_data_source(node_data_source_id)
             
+            # Do not hammer the cpu
             time.sleep(1)

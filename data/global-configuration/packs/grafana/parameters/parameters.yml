@@ -1,8 +1,7 @@
 
 # Is this module enable or not
-enabled:  false
+enabled_if_group:  grafana-connector
 
-## Grafana configuration
 
 # What is your grafana uri
 # By default: http://localhost:3000
