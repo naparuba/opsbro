@@ -35,6 +35,7 @@ class Encrypter(object):
                 self.RSA = None
                 # so now we did import it, refix sys.path to do not have misc inside
                 # sys.path.pop(0)
+        return self.RSA
     
     
     def get_AES(self):
@@ -45,6 +46,7 @@ class Encrypter(object):
         except ImportError:
             AES = None
         self.AES = AES
+        return AES
     
     
     def load(self, encryption_key):
