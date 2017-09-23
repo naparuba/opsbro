@@ -13,11 +13,13 @@ fi
 # Case 1: try to detect and join other node
 
 opsbro gossip detect --auto-join
+cat /var/log/opsbro/gossip.log
 
 NB_MEMBERS=$(opsbro gossip members | grep 'docker-container' | wc -l)
 
 if [ $NB_MEMBERS != 2 ]; then
    echo "BAD number of members: $NB_MEMBERS"
+
    exit 2
 fi
 

@@ -459,6 +459,7 @@ class Cluster(object):
                 continue
             
             # Look if we use encryption
+            encrypter = libstore.get_encrypter()
             data = encrypter.decrypt(data)
             # Maybe the decryption failed?
             if data == '':
