@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+/etc/init.d/opsbro start
+
 # Start rabbit mq
 rabbitmq-plugins enable rabbitmq_management
 rabbitmq-server &

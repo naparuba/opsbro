@@ -12,9 +12,6 @@ sleep 10
 opsbro  packs overload global.mysql
 opsbro  packs parameters set local.mysql.password        secret
 
-/etc/init.d/opsbro stop
-
-sleep 3
 /etc/init.d/opsbro start
 
 opsbro packs show
