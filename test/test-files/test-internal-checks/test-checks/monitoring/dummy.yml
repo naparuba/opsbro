@@ -1,0 +1,12 @@
+check:
+    if_group: linux
+
+    ok_output: "'ALL OK'"
+
+    critical_if: "1 == 1"
+    critical_output: "'CRITICAL OUTPUT'"
+
+    warning_if: "0 == 2"
+    warning_output:  "'WARNING: OUTPUT"
+
+    interval: "1s"
