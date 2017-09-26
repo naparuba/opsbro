@@ -13,7 +13,7 @@ from opsbro.modulemanager import modulemanager
 from opsbro.packer import packer
 from opsbro.unixclient import get_json, get_local
 from opsbro.log import cprint, logger
-from opsbro.defaultpaths import DEFAULT_LOG_DIR, DEFAULT_CFG_DIR, DEFAULT_DATA_DIR
+from opsbro.defaultpaths import DEFAULT_LOG_DIR, DEFAULT_CFG_DIR, DEFAULT_DATA_DIR, DEFAULT_SOCK_PATH
 from opsbro.info import VERSION
 from opsbro.cli_display import print_h1
 from opsbro.topic import topiker
@@ -26,7 +26,7 @@ CONFIG = None
 
 
 def get_local_socket():
-    return CONFIG.get('socket', '/var/lib/opsbro/opsbro.sock')
+    return CONFIG.get('socket', DEFAULT_SOCK_PATH)
 
 
 if os.name != 'nt':

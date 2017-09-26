@@ -38,17 +38,19 @@ port: 6768
 
 
 # Where to store the daemon data
-data: /var/lib/opsbro
-lock: /var/run/opsbro.lock
+#data: /var/lib/opsbro
+
+#lock: /var/run/opsbro.lock
 
 # Internal CLI => agent communication channel
-socket: /var/lib/opsbro/opsbro.sock
+#socket: /var/lib/opsbro/opsbro.sock
 
 
 ########## Log
 
 # Log storing path
-log: /var/log/opsbro
+#log: /var/log/opsbro
+
 # Which level is the daemon running. Possible values are:
 # * ERROR
 # * WARNING

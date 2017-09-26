@@ -56,7 +56,7 @@ TOPICS_SUB_TITLES = {
     TOPIC_MONITORING              : u'Is all OK on my server and applications?',
     TOPIC_METROLOGY               : u'Is my server and application performing well?',
     TOPIC_CONFIGURATION_AUTOMATION: u'Install+configure apache+nginx if server in web group',
-    TOPIC_SYSTEM_COMPLIANCE       : u'Are the secutiry patches applied?',
+    TOPIC_SYSTEM_COMPLIANCE       : u'Are the security patches applied?',
 }
 
 # sort of blue

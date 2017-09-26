@@ -9,18 +9,6 @@ import sys
 import os
 import signal
 
-sys.path.append('.')
-
-from opsbro.log import cprint, logger, is_tty
-from opsbro.cli import CLICommander
-
-from opsbro.info import VERSION, BANNER, TXT_BANNER
-from opsbro.misc.bro_quotes import get_quote
-from opsbro.defaultpaths import DEFAULT_CFG_FILE
-from opsbro.yamlmgr import yamler
-
-logger.setLevel('WARNING')
-
 CLI = None
 
 
@@ -50,12 +38,12 @@ def print_full_help():
 
 
 if __name__ == '__main__':
-    parser = optparse.OptionParser('', version="%prog " + VERSION, add_help_option=False)
+    parser = optparse.OptionParser('', version="%prog ", add_help_option=False)
     parser.add_option('--debug', action='store_true', dest="do_debug", help=("Enable the debug mode"))
     # parser.add_option('--proxy', dest="proxy", help="""Proxy URI. Like http://user:password@proxy-server:3128""")
     parser.add_option('-l', '--list', action='store_true', dest="do_list", help=("List available commands"))
     
-    parser.add_option('-c', '--config', dest="ymlconfig", default=DEFAULT_CFG_FILE, help=("Path to your local.yml file. Default: %s" % DEFAULT_CFG_FILE))
+    parser.add_option('-c', '--config', dest="ymlconfig", default='', help=("Path to your local.yml file."))
     parser.add_option('-v', action='store_true', dest="do_verbose", help=("Be more verbose"))
     parser.add_option('-h', '--help', action='store_true', dest="do_help", help=("Print help"))
     
@@ -66,6 +54,29 @@ if __name__ == '__main__':
     opts, args = parser.parse_args()
     # reenable the errors for later use
     parser.error = old_error
+    
+    # We need to import our libs, but can be an install or directly in the tarball (if executed directly from the install tar ball)
+    install_less = False
+    my_file = os.path.abspath(os.path.dirname(__file__))
+    my_root_dir = os.path.dirname(my_file)
+    # Both files must be present
+    tar_ball_detection_files = (os.path.join(my_root_dir, 'README.md'), os.path.join(my_root_dir, 'setup.py'))
+    if os.path.exists(tar_ball_detection_files[0]) and os.path.exists(tar_ball_detection_files[1]):
+        install_less = True
+        # Be sure that the opsbro lib is the install root one
+        sys.path.insert(0, my_root_dir)
+        from opsbro.defaultpaths import remap_from_install_dir
+        # If we are install less, we must ask for a full file path remaping
+        remap_from_install_dir()
+    
+    from opsbro.log import cprint, logger, is_tty
+    from opsbro.cli import CLICommander
+    
+    from opsbro.info import BANNER, TXT_BANNER
+    from opsbro.misc.bro_quotes import get_quote
+    from opsbro.yamlmgr import yamler
+    
+    logger.setLevel('WARNING')
     
     # Is args are setting them, they must be force to the rest of the execution without looking at the configuration
     if opts.do_verbose:

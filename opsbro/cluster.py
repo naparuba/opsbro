@@ -49,7 +49,7 @@ from opsbro.executer import executer
 from opsbro.monitoring import monitoringmgr
 from opsbro.installermanager import installormgr
 from opsbro.compliancemgr import compliancemgr
-from opsbro.defaultpaths import DEFAULT_LIBEXEC_DIR, DEFAULT_LOCK_PATH, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR, DEFAULT_CFG_DIR
+from opsbro.defaultpaths import DEFAULT_LIBEXEC_DIR, DEFAULT_LOCK_PATH, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR, DEFAULT_CFG_DIR, DEFAULT_SOCK_PATH
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('agent')
@@ -102,7 +102,9 @@ class Cluster(object):
         self.log_dir = DEFAULT_LOG_DIR  # '/var/log/opsbro'
         self.lock_path = DEFAULT_LOCK_PATH  # '/var/run/opsbro.lock'
         self.libexec_dir = DEFAULT_LIBEXEC_DIR  # '/var/lib/opsbro/libexec'
-        self.socket_path = os.path.join(self.data_dir, 'opsbro.sock')  # /var/lib/opsbro/opsbro.sock
+        self.socket_path = DEFAULT_SOCK_PATH  # /var/lib/opsbro/opsbro.sock
+        
+        print "DATA DIR", self.data_dir
         
         self.log_level = 'INFO'
         
@@ -186,6 +188,8 @@ class Cluster(object):
         self.last_alive_file = os.path.join(self.data_dir, 'last_alive')
         self.hostname_file = os.path.join(self.data_dir, 'last_hostname')
         self.zone_file = os.path.join(self.data_dir, 'current_zone')
+        
+        print "SERVER KEY FILE", self.server_key_file
         
         # Our cluster need a unique uuid, so try to guess a unique one from Hardware
         # To get a UUID that will be unique to this instance:
