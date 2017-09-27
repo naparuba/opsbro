@@ -144,6 +144,7 @@ class Rule(object):
 class ComplianceManager(object):
     def __init__(self):
         self.compliances = {}
+        self.did_run = False
     
     
     def import_compliance(self, compliance, full_path, file_name, mod_time=0, pack_name='', pack_level=''):
@@ -165,6 +166,7 @@ class ComplianceManager(object):
     def do_compliance_thread(self):
         while not stopper.interrupted:
             self.launch_compliances()
+            self.did_run = True
             time.sleep(1)
     
     

@@ -108,6 +108,7 @@ class Installor(object):
 class InstallorMgr(object):
     def __init__(self):
         self.install_rules = []
+        self.did_run = False
     
     
     def import_installor(self, o, fname, gname, mod_time=0, pack_name='', pack_level=''):
@@ -121,6 +122,7 @@ class InstallorMgr(object):
             for o in self.install_rules:
                 logger.debug('Look at installing %s' % o.name)
                 o.execute()
+            self.did_run = True
             time.sleep(1)
     
     

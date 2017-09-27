@@ -56,6 +56,13 @@ class Module(ParameterBasedType):
     
     def export_http(self):
         return
+    
+    
+    # Call when the daemon go down.
+    # WARNING: maybe the daemon thread is still alive, beware
+    # of the paralel data access
+    def stopping_agent(self):
+        pass
 
 
 class FunctionsExportModule(Module):

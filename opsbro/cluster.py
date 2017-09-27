@@ -443,7 +443,8 @@ class Cluster(object):
     
     def launch_http_listeners(self):
         threader.create_and_launch(self.launch_tcp_listener, name='Http backend', essential=True, part='agent')
-        
+    
+    
     def launch_modules_threads(self):
         # Launch modules threads
         modulemanager.launch()
@@ -724,11 +725,6 @@ class Cluster(object):
             self.internal_http_thread = threader.create_and_launch(httpdaemon.run, name='Internal HTTP', args=('', 0, self.socket_path,), essential=True, part='agent')
         else:  # ok windows, I look at you, really
             self.internal_http_thread = threader.create_and_launch(httpdaemon.run, name='Internal HTTP', args=('127.0.0.1', 6770, '',), essential=True, part='gossip')
-    
-    
-    # launch metric based listeners and backend
-    def start_ts_listener(self):
-        tsmgr.start_threads()
     
     
     # The first sync thread will ask to our replicats for their lately changed value
@@ -1112,39 +1108,112 @@ class Cluster(object):
             time.sleep(30)
     
     
+    # In one shot mode, we want to be sure the theses parts did run at least once:
+    # collector
+    # detector
+    # generator
+    # installor
+    # compliance
+    def wait_one_shot_end(self):
+        logger.info('Waiting for collectors to finish running')
+        while not collectormgr.did_run:
+            time.sleep(0.1)
+        logger.info('Collectors did run')
+        
+        logger.info('Waiting for detectors to finish running')
+        while not detecter.did_run:
+            time.sleep(0.1)
+        logger.info('Detectors did run')
+        
+        logger.info('Waiting for generator to finish running')
+        while not generatormgr.did_run:
+            time.sleep(0.1)
+        logger.info('Generators did run')
+        
+        logger.info('Waiting for installors to finish running')
+        while not installormgr.did_run:
+            time.sleep(0.1)
+        logger.info('Installors did run')
+        
+        logger.info('Waiting for system compliance to finish running')
+        while not compliancemgr.did_run:
+            time.sleep(0.1)
+        logger.info('System compliances did run')
+        
+        # Ok let's know the whole system we are going to stop
+        stopper.interrupted = True
+        
+        logger.info('One shot execution did finish to look at jobs, exiting')
+    
+    
+    def __exit_path(self):
+        # Maybe the modules want a special call
+        modulemanager.stopping_agent()
+        
+        # EXIT PATH
+        self.retention_nodes(force=True)
+        
+        # Clean lock file so daemon after us will be happy
+        self.clean_lock()
+        
+        logger.info('Exiting')
+    
+    
     # Guess what? yes, it is the main function
-    def main(self):
-        logger.info('Launching listeners')
-        self.launch_gossip_listener()
-        self.launch_http_listeners()
+    # One shot option is for an execution that is just doing some stuff and then exit
+    # so without having to start all the listening part
+    def main(self, one_shot=False):
+        # gossip UDP and the whole HTTP part is useless in a oneshot execution
+        if not one_shot:
+            logger.info('Launching listeners')
+            self.launch_gossip_listener()
+            self.launch_http_listeners()
+        # We need to have modules if need, maybe one of them can do something when exiting
         self.launch_modules_threads()
-        logger.info('Joining seeds nodes')
-        self.join()
+        
+        # joining is for gossip part, useless in a oneshot run
+        if not one_shot:
+            logger.info('Joining seeds nodes')
+            self.join()
+        
         logger.info('Starting check, collector and generator threads')
-        self.launch_check_thread()
+        
         self.launch_collector_thread()
-        self.launch_generator_thread()
         self.launch_detector_thread()
+        self.launch_generator_thread()
+        
+        # We don't give a fuck at the checks for a one shot currently (maybe one day, but not today)
+        if not one_shot:
+            self.launch_check_thread()
+        
         self.launch_installor_thread()
         self.launch_compliance_thread()
         
-        if 'kv' in gossiper.groups:
+        if 'kv' in gossiper.groups and not one_shot:
             self.launch_replication_backlog_thread()
             self.launch_replication_first_sync_thread()
-        self.start_ts_listener()
         
-        # be sure the check list are really updated now our litners are ok
-        monitoringmgr.update_checks_kv()
+        # be sure the check list are really updated now our listners are ok
+        # useless when a one shot run
+        if not one_shot:
+            monitoringmgr.update_checks_kv()
         
-        # We can now manage our memory by ourselves
-        threader.create_and_launch(self.do_memory_trim_thread, name='Memory cleaning', essential=True, part='agent')
+        # We can now manage our memory by ourselves, but in a one shot we won't live enough to eat the whole memory
+        if not one_shot:
+            threader.create_and_launch(self.do_memory_trim_thread, name='Memory cleaning', essential=True, part='agent')
         
-        # Launch gossip threads
-        threader.create_and_launch(gossiper.ping_another_nodes, name='Ping other nodes', essential=True, part='gossip')
-        threader.create_and_launch(gossiper.do_launch_gossip_loop, name='Cluster messages broadcasting', essential=True, part='gossip')
-        threader.create_and_launch(gossiper.launch_full_sync_loop, name='Nodes full synchronization', essential=True, part='gossip')
+        # Launch gossip threads, but not in one_shot run
+        if not one_shot:
+            threader.create_and_launch(gossiper.ping_another_nodes, name='Ping other nodes', essential=True, part='gossip')
+            threader.create_and_launch(gossiper.do_launch_gossip_loop, name='Cluster messages broadcasting', essential=True, part='gossip')
+            threader.create_and_launch(gossiper.launch_full_sync_loop, name='Nodes full synchronization', essential=True, part='gossip')
         
-        logger.log('Go go run!')
+        if one_shot:
+            self.wait_one_shot_end()
+            self.__exit_path()
+            return
+        
+        logger.info('Go go run!')
         i = -1
         while not stopper.interrupted:
             i += 1
@@ -1164,10 +1233,4 @@ class Cluster(object):
             
             time.sleep(1)
         
-        # EXIT PATH
-        self.retention_nodes(force=True)
-        
-        # Clean lock file so daemon after us will be happy
-        self.clean_lock()
-        
-        logger.info('Exiting')
+        self.__exit_path()

@@ -222,14 +222,17 @@ def do_info(show_logs):
 
 
 # Main daemon function. Currently in blocking mode only
-def do_start(daemon, cfg_dir):
+def do_start(daemon, cfg_dir, one_shot):
+    if daemon and one_shot:
+        logger.error('The parameters --daemon and --one-shot are not compatible.')
+        sys.exit(2)
     cprint('Starting opsbro daemon', color='green')
     cprint('%s' % cfg_dir)
     lock_path = CONFIG.get('lock', DEFAULT_LOCK_PATH)
     l = Launcher(lock_path=lock_path, cfg_dir=cfg_dir)
     l.do_daemon_init_and_start(is_daemon=daemon)
     # Here only the last son reach this
-    l.main()
+    l.main(one_shot=one_shot)
 
 
 def do_stop():
@@ -510,6 +513,7 @@ exports = {
         'args'       : [
             {'name': '--daemon', 'type': 'bool', 'default': False, 'description': 'Start opsbro into the background'},
             {'name': '--cfg-dir', 'default': '/etc/opsbro', 'description': 'Set a specifc configuration file'},
+            {'name': '--one-shot', 'type': 'bool', 'default': False, 'description': 'Execute the agent but without slaying alive. It just execute its jobs once, and then exit. Is not compatible with the --daemon parameter.'},
         ],
         'description': 'Start the opsbro daemon'
     },

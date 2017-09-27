@@ -28,6 +28,36 @@ configuration automation
 system compliance
 
 
+########### Main philosophy
+ * It follow the Lean Ops mantra
+ * Don't be a cargo cult ops
+   * it sounds cool
+   * BUT end large corps need over powerful tools, and such tools finish to be hard to start with
+   * complexity came from linking powerful tools, each one for a specific topic
+   * difficulty = nb over powerfull tools ²
+   * in the end you are loosing time to do your real job & build really fun things
+ * I (Jean Gabès) did build such a over powerful tool, and it's a real success to large corps
+    * but I know it's too much to lot of small teams!
+ * Learn from the real world manufactoring (Toyota & co): they did reduce the cost of operation/production thanks to the Lean Manufactoring
+   * We need to transform us into Lean Ops: use "just enough" tool
+ * It's what OpsBro is for all Ops: it solve day to day real world use cases and stay in this philosophy
+
+
+
+
+
+
+
+
+########## Doc & tuto plan
+
+service discovery
+automatic detection
+monitoring
+metrology
+configuration automation
+system compliance
+
 
 ################# Pypi
 cat ~/.pypirc

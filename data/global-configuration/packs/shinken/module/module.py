@@ -248,7 +248,6 @@ class ShinkenModule(ConnectorModule):
     # main method to export http interface. Must be in a method that got
     # a self entry
     def main_thread(self):
-        
         # If the detector did not run, we are not sure about the groups of the local node
         # so wait for it to be run, so we can generate shinken file ok from start
         while detecter.did_run == False:

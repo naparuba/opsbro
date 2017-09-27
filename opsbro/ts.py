@@ -358,10 +358,6 @@ class TSListener(object):
         self.tsb = TSBackend()
     
     
-    def start_threads(self):
-        pass
-    
-    
     # push a name but return if the name was already there or not
     def set_name_if_unset(self, key):
         return self.tsb.set_name_if_unset(key)

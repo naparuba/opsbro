@@ -1,0 +1,42 @@
+
+########### Lean Ops Main philosophy
+ * Don't be a cargo cult-ist ops
+   * Follow big corps way of doing sounds cool
+   => BUT end large corps need over powerful tools, and such tools finish to be hard to live with
+ * Yes big tools tutorials are always done in 5min, but look at the documentation size: is it a good idea to choose a tool because of its 5min tutorials if the documentation is 500 pages long?
+   * Even if you are using only the basics, in the end you will HAVE to deal & understand the more advanced features because they will "polute" the basics
+   * complexity came from linking powerful tools, each one for a specific topic
+   * it nightmare = nb over powerful tools ²
+   * in the end you are loosing time to do your real job & build really fun things
+ * I (Jean Gabès) did build such a over powerful tool (shinken solve 99% of the monitoring topic), and it's a real success to large corps
+    * but I know it's too much to lot of small teams!
+ * Learn from the real world manufactoring (Toyota & co): they did reduce the cost of operation/production thanks to the Lean Manufactoring
+   * remove all the "muda"(useless) from your systems
+   => We need to transform us into Lean Ops: use "just enough" tools
+ * Don't try to solve problems you don't have! (nor will have in the near future)
+   * why use scalability tool if a VM is 90%idle?
+   * why setup high availability if it's not business critical ? (backup are enough)
+   * lot of issues are not technical and must be managed before unicorns only problems
+   => Solve day to day real world use cases and stay in this philosophy
+   => If you are not using at least 70% of a tool features, change your tool.
+     * It's too much for your needs, and you will loose time in the end
+   * The unix philosophy: It's dead. Deal with it.
+     * Lot of small tools can be a nightmare to live with
+   * Setting complex tool that you only few (and maybe only you) can handle
+     * reduce the efficiency of the whole team
+     * hurts your enhancement (you can't move because you can't be replaced!)
+   => less tools, more humans
+   => Use transverve tools, that is focus on topics integrations instead of one topic completness
+     * Yes there are far less suchs tools in the Open Source world:
+       * because it's harder to do (the dev must understand numerous topics)
+       * over powerful features are buzzing quite "easily". Powerful topics integration won't.
+       * much tools are done nowadays to have an enterprise edition, so to be sell to big corps only
+       * most of transverse tools are only focus on large tools integrations: they can only reduce a bit of complexity, but will still be difficult
+         => it nightmare = (nb of powerful tool)² / 2 => still difficult
+       * OpsBro is such a tools focus on solving day to day real world case on 6 topics:
+         * service discovery
+         * automatic detection
+         * monitoring
+         * metrology
+         * configuration automation
+         * system compliance

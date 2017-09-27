@@ -6,20 +6,16 @@
 
 ## **OpsBro**
 
-OpsBro is a tool focus on the top 6 topics forr nowaday Ops:
+OpsBro is a tool focus on the top 6 topics for nowaday Ops:
 
-service discovery
-automatic detection
-monitoring
-metrology
-configuration automation
-system compliance
+ * service discovery
+ * automatic detection
+ * monitoring
+ * metrology
+ * configuration automation
+ * system compliance
 
 All the configuration / deployment is model based (aka into packs)
-
-
-![Agent](images/agent.png)
-
 
 
 ## Installation
@@ -27,22 +23,7 @@ All the configuration / deployment is model based (aka into packs)
 #### Prerequites
 You will need:
 
-  * python 2.6 or 2.7 (python 3 is not managed currently)
-
-It will automatically install:
-  * python-leveldb
-  * python-requests
-  * python-jinja2 
-  * python-cherrypy3
-
-
-To monitor linux:
-  * sysstat
-
-To monitor mongodb server:
-  * python-pymongo
-
-
+  * python 2.6 or 2.7
 
 
 #### Installation
@@ -52,10 +33,17 @@ Just launch:
     python setup.py install
 
 
-## Run your daemon, and join the opsbro cluster
+Note: On the main linux distributions, it will automatically install its dependencies from the package manager (apt/yum):
+  * debian
+  * centos
+  * redhat
+  * ubuntu
 
-#### Start OpsBro
+On the others distributions (OpenSuse, Alpine, etc), depedencies will be take from pypi.
 
+
+
+## Start OpsBro daemon
 You can start opsbro as a daemon with:
  
     /etc/init.d/opsbro start
@@ -65,7 +53,7 @@ You can also launch it in foreground:
     opsbro agent start
 
 
-#### Stop opsbro daemon
+## Stop OpsBro daemon
 Just launch:
   
     opsbro agent stop
@@ -76,7 +64,7 @@ Or use the init.d script:
 
 
 
-#### Display opsbro information
+## Display OpsBro information
 Just launch:
 
     opsbro agent info
@@ -86,7 +74,7 @@ You will have several information about the current opsbro agent state:
  
 ![Agent](images/info.png) 
 
-
+## Service discovery
 #### Agent cluster membership
 
 ##### Add your local node to the node cluster
@@ -130,8 +118,7 @@ And you will see the new node on the UI if you enable it
 
 
 
-
-## Discover your server (os, apps, location, ...)
+## Automatic detection (os, apps, location, ...)
 
 Detectors are rules that are executed by the agent to detect your server properties like
 
@@ -142,17 +129,18 @@ Detectors are rules that are executed by the agent to detect your server propert
 You should declare a json object like:
 
     detector:
-        interval: 10s
         apply_if: "grep('centos', '/etc/redhat-release')"
-        add_groups: ["linux", "centos"]
+        add_groups:
+            - linux
+            - centos
+        interval: 3600s
 
 
- * Execute every 10 seconds
  * If there is the strong centos in the file /etc/redhat-release
  * Then add the group "linux" and centos" to the local agent
+ * Execute every 3600 seconds
 
-
-## Collect your server metrics (cpu, kernel, databases metrics, etc)
+## Metrology: collect your server metrics (cpu, kernel, databases metrics, etc)
 
 Collectors are code executed by the agent to grok and store local os or application metrics. 
 
@@ -166,7 +154,62 @@ You can list available collectors with the command:
  * enabled: it's running well
  * disabled: it's missing a librairy for running
 
-## Execute checks
+## How to see collected data? (metrology)
+
+The opsbro agent is by default getting lot of metrology data from your OS and applications. It's done by "collctors" objets. You can easily list them and look at the colelcted data by launching:
+
+    opsbro collectors show
+
+
+**TODO** Allow to export into json format
+
+
+## Export and store your application telemetry into the agent metric system
+
+### Real time application performance metrics
+
+The statsd protocol is a great way to extract performance statistics from your application into your monitoring system. You application will extract small timing metrics (like function execution time) and send it in a non blocking way (in UDP).
+
+The statsd daemon part will agregate counters for 10s and will then export the min/max/average/99thpercentile to a graphite server so you can store and graph them.
+
+In order to enable the statsd listener, you must define the statsd in your local configuration:
+
+    statsd:
+        enabled    : true
+        port       : 8125
+        interval   : 10
+
+  * enabled: launch or not the statsd listener
+  * port: UDP port to listen
+  * interval: store metrics into memory for X seconds, then export them into graphite for storing
+
+**TODO**: change the ts group that enable this feature to real *role*/addons
+
+
+### Store your metrics for long term into Graphite
+
+You can store your metrics into a graphite like system, that will automatically agregate your data.
+
+In order to enable the graphite system, you must declare a graphite object in your local configuration:
+
+    graphite:
+        enabled    : true
+        port       : 2003
+        udp        : true
+        tcp        : true
+
+  * enabled: launch or not the graphite listener
+  * port: TCP and/or UDP port to listen metrics
+  * udp: listen in UDP mode
+  * tcp: listen to TCP mode
+
+**TODO**: finish the graphite part, to show storing and forwarding mode.
+
+## Grafana: view your node metrology data into the grafana UI
+
+**TODO**: test and show graphite /render interface of the agent into grafana
+
+## Monitoring
 
 You can execute checks on your agent by two means:
   * Use the collectors data and evaluate check rule on it
@@ -292,7 +335,7 @@ You must define it in your local configuration:
 
 Then your handler must be registered into your checks, in the "handlers" list.
 
-## Export your nodes and check states into Shinken
+## Export your nodes and check states into Shinken or Nagios
 
 You can export all your nodes informations (new, deleted or change node) into your Shinken installation. It will automatically:
   * create new host when you start a new node
@@ -311,7 +354,7 @@ Currently it also use hard path to manage your shinken communication:
   * it call the "/etc/init.d/shinken reload" command when a node configuration is changed(new, removed or group/template change) 
 
 
-## Access your nodes informations by DNS
+## DNS: Access your nodes informations by DNS
 
 If you enable the DNS interface for your agent, it will start an internal DNS server that will answer to queries. So your applications will be able to easily exchange with the valid node that is still alive or launched.
 
@@ -339,50 +382,6 @@ It list all available node with the "group" redis.
 TODO: document the local dns redirect to link into resolv.conf
 
 
-## Export and store your application telemetry into the agent metric system 
-
-### Real time application performance metrics
-
-The statsd protocol is a great way to extract performance statistics from your application into your monitoring system. You application will extract small timing metrics (like function execution time) and send it in a non blocking way (in UDP).
-
-The statsd daemon part will agregate counters for 10s and will then export the min/max/average/99thpercentile to a graphite server so you can store and graph them.
-
-In order to enable the statsd listener, you must define the statsd in your local configuration:
-
-    statsd:
-        enabled    : true
-        port       : 8125
-        interval   : 10
-
-  * enabled: launch or not the statsd listener
-  * port: UDP port to listen
-  * interval: store metrics into memory for X seconds, then export them into graphite for storing
-
-**TODO**: change the ts group that enable this feature to real *role*/addons
-
-
-### Store your metrics for long term into Graphite
-
-You can store your metrics into a graphite like system, that will automatically agregate your data.
-
-In order to enable the graphite system, you must declare a graphite object in your local configuration:
-    
-    graphite:
-        enabled    : true
-        port       : 2003
-        udp        : true
-        tcp        : true
-
-  * enabled: launch or not the graphite listener
-  * port: TCP and/or UDP port to listen metrics
-  * udp: listen in UDP mode
-  * tcp: listen to TCP mode
-
-**TODO**: finish the graphite part, to show storing and forwarding mode.
-
-## Get access to your graphite data with an external UI like Grafana
-
-**TODO**: test and show graphite /render interface of the agent into grafana
 
 
 ## Get notified when there is a node change (websocket)
@@ -423,14 +422,7 @@ The API is:
 // Generators
 
 
-## How to see collected data? (metrology)
 
-The opsbro agent is by default getting lot of metrology data from your OS and applications. It's done by "collctors" objets. You can easily list them and look at the colelcted data by launching:
-
-    opsbro collectors show
-
-
-**TODO** Allow to export into json format
 
 
 ## How to install applications on your system thanks to OpsBro
@@ -460,4 +452,17 @@ You can ask your node cluster system to elect a node for a specific task or appl
 
 ## Is there an UI available?
 
-Yes. There is a UI available in opsbro.io wbesite (SaaS).
+To see your metrology data, look at the grafana module.
+
+To see the nodes & metrology states, an UI is currently in progress. Will be not Open source but will be free of use at the opsbro.io website.
+Please contact me (naparuba _AT_ gmail.com is you are interested to test it in Beta stade).
+
+
+## specific packs:
+To monitor linux:
+  * sysstat
+
+To monitor mongodb server:
+  * python-pymongo
+
+

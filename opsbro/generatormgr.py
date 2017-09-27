@@ -17,6 +17,8 @@ logger = LoggerFactory.create_logger('generator')
 class GeneratorMgr(object):
     def __init__(self):
         self.generators = {}
+        # Did we run at least once
+        self.did_run = False
     
     
     # Generators will create files based on templates from
@@ -77,6 +79,8 @@ class GeneratorMgr(object):
                 should_launch = g.write_if_need()
                 if should_launch:
                     g.launch_command()
+            # Ok we did run at least once :)
+            self.did_run = True
             time.sleep(1)
 
 

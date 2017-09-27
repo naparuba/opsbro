@@ -217,8 +217,8 @@ class Launcher(object):
     
     
     # Main locking function, will LOCK here until the daemon is dead/killed/whatever
-    def main(self):
+    def main(self, one_shot=False):
         c = Cluster(cfg_dir=self.cfg_dir)
         
         # Blocking function here
-        c.main()
+        c.main(one_shot=one_shot)

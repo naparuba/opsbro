@@ -46,12 +46,6 @@ class CollectorManager:
         # results from the collectors, keep ony the last run
         self.results_lock = threading.RLock()
         self.results = {}
-        self.ts = None
-    
-    
-    # Get the ts from the cluster
-    def load_ts(self, ts):
-        self.ts = ts
     
     
     def load_directory(self, directory, pack_name='', pack_level=''):

@@ -116,6 +116,11 @@ class ModuleManager(object):
             mod_info = mod.get_info()
             r[mod.implement] = mod_info
         return r
+    
+    
+    def stopping_agent(self):
+        for mod in self.modules:
+            mod.stopping_agent()
 
 
 modulemanager = ModuleManager()
