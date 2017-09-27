@@ -1,0 +1,20 @@
+name: shinken-enterprise
+topics:
+    - monitoring
+types:
+    - pack
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description:  Module to allow a distant execution and discovery
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - module
+    - shinken-enterprise
+
+dependencies:
+    core: ">=1.0"
+license: ""

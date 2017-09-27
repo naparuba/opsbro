@@ -1,0 +1,10 @@
+
+## Shinken Enterprise configuration
+# By default this module will do nothing. If you set the shinken-enterprise
+# URI to send your discovery, then it will connect to it at agent exit,
+# and especially if you execute it in the --one-shot mode
+
+# is this module enabled
+enabled: false
+
+enterprise_callback_uri: ''
