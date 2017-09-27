@@ -16,7 +16,6 @@ from jsonmgr import jsoner
 from opsbro.now import NOW
 from opsbro.ts import tsmgr
 from opsbro.gossip import gossiper
-from opsbro.configurationmanager import configmgr
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('collector')
@@ -215,12 +214,13 @@ class CollectorManager:
             
             to_del = []
             for (colname, t) in cur_launchs.iteritems():
-                if not t.is_alive():
+                # if the thread is finish, join it
+                # NOTE: but also wait for all first execution to finish
+                if not t.is_alive() or not self.did_run:
                     t.join()
                     to_del.append(colname)
             for colname in to_del:
                 del cur_launchs[colname]
-            
             self.did_run = True  # ok our data are filled, you can use this data
             time.sleep(1)
     
