@@ -982,7 +982,7 @@ class Gossip(object):
         tmp = self.seeds
         others = []
         if not len(self.seeds):
-            logger.log("No seeds nodes, I'm a bootstrap node?")
+            logger.info("We do not have any seeds to join at startup.")
             return
         
         for e in tmp:
@@ -993,7 +993,7 @@ class Gossip(object):
                 port = int(elts[1])
             others.append((addr, port))
         random.shuffle(others)
-        while True:
+        while not stopper.interrupted:
             logger.log('JOINING myself %s is joining %s nodes' % (self.name, others))
             nb = 0
             for other in others:

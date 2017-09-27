@@ -406,19 +406,19 @@ class Cluster(object):
     
     
     def launch_check_thread(self):
-        self.check_thread = threader.create_and_launch(monitoringmgr.do_check_thread, name='Checks executions', essential=True, part='monitoring')
+        threader.create_and_launch(monitoringmgr.do_check_thread, name='Checks executions', essential=True, part='monitoring')
     
     
     def launch_collector_thread(self):
-        self.collector_thread = threader.create_and_launch(collectormgr.do_collector_thread, name='Collector scheduling', essential=True, part='collector')
+        threader.create_and_launch(collectormgr.do_collector_thread, name='Collector scheduling', essential=True, part='collector')
     
     
     def launch_generator_thread(self):
-        self.generator_thread = threader.create_and_launch(generatormgr.do_generator_thread, name='Generator scheduling', essential=True, part='generator')
+        threader.create_and_launch(generatormgr.do_generator_thread, name='Generator scheduling', essential=True, part='generator')
     
     
     def launch_detector_thread(self):
-        self.detector_thread = threader.create_and_launch(detecter.do_detector_thread, name='Detector scheduling', essential=True, part='detector')
+        threader.create_and_launch(detecter.do_detector_thread, name='Detector scheduling', essential=True, part='detector')
     
     
     def launch_compliance_thread(self):
@@ -430,17 +430,21 @@ class Cluster(object):
     
     
     def launch_replication_backlog_thread(self):
-        self.replication_backlog_thread = threader.create_and_launch(kvmgr.do_replication_backlog_thread, name='Replication backlog', essential=True, part='key-value')
+        threader.create_and_launch(kvmgr.do_replication_backlog_thread, name='Replication backlog', essential=True, part='key-value')
     
     
     def launch_replication_first_sync_thread(self):
-        self.replication_first_sync_thread = threader.create_and_launch(self.do_replication_first_sync_thread, name='First replication synchronization', essential=True, part='key-value')
+        threader.create_and_launch(self.do_replication_first_sync_thread, name='First replication synchronization', essential=True, part='key-value')
     
     
-    def launch_listeners(self):
-        self.udp_thread = threader.create_and_launch(self.launch_udp_listener, name='UDP listener', essential=True, part='gossip')
-        self.tcp_thread = threader.create_and_launch(self.launch_tcp_listener, name='Http backend', essential=True, part='agent')
+    def launch_gossip_listener(self):
+        threader.create_and_launch(self.launch_udp_listener, name='UDP listener', essential=True, part='gossip')
+    
+    
+    def launch_http_listeners(self):
+        threader.create_and_launch(self.launch_tcp_listener, name='Http backend', essential=True, part='agent')
         
+    def launch_modules_threads(self):
         # Launch modules threads
         modulemanager.launch()
     
@@ -1110,6 +1114,25 @@ class Cluster(object):
     
     # Guess what? yes, it is the main function
     def main(self):
+        logger.info('Launching listeners')
+        self.launch_gossip_listener()
+        self.launch_http_listeners()
+        self.launch_modules_threads()
+        logger.info('Joining seeds nodes')
+        self.join()
+        logger.info('Starting check, collector and generator threads')
+        self.launch_check_thread()
+        self.launch_collector_thread()
+        self.launch_generator_thread()
+        self.launch_detector_thread()
+        self.launch_installor_thread()
+        self.launch_compliance_thread()
+        
+        if 'kv' in gossiper.groups:
+            self.launch_replication_backlog_thread()
+            self.launch_replication_first_sync_thread()
+        self.start_ts_listener()
+        
         # be sure the check list are really updated now our litners are ok
         monitoringmgr.update_checks_kv()
         

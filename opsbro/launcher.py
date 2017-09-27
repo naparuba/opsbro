@@ -28,7 +28,7 @@ class Launcher(object):
             locale.setlocale(locale.LC_ALL, 'C')
     
     
-    def change_to_workdir(self):
+    def __change_to_workdir(self):
         if os.path.exists('/tmp'):
             try:
                 os.chdir('/tmp')
@@ -59,7 +59,7 @@ class Launcher(object):
     
     # Check (in pidfile) if there isn't already a daemon running. If yes and do_replace: kill it.
     # Keep in self.fpid the File object to the pidfile. Will be used by writepid.
-    def check_parallel_run(self):
+    def __check_parallel_run(self):
         # TODO: other daemon run on nt
         if os.name == 'nt':
             logger.warning("The parallel daemon check is not available on nt")
@@ -89,7 +89,7 @@ class Launcher(object):
         raise SystemExit(2)
     
     
-    def write_pid(self, pid=None):
+    def __write_pid(self, pid=None):
         if pid is None:
             pid = os.getpid()
         self.fpid.seek(0)
@@ -101,7 +101,7 @@ class Launcher(object):
     
     # Go in "daemon" mode: redirect stdout/err,
     # chdir, umask, fork-setsid-fork-writepid
-    def daemonize(self):
+    def __daemonize(self):
         logger.debug("Redirecting stdout and stderr as necessary..")
         if self.debug_path:
             fdtemp = os.open(self.debug_path, os.O_CREAT | os.O_WRONLY | os.O_TRUNC)
@@ -148,7 +148,7 @@ class Launcher(object):
         if pid != 0:
             # we are the last step and the real daemon is actually correctly created at least.
             # we have still the last responsibility to write the pid of the daemon itself.
-            self.write_pid(pid)
+            self.__write_pid(pid)
             os._exit(0)  # <-- this was the son, the real daemon is the son-son
         
         self.fpid.close()
@@ -157,27 +157,7 @@ class Launcher(object):
         logger.info("Daemonization done: pid=%d" % self.pid)
     
     
-    def do_daemon_init_and_start(self, is_daemon=False):
-        self.change_to_workdir()
-        self.check_parallel_run()
-        
-        # Force the debug level if the daemon is said to start with such level
-        if self.debug_path:
-            logger.setLevel('DEBUG')
-        
-        # If daemon fork() until we reach the final step
-        if is_daemon:
-            self.daemonize()
-        else:
-            if os.name != 'nt':
-                self.write_pid()
-                # Here only the son-son reach this part :)
-        
-        # Now we are started, try to raise system limits to the maximum allowed
-        self.find_and_set_higer_system_limits()
-    
-    
-    def find_and_set_higer_system_limit(self, res, res_name):
+    def __find_and_set_higer_system_limit(self, res, res_name):
         # first try to get the system limit, if already unlimited (-1) then we are good :)
         soft, hard = resource.getrlimit(res)
         if soft == -1 and hard == -1:
@@ -208,34 +188,37 @@ class Launcher(object):
         logger.info('System limit %s is set to maximum available: %s/%s' % (res_name, v, v))
     
     
-    def find_and_set_higer_system_limits(self):
+    def __find_and_set_higer_system_limits(self):
         if not resource:
             logger.info('System resource package is not available, cannot increase system limits')
             return
         for (res, res_name) in [(resource.RLIMIT_NPROC, 'number of process/threads'), (resource.RLIMIT_NOFILE, 'number of open files')]:
-            self.find_and_set_higer_system_limit(res, res_name)
+            self.__find_and_set_higer_system_limit(res, res_name)
+    
+    
+    def do_daemon_init_and_start(self, is_daemon=False):
+        self.__change_to_workdir()
+        self.__check_parallel_run()
+        
+        # Force the debug level if the daemon is said to start with such level
+        if self.debug_path:
+            logger.setLevel('DEBUG')
+        
+        # If daemon fork() until we reach the final step
+        if is_daemon:
+            self.__daemonize()
+        else:
+            if os.name != 'nt':
+                self.__write_pid()
+                # Here only the son-son reach this part :)
+        
+        # Now we are started, try to raise system limits to the maximum allowed
+        self.__find_and_set_higer_system_limits()
     
     
     # Main locking function, will LOCK here until the daemon is dead/killed/whatever
     def main(self):
         c = Cluster(cfg_dir=self.cfg_dir)
-        cprint('Linking services and checks', color='green')
-        cprint('Launching listeners', color='green')
-        c.launch_listeners()
-        cprint('Joining seeds nodes', color='green')
-        c.join()
-        cprint('Starting check, collector and generator threads', color='green')
-        c.launch_check_thread()
-        c.launch_collector_thread()
-        c.launch_generator_thread()
-        c.launch_detector_thread()
-        c.launch_installor_thread()
-        c.launch_compliance_thread()
-        
-        if 'kv' in gossiper.groups:
-            c.launch_replication_backlog_thread()
-            c.launch_replication_first_sync_thread()
-        c.start_ts_listener()
         
         # Blocking function here
         c.main()
