@@ -76,10 +76,10 @@ function try_installation {
 export -f try_installation
 
 NB_CPUS=`python -c "import multiprocessing;print multiprocessing.cpu_count()"`
-# Travis: be sure to use the 2 CPU available, and in fact to allow // connections so we keep the test time bellow the limit
+# Travis: be sure to use the 4 CPU available, and in fact to allow // connections so we keep the test time bellow the limit
 if [ "X$TRAVIS" == "Xtrue" ]; then
-   NB_CPUS=2
-   echo "Travis detected, using 2 CPUs"
+   NB_CPUS=4
+   echo "Travis detected, using 4 CPUs"
 fi
 
 
