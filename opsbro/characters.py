@@ -49,6 +49,9 @@ class Characters(object):
     higer_gun = u'߹'
     middle_gun = u'█'
     lower_gun = u'߸'
+    
+    # Spinners
+    spinners = u"⣷⣯⣟⡿⢿⣻⣽⣾"
 
 
 CHARACTERS = Characters()

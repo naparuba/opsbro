@@ -9,7 +9,8 @@
 
 import sys
 import json
-
+import time
+import itertools
 
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger, sprintf
@@ -17,6 +18,7 @@ from opsbro.library import libstore
 from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, put_opsbro_json
 from opsbro.cli_display import print_h1
+from opsbro.threadmgr import threader
 
 NO_ZONE_DEFAULT = '(no zone)'
 
@@ -141,24 +143,54 @@ def do_zone_change(name=''):
     print r
 
 
+def __print_detection_spinner():
+    spinners = itertools.cycle(CHARACTERS.spinners)
+    start = time.time()
+    for c in spinners:
+        will_quit = False
+        elapsed = time.time() - start
+        # exit after 2.8 s (we did have 3s max)
+        if elapsed > 2.8:
+            will_quit = True
+            elapsed = 3
+        cprint('\r %s ' % c, color='blue', end='')
+        cprint('UDP detection in progress. %.1fs/3s.' % (elapsed), end='')
+        # As we do not print the line, be sure to display it by flushing to display
+        sys.stdout.flush()
+        if will_quit:
+            break
+        time.sleep(0.25)
+    # Be sure to have a void line before the other thread print
+    cprint("")
+
+
 def do_detect_nodes(auto_join):
+    print_h1('UDP broadcast LAN detection')
     print "Trying to detect other nodes on the network thanks to a UDP broadcast. Will last 3s."
+    cprint(' * The detection scan will be ', end='')
+    cprint('3s', color='magenta', end='')
+    cprint(' long.')
+    threader.create_and_launch(__print_detection_spinner, (), 'spinner', essential=False)
+    
     # Send UDP broadcast packets from the daemon
     try:
         network_nodes = get_opsbro_json('/agent/detect')
     except get_request_errors(), exp:
         logger.error('Cannot join opsbro agent: %s' % exp)
         sys.exit(1)
-    print "Detection is DONE.\nDetection result:"
+    cprint(" * Detection is DONE")
+    print_h1('Detection result')
     if len(network_nodes) == 0:
-        print "Cannot detect (broadcast UDP) other nodes."
+        cprint(' ERROR: ', color='red', end='')
+        cprint("cannot detect (broadcast UDP) other nodes")
         sys.exit(1)
     print "Other network nodes detected on this network:"
     print '  Name                                 Zone        Address:port          Proxy    Groups'
     for node in network_nodes:
         print '  %-35s  %-10s  %s:%d  %5s     %s' % (node['name'], node['zone'], node['addr'], node['port'], node['is_proxy'], ','.join(node['groups']))
     if not auto_join:
-        print "Auto join (--auto-join) is not enabled, so don't try to join theses nodes"
+        cprint('NOTICE: ', color='blue', end='')
+        cprint("Auto join (--auto-join) is not enabled, so don't try to join theses nodes")
         return
     # try to join theses nodes so :)
     all_proxys = [node for node in network_nodes if node['is_proxy']]

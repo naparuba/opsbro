@@ -1,8 +1,46 @@
 # -*- coding: utf-8 -*-
+import sys
 
 from opsbro.misc.lolcat import lolcat
 from opsbro.log import cprint
 from opsbro.characters import TEST_CHARS
+
+import time
+spinners = [
+  #u"←↖↑↗→↘↓↙",
+  #u"▁▃▄▅▆▇█▇▆▅▄▃",
+  #u"▉▊▋▌▍▎▏▎▍▌▋▊▉",
+  #u"▖▘▝▗",
+  #u"▌▀▐▄",
+  #u"┤┘┴└├┌┬┐",
+  #u"◢◣◤◥",
+  #u"◰◳◲◱",
+  #u"◴◷◶◵",
+  #u"◐◓◑◒",
+  #u"|/-\\",
+  #u".oO@*",
+  #[u"◜ ", u" ◝", u" ◞", u"◟ "],
+  #u"◇◈◆",
+  u"⣾⣽⣻⢿⡿⣟⣯⣷",
+  u"⣷⣯⣟⡿⢿⣻⣽⣾",
+  #u"⡀⡁⡂⡃⡄⡅⡆⡇⡈⡉⡊⡋⡌⡍⡎⡏⡐⡑⡒⡓⡔⡕⡖⡗⡘⡙⡚⡛⡜⡝⡞⡟⡠⡡⡢⡣⡤⡥⡦⡧⡨⡩⡪⡫⡬⡭⡮⡯⡰⡱⡲⡳⡴⡵⡶⡷⡸⡹⡺⡻⡼⡽⡾⡿⢀⢁⢂⢃⢄⢅⢆⢇⢈⢉⢊⢋⢌⢍⢎⢏⢐⢑⢒⢓⢔⢕⢖⢗⢘⢙⢚⢛⢜⢝⢞⢟⢠⢡⢢⢣⢤⢥⢦⢧⢨⢩⢪⢫⢬⢭⢮⢯⢰⢱⢲⢳⢴⢵⢶⢷⢸⢹⢺⢻⢼⢽⢾⢿⣀⣁⣂⣃⣄⣅⣆⣇⣈⣉⣊⣋⣌⣍⣎⣏⣐⣑⣒⣓⣔⣕⣖⣗⣘⣙⣚⣛⣜⣝⣞⣟⣠⣡⣢⣣⣤⣥⣦⣧⣨⣩⣪⣫⣬⣭⣮⣯⣰⣱⣲⣳⣴⣵⣶⣷⣸⣹⣺⣻⣼⣽⣾⣿",
+  u"⠁⠂⠄⡀⢀⠠⠐⠈",
+  #[u">))'>", u" >))'>", u"  >))'>", u"   >))'>", u"    >))'>", u"   <'((<", u"  <'((<", u" <'((<"],
+]
+
+for l in spinners:
+    print "\n ******* "
+    if isinstance(l, basestring):
+        chars = [c for c in l]
+    else:
+        chars = l
+    cprint(' CHARS: %s' % ''.join(chars))
+    for c in chars:
+        cprint('\r', end='')
+        cprint(' %s' % c, color='blue', end='')
+        sys.stdout.flush()
+        time.sleep(0.5)
+
 
 elements = {
     # light Purple
