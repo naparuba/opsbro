@@ -4,7 +4,7 @@ GROUP=$1
 
 printf "\n****************** [ Checking GROUP is set:  $GROUP  ] ******************\n"
 
-LIMIT=10
+LIMIT=60
 
 for ii in `seq 1 $LIMIT`; do
     RES=$(opsbro evaluator eval "have_group('$GROUP')" | tail -n 1)
