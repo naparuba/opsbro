@@ -4,15 +4,24 @@ GROUP=$1
 
 printf "\n****************** [ Checking GROUP is set:  $GROUP  ] ******************\n"
 
-RES=$(opsbro evaluator eval "have_group('$GROUP')" | tail -n 1)
+LIMIT=10
 
-if [ $RES != "True" ]; then
-    echo "Fail: check if group is set: have_group('$GROUP') ==> $RES"
-    opsbro agent info | grep Groups
-    opsbro evaluator eval "have_group('$GROUP')"
-    exit 2
-fi
+for ii in `seq 1 $LIMIT`; do
+    RES=$(opsbro evaluator eval "have_group('$GROUP')" | tail -n 1)
 
-echo "GROUP: $GROUP is OK"
-echo ""
+    if [ $RES != "True" ]; then
+        if [ $ii == $LIMIT ]; then
+           echo "Fail: check if group is set: have_group('$GROUP') ==> $RES"
+           opsbro agent info | grep Groups
+           opsbro evaluator eval "have_group('$GROUP')"
+           exit 2
+        fi
+        echo "Let more time to the agent to start, restart this test"
+        continue
+    fi
+    echo "    - dbg: finish loop: $ii"
+    echo "GROUP: $GROUP is OK"
+    echo ""
+    break
+done
 

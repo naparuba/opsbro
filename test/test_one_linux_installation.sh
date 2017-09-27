@@ -59,47 +59,27 @@ for ii in `seq 1 $LIMIT`; do
        continue
     fi
     # Test OK, we can break
-    echo "DBG: FINISH loop $ii"
+    echo "    dbg: finish loop $ii"
     break
 done
 
 echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Linux GROUP      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
 # Check if linux group is set
-LIMIT=60
-for ii in `seq 1 $LIMIT`; do
-    echo "Checking agent addr, loop $ii"
+echo "Checking agent addr, loop $ii"
 
-    test/assert_group.sh "linux"
-    if [ $? != 0 ]; then
-       if [ $ii == $LIMIT ]; then
-           echo "ERROR: the group linux is missing!"
-           exit 2
-       fi
-       echo "Let more time to the agent to start, restart this test"
-       continue
-    fi
-    # Test OK, we can break
-    echo "DBG: FINISH loop $ii"
-    break
-done
+test/assert_group.sh "linux"
+if [ $? != 0 ]; then
+    echo "ERROR: the group linux is missing!"
+    exit 2
+fi
+
 
 echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Docker-container GROUP      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
 # Check if docker-container group is set
+echo "Checking agent docker group, loop $ii"
 
-LIMIT=60
-for ii in `seq 1 $LIMIT`; do
-    echo "Checking agent docker group, loop $ii"
-
-    test/assert_group.sh "docker-container"
-    if [ $? != 0 ]; then
-       if [ $ii == $LIMIT ]; then
-           echo "ERROR: the group docker-container is missing!"
-           exit 2
-       fi
-       echo "Let more time to the agent to start, restart this test"
-       continue
-    fi
-    # Test OK, we can break
-    echo "DBG: FINISH loop $ii"
-    break
-done
+test/assert_group.sh "docker-container"
+if [ $? != 0 ]; then
+   echo "ERROR: the group docker-container is missing!"
+   exit 2
+fi
