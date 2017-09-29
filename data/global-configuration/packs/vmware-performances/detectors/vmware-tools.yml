@@ -1,0 +1,6 @@
+detector:
+    add_groups:
+        - vmware-tools
+
+    apply_if: "{{collector.vmwareperformances.vmware_tools_available}} == True"
+    interval: 60s
