@@ -211,6 +211,7 @@ class CollectorManager:
                 # if the thread is finish, join it
                 # NOTE: but also wait for all first execution to finish
                 if not t.is_alive() or not self.did_run:
+                    logger.debug('Joining collector thread: %s' % colname)
                     t.join()
                     to_del.append(colname)
             for colname in to_del:
@@ -219,15 +220,16 @@ class CollectorManager:
             time.sleep(1)
     
     
+    def get_collector_json_extract(self, entry):
+        c = copy.copy(entry)
+        # inst are not serializable
+        del c['inst']
+        return (c['name'], c)
+    
+    
     # main method to export http interface. Must be in a method that got
     # a self entry
     def export_http(self):
-        def prepare_entry(e):
-            c = copy.copy(e)
-            # inst are not serializable
-            del c['inst']
-            return (c['name'], c)
-        
         
         @http_export('/collectors/')
         @http_export('/collectors')
@@ -236,7 +238,7 @@ class CollectorManager:
             response.content_type = 'application/json'
             res = {}
             for (ccls, e) in self.collectors.iteritems():
-                cname, c = prepare_entry(e)
+                cname, c = self.get_collector_json_extract(e)
                 res[cname] = c
             return jsoner.dumps(res)
         
@@ -247,7 +249,7 @@ class CollectorManager:
             e = self.collectors.get(_id, None)
             if e is None:
                 return jsoner.dumps(e)
-            cname, c = prepare_entry(e)
+            cname, c = self.get_collector_json_extract(e)
             return jsoner.dumps(c)
 
 

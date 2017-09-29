@@ -104,8 +104,6 @@ class Cluster(object):
         self.libexec_dir = DEFAULT_LIBEXEC_DIR  # '/var/lib/opsbro/libexec'
         self.socket_path = DEFAULT_SOCK_PATH  # /var/lib/opsbro/opsbro.sock
         
-        print "DATA DIR", self.data_dir
-        
         self.log_level = 'INFO'
         
         # now we read them, set it in our object
@@ -188,8 +186,6 @@ class Cluster(object):
         self.last_alive_file = os.path.join(self.data_dir, 'last_alive')
         self.hostname_file = os.path.join(self.data_dir, 'last_hostname')
         self.zone_file = os.path.join(self.data_dir, 'current_zone')
-        
-        print "SERVER KEY FILE", self.server_key_file
         
         # Our cluster need a unique uuid, so try to guess a unique one from Hardware
         # To get a UUID that will be unique to this instance:
@@ -325,7 +321,6 @@ class Cluster(object):
         
         # Load docker thing if possible
         dockermgr.export_http()
-        dockermgr.launch()
         
         # Our main object for gossip managment
         gossiper.init(nodes, nodes_lock, self.addr, self.port, self.name, self.display_name, self.incarnation, self.uuid, self.groups, self.seeds, self.bootstrap, self.zone, self.is_proxy)
@@ -1168,8 +1163,9 @@ class Cluster(object):
             logger.info('Launching listeners')
             self.launch_gossip_listener()
             self.launch_http_listeners()
-        # We need to have modules if need, maybe one of them can do something when exiting
-        self.launch_modules_threads()
+            # We need to have modules if need, maybe one of them can do something when exiting
+            # but in one shot we only call them at the stop, without allow them to spawn their thread
+            self.launch_modules_threads()
         
         # joining is for gossip part, useless in a oneshot run
         if not one_shot:
@@ -1192,6 +1188,10 @@ class Cluster(object):
         if 'kv' in gossiper.groups and not one_shot:
             self.launch_replication_backlog_thread()
             self.launch_replication_first_sync_thread()
+        
+        # We don't care about docker in one-shot disco
+        if not one_shot:
+            dockermgr.launch()
         
         # be sure the check list are really updated now our listners are ok
         # useless when a one shot run
