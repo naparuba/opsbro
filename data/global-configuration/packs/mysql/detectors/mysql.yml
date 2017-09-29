@@ -1,5 +1,6 @@
 detector:
     add_groups:
         - mysql
-    apply_if: "file_exists('/etc/my.cnf')"
+    # NOTE: we cannot use the /etc/my.cnf presence because in centos even with just mysqllibs (client) it's present
+    apply_if: "file_exists('/usr/bin/mysqld_safe')"
     interval: 10s
