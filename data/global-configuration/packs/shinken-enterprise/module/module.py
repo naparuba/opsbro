@@ -1,7 +1,9 @@
+import json
+
 from opsbro.module import ConnectorModule
 from opsbro.parameters import StringParameter, BoolParameter
 from opsbro.gossip import gossiper
-
+from opsbro.collectormanager import collectormgr
 
 class ShinkenEnterpriseModule(ConnectorModule):
     implement = 'shinken-enterprise'
@@ -20,4 +22,20 @@ class ShinkenEnterpriseModule(ConnectorModule):
         with gossiper.groups_lock:
             groups = gossiper.groups[:]
         self.logger.info('Pushing back ours groups and discovery informations to Shinken Enterprise')
+
+        collectors_data = {}
+        for (ccls, e) in collectormgr.collectors.iteritems():
+            cname, c = collectormgr.get_collector_json_extract(e)
+            collectors_data[cname] = c
+
         # TODO: push to shinken now :)
+        f = open('/tmp/shinken-local-discovery.json', 'w')
+        
+        data = {'groups': groups,
+                'collectors': collectors_data,
+                }
+        
+        f.write(json.dumps(data, indent=4))
+        
+        f.close()
+        
