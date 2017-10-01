@@ -28,7 +28,8 @@ RUN        apt-get install -y dnsutils
 RUN        apt-get install -y python-apt
 RUN        apt-get install -y strace
 RUN        apt-get install -y less
-
+RUN        apt-get install -y python-blessed
+RUN        apt-get install -y locales
 
 ADD        . /root/opsbro-oss
 WORKDIR       /root/opsbro-oss
