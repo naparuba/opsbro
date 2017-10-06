@@ -192,3 +192,292 @@ def yml_parameter_remove(parameters_file_path, parameter_name, str_value, file_d
     cprint(parameter_name, color='magenta', end='')
     cprint(' %s ' % CHARACTERS.arrow_left, end='')
     cprint(str_value, color='green')
+
+
+_donut_100 = u'''
+ ⢀⣤⣶⣿⣿⣿⣷⣦⣄
+⢰⣿⣿⣿⠿⠛⠻⢿⣿⣿⣷
+⣿⣿⣿⠃ XXX⢻⣿⣿⡇
+⢿⣿⣿⣆ Y ⢀⣾⣿⣿⠇
+⠘⢿⣿⣿⣿⣶⣾⣿⣿⣿⠟
+  ⠙⠿⣿⣿⣿⡿⠟⠁
+'''.replace('XXX', r'%3d').replace('Y', r'%%')
+
+_donut_95_99 = u'''
+ ⢀⣤⣶⣿ ⣿⣷⣦⣄
+⢰⣿⣿⣿⠿ ⠻⢿⣿⣿⣷
+⣿⣿⣿⠃ XX ⢻⣿⣿⡇
+⢿⣿⣿⣆ Y ⢀⣾⣿⣿⠇
+⠘⢿⣿⣿⣿⣶⣾⣿⣿⣿⠟
+  ⠙⠿⣿⣿⣿⡿⠟⠁
+'''.replace('XX', r'%2d').replace('Y', r'%%')
+
+_donut_90_95 = u'''
+ ⢀⣤⣶  ⣿⣷⣦⣄
+⢰⣿⣿⣿⠿ ⠻⢿⣿⣿⣷
+⣿⣿⣿⠃ XX ⢻⣿⣿⡇
+⢿⣿⣿⣆ Y ⢀⣾⣿⣿⠇
+⠘⢿⣿⣿⣿⣶⣾⣿⣿⣿⠟
+  ⠙⠿⣿⣿⣿⡿⠟⠁
+'''.replace('XX', r'%2d').replace('Y', r'%%')
+
+_donut_85_90 = u'''
+ ⢀⣤   ⣿⣷⣦⣄
+⢰⣿⣿⣿  ⠻⢿⣿⣿⣷
+⣿⣿⣿⠃ XX ⢻⣿⣿⡇
+⢿⣿⣿⣆ Y ⢀⣾⣿⣿⠇
+⠘⢿⣿⣿⣿⣶⣾⣿⣿⣿⠟
+  ⠙⠿⣿⣿⣿⡿⠟⠁
+'''.replace('XX', r'%2d').replace('Y', r'%%')
+
+_donut_80_85 = u'''
+      ⣿⣷⣦⣄
+⢰⣿⣆   ⠻⢿⣿⣿⣷
+⣿⣿⣿⠃ XX ⢻⣿⣿⡇
+⢿⣿⣿⣆ Y ⢀⣾⣿⣿⠇
+⠘⢿⣿⣿⣿⣶⣾⣿⣿⣿⠟
+  ⠙⠿⣿⣿⣿⡿⠟⠁
+'''.replace('XX', r'%2d').replace('Y', r'%%')
+
+_donut_75_80 = u'''
+      ⣿⣷⣦⣄
+⡀     ⠻⢿⣿⣿⣷
+⣿⣶⣆  XX ⢻⣿⣿⡇
+⢿⣿⣿⣆ Y ⢀⣾⣿⣿⠇
+⠘⢿⣿⣿⣿⣶⣾⣿⣿⣿⠟
+  ⠙⠿⣿⣿⣿⡿⠟⠁
+'''.replace('XX', r'%2d').replace('Y', r'%%')
+
+_donut_70_75 = u'''
+      ⣿⣷⣦⣄
+      ⠻⢿⣿⣿⣷
+     XX ⢻⣿⣿⡇
+⢿⣿⣿⣆ Y ⢀⣾⣿⣿⠇
+⠘⢿⣿⣿⣿⣶⣾⣿⣿⣿⠟
+  ⠙⠿⣿⣿⣿⡿⠟⠁
+'''.replace('XX', r'%2d').replace('Y', r'%%')
+
+_donut_65_70 = u'''
+      ⣿⣷⣦⣄
+      ⠻⢿⣿⣿⣷
+     XX ⢻⣿⣿⡇
+     Y ⢀⣾⣿⣿⠇
+ ⣤⣶⣿⣿⣶⣾⣿⣿⣿⠟
+  ⠙⠿⣿⣿⣿⡿⠟⠁
+'''.replace('XX', r'%2d').replace('Y', r'%%')
+
+_donut_60_65 = u'''
+      ⣿⣷⣦⣄
+      ⠻⢿⣿⣿⣷
+     XX ⢻⣿⣿⡇
+     Y ⢀⣾⣿⣿⠇
+   ⣠⣾⣶⣾⣿⣿⣿⠟
+  ⠈⠿⣿⣿⣿⡿⠟⠁
+'''.replace('XX', r'%2d').replace('Y', r'%%')
+
+_donut_55_60 = u'''
+      ⣿⣷⣦⣄
+      ⠻⢿⣿⣿⣷
+     XX ⢻⣿⣿⡇
+     Y ⢀⣾⣿⣿⠇
+    ⣰⣶⣾⣿⣿⣿⠟
+   ⣰⣿⣿⣿⡿⠟⠁
+'''.replace('XX', r'%2d').replace('Y', r'%%')
+
+_donut_50_55 = u'''
+      ⣿⣷⣦⣄
+      ⠻⢿⣿⣿⣷
+     XX ⢻⣿⣿⡇
+     Y ⢀⣾⣿⣿⠇
+    ⢀⣾⣿⣿⣿⠟
+    ⣾⣿⡿⠟⠁
+'''.replace('XX', r'%2d').replace('Y', r'%%')
+
+_donut_50 = u'''
+      ⣿⣷⣦⣄
+      ⠻⢿⣿⣿⣷
+     XX ⢻⣿⣿⡇
+     Y ⢀⣾⣿⣿⠇
+      ⣾⣿⣿⣿⠟
+      ⣿⡿⠟⠁
+'''.replace('XX', r'%2d').replace('Y', r'%%')
+
+_donut_45_50 = u'''
+      ⣿⣷⣦⣄
+      ⠻⢿⣿⣿⣷
+     XX ⢻⣿⣿⡇
+     Y ⢀⣾⣿⣿⠇
+      ⣾⣿⣿⣿⠟
+       ⢻⠟⠁
+'''.replace('XX', r'%2d').replace('Y', r'%%')
+
+_donut_40_45 = u'''
+      ⣿⣷⣦⣄
+      ⠻⢿⣿⣿⣷
+     XX ⢻⣿⣿⡇
+     Y ⢀⣾⣿⣿⠇
+       ⢻⣿⣿⠟
+        ⠙⠁
+'''.replace('XX', r'%2d').replace('Y', r'%%')
+
+_donut_35_40 = u'''
+      ⣿⣷⣦⣄
+      ⠻⢿⣿⣿⣷
+     XX ⢻⣿⣿⡇
+     Y ⢀⣾⣿⣿⠇
+       ⠙⢻⣿⡟
+       
+'''.replace('XX', r'%2d').replace('Y', r'%%')
+
+_donut_30_35 = u'''
+      ⣿⣷⣦⣄
+      ⠻⢿⣿⣿⣷
+     XX ⢻⣿⣿⡇
+     Y ⢀⣾⣿⣿⠇
+       ⠈⠛⠛⠋
+       
+'''.replace('XX', r'%2d').replace('Y', r'%%')
+
+_donut_25_30 = u'''
+      ⣿⣷⣦⣄
+      ⠻⢿⣿⣿⣷
+     XX ⢻⣿⣿⡇
+     Y  ⠈⢻⣿⠇
+     
+
+'''.replace('XX', r'%2d').replace('Y', r'%%')
+
+_donut_25 = u'''
+      ⣿⣷⣦⣄
+      ⠻⢿⣿⣿⣷
+     XX ⢻⣿⣿⡇
+     Y
+     
+     
+'''.replace('XX', r'%2d').replace('Y', r'%%')
+
+_donut_20_25 = u'''
+      ⣿⣷⣦⣄
+      ⠻⢿⣿⣿⣷
+     XX ⢻⡿⠟⠁
+     Y
+     
+     
+'''.replace('XX', r'%2d').replace('Y', r'%%')
+
+_donut_15_20 = u'''
+      ⣿⣷⣦⣄
+      ⠻⢿⡿⠋
+     XX
+     Y
+     
+     
+'''.replace('XX', r'%2d').replace('Y', r'%%')
+
+_donut_10_15 = u'''
+      ⣿⣷⣦
+      ⠻⡿⠋
+     XX
+     Y
+     
+     
+'''.replace('XX', r'%2d').replace('Y', r'%%')
+
+_donut_5_10 = u'''
+      ⣿⣦
+      ⠛⠋
+     XX
+     Y
+     
+     
+'''.replace('XX', r'%2d').replace('Y', r'%%')
+
+_donut_0_5 = u'''
+      ⣿
+      ⠛
+     XX
+     Y
+     
+     
+'''.replace('XX', r'%2d').replace('Y', r'%%')
+
+_donut_0 = u'''
+
+   
+     XX
+     Y
+
+
+'''.replace('XX', r'%2d').replace('Y', r'%%')
+
+
+class DonutPrinter(object):
+    def get_donut(self, value):
+        
+        try:
+            if 0 < value < 1:  # round 0
+                value = 0
+            elif 100 <= value < 101:  # get round for 100
+                value = 100
+            else:
+                value = int(value)
+        except Exception:
+            return
+        if value < 0:
+            return
+        if value > 100:
+            return
+        
+        if value == 0:
+            tpl = _donut_0
+        elif 0 < value <= 5:
+            tpl = _donut_0_5
+        elif 5 < value <= 10:
+            tpl = _donut_5_10
+        elif 10 < value <= 15:
+            tpl = _donut_10_15
+        elif 15 < value <= 20:
+            tpl = _donut_15_20
+        elif 20 < value <= 25:
+            tpl = _donut_20_25
+        elif value == 25:
+            tpl = _donut_25
+        elif 25 < value <= 30:
+            tpl = _donut_25_30
+        elif 30 < value <= 35:
+            tpl = _donut_30_35
+        elif 35 < value <= 40:
+            tpl = _donut_35_40
+        elif 40 < value <= 45:
+            tpl = _donut_40_45
+        elif 45 < value <= 49:
+            tpl = _donut_45_50
+        elif value == 50:
+            tpl = _donut_50
+        elif 50 < value <= 55:
+            tpl = _donut_50_55
+        elif 55 < value <= 60:
+            tpl = _donut_55_60
+        elif 60 < value <= 65:
+            tpl = _donut_60_65
+        elif 65 < value <= 70:
+            tpl = _donut_65_70
+        elif 70 < value <= 75:
+            tpl = _donut_70_75
+        elif 75 < value <= 80:
+            tpl = _donut_75_80
+        elif 80 < value <= 85:
+            tpl = _donut_80_85
+        elif 85 < value <= 90:
+            tpl = _donut_85_90
+        elif 90 < value <= 95:
+            tpl = _donut_90_95
+        elif 95 < value <= 99:
+            tpl = _donut_95_99
+        elif value == 100:
+            tpl = _donut_100
+        
+        res = tpl % value
+        # Remove the first return line (use for code lisibility)
+        res = '\n'.join(res.splitlines()[1:])
+        return res
