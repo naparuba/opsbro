@@ -29,6 +29,13 @@ braille_r_right = (0x20, 0x10, 0x08)
 TBox = namedtuple('TBox', 't x y w h')
 
 from opsbro.log import cprint
+from opsbro.characters import CHARACTERS
+
+
+def LOG(s):
+    f = open('/tmp/log.txt', 'a')
+    f.write(s + '\n')
+    f.close()
 
 
 class Tile(object):
@@ -127,6 +134,40 @@ class Split(Tile):
         self.items = items
     
     
+    # For vertical: get the max of our items as our max height
+    def _get_size(self):
+        if len(self.items) == 0:
+            return None, None
+        max_height = None
+        items_with_max_height = []
+        items_without_max_height = []
+        for i in self.items:
+            max_width, max_height = i._get_size()
+            if max_height:
+                items_with_max_height.append(i)
+            else:
+                items_without_max_height.append(i)
+                
+        # If only with size, take max it
+        if len(items_without_max_height) == 0:
+            max_height = 0
+            for i in items_with_max_height:
+                i_w, i_h = i._get_size()
+                max_height = max(max_height, i_h)
+            return None, max_height
+
+        return None, None
+        # If not, take the max possible
+        if len(items_without_max_height) == 0:
+            pass
+        
+        for item in self.items:
+            item_max_width, item_max_height = item._get_size(max_height)
+            if max_height is None or (item_max_height is not None and item_max_height > max_height):
+                max_height = item_max_height
+        return None, max_height
+    
+    
     def _display(self, tbox, parent):
         """Render current tile and its items. Recurse into nested splits
         """
@@ -136,6 +177,11 @@ class Split(Tile):
             # empty split
             self._fill_area(tbox, ' ')
             return
+        LOG('*******')
+        LOG('myself %s sons are %s' % (self, self.items))
+        LOG('TBOX H %s  is %d' % (self, tbox.h))
+        # if tbox.h <= 0:
+        #    return
         
         reserved_height = 0
         items_with_max_height = []
@@ -147,7 +193,7 @@ class Split(Tile):
                 reserved_height += max_height + 2  # 2 for top/bottom border
             else:
                 items_without_max_height.append(i)
-        
+        LOG("Box hight: %d  reserved height: %d" % (tbox.h, reserved_height))
         if isinstance(self, VSplit):
             if items_without_max_height:
                 item_height = (tbox.h - reserved_height) // len(items_without_max_height)
@@ -162,10 +208,12 @@ class Split(Tile):
         y = tbox.y
         for i in self.items:
             max_width, max_height = i._get_size()
+            LOG('  ITEM: %s height=%s' % (i, max_height))
             if max_height is None:
                 max_height = item_height
             else:
                 max_height += 2  # count the border too
+            LOG("DISPLAY %s %s %s %s" % (type(i), max_height, 'will display at addr', x))
             i._display(TBox(tbox.t, x, y, item_width, max_height), self)
             if isinstance(self, VSplit):
                 x += max_height
@@ -197,6 +245,7 @@ class Text(Tile):
         self.text = text
         self.color = color
     
+    
     # Take automatically the size of the text in height
     def _get_size(self):
         return None, len(self.text.splitlines())
@@ -226,10 +275,10 @@ class Log(Tile):
         start = n_logs - log_range
         # F.write('WILL PRINT %d\n' % log_range)
         # print(tbox.t.color(self.color))
+        i = 0
         for i in range(0, log_range):
             line = self.logs[start + i]
             print(tbox.t.move(tbox.x + i, tbox.y) + line + ' ' * (tbox.w - len(line)))
-            # F.write('%s\n' % tbox.t.move(tbox.x, tbox.y +i))
         
         if i < tbox.h:
             for i2 in range(i + 1, tbox.h):
@@ -241,15 +290,19 @@ class Log(Tile):
 
 
 class HGauge(Tile):
-    def __init__(self, label=None, val=100, color=2, **kw):
+    def __init__(self, label='', title='', val=100, color=2, **kw):
         kw['color'] = color
+        kw['title'] = title
         super(HGauge, self).__init__(**kw)
         self.value = val
-        self.label = label
+        self.label_orig = label if label else ''
+        self.title_orig = title if title else ''
         self.max_height = 1
+        self.label = ''
     
     
     def _display(self, tbox, parent):
+        self.title = self.title_orig + (': %s' % self.value)
         tbox = self._draw_borders_and_title(tbox)
         if self.label:
             wi = (tbox.w - len(self.label) - 3) * self.value / 100
@@ -257,13 +310,13 @@ class HGauge(Tile):
         else:
             wi = tbox.w * self.value / 100.0
         index = int((wi - int(wi)) * 7)
-        bar = hbar_elements[-1] * int(wi) + hbar_elements[index]
+        bar = CHARACTERS.bar_fill * int(wi)  # + hbar_elements[index]
         print(tbox.t.color(self.color) + tbox.t.move(tbox.x, tbox.y + 1))
         if self.label:
             pad = tbox.w - 1 - len(self.label) - len(bar)
         else:
             pad = tbox.w - len(bar)
-        bar += hbar_elements[0] * pad
+        bar += CHARACTERS.bar_unfill * pad
         # draw bar
         for dx in range(0, tbox.h):
             m = tbox.t.move(tbox.x + dx, tbox.y)

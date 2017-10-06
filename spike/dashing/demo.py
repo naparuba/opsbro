@@ -15,10 +15,6 @@ if __name__ == '__main__':
                 HGauge(val=50, title="Cpu 1", border_color=5),
                 HGauge(title="label 20", val=20, border_color=5),
                 HGauge(title="label 30", val=30, border_color=5),
-                #HGauge(label="label 50", val=50, border_color=5),
-                #HGauge(label="label 80", val=80, border_color=5),
-                #HGauge(val=20),
-                #HGauge(label="label, no border", val=55),
                 HSplit(
                     VDonut(val=66, border_color=5, label='Physical Memory'),
                     VDonut(val=66, border_color=5, label='Physical Memory'),
@@ -28,32 +24,37 @@ if __name__ == '__main__':
                 HSplit(
                     VGauge(val=0, border_color=2),
                     VGauge(val=5, border_color=2),
-                    #VGauge(val=30, border_color=2),
-                    #VGauge(val=50, border_color=2),
-                    #VGauge(val=80, border_color=2, color=4),
                     
                     VGauge(val=95, border_color=2, color=3),
-                    #ColorRangeVGauge(
-                    #    val=100,
-                    #    border_color=2,
-                    #    colormap=(
-                    #        (33, 2),
-                    #        (66, 4),
-                    #        (100, 1),
-                    #    )
-                    #),
                 )
             ),
             VSplit(
                 Text('Hello World,\nthis is dashing.', color=1, border_color=2),  # color=0 = black, 1 =red
                 Log(title='logs', border_color=5),
-                #VChart(border_color=2, color=2),
                 HChart(border_color=2, color=2),
                 HBrailleChart(border_color=2, color=2),
-                # HBrailleFilledChart(border_color=2, color=2),
             ),
             title='Dashing TITLE',
         )
+    ui = HSplit(
+        VSplit(
+            HGauge(val=50, title="Cpu 1", border_color=5),
+            HSplit(
+                VDonut(val=66, border_color=5, label='Physical Memory'),
+                VDonut(val=66, border_color=5, label='Physical Memory'),
+                VDonut(val=66, border_color=5, label='Physical Memory'),
+        
+            ),
+        ),
+        VSplit(
+            Text('Hello World,\nthis is dashing.', color=1, border_color=2),  # color=0 = black, 1 =red
+            Log(title='logs', border_color=5),
+            HChart(border_color=2, color=2),
+            HBrailleChart(border_color=2, color=2),
+        ),
+        title='Dashing TITLE',
+    )
+
     log = ui.items[1].items[1]
     vchart = ui.items[1].items[2]
     hchart = ui.items[1].items[3]
@@ -68,7 +69,7 @@ if __name__ == '__main__':
         print "T", type(log)
         ui.items[0].items[0].value = int(50 + 49.9 * math.sin(cycle / 80.0))
         ui.items[0].items[1].value = int(50 + 45 * math.sin(cycle / 20.0))
-        ui.items[0].items[2].value = int(50 + 45 * math.sin(cycle / 30.0 + 3))
+        #ui.items[0].items[2].value = int(50 + 45 * math.sin(cycle / 30.0 + 3))
 
         vgauges = ui.items[0].items[-1].items
         for gaugenum, vg in enumerate(vgauges):
