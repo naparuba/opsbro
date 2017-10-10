@@ -16,7 +16,7 @@ from opsbro.packer import packer
 from opsbro.misc.lolcat import lolcat
 from opsbro.topic import topiker
 
-from dashing import HSplit, HBrailleChart, HBrailleFilledChart, HChart, HGauge, VSplit, VDonut, VChart, VGauge, Text, Terminal
+from dashing import HSplit, HBrailleFilledChart, HGauge, VSplit, VDonut, Text, Terminal
 
 
 def __print_pack_breadcumb(pack_name, pack_level, end='\n', topic_picto='large'):
@@ -61,6 +61,8 @@ def _get_expr_evaluator(expr):
     return _get_value_from_expression
 
 
+COLOR_CYAN_ID=6
+
 def _get_tree(root):
     if not isinstance(root, dict):
         raise Exception('Bad dashboard value definition, should be a dict/hash key. %s found ' % type(root))
@@ -89,24 +91,24 @@ def _get_tree(root):
         unit = root_value['unit']
         value_expr = root_value['value']
         vcallback = _get_expr_evaluator(value_expr)
-        res = HGauge(val=33, border_color=2, title=title, vcallback=vcallback, unit=unit)
+        res = HGauge(val=33, border_color=COLOR_CYAN_ID, title=title, vcallback=vcallback, unit=unit)
     elif root_type == 'horizontal_chart':
         title = root_value['title']
         unit = root_value['unit']
         value_expr = root_value['value']
         vcallback = _get_expr_evaluator(value_expr)
-        res = HBrailleFilledChart(val=33, border_color=2, color=2, title=title, vcallback=vcallback, unit=unit)
+        res = HBrailleFilledChart(val=33, border_color=COLOR_CYAN_ID, color=2, title=title, vcallback=vcallback, unit=unit)
     elif root_type == 'donut':
         title = root_value['title']
         unit = root_value['unit']
         value_expr = root_value['value']
         vcallback = _get_expr_evaluator(value_expr)
-        res = VDonut(val=33, border_color=2, title=title, vcallback=vcallback, unit=unit)
+        res = VDonut(val=33, border_color=COLOR_CYAN_ID, title=title, vcallback=vcallback, unit=unit)
     elif root_type == 'text':
         title = root_value['title']
         value_expr = root_value['value']
         vcallback = _get_expr_evaluator(value_expr)
-        res = Text(text='bibi', border_color=2, title=title, vcallback=vcallback)
+        res = Text(text='bibi', border_color=COLOR_CYAN_ID, title=title, vcallback=vcallback)
     else:
         raise Exception('Unknown dashboard type: %s' % root_type)
     return res

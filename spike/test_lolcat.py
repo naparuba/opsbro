@@ -82,6 +82,6 @@ for (text, color) in ordered:
     lol_txt = lolcat.get_line(text, color, spread=None)
     cprint(lol_txt)
 
-for i in range(00, 70000):
+for i in range(00, 700):
     print "\033[74m %d " % i,
     cprint('%s' % unichr(i), color='red')

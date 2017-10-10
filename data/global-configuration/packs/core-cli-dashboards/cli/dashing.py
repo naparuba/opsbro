@@ -3,6 +3,7 @@
 
 # LGPL, cf dashing-LICENCE
 # From https://github.com/FedericoCeratto/dashing
+from __future__ import print_function
 
 from collections import deque, namedtuple
 
@@ -70,17 +71,26 @@ class Tile(object):
         raise NotImplementedError
     
     
+    def _jump_to(self, tbox, x, y):
+        print(tbox.t.move(x, y), end='')
+    
+    
     def _draw_borders(self, tbox):
         # top border
-        print(tbox.t.color(self.border_color) + tbox.t.move(tbox.x, tbox.y) +
-              border_tl + border_h * (tbox.w - 2) + border_tr)
+        print(tbox.t.color(self.border_color), end='')
+        self._jump_to(tbox, tbox.x, tbox.y)
+        cprint(border_tl + border_h * (tbox.w - 2) + border_tr, color='cyan', end='')
+        
         # left and right
         for dx in range(1, tbox.h - 1):
-            print(tbox.t.move(tbox.x + dx, tbox.y) + border_v)
-            print(tbox.t.move(tbox.x + dx, tbox.y + tbox.w - 1) + border_v)
+            self._jump_to(tbox, tbox.x + dx, tbox.y)
+            cprint(border_v, color='cyan', end='')
+            
+            self._jump_to(tbox, tbox.x + dx, tbox.y + tbox.w - 1)
+            cprint(border_v, color='cyan', end='')
         # bottom
-        print(tbox.t.move(tbox.x + tbox.h - 1, tbox.y) + border_bl +
-              border_h * (tbox.w - 2) + border_br)
+        self._jump_to(tbox, tbox.x + tbox.h - 1, tbox.y)
+        cprint(border_bl + border_h * (tbox.w - 2) + border_br, color='cyan', end='')
     
     
     def _draw_borders_and_title(self, tbox):
@@ -89,6 +99,7 @@ class Tile(object):
         """
         if self.border_color is not None:
             self._draw_borders(tbox)
+        
         if self.title:
             fill_all_width = (self.border_color is None)
             self._draw_title(tbox, fill_all_width)
@@ -102,14 +113,6 @@ class Tile(object):
         return TBox(tbox.t, tbox.x, tbox.y, tbox.w, tbox.h)
     
     
-    def _fill_area(self, tbox, char, *a, **kw):  # FIXME
-        """Fill area with a character
-        """
-        # for dx in range(0, height):
-        #    print(tbox.t.move(x + dx, tbox.y) + char * width)
-        pass
-    
-    
     def display(self):
         """Render current tile and its items. Recurse into nested splits
         if any.
@@ -118,8 +121,6 @@ class Tile(object):
             t = self._terminal
         except AttributeError:
             t = self._terminal = Terminal()
-            tbox = TBox(t, 0, 0, t.width, t.height - 1)
-            self._fill_area(tbox.t, 0, 0, t.width, t.height - 1, 'f')  # FIXME
         
         tbox = TBox(t, 0, 0, t.width, t.height - 1)
         self._display(tbox, None)
@@ -131,15 +132,16 @@ class Tile(object):
         if not self.title:
             return
         margin = int((tbox.w - len(self.title)) / 20)
-        col = '' if self.border_color is None else \
-            tbox.t.color(self.border_color)
         if fill_all_width:
-            title = ' ' * margin + self.title + \
-                    ' ' * (tbox.w - margin - len(self.title))
-            print(tbox.t.move(tbox.x, tbox.y) + col + title)
+            title = ' ' * margin + self.title + ' ' * (tbox.w - margin - len(self.title))
+            
+            self._jump_to(tbox, tbox.x, tbox.y)
+            cprint(title, on_color='on_grey', end='')
         else:
             title = ' ' * margin + self.title + ' ' * margin
-            print(tbox.t.move(tbox.x, tbox.y + margin) + col + title)
+            
+            self._jump_to(tbox, tbox.x, tbox.y + margin)
+            cprint(title, on_color='on_grey', end='')
 
 
 class Split(Tile):
@@ -171,15 +173,6 @@ class Split(Tile):
             return None, max_height
         
         return None, None
-        # If not, take the max possible
-        if len(items_without_max_height) == 0:
-            pass
-        
-        for item in self.items:
-            item_max_width, item_max_height = item._get_size(max_height)
-            if max_height is None or (item_max_height is not None and item_max_height > max_height):
-                max_height = item_max_height
-        return None, max_height
     
     
     def _display(self, tbox, parent):
@@ -189,7 +182,6 @@ class Split(Tile):
         
         if not self.items:
             # empty split
-            self._fill_area(tbox, ' ')
             return
         LOG('*******')
         LOG('myself %s sons are %s' % (self, self.items))
@@ -233,16 +225,6 @@ class Split(Tile):
                 x += max_height
             else:
                 y += item_width
-        
-        # Fill leftover area
-        if isinstance(self, VSplit):
-            leftover_x = tbox.h - x + 1
-            if leftover_x > 0:
-                self._fill_area(TBox(tbox.t, x, y, tbox.w, leftover_x), ' ')
-        else:
-            leftover_y = tbox.w - y + 1
-            if leftover_y > 0:
-                self._fill_area(TBox(tbox.t, x, y, leftover_y, tbox.h), ' ')
 
 
 class VSplit(Split):
@@ -277,17 +259,18 @@ class Text(Tile):
     def _display(self, tbox, parent):
         self._refresh_value()
         tbox = self._draw_borders_and_title(tbox)
+        
         dx = 0
-        # print "TEXT VALUE"*20, self.text, list(enumerate(self.text.splitlines()))
         for dx, line in enumerate(self.text.splitlines()):
-            print(tbox.t.color(self.color) + tbox.t.move(tbox.x + dx, tbox.y) +
-                  line + ' ' * (tbox.w - len(line)))
+            self._jump_to(tbox, tbox.x + dx, tbox.y)
+            cprint(line + ' ' * (tbox.w - len(line)), color='white', end='')
         dx += 1
         while dx < tbox.h:
             print(tbox.t.move(tbox.x + dx, tbox.y) + ' ' * tbox.w)
             dx += 1
 
 
+'''
 class Log(Tile):
     def __init__(self, *args, **kw):
         self.logs = deque(maxlen=50)
@@ -299,8 +282,7 @@ class Log(Tile):
         n_logs = len(self.logs)
         log_range = min(n_logs, tbox.h)
         start = n_logs - log_range
-        # F.write('WILL PRINT %d\n' % log_range)
-        # print(tbox.t.color(self.color))
+        
         i = 0
         for i in range(0, log_range):
             line = self.logs[start + i]
@@ -313,6 +295,7 @@ class Log(Tile):
     
     def append(self, msg):
         self.logs.append(msg)
+'''
 
 
 class HGauge(Tile):
@@ -339,32 +322,21 @@ class HGauge(Tile):
         self._refresh_value()
         self.title = self.title_orig + (': %s %s' % (self.value, self.unit))
         tbox = self._draw_borders_and_title(tbox)
-        if self.label:
-            wi = (tbox.w - len(self.label) - 3) * self.value / 100
-            v_center = int((tbox.h) * 0.5)
-        else:
-            wi = tbox.w * self.value / 100.0
-        index = int((wi - int(wi)) * 7)
-        bar = CHARACTERS.bar_fill * int(wi)  # + hbar_elements[index]
-        print(tbox.t.color(self.color) + tbox.t.move(tbox.x, tbox.y + 1))
-        if self.label:
-            pad = tbox.w - 1 - len(self.label) - len(bar)
-        else:
-            pad = tbox.w - len(bar)
-        bar += CHARACTERS.bar_unfill * pad
-        # draw bar
-        for dx in range(0, tbox.h):
-            m = tbox.t.move(tbox.x + dx, tbox.y)
-            if self.label:
-                if dx == v_center:
-                    # draw label
-                    print(m + self.label + ' ' + bar)
-                else:
-                    print(m + ' ' * len(self.label) + ' ' + bar)
-            else:
-                print(m + bar)
+        
+        wi = tbox.w * self.value / 100.0
+        
+        bar = CHARACTERS.bar_fill * int(wi)
+        self._jump_to(tbox, tbox.x, tbox.y + 1)
+        
+        pad = tbox.w - len(bar)
+        padding_bar = CHARACTERS.bar_unfill * pad
+        
+        self._jump_to(tbox, tbox.x, tbox.y)
+        cprint(bar, color='white', end='')
+        cprint(padding_bar, color='grey', end='')
 
 
+'''
 class VGauge(Tile):
     def __init__(self, val=100, color=2, **kw):
         kw['color'] = color
@@ -399,6 +371,7 @@ class VGauge(Tile):
                 bar = ' ' * tbox.w
             
             print(m + bar)
+'''
 
 
 class VDonut(Tile):
@@ -432,18 +405,14 @@ class VDonut(Tile):
         n_logs = len(logs)
         log_range = min(n_logs, tbox.h)
         start = n_logs - log_range
-        # F.write('WILL PRINT %d\n' % log_range)
-        # print(tbox.t.color(self.color))
+        
         for i in range(0, log_range):
             line = logs[start + i]
-            print(tbox.t.move(tbox.x + i, tbox.y) + line + ' ' * (tbox.w - len(line)))
-            # F.write('%s\n' % tbox.t.move(tbox.x, tbox.y +i))
-            
-            # if i < tbox.h:
-            #    for i2 in range(i + 1, tbox.h):
-            #        print(tbox.t.move(tbox.x + i2, tbox.y) + ' ' * tbox.w)
+            self._jump_to(tbox, tbox.x + i, tbox.y)
+            cprint(line + ' ' * (tbox.w - len(line)), color='magenta', end='')
 
 
+'''
 class ColorRangeVGauge(Tile):
     """Vertical gauge with color map.
     E.g.: green gauge for values below 50, red otherwise:
@@ -476,8 +445,9 @@ class ColorRangeVGauge(Tile):
                 bar = ' ' * tbox.w
             
             print(m + bar)
+'''
 
-
+'''
 class VChart(Tile):
     """Vertical chart. Values must be between 0 and 100 and can be float.
     """
@@ -509,8 +479,9 @@ class VChart(Tile):
             except IndexError:
                 bar = ' ' * tbox.w
             print(tbox.t.move(tbox.x + dx, tbox.y) + bar)
+'''
 
-
+'''
 class HChart(Tile):
     """Horizontal chart, filled
     """
@@ -560,8 +531,9 @@ class HChart(Tile):
             
             # assert len(bar) == tbox.w
             print(tbox.t.move(tbox.x + dx, tbox.y) + bar)
+'''
 
-
+'''
 class HBrailleChart(Tile):
     def __init__(self, val=100, *args, **kw):
         super(HBrailleChart, self).__init__(**kw)
@@ -623,6 +595,7 @@ class HBrailleChart(Tile):
                     bar += ' '
             
             print(tbox.t.move(tbox.x + dx, tbox.y) + bar)
+'''
 
 
 class HBrailleFilledChart(Tile):
@@ -662,7 +635,7 @@ class HBrailleFilledChart(Tile):
         self.title = self.title_orig + (': %s %s' % (self.value, self.unit))
         
         tbox = self._draw_borders_and_title(tbox)
-        print(tbox.t.color(self.color))
+        
         for dx in range(tbox.h):
             bar = ''
             for dy in range(tbox.w):
@@ -691,4 +664,5 @@ class HBrailleFilledChart(Tile):
                     index2 = 0
                 bar += self._generate_braille(index1, index2)
             
-            print(tbox.t.move(tbox.x + dx, tbox.y) + bar)
+            self._jump_to(tbox, tbox.x + dx, tbox.y)
+            cprint(bar, color='green', end='')
