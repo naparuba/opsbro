@@ -1,0 +1,38 @@
+dashboard:
+    title:  Linux system overall
+    content:
+        vertical_split:
+                   - horizontal_gauge:
+                      title: CPU value
+                      value: "100-{{collector.cpustats.cpuall.%idle}}"
+                      unit: "%"
+                   - horizontal_chart:
+                      title: CPU Chart
+                      value: "100-{{collector.cpustats.cpuall.%idle}}"
+                      unit: "%"
+                   - horizontal_split:
+                      - donut:
+                         title: "Physical memory"
+                         value: "{{collector.memory.phys_used}}"
+                         unit: "%"
+                      - donut:
+                         title: "Swap"
+                         value: "{{collector.memory.swap_used}}"
+                         unit: "%"
+                      - horizontal_gauge:
+                         title: "Disk /"
+                         value: "{{collector.diskusage./.pct_used}}"
+                         unit: "%"
+                   - text:
+                      title: "Network activity"
+                      value: "'Eth0 recv: %s pkt/s' % {{collector.networktraffic.eth0.recv_packets/s}}"
+
+
+
+
+
+# CPU gauge
+# CPU CHART
+# Memory donut  | swap donut | disks horizontal gauge
+# Text: network text
+# TODO: Process table

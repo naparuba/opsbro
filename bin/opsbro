@@ -3,6 +3,9 @@
 # Copyright (C) 2014:
 #    Gabes Jean, naparuba@gmail.com
 
+# We do not want the warnings print to stderr to pop out in the CLI or the agent
+import warnings
+warnings.filterwarnings('ignore')
 
 import optparse
 import sys

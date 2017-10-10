@@ -95,6 +95,11 @@ class ConfigurationManager(object):
         return detecter
     
     
+    def get_dashboarder(self):
+        from opsbro.dashboardmanager import get_dashboarder
+        return get_dashboarder()
+    
+    
     # the cluster is asking me which parameters are set in the local.yaml file
     def get_parameters_for_cluster_from_configuration(self):
         return self.parameters_for_cluster_from_configuration
@@ -130,6 +135,8 @@ class ConfigurationManager(object):
                     self.load_detector_object(obj, fp, pack_name=pack_name, pack_level=pack_level)
                 elif load_focus == 'installor':
                     self.load_installor_object(obj, fp, pack_name=pack_name, pack_level=pack_level)
+                elif load_focus == 'dashboard':
+                    self.load_dashboard_object(obj, fp, pack_name=pack_name, pack_level=pack_level)
                 elif load_focus == 'parameter':
                     self.load_pack_parameters(obj, pack_name=pack_name, pack_level=pack_level)
                 elif load_focus == 'compliance':
@@ -209,7 +216,7 @@ class ConfigurationManager(object):
         if 'check' in o:
             check = o['check']
             if not isinstance(check, dict):
-                logger.error('ERROR: the check from the file %s is not a valid dict' % fp)
+                logger.error('ERROR: the check from the file %s is not a valid dict (%s found)' % (fp, type(check)))
                 sys.exit(2)
             fname = fp
             mod_time = int(os.path.getmtime(fp))
@@ -220,7 +227,7 @@ class ConfigurationManager(object):
         if 'service' in o:
             service = o['service']
             if not isinstance(service, dict):
-                logger.error('ERROR: the service from the file %s is not a valid dict' % fp)
+                logger.error('ERROR: the service from the file %s is not a valid dict (%s found)' % (fp, type(service)))
                 sys.exit(2)
             
             mod_time = int(os.path.getmtime(fp))
@@ -246,7 +253,7 @@ class ConfigurationManager(object):
         if 'generator' in o:
             generator = o['generator']
             if not isinstance(generator, dict):
-                logger.error('ERROR: the generator from the file %s is not a valid dict' % fp)
+                logger.error('ERROR: the generator from the file %s is not a valid dict (%s found)' % (fp, type(generator)))
                 sys.exit(2)
             
             mod_time = int(os.path.getmtime(fp))
@@ -260,7 +267,7 @@ class ConfigurationManager(object):
         if 'detector' in o:
             detector = o['detector']
             if not isinstance(detector, dict):
-                logger.error('ERROR: the detector from the file %s is not a valid dict' % fp)
+                logger.error('ERROR: the detector from the file %s is not a valid dict (%s found)' % (fp, type(detector)))
                 sys.exit(2)
             mod_time = int(os.path.getmtime(fp))
             fname = fp
@@ -273,13 +280,26 @@ class ConfigurationManager(object):
         if 'installor' in o:
             installor = o['installor']
             if not isinstance(installor, dict):
-                logger.error('ERROR: the installor from the file %s is not a valid dict' % fp)
+                logger.error('ERROR: the installor from the file %s is not a valid dict (%s found)' % (fp, type(installor)))
                 sys.exit(2)
             mod_time = int(os.path.getmtime(fp))
             fname = fp
             gname = os.path.splitext(fname)[0]
             installormgr = self.get_installormgr()
             installormgr.import_installor(installor, fname, gname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
+    
+    
+    def load_dashboard_object(self, o, fp, pack_name, pack_level):
+        if 'dashboard' in o:
+            dashboard = o['dashboard']
+            if not isinstance(dashboard, dict):
+                logger.error('ERROR: the dashboard from the file %s is not a valid dict (%s found)' % (fp, type(dashboard)))
+                sys.exit(2)
+            mod_time = int(os.path.getmtime(fp))
+            fname = fp
+            gname = os.path.splitext(fname)[0]
+            dashboarder = self.get_dashboarder()
+            dashboarder.import_dashboard(dashboard, fname, gname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
     
     
     def load_pack_parameters(self, o, pack_name, pack_level):
@@ -320,7 +340,7 @@ class ConfigurationManager(object):
             _types = [('monitoring', 'monitoring'),
                       ('generators', 'generator'), ('parameters', 'parameter'),
                       ('detectors', 'detector'), ('installors', 'installor'),
-                      ('compliance', 'compliance')
+                      ('compliance', 'compliance'), ('dashboards', 'dashboard'),
                       ]
             for sub_dir, load_focus in _types:
                 full_sub_dir = os.path.join(dir, sub_dir)
@@ -353,9 +373,6 @@ class ConfigurationManager(object):
             r = self.dump_parameters()
             logger.error('DUMP PARAMETERS: %s' % r)
             return r
-
-
-    
 
 
 configmgr = ConfigurationManager()
