@@ -17,7 +17,7 @@ from opsbro.packer import packer
 from opsbro.misc.lolcat import lolcat
 from opsbro.topic import topiker
 
-from dashing import HSplit, HBrailleChart, HBrailleFilledChart, HChart, HGauge, VSplit, VDonut, VChart, VGauge, Text
+from dashing import HSplit, HBrailleChart, HBrailleFilledChart, HChart, HGauge, VSplit, VDonut, VChart, VGauge, Text, Terminal
 
 
 def __print_pack_breadcumb(pack_name, pack_level, end='\n', topic_picto='large'):
@@ -41,27 +41,6 @@ def __get_pack_breadcumb(pack_name, pack_level, end='', topic_picto='large'):
           + end
     
     return res
-
-
-def _get_ui_demo():
-    char_cpu = HBrailleChart(border_color=2, title='Cpu', color=2, id='char_cpu')
-    char_memory = HBrailleChart(border_color=2, title='Memory', color=2, id='char_memory')
-    donut_memory = VDonut(val=66, border_color=5, label='Memory', id='donut_memory')
-    donut_swap = VDonut(val=66, border_color=5, label='Swap', id='donut_swap')
-    text_network = Text('Network activity.', color=1, border_color=2, id='text_network')  # color=0 = black, 1 =red
-    donut_disk = VDonut(val=66, border_color=5, label='Disks', id='donut_disk')
-    top_process = Text('Top processes.', color=1, border_color=2, id='top_process')  # color=0 = black, 1 =red
-    
-    ui = VSplit(
-        char_cpu,
-        HSplit(char_memory, donut_memory, donut_swap,
-               ),
-        HSplit(text_network,
-               donut_disk,
-               top_process
-               )
-    )
-    return ui
 
 
 def _get_expr_evaluator(expr):
@@ -142,6 +121,10 @@ def _get_ui_from_dashboard(dashboard):
 
 
 def do_dashboards_show(dashboard_name):
+    if Terminal is None:
+        logger.error('Missing the python-blessed librairy. Please install it')
+        sys.exit(1)
+    
     import codecs
     stdout_utf8 = codecs.getwriter("utf-8")(sys.stdout)
     sys.stdout = stdout_utf8
@@ -154,7 +137,6 @@ def do_dashboards_show(dashboard_name):
         logger.error('There is no such dashboard %s. Please use the dashboards list command to view all available dashboards' % dashboard_name)
         sys.exit(2)
     
-    ui = _get_ui_demo()
     ui = _get_ui_from_dashboard(dashboard)
     
     if ui is None:

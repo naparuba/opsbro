@@ -129,7 +129,10 @@ class Evaluater(object):
         except Exception, exp:
             logger.debug('EVAL: fail to eval expr: %s : %s' % (expr, exp))
             raise
-        logger.debug('EVAL: result: %s' % r)
+        try:
+            logger.debug('EVAL: result: %s' % r)
+        except TypeError:  # for r == tuple, try other
+            logger.debug('EVAL: result: %s' % str(r))
         return r
     
     
@@ -141,6 +144,8 @@ class Evaluater(object):
             return node.s
         elif isinstance(node, ast.List):  # <list>
             return [self.eval_(e) for e in node.elts]
+        elif isinstance(node, ast.Tuple):  # <tuple>
+            return tuple([self.eval_(e) for e in node.elts])
         elif isinstance(node, ast.Dict):  # <dict>
             _keys = [self.eval_(e) for e in node.keys]
             _values = [self.eval_(e) for e in node.values]

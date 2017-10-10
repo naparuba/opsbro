@@ -5,7 +5,11 @@
 # From https://github.com/FedericoCeratto/dashing
 
 from collections import deque, namedtuple
-from blessed import Terminal
+
+try:
+    from blessed import Terminal
+except ImportError:
+    Terminal = None
 
 try:
     unichr

@@ -66,6 +66,12 @@ class Mongodb(Collector):
             
             # Setup            
             status = {'available': True}
+            status.update(statusOutput)
+            # local time is a datetime, not possible to jsonify it
+            try:
+                del status['localTime']
+            except:
+                pass
             
             # Version
             try:

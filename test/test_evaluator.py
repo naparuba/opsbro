@@ -40,6 +40,9 @@ class TestEvaluater(OpsBroTest):
             {'rule': 'not ("a"=="a")', 'expected': False},
             {'rule': '"a" in ["a","b"]', 'expected': True},
             {'rule': '{"k":"v"}', 'expected': {'k': 'v'}},
+            {'rule': '(1, 2, 3)', 'expected': (1, 2, 3)},
+            {'rule': '(1, 2,3) == (1,2,3)', 'expected': True},
+            {'rule': '"PI %.2f" % 3.14', 'expected': "PI 3.14"},
             # NOTMANAGE {'rule': '{"k":"v"}["k"]', 'expected': 'v'},
         ]
         for r in rules:
@@ -51,8 +54,8 @@ class TestEvaluater(OpsBroTest):
             except Exception, exp:
                 r = traceback.format_exc()
             print "Rule: %s" % rule
-            print "Expected: %s" % expected
-            print "Result: %s" % r
+            print "Expected: %s" % str(expected)
+            print "Result: %s" % str(r)
             print "Is The same?: %s" % (r == expected)
             self.assert_(r == expected)
 
