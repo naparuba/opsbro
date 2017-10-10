@@ -1,0 +1,37 @@
+dashboard:
+    title:  Overall redis performances
+    content:
+        vertical_split:
+                   - text:
+                       title: "Redis"
+                       value: "'Redis version: %s  Role:%s' %  ({{collector.redis.redis_version}}, {{collector.redis.role}})"
+                   - horizontal_chart:
+                      title: Total commands process/s
+                      value: "{{collector.redis.total_commands_processed/s}}"
+                      unit: "cmd/s"
+                   - horizontal_chart:
+                      title: Number of redis clients
+                      value: "{{collector.redis.connected_clients}}"
+                      unit: "redis clients"
+                   - horizontal_split:
+                       - donut:
+                          title: Cpu user
+                          value: "{{collector.redis.used_cpu_user/s}}"
+                          unit: "%"
+                       - donut:
+                          title: Cpu system
+                          value: "{{collector.redis.used_cpu_sys/s}}"
+                          unit: "%"
+                       - donut:
+                          title: Redis memory consumption
+                          value: "(1.0 * {{collector.redis.used_memory_rss}} ) / {{collector.redis.total_system_memory}}"
+                          unit: "%"
+
+                   - horizontal_split:
+                      - text:
+                          title: "Network In"
+                          value: "'Network bytes In: %s' % {{collector.redis.total_net_input_bytes}}"
+                      - text:
+                          title: "Network Out"
+                          value: "'Network bytes Out: %s' % {{collector.redis.total_net_output_bytes}}"
+

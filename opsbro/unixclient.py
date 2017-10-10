@@ -14,7 +14,6 @@ import urllib
 import httplib
 from urlparse import urlsplit
 
-
 from opsbro.log import logger
 from opsbro.library import libstore
 
@@ -113,7 +112,8 @@ def get_request_errors():
 def get_json(uri, local_socket='', params={}, multi=False, method='GET'):
     try:
         (code, r) = get_local(uri, local_socket=local_socket, params=params, method=method)
-    except get_request_errors():
+    except get_request_errors(), exp:
+        logger.debug("ERROR local unix get json raw return did raise an exception %s" % exp)
         raise
     
     if r == '':
@@ -126,6 +126,7 @@ def get_json(uri, local_socket='', params={}, multi=False, method='GET'):
     try:
         d = json.loads(r)  # was r.text from requests
     except ValueError, exp:  # bad json
+        logger.debug("ERROR local unix get json raw return did raise an exception  in bad json (%s) %s" % (r, exp))
         logger.error('Bad return from the server %s: "%s"' % (exp, r))
         raise
     return d

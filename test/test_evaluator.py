@@ -2,9 +2,6 @@
 # Copyright (C) 2014:
 #    Gabes Jean, naparuba@gmail.com
 
-import copy
-import time
-import threading
 import traceback
 from opsbro_test import *
 

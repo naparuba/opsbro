@@ -5,7 +5,6 @@
 
 import sys
 import time
-
 import base64
 
 from opsbro.cli import post_opsbro_json
@@ -48,13 +47,14 @@ def _get_expr_evaluator(expr):
     
     
     def _get_value_from_expression():
+        logger.debug('\n\n\n\n\n\n\n\n\n\nEVAL EXPR %s\n\n' % this_expr)
         expr_64 = base64.b64encode(this_expr)
         try:
             r = post_opsbro_json('/agent/evaluator/eval', {'expr': expr_64})
         except Exception, exp:
-            logger.error(exp)
+            logger.debug('\n\n\n\n\n\n\n\n\n\nExcep Result %s => %s\n\n' % (this_expr, exp))
             r = None
-        logger.debug('Result %s => %s' % (this_expr, r))
+        logger.debug('\n\n\n\n\n\n\n\nResult %s => %s\n\n' % (this_expr, r))
         return r
     
     

@@ -626,10 +626,12 @@ class HBrailleChart(Tile):
 
 
 class HBrailleFilledChart(Tile):
-    def __init__(self, val=100, *args, **kw):
+    def __init__(self, val=100, title='', *args, **kw):
+        kw['title'] = title
         super(HBrailleFilledChart, self).__init__(**kw)
         self.value = val
         self.datapoints = deque(maxlen=500)
+        self.title_orig = title
     
     
     def append(self, dp):
@@ -657,6 +659,8 @@ class HBrailleFilledChart(Tile):
     
     def _display(self, tbox, parent):
         self._refresh_value()
+        self.title = self.title_orig + (': %s %s' % (self.value, self.unit))
+        
         tbox = self._draw_borders_and_title(tbox)
         print(tbox.t.color(self.color))
         for dx in range(tbox.h):
