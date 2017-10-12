@@ -3,6 +3,7 @@
 from opsbro.log import cprint, logger, sprintf
 from opsbro.characters import CHARACTERS
 from opsbro.yamlmgr import yamler
+from .misc.lolcat import lolcat
 
 
 # raw_title means do not format it, use it's own color
@@ -478,14 +479,18 @@ class DonutPrinter(object):
             tpl = _donut_100
         
         res = tpl % value
+
+        res = _apply_donut_color_map(res)
         
-        match_value = '%d' % value
+        match_value = ' %d' % value
         repl_str = sprintf(match_value, color='white')
         res = res.replace(match_value, repl_str)
         
         # Remove the first return line (use for code lisibility)
         res = '\n'.join(res.splitlines()[1:])
         return res
+
+
 '''
 6 lignes
 8 char/ligne
@@ -499,11 +504,48 @@ class DonutPrinter(object):
 ⠘⢿⣿⣿⣿⣶⣾⣿⣿⣿⠟
   ⠙⠿⣿⣿⣿⡿⠟⠁
 
- 85-86-87-89-39-41-43-45
+0-85-86-87-89-39-41-43-45
 81-82-83-84-88-40-42-44-46-47
 80-79-78-77 100-48-49-50-51
 76-75-73-69 % 52-53-54-55
 74-72-70-67-65-63-61-58-57-56
-  71-68-66-64-62-60-59
+0-0-71-68-66-64-62-60-59
 
 '''
+
+color_map = [
+    (0,),
+    (0, 85, 86, 87, 89, 39, 41, 43, 45, 45, 0),
+    (81, 82, 83, 84, 88, 40, 42, 44, 46, 47, 47),
+    (80, 79, 78, 77, 0, 0,0, 0, 100, 48, 49, 50, 51, 51),
+    (76, 75, 73, 69, 0, 0, 0, 52, 53, 54, 55, 55),
+    (74, 72, 70, 67, 65, 63, 61, 58, 57, 56, 56),
+    (0, 0, 71, 68, 66, 64, 62, 60, 59, 59, 0, 0),
+]
+
+
+def _apply_donut_color_map(tpl):
+    new_tpl = []
+    line_idx = 0
+    for line in tpl.splitlines():
+        line_colors = color_map[line_idx]
+        char_idx = 0
+        new_line = ''
+        for c in line:
+            try:
+                color = line_colors[char_idx]
+            except IndexError:
+                color = 0
+            char_idx += 1
+            # If no color, skip it
+            if color == 0:
+                new_line += c
+            else:
+                new_line += lolcat.get_line(c, color, spread=None)
+        new_tpl.append(new_line)
+        line_idx += 1
+        
+    new_tpl = '\n'.join(new_tpl)
+    #cprint ('RAW NEW TPL')
+    #cprint(new_tpl)
+    return new_tpl

@@ -24,7 +24,7 @@ if is_tty():
         init_colorama()
     except (SyntaxError, ImportError), exp:
         # Outch can't import a cprint, do a simple print
-        def cprint(s, color='', end='\n'):
+        def cprint(s, color='', on_color='', end='\n'):
             if end == '':
                 print s,
             else:
@@ -45,7 +45,7 @@ else:
     stdout_utf8 = codecs.getwriter("utf-8")(sys.stdout)
     
     
-    def cprint(s, color='', end='\n'):
+    def cprint(s, color='', on_color='', end='\n'):
         if not isinstance(s, basestring):
             s = str(s)
         if end == '':

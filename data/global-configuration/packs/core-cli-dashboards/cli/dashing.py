@@ -427,13 +427,17 @@ class VDonut(Tile):
         self.value = self.vcallback()
         if self.value is None:
             self.value = 0
+        if self.value < 0:
+            self.value = 0
+        if self.value > 100:
+            self.value = 0
     
     
     def _display(self, tbox, parent):
         self._refresh_value()
         self.title = self.title_orig + (': %d %s' % (self.value, self.unit))
         tbox = self._draw_borders_and_title(tbox)
-        self.value = 100
+        
         donut_s = DonutPrinter().get_donut(self.value)
         logs = donut_s.splitlines()
         logs.append(self.label)
@@ -444,7 +448,7 @@ class VDonut(Tile):
         for i in range(0, log_range):
             line = logs[start + i]
             self._jump_to(tbox, tbox.x + i, tbox.y)
-            #cprint(line + ' ' * (tbox.w - len(line)), color='magenta', end='')
+            # cprint(line + ' ' * (tbox.w - len(line)), color='magenta', end='')
             cprint(line + ' ' * (tbox.w - len(line)), end='')
 
 

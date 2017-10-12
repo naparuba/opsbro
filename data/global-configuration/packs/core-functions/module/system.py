@@ -1,5 +1,6 @@
 from opsbro.evaluater import export_evaluater_function
 from opsbro.gossip import gossiper
+from opsbro.misc.lolcat import lolcat
 
 
 @export_evaluater_function
@@ -35,8 +36,6 @@ def have_group(group):
     return gossiper.have_group(group)
 
 
-
-
 try:
     import pwd, grp
     from pwd import getpwnam
@@ -66,7 +65,7 @@ def user_exists(username_or_uid):
         uid = int(username_or_uid)
     except ValueError:
         uid = None
-
+    
     # Maybe we have a uid, maybe a string to search
     if uid is not None:
         try:
@@ -122,3 +121,24 @@ def group_exists(groupname_or_gid):
     except KeyError:  # no such group sorry
         return False
 
+
+@export_evaluater_function
+def colorize(s, color):
+    """**colorize(s, color)** -> return the string s with the color (ainsi)
+
+ * s: (string) string to colorize
+ * color: (int between 1 -> 64) ainsi color
+
+<code>
+    Example:
+        colorize('my string', 55)
+    Returns:
+        \x1b[55Dmy string\x1b[0m
+</code>
+    """
+    if not isinstance(s, basestring):
+        try:
+            s = unicode(s)
+        except:
+            return ''
+    return lolcat.get_line(s, color, spread=None)

@@ -32,7 +32,9 @@ class System(Collector):
         res['architecture'] = platform.uname()[-1]
         # Lazy load multiprocessing
         import multiprocessing
-        res['cpucount'] = multiprocessing.cpu_count()
+        res['cpu_count'] = multiprocessing.cpu_count()
+        res['cpu_model_name'] = ''
+        res['cpu_mhz'] = 0
         
         systepacketmgr = get_systepacketmgr()
         # Linux, directly ask python
@@ -40,9 +42,9 @@ class System(Collector):
             (distname, version, _id) = systepacketmgr.get_distro()
             linux = {}
             res['os']['linux'] = linux
-            linux['distribution'] = distname  #.lower()
-            linux['version'] = version  #.lower()
-            linux['id'] = _id  #.lower()
+            linux['distribution'] = distname  # .lower()
+            linux['version'] = version  # .lower()
+            linux['id'] = _id  # .lower()
             # Maybe version is directly an int, get it
             _version = linux['version']
             _major = None
@@ -63,6 +65,19 @@ class System(Collector):
                     pass
             linux['major_version'] = _major
             linux['minor_version'] = _minor
+            
+            # Also get CPU info
+            with open('/proc/cpuinfo', 'r') as f:
+                buf = f.read()
+                lines = buf.splitlines()
+                for line in lines:
+                    if ':' not in line:
+                        continue
+                    key, value = line.split(':', 1)
+                    if key.startswith('model name'):
+                        res['cpu_model_name'] = value.strip()
+                    if key.startswith('cpu MHz'):
+                        res['cpu_mhz'] = int(float(value.strip()))
         
         # Windows, get data from Win32_OperatingSystem
         if os.name == 'nt':
