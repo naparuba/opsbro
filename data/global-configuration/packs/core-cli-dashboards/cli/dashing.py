@@ -18,6 +18,7 @@ except NameError:
     unichr = chr
 
 from opsbro.cli_display import DonutPrinter
+from opsbro.misc.lolcat import lolcat
 
 # "graphic" elements
 
@@ -44,6 +45,16 @@ def LOG(s):
     f = open('/tmp/log.txt', 'a')
     f.write(s + '\n')
     f.close()
+
+
+COLOR_PACK_LIGHT_GREEN_TO_DARK_PURPLE = 1
+# lower (light green=59) to max (dark purple=28)
+DARK_PURPLE = 28
+LIGHT_GREEN = 59
+
+COLOR_PACK_CITRON_TO_VIOLET = 2
+CITRON = 0
+VIOLET = 28
 
 
 class Tile(object):
@@ -73,6 +84,23 @@ class Tile(object):
     
     def _jump_to(self, tbox, x, y):
         print(tbox.t.move(x, y), end='')
+    
+    
+    def _get_color_from_percent_between_0_1(self, pct, color_pack=COLOR_PACK_LIGHT_GREEN_TO_DARK_PURPLE):
+        if color_pack == COLOR_PACK_LIGHT_GREEN_TO_DARK_PURPLE:
+            COLOR_START = DARK_PURPLE
+            COLOR_END = LIGHT_GREEN
+        elif color_pack == COLOR_PACK_CITRON_TO_VIOLET:
+            COLOR_START = CITRON
+            COLOR_END = VIOLET
+        else:
+            raise Exception('Bad color pack %s' % color_pack)
+        # get a degraded color
+        # color_range = LIGHT_GREEN - DARK_PURPLE
+        color_range = COLOR_END - COLOR_START
+        # color = DARK_PURPLE + (pct * color_range)
+        color = COLOR_START + (pct * color_range)
+        return int(color)
     
     
     def _draw_borders(self, tbox):
@@ -323,16 +351,22 @@ class HGauge(Tile):
         self.title = self.title_orig + (': %s %s' % (self.value, self.unit))
         tbox = self._draw_borders_and_title(tbox)
         
-        wi = tbox.w * self.value / 100.0
+        value_ratio = max(0, min(1, self.value / 100.0))
         
-        bar = CHARACTERS.bar_fill * int(wi)
+        fill_len = int(tbox.w * value_ratio)
+        bar = ''
+        for i in range(fill_len):
+            char_color = self._get_color_from_percent_between_0_1(1 - 1.0 * i / tbox.w, color_pack=COLOR_PACK_CITRON_TO_VIOLET)
+            LOG('Current color: %s\n' % char_color)
+            bar += lolcat.get_line(CHARACTERS.bar_fill, char_color, spread=None)
+        
         self._jump_to(tbox, tbox.x, tbox.y + 1)
         
-        pad = tbox.w - len(bar)
-        padding_bar = CHARACTERS.bar_unfill * pad
+        pad_size = tbox.w - fill_len
+        padding_bar = CHARACTERS.bar_unfill * pad_size
         
         self._jump_to(tbox, tbox.x, tbox.y)
-        cprint(bar, color='white', end='')
+        cprint(bar, end='')
         cprint(padding_bar, color='grey', end='')
 
 
@@ -399,6 +433,7 @@ class VDonut(Tile):
         self._refresh_value()
         self.title = self.title_orig + (': %d %s' % (self.value, self.unit))
         tbox = self._draw_borders_and_title(tbox)
+        self.value = 100
         donut_s = DonutPrinter().get_donut(self.value)
         logs = donut_s.splitlines()
         logs.append(self.label)
@@ -409,7 +444,8 @@ class VDonut(Tile):
         for i in range(0, log_range):
             line = logs[start + i]
             self._jump_to(tbox, tbox.x + i, tbox.y)
-            cprint(line + ' ' * (tbox.w - len(line)), color='magenta', end='')
+            #cprint(line + ' ' * (tbox.w - len(line)), color='magenta', end='')
+            cprint(line + ' ' * (tbox.w - len(line)), end='')
 
 
 '''
@@ -630,39 +666,51 @@ class HBrailleFilledChart(Tile):
         return unichr(v)
     
     
+    def _get_braille_idx_from_pos(self, y_value, line_idx):
+        if line_idx == int(y_value):  # 1/4=>3/4 height
+            index = 3 - int((y_value - int(y_value)) * 4)
+        elif line_idx > y_value:  # full
+            index = 3
+        else:
+            index = 0
+        return index
+    
+    
     def _display(self, tbox, parent):
         self._refresh_value()
         self.title = self.title_orig + (': %s %s' % (self.value, self.unit))
         
         tbox = self._draw_borders_and_title(tbox)
         
-        for dx in range(tbox.h):
+        box_height = tbox.h
+        box_width = tbox.w
+        
+        for line_idx in range(box_height):
+            # get a degraded color, wil be the same for all the line
+            line_color = self._get_color_from_percent_between_0_1(1.0 * line_idx / box_height)
             bar = ''
-            for dy in range(tbox.w):
-                dp_index = (dy - tbox.w) * 2
+            for col_idx in range(box_width):
+                dp_index = (col_idx - box_width) * 2
                 try:
-                    dp1 = self.datapoints[dp_index]
-                    dp2 = self.datapoints[dp_index + 1]
+                    value_1 = self.datapoints[dp_index]
+                    value_2 = self.datapoints[dp_index + 1]
                 except IndexError:
                     # no data (yet)
+                    # and no color too, useful for quick debug by hightlight shell :)
                     bar += ' '
                     continue
+                # TODO: manage more than % here, with min/max
+                v1_ratio = value_1 / 100.0
+                v2_ratio = value_2 / 100.0
+                y_v1 = (1 - v1_ratio) * box_height
+                y_v2 = (1 - v2_ratio) * box_height
+                index1 = self._get_braille_idx_from_pos(y_v1, line_idx)
+                index2 = self._get_braille_idx_from_pos(y_v2, line_idx)
                 
-                q1 = (1 - dp1 / 100.0) * tbox.h
-                q2 = (1 - dp2 / 100.0) * tbox.h
-                if dx == int(q1):
-                    index1 = 3 - int((q1 - int(q1)) * 4)
-                elif dx > q1:
-                    index1 = 3
-                else:
-                    index1 = 0
-                if dx == int(q2):
-                    index2 = 3 - int((q2 - int(q2)) * 4)
-                elif dx > q2:
-                    index2 = 3
-                else:
-                    index2 = 0
-                bar += self._generate_braille(index1, index2)
+                char = self._generate_braille(index1, index2)
+                
+                color_char = lolcat.get_line(char, line_color, spread=None)
+                bar += color_char
             
-            self._jump_to(tbox, tbox.x + dx, tbox.y)
-            cprint(bar, color='green', end='')
+            self._jump_to(tbox, tbox.x + line_idx, tbox.y)
+            cprint(bar, end='')

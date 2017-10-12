@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from opsbro.log import cprint, logger
+from opsbro.log import cprint, logger, sprintf
 from opsbro.characters import CHARACTERS
 from opsbro.yamlmgr import yamler
 
@@ -478,6 +478,32 @@ class DonutPrinter(object):
             tpl = _donut_100
         
         res = tpl % value
+        
+        match_value = '%d' % value
+        repl_str = sprintf(match_value, color='white')
+        res = res.replace(match_value, repl_str)
+        
         # Remove the first return line (use for code lisibility)
         res = '\n'.join(res.splitlines()[1:])
         return res
+'''
+6 lignes
+8 char/ligne
+
+39->86
+
+ ⢀⣤⣶⣿⣿⣿⣷⣦⣄
+⢰⣿⣿⣿⠿⠛⠻⢿⣿⣿⣷
+⣿⣿⣿⠃ 100⢻⣿⣿⡇
+⢿⣿⣿⣆ % ⢀⣾⣿⣿⠇
+⠘⢿⣿⣿⣿⣶⣾⣿⣿⣿⠟
+  ⠙⠿⣿⣿⣿⡿⠟⠁
+
+ 85-86-87-89-39-41-43-45
+81-82-83-84-88-40-42-44-46-47
+80-79-78-77 100-48-49-50-51
+76-75-73-69 % 52-53-54-55
+74-72-70-67-65-63-61-58-57-56
+  71-68-66-64-62-60-59
+
+'''
