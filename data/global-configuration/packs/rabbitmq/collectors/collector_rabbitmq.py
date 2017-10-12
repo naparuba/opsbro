@@ -43,17 +43,17 @@ class RabbitMQ(Collector):
             response = request.read()
         
         except (urllib2.HTTPError, urllib2.URLError, httplib.HTTPException) as e:
-            logger.error('Unable to get RabbitMQ status - HTTPError = %s' % e)
+            self.error('Unable to get RabbitMQ status - HTTPError = %s' % e)
             return False
         
         except Exception:
-            logger.error('Unable to get RabbitMQ status - Exception = %s', traceback.format_exc())
+            self.error('Unable to get RabbitMQ status - Exception = %s' % traceback.format_exc())
             return False
         
         try:
             status = json.loads(response)
         except Exception, exp:
-            logger.error("Rabbitmq: parsing json: %s" % exp)
+            self.error("Rabbitmq: parsing json: %s" % exp)
             return False
         
         return status

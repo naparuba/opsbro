@@ -44,7 +44,7 @@ class IoStats(Collector):
             _cmd = 'iostat -d 1 2 -x -k'
             stats = self.execute_shell(_cmd)
             if not stats:
-                logger.error('getIOStats: exception in launching command')
+                self.error('getIOStats: exception in launching command %s' % _cmd)
                 return False
             
             recentStats = stats.split('Device:')[2].split('\n')
@@ -79,7 +79,7 @@ class IoStats(Collector):
                     iostats[device][headerName] = float(values[headerIndex])
         
         except Exception:
-            logger.error('getIOStats: exception = %s', traceback.format_exc())
+            self.error('getIOStats: exception = %s' % traceback.format_exc())
             return False
         
         # logger.debug('getIOStats: completed, returning')

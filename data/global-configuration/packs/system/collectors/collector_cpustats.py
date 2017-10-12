@@ -68,7 +68,7 @@ class CpuStats(Collector):
                         cpuStats[device][headerName] = float(values[headerIndex])
             
             except Exception:
-                logger.error('getCPUStats: exception = %s', traceback.format_exc())
+                self.error('getCPUStats: exception = %s' % traceback.format_exc())
                 return False
         else:
             logger.debug('getCPUStats: unsupported platform')

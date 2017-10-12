@@ -1,5 +1,6 @@
 import json
 import httplib
+import socket
 
 from opsbro.collector import Collector
 
@@ -18,10 +19,14 @@ class Geoloc(Collector):
         srv = 'ipinfo.io'
         # Allow 3s to connect.
         # NOTE: If you lag more than 3s, means you are in north korea: then you don't need geoloc.
-        conn = httplib.HTTPConnection(srv, timeout=3)
-        conn.request("GET", "/json")
-        r1 = conn.getresponse()
-        data = r1.read()
+        try:
+            conn = httplib.HTTPConnection(srv, timeout=3)
+            conn.request("GET", "/json")
+            r1 = conn.getresponse()
+            data = r1.read()
+        except socket.gaierror, exp:
+            self.error("Cannot contact ipinfo.io: %s" % exp)
+            return False
         
         self.logger.debug('RAW geoloc data', data)
         self.geodata = json.loads(data)

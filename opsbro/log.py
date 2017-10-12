@@ -153,10 +153,13 @@ class Logger(object):
         
         d_display = self.__get_time_display()
         s = '[%s][%s][%s] %s: %s' % (d_display, kwargs.get('level', 'UNSET  '), self.name, s_part, ' '.join([get_unicode_string(s) for s in args]))
-        if 'color' in kwargs:
-            cprint(s, color=kwargs['color'])
-        else:
-            print(s)
+        
+        # Sometime we want a log output, but not in the stdout
+        if kwargs.get('do_print', True):
+            if 'color' in kwargs:
+                cprint(s, color=kwargs['color'])
+            else:
+                print(s)
         stack = kwargs.get('stack', False)
         
         # Not a perf problems as it's just for errors and a limited size

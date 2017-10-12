@@ -91,5 +91,5 @@ class Nginx(Collector):
                 return False
         
         except Exception:
-            logger.error('Unable to get Nginx status - %s - Exception = %s', response, traceback.format_exc())
+            self.error('Unable to get Nginx status - %s - Exception = %s' % (response, traceback.format_exc()))
             return False

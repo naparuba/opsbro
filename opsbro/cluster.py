@@ -51,6 +51,7 @@ from opsbro.installermanager import installormgr
 from opsbro.compliancemgr import compliancemgr
 from opsbro.defaultpaths import DEFAULT_LIBEXEC_DIR, DEFAULT_LOCK_PATH, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR, DEFAULT_CFG_DIR, DEFAULT_SOCK_PATH
 
+
 # Global logger for this part
 logger = LoggerFactory.create_logger('agent')
 logger_gossip = LoggerFactory.create_logger('gossip')
@@ -110,6 +111,7 @@ class Cluster(object):
         parameters_from_local_configuration = configmgr.get_parameters_for_cluster_from_configuration()
         
         for (k, v) in parameters_from_local_configuration.iteritems():
+            logger.debug('Setting parameter from local configuration: %s => %s' % (k, v))
             setattr(self, k, v)
         
         # We can start with a void log dir too

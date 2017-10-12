@@ -64,8 +64,10 @@ class Collector(ParameterBasedType):
     
     # our run did fail, so we must exit in a clean way and keep a log
     # if we can
+    # NOTE: we want the error in our log file, but not in the stdout of the daemon
+    # to let the stdout errors for real daemon error
     def error(self, txt):
-        self.logger.debug(txt)
+        self.logger.error(txt, do_print=False)
         self.log = txt
     
     
@@ -90,8 +92,7 @@ class Collector(ParameterBasedType):
             if err:
                 self.logger.error('Error in sub process', err)
         except Exception, exp:
-            self.logger.error('Collector [%s] execute command [%s] error: %s' % (self.__class__.__name__.lower(), cmd, traceback.format_exc()))
-            self.error(traceback.format_exc())
+            self.error('Collector [%s] execute command [%s] error: %s' % (self.__class__.__name__.lower(), cmd, traceback.format_exc()))
             return False
         return output
     

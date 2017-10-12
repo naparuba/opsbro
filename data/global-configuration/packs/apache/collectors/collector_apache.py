@@ -79,18 +79,17 @@ class Apache(Collector):
                     res['req/s'] = (totalAccesses - self.apacheTotalAccesses) / 60
                     self.apacheTotalAccesses = totalAccesses
             else:
-                logger.error('getApacheStatus: Total Accesses not present in mod_status output. Is ExtendedStatus enabled?')
+                self.error('getApacheStatus: Total Accesses not present in mod_status output. Is ExtendedStatus enabled?')
         except (IndexError, KeyError):
-            logger.error(
-                'getApacheStatus: IndexError - Total Accesses not present in mod_status output. Is ExtendedStatus enabled?')
+            self.error('getApacheStatus: IndexError - Total Accesses not present in mod_status output. Is ExtendedStatus enabled?')
         
         try:
             if apacheStatus['BusyWorkers'] != False and apacheStatus['IdleWorkers'] != False:
                 res['busy_workers'] = int(apacheStatus['BusyWorkers'])
                 res['idle_workers'] = int(apacheStatus['IdleWorkers'])
             else:
-                logger.error('getApacheStatus: BusyWorkers/IdleWorkers not present in mod_status output. Is the URL correct (must have ?auto at the end)?')
+                self.error('getApacheStatus: BusyWorkers/IdleWorkers not present in mod_status output. Is the URL correct (must have ?auto at the end)?')
         except (IndexError, KeyError):
-            logger.error('getApacheStatus: IndexError - BusyWorkers/IdleWorkers not present in mod_status output. Is the URL correct (must have ?auto at the end)?')
+            self.error('getApacheStatus: IndexError - BusyWorkers/IdleWorkers not present in mod_status output. Is the URL correct (must have ?auto at the end)?')
         
         return res

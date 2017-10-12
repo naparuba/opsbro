@@ -13,7 +13,7 @@ class DiskUsage(Collector):
         if os.name == 'nt':
             return False
         
-        _cmd = 'df -k -x smbfs -x tmpfs -x cifs -x iso9660 -x udf -x nfsv4'
+        _cmd = 'df -k -x smbfs -x tmpfs -x cifs -x iso9660 -x udf -x nfsv4 -x udev -x devtmpfs'
         df = self.execute_shell(_cmd)
         if not df:
             return False
