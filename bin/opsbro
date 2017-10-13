@@ -4,8 +4,16 @@
 #    Gabes Jean, naparuba@gmail.com
 
 # We do not want the warnings print to stderr to pop out in the CLI or the agent
+# NOTe: the warnings.filterwarnings('ignore') is not working with some warnings
+# like in debian9 SSL, so use another way
 import warnings
-warnings.filterwarnings('ignore')
+
+
+def _disable_warns(*args, **kwargs):
+    pass
+
+
+warnings.showwarning = _disable_warns
 
 import optparse
 import sys
@@ -69,6 +77,7 @@ if __name__ == '__main__':
         # Be sure that the opsbro lib is the install root one
         sys.path.insert(0, my_root_dir)
         from opsbro.defaultpaths import remap_from_install_dir
+        
         # If we are install less, we must ask for a full file path remaping
         remap_from_install_dir()
     

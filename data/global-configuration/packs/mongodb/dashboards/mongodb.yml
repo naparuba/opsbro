@@ -1,0 +1,19 @@
+dashboard:
+    title:  Overall mongodb performances
+    content:
+        vertical_split:
+                   - text:
+                       title: "Mongodb"
+                       value: "'Mongodb version: %s  Storage engine:%s' % ( {{collector.mongodb.version}}, {{collector.mongodb.storageEngine.name}} )"
+                   - horizontal_chart:
+                      title: Mongodb memory consumption
+                      value: "(100.0 *  1024 * {{collector.mongodb.mem.resident}} ) / {{collector.memory.memtotal}}"
+                      unit: "%"
+                   - vertical_split:
+                      - text:
+                          title: "Network In"
+                          value: "'Network bytes In: %s' % {{collector.mongodb.network.bytesIn}}"
+                      - text:
+                          title: "Network Out"
+                          value: "'Network bytes Out: %s' % {{collector.mongodb.network.bytesOut}}"
+
