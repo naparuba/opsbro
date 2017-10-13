@@ -43,11 +43,16 @@ class Redis(Collector):
     RATE_KEYS = ['used_cpu_sys', 'used_cpu_sys_children', 'used_cpu_user', 'used_cpu_user_children',
                  'total_commands_processed']
     
-    parameters = {
-        'server'  : StringParameter(default='localhost'),
-        'port'    : IntParameter(default=6379),
+    # Some computed keys must be multiply to be valid (to set in pct)
+    RATE_KEYS_MULT = {
+        'used_cpu_sys': 100, 'used_cpu_sys_children': 100, 'used_cpu_user': 100, 'used_cpu_user_children': 100,
     }
-
+    
+    parameters = {
+        'server': StringParameter(default='localhost'),
+        'port'  : IntParameter(default=6379),
+    }
+    
     
     def __init__(self):
         super(Redis, self).__init__()
@@ -84,7 +89,9 @@ class Redis(Collector):
         for (k, v) in info.iteritems():
             if k in self.RATE_KEYS:
                 if k in self.store:
-                    to_add['%s/s' % k] = (v - self.store[k]) / diff
+                    nv = (v - self.store[k]) / diff
+                    mul = self.RATE_KEYS_MULT.get(k, 1)
+                    to_add['%s/s' % k] = nv * mul
                 else:
                     to_add['%s/s' % k] = 0
                 self.store[k] = info[k]
