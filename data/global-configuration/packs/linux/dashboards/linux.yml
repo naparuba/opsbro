@@ -13,6 +13,10 @@ dashboard:
                       title: CPU Chart
                       value: "100-{{collector.cpustats.cpuall.%idle}}"
                       unit: "%"
+                   - horizontal_chart:
+                      title: Load average / cpus
+                      value: "100 * {{collector.loadaverage.load1}} / (1.0 * {{collector.system.cpu_count}})"
+                      unit: "%"
                    - horizontal_split:
                       - donut:
                          title: "Physical memory"
@@ -28,7 +32,7 @@ dashboard:
                          unit: "%"
                    - text:
                       title: "Network activity"
-                      value: "'Eth0 recv: %s pkt/s' % {{collector.networktraffic.eth0.recv_packets/s}}"
+                      value: "'Eth0 recv: %s pkt/s' % colorize({{collector.networktraffic.eth0.recv_packets/s}}, 44)"
 
 
 
