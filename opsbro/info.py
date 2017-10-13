@@ -83,7 +83,10 @@ def _lolify(s):
 _OPS = '%s%s%s%sOps%s' % ('', _BOLD, '', _BLUE, _RESET)
 _STAR = '%s%s%s%s*%s' % ('', _BOLD, '', _WHITE, _RESET)
 _BRO = '%s%s%s%sBro%s' % ('', '', _BOLD, _RED, _RESET)
-_title = (u'%s   %s%s%s   %s   Version:%s%s%s' % (_lolify(CHARACTERS.vbar), _OPS, _STAR, _BRO, _lolify(CHARACTERS.vbar), _MAGENTA, VERSION, _RESET))
+
+TITLE_COLOR = u'%s%s%s' % (_OPS, _STAR, _BRO)
+
+_title = (u'%s   %s   %s   Version:%s%s%s' % (_lolify(CHARACTERS.vbar), TITLE_COLOR, _lolify(CHARACTERS.vbar), _MAGENTA, VERSION, _RESET))
 
 before_add = (u'  %s%s%s' % (CHARACTERS.corner_top_left, CHARACTERS.hbar * 13, CHARACTERS.corner_top_right))
 before_add = _lolify(before_add)
@@ -98,7 +101,7 @@ banner_lines[_idx + 1] = line_after
 
 _idx_topics = 5
 
-banner_lines[_idx_topics] += '  %sOps%s*%sBro%s goal: solve most common use cases of theses %s%s6%s Topics' % (_BLUE,_RESET, _RED, _RESET, _BOLD, _MAGENTA, _RESET)
+banner_lines[_idx_topics] += '  %sOps%s*%sBro%s goal: solve most common use cases of theses %s%s6%s Topics' % (_BLUE, _RESET, _RED, _RESET, _BOLD, _MAGENTA, _RESET)
 for (i, topic) in enumerate(TOPICS):
     _color_id = TOPICS_COLORS[topic]
     topic_label = lolcat.get_line(TOPICS_LABEL_BANNER[topic].ljust(MAX_TOPICS_LABEL_SIZE), _color_id, spread=None)

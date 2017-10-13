@@ -61,7 +61,8 @@ def _get_expr_evaluator(expr):
     return _get_value_from_expression
 
 
-COLOR_CYAN_ID=6
+COLOR_CYAN_ID = 6
+
 
 def _get_tree(root):
     if not isinstance(root, dict):
@@ -145,11 +146,8 @@ def do_dashboards_show(dashboard_name):
         sys.exit(1)
     
     while True:
-        # Clear the terminal
-        cprint('\033c')
-        
-        ui.display()
-        time.sleep(3)
+        ui.display(dashboard['title'])
+        time.sleep(10)
 
 
 def do_dashboards_list():

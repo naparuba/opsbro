@@ -4,7 +4,7 @@
 # LGPL, cf dashing-LICENCE
 # From https://github.com/FedericoCeratto/dashing
 from __future__ import print_function
-
+import time
 from collections import deque, namedtuple
 
 try:
@@ -19,6 +19,8 @@ except NameError:
 
 from opsbro.cli_display import DonutPrinter
 from opsbro.misc.lolcat import lolcat
+from opsbro.info import TITLE_COLOR
+from opsbro.misc.bro_quotes import get_quote
 
 # "graphic" elements
 
@@ -141,7 +143,7 @@ class Tile(object):
         return TBox(tbox.t, tbox.x, tbox.y, tbox.w, tbox.h)
     
     
-    def display(self):
+    def display(self, title):
         """Render current tile and its items. Recurse into nested splits
         if any.
         """
@@ -150,8 +152,40 @@ class Tile(object):
         except AttributeError:
             t = self._terminal = Terminal()
         
-        tbox = TBox(t, 0, 0, t.width, t.height - 1)
+        # Clear the terminal
+        cprint('\033c')
+        
+        tbox = TBox(t, 1, 0, t.width, t.height - 2)  # -1 for title, -1 for the ending line
+        
+        # Show the title at the first line
+        self._jump_to(tbox, 0, 0)
+        
+        # Put OpsBro title on all dashboards
+        cprint(u' %s' % TITLE_COLOR, end='')
+        
+        # Put the title in the middle of the first line
+        title = u'ʃ %s ʅ' % title
+        l_title = len(title)
+        title = lolcat.get_line(title, 1, spread=1)
+        self._jump_to(tbox, 0, int((t.width / 2) - (l_title / 2)))
+        cprint(title, end='')
+        
+        time_format = time.strftime("%H:%M")
+        self._jump_to(tbox, 0, t.width - len(time_format) - 1)
+        cprint(time_format, color='white', end='')
+        
+        # Now display the other box
         self._display(tbox, None)
+        
+        self._jump_to(tbox, t.height - 1, 0)
+        cprint(' http://opsbro.io', color='grey', end='')
+        
+        quote, from_film = get_quote()
+        full_quote = '>> %s  (%s)' % (quote, from_film)
+        l_full_quote = len(full_quote)
+        self._jump_to(tbox, t.height - 1, t.width - l_full_quote)
+        cprint(full_quote, color='grey', end='')
+        
         # park cursor in a safe place and reset color
         print(t.move(t.height - 3, 0) + t.color(0))
     
