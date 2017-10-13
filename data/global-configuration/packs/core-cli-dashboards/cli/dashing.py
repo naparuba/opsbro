@@ -658,6 +658,9 @@ class HBrailleFilledChart(Tile):
         self.value = self.vcallback()
         if self.value is None:
             self.value = 0
+        # If percent, max to 0=>100
+        if self.unit == '%':
+            self.value = min(100, max(0, self.value))
         self.append(self.value)
     
     
