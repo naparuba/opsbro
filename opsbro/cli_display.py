@@ -202,7 +202,7 @@ _donut_100 = u'''
 ⢿⣿⣿⣆ Y ⢀⣾⣿⣿⠇
 ⠘⢿⣿⣿⣿⣶⣾⣿⣿⣿⠟
   ⠙⠿⣿⣿⣿⡿⠟⠁
-'''.replace('XXX', r'%3d').replace('Y', r'%%')
+'''.replace('XXX', r'%-3d').replace('Y', r'%%')
 
 _donut_95_99 = u'''
  ⢀⣤⣶⣿ ⣿⣷⣦⣄
@@ -429,6 +429,7 @@ class DonutPrinter(object):
         if value > 100:
             return
         
+        '''
         if value == 0:
             tpl = _donut_0
         elif 0 < value <= 5:
@@ -477,10 +478,12 @@ class DonutPrinter(object):
             tpl = _donut_95_99
         elif value == 100:
             tpl = _donut_100
+        '''
+        tpl = _donut_100
         
         res = tpl % value
-
-        res = _apply_donut_color_map(res)
+        
+        res = _apply_donut_color_map(res, value)
         
         match_value = ' %d' % value
         repl_str = sprintf(match_value, color='white')
@@ -504,48 +507,63 @@ class DonutPrinter(object):
 ⠘⢿⣿⣿⣿⣶⣾⣿⣿⣿⠟
   ⠙⠿⣿⣿⣿⡿⠟⠁
 
-0-85-86-87-89-39-41-43-45
-81-82-83-84-88-40-42-44-46-47
-80-79-78-77 100-48-49-50-51
-76-75-73-69 % 52-53-54-55
-74-72-70-67-65-63-61-58-57-56
-0-0-71-68-66-64-62-60-59
-
 '''
 
+# Color to set at this position
 color_map = [
     (0,),
     (0, 85, 86, 87, 89, 39, 41, 43, 45, 45, 0),
     (81, 82, 83, 84, 88, 40, 42, 44, 46, 47, 47),
-    (80, 79, 78, 77, 0, 0,0, 0, 100, 48, 49, 50, 51, 51),
+    (80, 79, 78, 77, 0, 0, 0, 0, 100, 48, 49, 50, 51, 51),
     (76, 75, 73, 69, 0, 0, 0, 52, 53, 54, 55, 55),
     (74, 72, 70, 67, 65, 63, 61, 58, 57, 56, 56),
     (0, 0, 71, 68, 66, 64, 62, 60, 59, 59, 0, 0),
 ]
 
+# But only if the donut value if over this limit
+color_map_pct = [
+    (0,),
+    (0, 86, 92, 96, 100, 1, 5, 9, 13, 17, 0),
+    (80, 82, 88, 94, 97, 3, 7, 11, 15, 18, 19),
+    (76, 78, 84, 90, 0, 0, 0, 0, 20, 20, 21, 22, 23, 25),
+    (75, 74, 72, 70, 0, 0, 0, 35, 33, 31, 29, 27),
+    (68, 66, 64, 56, 52, 49, 47, 45, 41, 39, 37),
+    (0, 0, 60, 58, 54, 50, 48, 46, 44, 43, 0, 0),
+]
 
-def _apply_donut_color_map(tpl):
+
+def _apply_donut_color_map(tpl, value):
     new_tpl = []
     line_idx = 0
     for line in tpl.splitlines():
         line_colors = color_map[line_idx]
+        line_color_pct = color_map_pct[line_idx]
         char_idx = 0
         new_line = ''
         for c in line:
             try:
                 color = line_colors[char_idx]
+                pct_activation = line_color_pct[char_idx]
             except IndexError:
                 color = 0
+                pct_activation = 0
             char_idx += 1
+            
+            # Maybe we want a grey for this
+            if pct_activation > value:
+                color = -1
+            
             # If no color, skip it
             if color == 0:
                 new_line += c
+            # Maybe we are over the limit, put grey
+            elif color == -1:
+                new_line += sprintf(c, 'grey', end='')
+            # Ok, color is legit, use it
             else:
                 new_line += lolcat.get_line(c, color, spread=None)
         new_tpl.append(new_line)
         line_idx += 1
-        
+    
     new_tpl = '\n'.join(new_tpl)
-    #cprint ('RAW NEW TPL')
-    #cprint(new_tpl)
     return new_tpl
