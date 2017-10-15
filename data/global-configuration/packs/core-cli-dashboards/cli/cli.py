@@ -16,7 +16,7 @@ from opsbro.packer import packer
 from opsbro.misc.lolcat import lolcat
 from opsbro.topic import topiker
 
-from dashing import HSplit, HBrailleFilledChart, HGauge, VSplit, VDonut, Text, Terminal
+from dashing import HSplit, HBrailleFilledChart, HGauge, VSplit, VDonut, Text
 
 
 def __print_pack_breadcumb(pack_name, pack_level, end='\n', topic_picto='large'):
@@ -124,10 +124,6 @@ def _get_ui_from_dashboard(dashboard):
 
 
 def do_dashboards_show(dashboard_name):
-    if Terminal is None:
-        logger.error('Missing the python-blessed librairy. Please install it')
-        sys.exit(1)
-    
     import codecs
     stdout_utf8 = codecs.getwriter("utf-8")(sys.stdout)
     sys.stdout = stdout_utf8

@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
 
-from opsbro.log import cprint, logger, sprintf
-from opsbro.characters import CHARACTERS
-from opsbro.yamlmgr import yamler
+from fcntl import ioctl
+import struct
+from termios import TIOCGWINSZ
+import sys
+
+from .log import cprint, logger, sprintf
+from .characters import CHARACTERS
+from .yamlmgr import yamler
 from .misc.lolcat import lolcat
 
 
@@ -193,6 +198,13 @@ def yml_parameter_remove(parameters_file_path, parameter_name, str_value, file_d
     cprint(parameter_name, color='magenta', end='')
     cprint(' %s ' % CHARACTERS.arrow_left, end='')
     cprint(str_value, color='green')
+
+def get_terminal_size():
+    try:
+        height, width = struct.unpack('hhhh', ioctl(sys.stdout, TIOCGWINSZ, '\000' * 8))[0:2]
+    except IOError, exp:
+        raise Exception('Cannot get the terminal size (%s error)' % exp)
+    return height, width
 
 
 _donut_100 = u'''

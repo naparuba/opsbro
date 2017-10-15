@@ -5,19 +5,15 @@
 # From https://github.com/FedericoCeratto/dashing
 from __future__ import print_function
 import time
+import sys
 from collections import deque, namedtuple
-
-try:
-    from blessed import Terminal
-except ImportError:
-    Terminal = None
 
 try:
     unichr
 except NameError:
     unichr = chr
 
-from opsbro.cli_display import DonutPrinter
+from opsbro.cli_display import DonutPrinter, get_terminal_size
 from opsbro.misc.lolcat import lolcat
 from opsbro.info import TITLE_COLOR
 from opsbro.misc.bro_quotes import get_quote
@@ -37,7 +33,7 @@ braille_right = (0x08, 0x10, 0x20, 0x80, 0)
 braille_r_left = (0x04, 0x02, 0x01)
 braille_r_right = (0x20, 0x10, 0x08)
 
-TBox = namedtuple('TBox', 't x y w h')
+TBox = namedtuple('TBox', 'x y w h')
 
 from opsbro.log import cprint
 from opsbro.characters import CHARACTERS
@@ -84,8 +80,10 @@ class Tile(object):
         raise NotImplementedError
     
     
-    def _jump_to(self, tbox, x, y):
-        print(tbox.t.move(x, y), end='')
+    # Go to the position x,y of the terminal
+    # NOTE: +1 because the position are starting at 1, not 0
+    def _jump_to(self, x, y):
+        cprint(u'\033[%d;%dH' % (x + 1, y + 1), end='')
     
     
     def _get_color_from_percent_between_0_1(self, pct, color_pack=COLOR_PACK_LIGHT_GREEN_TO_DARK_PURPLE):
@@ -98,28 +96,25 @@ class Tile(object):
         else:
             raise Exception('Bad color pack %s' % color_pack)
         # get a degraded color
-        # color_range = LIGHT_GREEN - DARK_PURPLE
         color_range = COLOR_END - COLOR_START
-        # color = DARK_PURPLE + (pct * color_range)
         color = COLOR_START + (pct * color_range)
         return int(color)
     
     
     def _draw_borders(self, tbox):
         # top border
-        print(tbox.t.color(self.border_color), end='')
-        self._jump_to(tbox, tbox.x, tbox.y)
+        self._jump_to(tbox.x, tbox.y)
         cprint(border_tl + border_h * (tbox.w - 2) + border_tr, color='cyan', end='')
         
         # left and right
         for dx in range(1, tbox.h - 1):
-            self._jump_to(tbox, tbox.x + dx, tbox.y)
+            self._jump_to(tbox.x + dx, tbox.y)
             cprint(border_v, color='cyan', end='')
             
-            self._jump_to(tbox, tbox.x + dx, tbox.y + tbox.w - 1)
+            self._jump_to(tbox.x + dx, tbox.y + tbox.w - 1)
             cprint(border_v, color='cyan', end='')
         # bottom
-        self._jump_to(tbox, tbox.x + tbox.h - 1, tbox.y)
+        self._jump_to(tbox.x + tbox.h - 1, tbox.y)
         cprint(border_bl + border_h * (tbox.w - 2) + border_br, color='cyan', end='')
     
     
@@ -135,30 +130,24 @@ class Tile(object):
             self._draw_title(tbox, fill_all_width)
         
         if self.border_color is not None:
-            return TBox(tbox.t, tbox.x + 1, tbox.y + 1, tbox.w - 2, tbox.h - 2)
+            return TBox(tbox.x + 1, tbox.y + 1, tbox.w - 2, tbox.h - 2)
         
         elif self.title is not None:
-            return TBox(tbox.t, tbox.x + 1, tbox.y, tbox.w - 1, tbox.h - 1)
+            return TBox(tbox.x + 1, tbox.y, tbox.w - 1, tbox.h - 1)
         
-        return TBox(tbox.t, tbox.x, tbox.y, tbox.w, tbox.h)
+        return TBox(tbox.x, tbox.y, tbox.w, tbox.h)
     
     
     def display(self, title):
-        """Render current tile and its items. Recurse into nested splits
-        if any.
-        """
-        try:
-            t = self._terminal
-        except AttributeError:
-            t = self._terminal = Terminal()
+        terminal_height, terminal_width = get_terminal_size()
         
         # Clear the terminal
         cprint('\033c')
         
-        tbox = TBox(t, 1, 0, t.width, t.height - 2)  # -1 for title, -1 for the ending line
+        tbox = TBox(1, 0, terminal_width, terminal_height - 2)  # -1 for title, -1 for the ending line
         
         # Show the title at the first line
-        self._jump_to(tbox, 0, 0)
+        self._jump_to(0, 0)
         
         # Put OpsBro title on all dashboards
         cprint(u' %s' % TITLE_COLOR, end='')
@@ -167,27 +156,28 @@ class Tile(object):
         title = u'ʃ %s ʅ' % title
         l_title = len(title)
         title = lolcat.get_line(title, 1, spread=1)
-        self._jump_to(tbox, 0, int((t.width / 2) - (l_title / 2)))
+        self._jump_to(0, int((terminal_width / 2) - (l_title / 2)))
         cprint(title, end='')
         
         time_format = time.strftime("%H:%M")
-        self._jump_to(tbox, 0, t.width - len(time_format) - 1)
+        self._jump_to(0, terminal_width - len(time_format) - 1)
         cprint(time_format, color='white', end='')
         
         # Now display the other box
         self._display(tbox, None)
         
-        self._jump_to(tbox, t.height - 1, 0)
+        self._jump_to(terminal_height - 1, 0)
         cprint(' http://opsbro.io', color='grey', end='')
         
         quote, from_film = get_quote()
         full_quote = '>> %s  (%s)' % (quote, from_film)
         l_full_quote = len(full_quote)
-        self._jump_to(tbox, t.height - 1, t.width - l_full_quote)
+        self._jump_to(terminal_height - 1, terminal_width - l_full_quote)
         cprint(full_quote, color='grey', end='')
         
         # park cursor in a safe place and reset color
-        print(t.move(t.height - 3, 0) + t.color(0))
+        self._jump_to(terminal_height, -1)
+        sys.stdout.flush()
     
     
     def _draw_title(self, tbox, fill_all_width):
@@ -197,12 +187,12 @@ class Tile(object):
         if fill_all_width:
             title = ' ' * margin + self.title + ' ' * (tbox.w - margin - len(self.title))
             
-            self._jump_to(tbox, tbox.x, tbox.y)
+            self._jump_to(tbox.x, tbox.y)
             cprint(title, on_color='on_grey', end='')
         else:
             title = ' ' * margin + self.title + ' ' * margin
             
-            self._jump_to(tbox, tbox.x, tbox.y + margin)
+            self._jump_to(tbox.x, tbox.y + margin)
             cprint(title, on_color='on_grey', end='')
 
 
@@ -248,8 +238,6 @@ class Split(Tile):
         LOG('*******')
         LOG('myself %s sons are %s' % (self, self.items))
         LOG('TBOX H %s  is %d' % (self, tbox.h))
-        # if tbox.h <= 0:
-        #    return
         
         reserved_height = 0
         items_with_max_height = []
@@ -282,7 +270,7 @@ class Split(Tile):
             else:
                 max_height += 2  # count the border too
             LOG("DISPLAY %s %s %s %s" % (type(i), max_height, 'will display at addr', x))
-            i._display(TBox(tbox.t, x, y, item_width, max_height), self)
+            i._display(TBox(x, y, item_width, max_height), self)
             if isinstance(self, VSplit):
                 x += max_height
             else:
@@ -324,11 +312,12 @@ class Text(Tile):
         
         dx = 0
         for dx, line in enumerate(self.text.splitlines()):
-            self._jump_to(tbox, tbox.x + dx, tbox.y)
+            self._jump_to(tbox.x + dx, tbox.y)
             cprint(line + ' ' * (tbox.w - len(line)), color='white', end='')
         dx += 1
         while dx < tbox.h:
-            print(tbox.t.move(tbox.x + dx, tbox.y) + ' ' * tbox.w)
+            self._jump_to(tbox.x + dx, tbox.y)
+            cprint(' ' * tbox.w, end='')
             dx += 1
 
 
@@ -394,12 +383,12 @@ class HGauge(Tile):
             LOG('Current color: %s\n' % char_color)
             bar += lolcat.get_line(CHARACTERS.bar_fill, char_color, spread=None)
         
-        self._jump_to(tbox, tbox.x, tbox.y + 1)
+        self._jump_to(tbox.x, tbox.y + 1)
         
         pad_size = tbox.w - fill_len
         padding_bar = CHARACTERS.bar_unfill * pad_size
         
-        self._jump_to(tbox, tbox.x, tbox.y)
+        self._jump_to(tbox.x, tbox.y)
         cprint(bar, end='')
         cprint(padding_bar, color='grey', end='')
 
@@ -481,8 +470,7 @@ class VDonut(Tile):
         
         for i in range(0, log_range):
             line = logs[start + i]
-            self._jump_to(tbox, tbox.x + i, tbox.y)
-            # cprint(line + ' ' * (tbox.w - len(line)), color='magenta', end='')
+            self._jump_to(tbox.x + i, tbox.y)
             cprint(line + ' ' * (tbox.w - len(line)), end='')
 
 
@@ -753,5 +741,5 @@ class HBrailleFilledChart(Tile):
                 color_char = lolcat.get_line(char, line_color, spread=None)
                 bar += color_char
             
-            self._jump_to(tbox, tbox.x + line_idx, tbox.y)
+            self._jump_to(tbox.x + line_idx, tbox.y)
             cprint(bar, end='')
