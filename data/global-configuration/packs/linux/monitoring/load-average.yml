@@ -5,10 +5,10 @@ check:
 
     ok_output: "'OK: load is at %s' % {{collector.loadaverage.load1}}"
     
-    critical_if: "{{collector.loadaverage.load1}} > {{collector.system.cpucount}}"
+    critical_if: "{{collector.loadaverage.load1}} > {{collector.system.cpu_count}}"
     critical_output: "'CRITICAL: load is at %s' % {{collector.loadaverage.load1}}"
 
-    warning_if: "{{collector.loadaverage.load1}} > 0.9 * {{collector.system.cpucount}}"
+    warning_if: "{{collector.loadaverage.load1}} > 0.9 * {{collector.system.cpu_count}}"
     warning_output: "'WARNING: load is at %s' % {{collector.loadaverage.load1}}"
     
     interval: 30s

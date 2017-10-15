@@ -1,12 +1,12 @@
 check:
     if_group: linux
 
-    ok_output: "'OK: memory is at %s%%' % {{collector.memory.phys_used}}"
+    ok_output: "'OK: memory is at %d%%' % {{collector.memory.phys_used}}"
     
     critical_if: "{{collector.memory.phys_used}} > {{parameters.memory_critical}}"
-    critical_output: "'CRITICAL: memory is at %.2f%%' % {{collectors.memory.phys_used}}"
+    critical_output: "'CRITICAL: memory is at %d%%' % {{collectors.memory.phys_used}}"
 
     warning_if: "{{collector.memory.phys_used}} > {{parameters.threshold.memory_warning}}"
-    warning_output:  "'WARNING: memory is at %.2f%%' % {{collector.memory.phys_used}}"
+    warning_output:  "'WARNING: memory is at %d%%' % {{collector.memory.phys_used}}"
 
     interval: "30s"

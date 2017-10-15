@@ -224,7 +224,6 @@ class Evaluater(object):
             # self.cfg_data[k1][k2][k3] entry if exists
             (founded, ld) = self._found_params_inside(elts, pack_parameters)
             logger.debug('Did find or not %s into parameters: %s => %s (%s)' % (elts, pack_parameters, founded, ld))
-            ld = str(ld)
             if founded:
                 return ld
         return ''

@@ -371,7 +371,7 @@ class HGauge(Tile):
     
     def _display(self, tbox, parent):
         self._refresh_value()
-        self.title = self.title_orig + (': %s %s' % (self.value, self.unit))
+        self.title = self.title_orig + (': %d %s' % (self.value, self.unit))
         tbox = self._draw_borders_and_title(tbox)
         
         value_ratio = max(0, min(1, self.value / 100.0))
@@ -707,7 +707,7 @@ class HBrailleFilledChart(Tile):
     
     def _display(self, tbox, parent):
         self._refresh_value()
-        self.title = self.title_orig + (': %s %s' % (self.value, self.unit))
+        self.title = self.title_orig + (': %d %s' % (self.value, self.unit))
         
         tbox = self._draw_borders_and_title(tbox)
         
