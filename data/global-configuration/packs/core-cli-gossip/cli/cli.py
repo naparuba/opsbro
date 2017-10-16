@@ -16,7 +16,7 @@ from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger, sprintf
 from opsbro.library import libstore
 from opsbro.unixclient import get_request_errors
-from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, put_opsbro_json
+from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, put_opsbro_json, wait_for_agent_started
 from opsbro.cli_display import print_h1
 from opsbro.threadmgr import threader
 
@@ -26,6 +26,9 @@ NO_ZONE_DEFAULT = '(no zone)'
 ############# ********************        MEMBERS management          ****************###########
 
 def do_members(detail=False):
+    # The information is available only if the agent is started
+    wait_for_agent_started(visual_wait=True)
+    
     try:
         members = get_opsbro_json('/agent/members').values()
     except get_request_errors(), exp:
@@ -86,6 +89,9 @@ def do_members(detail=False):
 
 
 def do_leave(nuuid=''):
+    # The information is available only if the agent is started
+    wait_for_agent_started(visual_wait=True)
+    
     # Lookup at the localhost name first
     if not nuuid:
         try:
@@ -112,6 +118,9 @@ def do_join(seed=''):
     if seed == '':
         logger.error('Missing target argument. For example 192.168.0.1:6768')
         return
+    # The information is available only if the agent is started
+    wait_for_agent_started(visual_wait=True)
+    
     try:
         (code, r) = get_opsbro_local('/agent/join/%s' % seed)
     except get_request_errors(), exp:
@@ -133,6 +142,9 @@ def do_zone_change(name=''):
     if not name:
         print "Need a zone name"
         return
+    # The information is available only if the agent is started
+    wait_for_agent_started(visual_wait=True)
+    
     print "Switching to zone", name
     try:
         r = put_opsbro_json('/agent/zone', name)

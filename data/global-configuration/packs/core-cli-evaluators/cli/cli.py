@@ -11,10 +11,13 @@ import base64
 
 from opsbro.log import cprint, logger
 from opsbro.unixclient import get_request_errors
-from opsbro.cli import get_opsbro_local, print_info_title, post_opsbro_json
+from opsbro.cli import get_opsbro_local, print_info_title, post_opsbro_json, wait_for_agent_started
 
 
 def do_evaluator_list():
+    # The information is available only if the agent is started
+    wait_for_agent_started(visual_wait=True)
+    
     try:
         (code, r) = get_opsbro_local('/agent/evaluator/list')
     except get_request_errors(), exp:
@@ -52,7 +55,9 @@ def do_evaluator_list():
 
 
 def do_evaluator_eval(expr):
-    print expr
+    # The information is available only if the agent is started
+    wait_for_agent_started(visual_wait=True)
+    
     expr_64 = base64.b64encode(expr)
     try:
         r = post_opsbro_json('/agent/evaluator/eval', {'expr': expr_64})

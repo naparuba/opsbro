@@ -6,12 +6,14 @@ import imp
 import traceback
 import sys
 import optparse
+import time
+import itertools
 
 from opsbro.configurationmanager import configmgr
 from opsbro.collectormanager import collectormgr
 from opsbro.modulemanager import modulemanager
 from opsbro.packer import packer
-from opsbro.unixclient import get_json, get_local
+from opsbro.unixclient import get_json, get_local, get_request_errors
 from opsbro.log import cprint, logger
 from opsbro.defaultpaths import DEFAULT_LOG_DIR, DEFAULT_CFG_DIR, DEFAULT_DATA_DIR, DEFAULT_SOCK_PATH
 from opsbro.info import VERSION
@@ -72,7 +74,44 @@ else:
         return get_json(uri, params=data, method='PUT')
 
 
+def get_opsbro_agent_state():
+    try:
+        agent_state = get_opsbro_json('/agent/state')
+    except get_request_errors():
+        agent_state = 'stopped'
+    return agent_state
 
+
+def wait_for_agent_started(timeout=30, visual_wait=False, exit_if_stopped=False):
+    spinners = itertools.cycle(CHARACTERS.spinners)
+    start = time.time()
+    agent_state = 'unknown'
+    while time.time() - start < timeout:
+        try:
+            agent_state = get_opsbro_json('/agent/state')
+        except get_request_errors():
+            agent_state = 'stopped'
+        if agent_state == 'stopped':
+            # Maybe we need to exit of the daemon is stopped
+            if exit_if_stopped:
+                cprint('\r', end='')
+                logger.error('The agent is stopped')
+                sys.exit(2)
+            break
+        if agent_state == 'ok':
+            break
+        if visual_wait:
+            cprint('\r %s ' % spinners.next(), color='blue', end='')
+            cprint(' agent is still initializing (collector, detector, system compliance & generators did finish)', end='')
+            sys.stdout.flush()
+        time.sleep(0.1)
+    if visual_wait:
+        # Clean what we did put before
+        cprint('\r' , end='')
+        cprint(' '*100, end='')
+        cprint('\r', end='')
+        sys.stdout.flush()
+    return agent_state
 
 
 def print_info_title(title):

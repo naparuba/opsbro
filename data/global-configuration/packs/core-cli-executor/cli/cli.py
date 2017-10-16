@@ -12,13 +12,16 @@ import json
 from opsbro.log import cprint, logger
 
 from opsbro.unixclient import get_request_errors
-from opsbro.cli import get_opsbro_local
+from opsbro.cli import get_opsbro_local, wait_for_agent_started
 
 
 def do_exec(group='*', cmd='uname -a'):
     if cmd == '':
         logger.error('Missing command')
         return
+    # The information is available only if the agent is started
+    wait_for_agent_started(visual_wait=True)
+    
     try:
         (code, r) = get_opsbro_local('/exec/%s?cmd=%s' % (group, cmd))
     except get_request_errors(), exp:

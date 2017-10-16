@@ -12,6 +12,7 @@ from opsbro.cli import post_opsbro_json
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, sprintf, logger
 from opsbro.cli_display import print_h1
+from opsbro.cli import wait_for_agent_started
 from opsbro.packer import packer
 from opsbro.misc.lolcat import lolcat
 from opsbro.topic import topiker
@@ -127,6 +128,8 @@ def do_dashboards_show(dashboard_name):
     import codecs
     stdout_utf8 = codecs.getwriter("utf-8")(sys.stdout)
     sys.stdout = stdout_utf8
+
+    wait_for_agent_started(visual_wait=True)
     
     from opsbro.dashboardmanager import get_dashboarder
     dashboarder = get_dashboarder()

@@ -10,11 +10,14 @@ import json
 
 from opsbro.log import cprint, logger
 from opsbro.unixclient import get_request_errors
-from opsbro.cli import get_opsbro_local, print_info_title, print_2tab
+from opsbro.cli import get_opsbro_local, print_info_title, print_2tab, wait_for_agent_started
 from opsbro.cli_display import print_element_breadcumb
 
 
 def do_detect_list():
+    # The information is available only if the agent is started
+    wait_for_agent_started(visual_wait=True)
+    
     try:
         (code, r) = get_opsbro_local('/agent/detectors')
     except get_request_errors(), exp:
@@ -48,6 +51,9 @@ def do_detect_list():
 
 
 def do_detect_run():
+    # The information is available only if the agent is started
+    wait_for_agent_started(visual_wait=True)
+    
     try:
         (code, r) = get_opsbro_local('/agent/detectors/run')
     except get_request_errors(), exp:

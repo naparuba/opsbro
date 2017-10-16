@@ -13,7 +13,7 @@ import json
 
 from opsbro.log import cprint, logger
 from opsbro.unixclient import get_request_errors
-from opsbro.cli import get_opsbro_json, print_info_title
+from opsbro.cli import get_opsbro_json, print_info_title, wait_for_agent_started
 from opsbro.collectormanager import collectormgr
 from opsbro.library import libstore
 
@@ -69,6 +69,9 @@ def pretty_print(d):
 
 
 def do_collectors_show(name='', all=False):
+    # The information is available only if the agent is started
+    wait_for_agent_started(visual_wait=True)
+    
     try:
         collectors = get_opsbro_json('/collectors')
     except get_request_errors(), exp:
@@ -90,6 +93,9 @@ def do_collectors_show(name='', all=False):
 
 
 def do_collectors_list():
+    # The information is available only if the agent is started
+    wait_for_agent_started(visual_wait=True)
+    
     try:
         collectors = get_opsbro_json('/collectors')
     except get_request_errors(), exp:

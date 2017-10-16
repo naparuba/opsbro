@@ -51,15 +51,24 @@ from opsbro.installermanager import installormgr
 from opsbro.compliancemgr import compliancemgr
 from opsbro.defaultpaths import DEFAULT_LIBEXEC_DIR, DEFAULT_LOCK_PATH, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR, DEFAULT_CFG_DIR, DEFAULT_SOCK_PATH
 
-
 # Global logger for this part
 logger = LoggerFactory.create_logger('agent')
 logger_gossip = LoggerFactory.create_logger('gossip')
+
+AGENT_STATE_INITIALIZING = 'initializing'
+AGENT_STATE_OK = 'ok'
+AGENT_STATE_STOPPED = 'stopped'
 
 
 class Cluster(object):
     def __init__(self, port=6768, name='', bootstrap=False, seeds='', groups='', cfg_dir='', libexec_dir=''):
         self.set_exit_handler()
+        
+        # We need to keep a trace about in what state we are globally
+        # * initializing= not all threads did loop once
+        # * ok= all threads did loop
+        # * stopping= stop in progress
+        self.agent_state = AGENT_STATE_INITIALIZING
         
         # Launch the now-update thread
         NOW.launch()
@@ -520,17 +529,24 @@ class Cluster(object):
     # TODO: SPLIT into modules :)
     def launch_tcp_listener(self):
         
+        @http_export('/agent/state')
+        def get_agent_state():
+            response.content_type = 'application/json'
+            return jsoner.dumps(self.agent_state)
+        
+        
         @http_export('/agent/info')
         def get_info():
             response.content_type = 'application/json'
-            r = {'logs'      : raw_logger.get_errors(), 'pid': os.getpid(), 'name': self.name, 'display_name': self.display_name,
-                 'port'      : self.port, 'addr': self.addr, 'socket': self.socket_path, 'zone': gossiper.zone,
-                 'uuid'      : gossiper.uuid,
-                 'threads'   : threader.get_info(),
-                 'version'   : VERSION, 'groups': gossiper.groups,
-                 'docker'    : dockermgr.get_info(),
-                 'collectors': collectormgr.get_info(),
-                 'kv'        : kvmgr.get_info(),
+            r = {'agent_state': self.agent_state,
+                 'logs'       : raw_logger.get_errors(), 'pid': os.getpid(), 'name': self.name, 'display_name': self.display_name,
+                 'port'       : self.port, 'addr': self.addr, 'socket': self.socket_path, 'zone': gossiper.zone,
+                 'uuid'       : gossiper.uuid,
+                 'threads'    : threader.get_info(),
+                 'version'    : VERSION, 'groups': gossiper.groups,
+                 'docker'     : dockermgr.get_info(),
+                 'collectors' : collectormgr.get_info(),
+                 'kv'         : kvmgr.get_info(),
                  }
             
             # Update the infos with modules ones
@@ -1105,6 +1121,18 @@ class Cluster(object):
             time.sleep(30)
     
     
+    def update_agent_state(self):
+        if self.agent_state == AGENT_STATE_INITIALIZING:
+            b = True
+            b &= collectormgr.did_run
+            b &= detecter.did_run
+            b &= generatormgr.did_run
+            b &= installormgr.did_run
+            b &= compliancemgr.did_run
+            if b:
+                self.agent_state = AGENT_STATE_OK
+    
+    
     # In one shot mode, we want to be sure the theses parts did run at least once:
     # collector
     # detector
@@ -1112,30 +1140,11 @@ class Cluster(object):
     # installor
     # compliance
     def wait_one_shot_end(self):
-        logger.info('Waiting for collectors to finish running')
-        while not collectormgr.did_run:
+        while self.agent_state == AGENT_STATE_INITIALIZING:
+            self.update_agent_state()
             time.sleep(0.1)
-        logger.info('Collectors did run')
         
-        logger.info('Waiting for detectors to finish running')
-        while not detecter.did_run:
-            time.sleep(0.1)
-        logger.info('Detectors did run')
-        
-        logger.info('Waiting for generator to finish running')
-        while not generatormgr.did_run:
-            time.sleep(0.1)
-        logger.info('Generators did run')
-        
-        logger.info('Waiting for installors to finish running')
-        while not installormgr.did_run:
-            time.sleep(0.1)
-        logger.info('Installors did run')
-        
-        logger.info('Waiting for system compliance to finish running')
-        while not compliancemgr.did_run:
-            time.sleep(0.1)
-        logger.info('System compliances did run')
+        # Ok all did launched, we can quit
         
         # Ok let's know the whole system we are going to stop
         stopper.interrupted = True
@@ -1144,6 +1153,9 @@ class Cluster(object):
     
     
     def __exit_path(self):
+        # Change the agent_state to stopped
+        self.agent_state = AGENT_STATE_STOPPED
+        
         # Maybe the modules want a special call
         modulemanager.stopping_agent()
         
@@ -1223,6 +1235,9 @@ class Cluster(object):
                 logger.debug('KNOWN NODES: %d, alive:%d, suspect:%d, dead:%d, leave:%d' % (
                     gossiper.count(), gossiper.count('alive'), gossiper.count('suspect'), gossiper.count('dead'),
                     gossiper.count('leave')))
+            
+            # Update the agent state (initializing, ok, stopped, etc)
+            self.update_agent_state()
             
             gossiper.look_at_deads()
             

@@ -18,7 +18,14 @@ if [ $? != 0 ]; then
 fi
 
 
-#sleep 60
+echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Wait for initialization finish       ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
+# Will wait 60s max if the daemon is not finish to launch all the init things (collectors, generators, and co)
+time opsbro agent wait-initialized --timeout 60
+
+if [ $? != 0 ]; then
+   echo "ERROR: the agent did not initialize in time"
+   exit 2
+fi
 
 
 echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Info           ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"

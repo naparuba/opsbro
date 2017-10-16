@@ -12,11 +12,14 @@ import json
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger
 from opsbro.unixclient import get_request_errors
-from opsbro.cli import get_opsbro_local
+from opsbro.cli import get_opsbro_local, wait_for_agent_started
 from opsbro.cli_display import print_h1
 
 
 def do_compliance_list():
+    # The information is available only if the agent is started
+    wait_for_agent_started(visual_wait=True)
+    
     uri = '/compliance/'
     try:
         (code, r) = get_opsbro_local(uri)

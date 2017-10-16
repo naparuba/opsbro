@@ -12,13 +12,16 @@ import json
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger
 from opsbro.unixclient import get_request_errors
-from opsbro.cli import get_opsbro_local
+from opsbro.cli import get_opsbro_local, wait_for_agent_started
 from opsbro.cli_display import print_h1
 
 NO_ZONE_DEFAULT = '(no zone)'
 
 
 def do_state(name=''):
+    # The information is available only if the agent is started
+    wait_for_agent_started(visual_wait=True)
+    
     uri = '/agent/state/%s' % name
     if not name:
         uri = '/agent/state'
