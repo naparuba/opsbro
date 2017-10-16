@@ -10,8 +10,8 @@ except ImportError:
     resource = None
 
 from opsbro.cluster import Cluster
-from opsbro.log import cprint, logger
-from opsbro.gossip import gossiper
+from opsbro.log import logger
+
 
 REDIRECT_TO = getattr(os, "devnull", "/dev/null")
 

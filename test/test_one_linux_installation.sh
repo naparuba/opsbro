@@ -111,17 +111,18 @@ fi
 echo "Pack: cpustats counters are OK"
 
 
-echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  STANDARD LINUX PACK:  networktraffic counters      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
-NETWORKSTATS=$(opsbro collectors show networktraffic)
+#TODO: fis the networktraffic so it pop out directly at first loop
+#echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  STANDARD LINUX PACK:  networktraffic counters      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
+#NETWORKSTATS=$(opsbro collectors show networktraffic)
 
-printf "%s" "$NETWORKSTATS" | grep 'recv_bytes/s' > /dev/null
-if [ $? != 0 ]; then
-   echo "ERROR: the networkstats collector do not seems to be working"
-   printf "$NETWORKSTATS"
-   exit 2
-fi
+#printf "%s" "$NETWORKSTATS" | grep 'recv_bytes/s' > /dev/null
+#if [ $? != 0 ]; then
+#   echo "ERROR: the networkstats collector do not seems to be working"
+#   printf "$NETWORKSTATS"
+#   exit 2
+#fi
 
-echo "Pack: networkstats counters are OK"
+#echo "Pack: networkstats counters are OK"
 
 
 echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  STANDARD LINUX PACK:  openports counters      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"

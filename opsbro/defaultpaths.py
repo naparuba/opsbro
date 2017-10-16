@@ -24,7 +24,7 @@ def remap_from_install_dir():
     global DEFAULT_DATA_DIR, DEFAULT_LOG_DIR, DEFAULT_LOCK_PATH, DEFAULT_LOCK_PATH, DEFAULT_CFG_FILE, DEFAULT_CFG_DIR, DEFAULT_SOCK_PATH
     my_dir = os.path.dirname(__file__)
     install_root = os.path.dirname(my_dir)
-    print "Installation root", install_root
+    
     DEFAULT_DATA_DIR = os.path.join(install_root, 'data')
     DEFAULT_LOG_DIR = os.path.join(install_root, 'log')
     DEFAULT_LOCK_PATH = os.path.join(install_root, 'log', 'opsbro.lock')

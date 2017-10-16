@@ -227,7 +227,6 @@ def do_start(daemon, cfg_dir, one_shot):
         logger.error('The parameters --daemon and --one-shot are not compatible.')
         sys.exit(2)
     cprint('Starting opsbro daemon', color='green')
-    cprint('%s' % cfg_dir)
     lock_path = CONFIG.get('lock', DEFAULT_LOCK_PATH)
     l = Launcher(lock_path=lock_path, cfg_dir=cfg_dir)
     l.do_daemon_init_and_start(is_daemon=daemon)
