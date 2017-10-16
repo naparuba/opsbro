@@ -13,7 +13,7 @@ import json
 
 from opsbro.log import cprint, logger
 from opsbro.unixclient import get_request_errors
-from opsbro.cli import get_opsbro_json, print_info_title, wait_for_agent_started
+from opsbro.cli import get_opsbro_json, print_info_title, AnyAgent
 from opsbro.collectormanager import collectormgr
 from opsbro.library import libstore
 
@@ -69,47 +69,46 @@ def pretty_print(d):
 
 
 def do_collectors_show(name='', all=False):
-    # The information is available only if the agent is started
-    wait_for_agent_started(visual_wait=True)
-    
-    try:
-        collectors = get_opsbro_json('/collectors')
-    except get_request_errors(), exp:
-        logger.error(exp)
-        return
-    
-    disabled = []
-    for (cname, d) in collectors.iteritems():
-        if name and not name == cname:
-            continue
-        if not name and not d['active'] and not all:
-            disabled.append(d)
-            continue
-        print_info_title('Collector %s' % cname)
-        pretty_print(d)
-    if len(disabled) > 0:
-        print_info_title('Disabled collectors')
-        cprint(','.join([d['name'] for d in disabled]), color='grey')
+    # We need an agent for this
+    with AnyAgent():
+        try:
+            collectors = get_opsbro_json('/collectors')
+        except get_request_errors(), exp:
+            logger.error(exp)
+            return
+        
+        disabled = []
+        for (cname, d) in collectors.iteritems():
+            if name and not name == cname:
+                continue
+            if not name and not d['active'] and not all:
+                disabled.append(d)
+                continue
+            print_info_title('Collector %s' % cname)
+            pretty_print(d)
+        if len(disabled) > 0:
+            print_info_title('Disabled collectors')
+            cprint(','.join([d['name'] for d in disabled]), color='grey')
 
 
 def do_collectors_list():
-    # The information is available only if the agent is started
-    wait_for_agent_started(visual_wait=True)
-    
-    try:
-        collectors = get_opsbro_json('/collectors')
-    except get_request_errors(), exp:
-        logger.error(exp)
-        return
-    cnames = collectors.keys()
-    cnames.sort()
-    for cname in cnames:
-        d = collectors[cname]
-        cprint(cname.ljust(15) + ':', end='')
-        if d['active']:
-            cprint('enabled', color='green')
-        else:
-            cprint('disabled', color='grey')
+    # We need an agent for this
+    with AnyAgent():
+        
+        try:
+            collectors = get_opsbro_json('/collectors')
+        except get_request_errors(), exp:
+            logger.error(exp)
+            return
+        cnames = collectors.keys()
+        cnames.sort()
+        for cname in cnames:
+            d = collectors[cname]
+            cprint(cname.ljust(15) + ':', end='')
+            if d['active']:
+                cprint('enabled', color='green')
+            else:
+                cprint('disabled', color='grey')
 
 
 def do_collectors_run(name):

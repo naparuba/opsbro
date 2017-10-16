@@ -8,6 +8,7 @@ import sys
 import optparse
 import time
 import itertools
+import subprocess
 
 from opsbro.configurationmanager import configmgr
 from opsbro.collectormanager import collectormgr
@@ -22,9 +23,23 @@ from opsbro.topic import topiker
 from opsbro.characters import CHARACTERS
 from opsbro.misc.lolcat import lolcat
 from opsbro.library import libstore
+from opsbro.cluster import AGENT_STATE_STOPPED
 
 # Will be populated by the opsbro CLI command
 CONFIG = None
+
+CURRENT_BINARY = ''
+
+
+# We should save the current opsbro binary used, for debug purpose for example
+def save_current_binary(pth):
+    global CURRENT_BINARY
+    CURRENT_BINARY = pth
+
+
+def get_current_binary():
+    global CURRENT_BINARY
+    return CURRENT_BINARY
 
 
 def get_local_socket():
@@ -82,6 +97,54 @@ def get_opsbro_agent_state():
     return agent_state
 
 
+class AnyAgent(object):
+    def __init__(self):
+        self.did_start_a_tmp_agent = False
+        self.tmp_agent = None
+
+
+    def __enter__(self):
+        self.assert_one_agent()
+    
+
+    def _do_agent_stop(self                      ):
+        try:
+            get_opsbro_local('/stop')
+        except get_request_errors(), exp:
+            logger.error(exp)
+            return
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.tmp_agent is not None:
+            cprint('# * Stopping the temporary agent:', color= 'grey', end='')
+            sys.stdout.flush()
+            self._do_agent_stop()
+            # Be sure to kill it
+            self.tmp_agent.terminate()
+            cprint('%s OK' % CHARACTERS.check, color='grey')
+            cprint('# | if you want to start the agent can launch it with the "opsbro agent start" command', color='grey')
+
+
+    # For some CLI we don't care if we have a running agent or just a dummy send (like
+    # quick dashboards)
+    def assert_one_agent(self):
+        agent_state = wait_for_agent_started(visual_wait=True)
+        if agent_state == AGENT_STATE_STOPPED:
+            self.did_start_a_tmp_agent = True
+            tmp_agent_cmd = 'python %s agent start' % get_current_binary()
+            self.tmp_agent = subprocess.Popen(tmp_agent_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, preexec_fn=os.setsid)
+            cprint('')
+            cprint('# This command need a started agent, and currently no one is started', color='grey')
+            cprint('# * Spawning a ', color='grey', end='')
+            cprint('temporary one', color='yellow')
+            cprint('# | - process pid is %s' % self.tmp_agent.pid, color='grey')
+            cprint('# | - you can avoid the temporary agent by launching one with "opsbro agent start" or "/etc/init.d/opsbro start" ', color='grey')
+            time.sleep(1)
+            agent_state = wait_for_agent_started(visual_wait=True)
+        if agent_state == AGENT_STATE_STOPPED:
+            raise Exception('Cannot have the agent, even a temporary one')
+        
+
 def wait_for_agent_started(timeout=30, visual_wait=False, exit_if_stopped=False):
     spinners = itertools.cycle(CHARACTERS.spinners)
     start = time.time()
@@ -102,13 +165,15 @@ def wait_for_agent_started(timeout=30, visual_wait=False, exit_if_stopped=False)
             break
         if visual_wait:
             cprint('\r %s ' % spinners.next(), color='blue', end='')
-            cprint(' agent is still initializing (collector, detector, system compliance & generators are not finish)', end='')
+            cprint(' agent is still ', end='')
+            cprint('initializing', color='yellow', end='')
+            cprint(' (collector, detector,... are not finish)', end='')
             sys.stdout.flush()
         time.sleep(0.1)
     if visual_wait:
         # Clean what we did put before
-        cprint('\r' , end='')
-        cprint(' '*100, end='')
+        cprint('\r', end='')
+        cprint(' ' * 100, end='')
         cprint('\r', end='')
         sys.stdout.flush()
     return agent_state

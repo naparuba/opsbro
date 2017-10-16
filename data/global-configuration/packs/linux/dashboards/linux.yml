@@ -13,10 +13,6 @@ dashboard:
                       title: CPU Chart
                       value: "100-{{collector.cpustats.cpu_all.%idle}}"
                       unit: "%"
-                   - horizontal_chart:
-                      title: Load average / cpus
-                      value: "100 * {{collector.loadaverage.load1}} / (1.0 * {{collector.system.cpu_count}})"
-                      unit: "%"
                    - horizontal_split:
                       - donut:
                          title: "Physical memory"

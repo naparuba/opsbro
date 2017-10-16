@@ -509,7 +509,7 @@ def do_agent_parameters_remove(parameter_name, str_value):
 
 
 def do_agent_wait_full_initialized(timeout=30):
-    agent_state = wait_for_agent_started(visual_wait=True, exit_if_stopped=True)
+    agent_state = wait_for_agent_started(visual_wait=True, timeout=timeout, exit_if_stopped=True)
     if agent_state == AGENT_STATE_OK:
         cprint(AGENT_STATE_OK, color='green')
         return

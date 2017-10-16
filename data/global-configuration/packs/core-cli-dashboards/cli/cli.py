@@ -7,12 +7,10 @@ import sys
 import time
 import base64
 
-from opsbro.cli import post_opsbro_json
-
+from opsbro.cli import post_opsbro_json, AnyAgent
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, sprintf, logger
 from opsbro.cli_display import print_h1
-from opsbro.cli import wait_for_agent_started
 from opsbro.packer import packer
 from opsbro.misc.lolcat import lolcat
 from opsbro.topic import topiker
@@ -126,30 +124,31 @@ def do_dashboards_show(dashboard_name):
     import codecs
     stdout_utf8 = codecs.getwriter("utf-8")(sys.stdout)
     sys.stdout = stdout_utf8
+    
+    # We don't care if we are in the installed agent or a temporary spawn one
+    with AnyAgent():
+        from opsbro.dashboardmanager import get_dashboarder
+        dashboarder = get_dashboarder()
+        
+        dashboard = dashboarder.dashboards.get(dashboard_name, None)
+        if dashboard is None:
+            logger.error('There is no such dashboard %s. Please use the dashboards list command to view all available dashboards' % dashboard_name)
+            sys.exit(2)
+        
+        ui = _get_ui_from_dashboard(dashboard)
+        
+        if ui is None:
+            sys.exit(1)
+        
+        while True:
+            try:
+                ui.display(dashboard['title'])
+                time.sleep(10)
+            except KeyboardInterrupt:
+                # Clean the screen before exiting
+                cprint('\033c')
+                return
 
-    wait_for_agent_started(visual_wait=True)
-    
-    from opsbro.dashboardmanager import get_dashboarder
-    dashboarder = get_dashboarder()
-    
-    dashboard = dashboarder.dashboards.get(dashboard_name, None)
-    if dashboard is None:
-        logger.error('There is no such dashboard %s. Please use the dashboards list command to view all available dashboards' % dashboard_name)
-        sys.exit(2)
-    
-    ui = _get_ui_from_dashboard(dashboard)
-    
-    if ui is None:
-        sys.exit(1)
-    
-    while True:
-        try:
-            ui.display(dashboard['title'])
-            time.sleep(10)
-        except KeyboardInterrupt:
-            # Clean the screen before exiting
-            cprint('\033c')
-            sys.exit(0)
 
 
 def do_dashboards_list():

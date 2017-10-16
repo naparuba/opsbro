@@ -167,7 +167,7 @@ class Tile(object):
         self._display(tbox, None)
         
         self._jump_to(terminal_height - 1, 0)
-        cprint(' http://opsbro.io', color='grey', end='')
+        cprint(' http://opsbro.io (by Shinken Solutions team)', color='grey', end='')
         
         quote, from_film = get_quote()
         full_quote = '>> %s  (%s)' % (quote, from_film)

@@ -18,7 +18,6 @@ warnings.showwarning = _disable_warns
 import optparse
 import sys
 import os
-import signal
 
 CLI = None
 
@@ -74,11 +73,13 @@ if __name__ == '__main__':
         remap_from_install_dir()
     
     from opsbro.log import cprint, logger, is_tty
-    from opsbro.cli import CLICommander
-    
+    from opsbro.cli import CLICommander, save_current_binary
     from opsbro.info import BANNER, TXT_BANNER
     from opsbro.misc.bro_quotes import get_quote
     from opsbro.yamlmgr import yamler
+
+    # We should save our current opsbro binary, for debug purpose or sub spawn of some cli calls
+    save_current_binary(sys.argv[0])
     
     logger.setLevel('WARNING')
     
