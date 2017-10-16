@@ -17,6 +17,9 @@ if [ $? != 0 ]; then
    exit 2
 fi
 
+#TODO: find a way for this sleep to be useless
+# Sleep until the opsbro
+sleep 1
 
 echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Wait for initialization finish       ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
 # Will wait 60s max if the daemon is not finish to launch all the init things (collectors, generators, and co)
