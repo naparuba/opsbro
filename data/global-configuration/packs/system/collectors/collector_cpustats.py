@@ -52,7 +52,6 @@ class CpuStats(Collector):
             for (t, new_v) in new_stats.iteritems():
                 old_v = old_stats[t]
                 this_type_consumed = (new_v - old_v) / float(diff_time)
-                print "Computed", t, this_type_consumed
                 r[k][t] = this_type_consumed
         return r
     
@@ -105,5 +104,5 @@ class CpuStats(Collector):
             logger.debug('getCPUStats: unsupported platform')
             return False
         
-        logger.debug('getCPUStats: completed, returning')
+        self.logger.debug('getCPUStats: completed, returning')
         return cpuStats

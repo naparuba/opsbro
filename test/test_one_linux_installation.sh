@@ -83,3 +83,56 @@ if [ $? != 0 ]; then
    echo "ERROR: the group docker-container is missing!"
    exit 2
 fi
+
+
+echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  STANDARD LINUX PACK:  iostats counters      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
+IOSTATS=$(opsbro collectors show iostats)
+
+printf "%s" "$IOSTATS" | grep read_bytes > /dev/null
+if [ $? != 0 ]; then
+   echo "ERROR: the iostats collector do not seems to be working"
+   printf "$IOSTATS"
+   exit 2
+fi
+
+echo "Pack: iostats counters are OK"
+
+
+echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  STANDARD LINUX PACK:  cpustats counters      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
+CPUSTATS=$(opsbro collectors show cpustats)
+
+printf "%s" "$CPUSTATS" | grep 'cpu_all.%idle' > /dev/null
+if [ $? != 0 ]; then
+   echo "ERROR: the cpustats collector do not seems to be working"
+   printf "$CPUSTATS"
+   exit 2
+fi
+
+echo "Pack: cpustats counters are OK"
+
+
+echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  STANDARD LINUX PACK:  networktraffic counters      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
+NETWORKSTATS=$(opsbro collectors show networktraffic)
+
+printf "%s" "$NETWORKSTATS" | grep 'recv_bytes/s' > /dev/null
+if [ $? != 0 ]; then
+   echo "ERROR: the networkstats collector do not seems to be working"
+   printf "$NETWORKSTATS"
+   exit 2
+fi
+
+echo "Pack: networkstats counters are OK"
+
+
+echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  STANDARD LINUX PACK:  openports counters      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
+OPENPORTS=$(opsbro collectors show openports)
+
+# The 6768 is the default agent one, so should be open
+printf "%s" "$OPENPORTS" | grep '6768' > /dev/null
+if [ $? != 0 ]; then
+   echo "ERROR: the OPENPORTS collector do not seems to be working"
+   printf "$OPENPORTS"
+   exit 2
+fi
+
+echo "Pack: openports counters are OK"

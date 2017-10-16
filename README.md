@@ -459,8 +459,6 @@ Please contact me (naparuba _AT_ gmail.com is you are interested to test it in B
 
 
 ## specific packs:
-To monitor linux:
-  * sysstat
 
 To monitor mongodb server:
   * python-pymongo
