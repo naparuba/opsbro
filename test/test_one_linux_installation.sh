@@ -144,3 +144,6 @@ echo "Pack: cpustats counters are OK"
 #fi
 
 #echo "Pack: openports counters are OK"
+
+
+echo "************************************ One linux installation is OK *********************************************"

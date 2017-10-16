@@ -3,6 +3,8 @@ MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 RUN        apt-get update && apt-get install -y python
 RUN        apt-get install -y python-pip
+# NOTE: the pypi version is still using iostat calls
+RUN        apt-get install -y sysstat
 
 ADD        . /root/opsbro-oss
 

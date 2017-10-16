@@ -102,7 +102,7 @@ def wait_for_agent_started(timeout=30, visual_wait=False, exit_if_stopped=False)
             break
         if visual_wait:
             cprint('\r %s ' % spinners.next(), color='blue', end='')
-            cprint(' agent is still initializing (collector, detector, system compliance & generators did finish)', end='')
+            cprint(' agent is still initializing (collector, detector, system compliance & generators are not finish)', end='')
             sys.stdout.flush()
         time.sleep(0.1)
     if visual_wait:

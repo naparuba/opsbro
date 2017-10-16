@@ -566,8 +566,8 @@ class MonitoringManager(object):
     
     
     def export_http(self):
-        @http_export('/agent/state/:nuuid')
-        @http_export('/agent/state')
+        @http_export('/monitoring/state/:nuuid')
+        @http_export('/monitoring/state')
         def get_state(nuuid=''):
             response.content_type = 'application/json'
             r = {'checks': {}, 'services': {}}
@@ -603,13 +603,13 @@ class MonitoringManager(object):
                 return r
         
         
-        @http_export('/agent/checks')
+        @http_export('/monitoring/checks')
         def agent_checks():
             response.content_type = 'application/json'
             return self.checks
         
         
-        @http_export('/agent/checks/:cname#.+#')
+        @http_export('/monitoring/checks/:cname#.+#')
         def agent_check(cname):
             response.content_type = 'application/json'
             if cname not in self.checks:
@@ -617,7 +617,7 @@ class MonitoringManager(object):
             return self.checks[cname]
         
         
-        @http_export('/agent/checks/:cname#.+#', method='DELETE')
+        @http_export('/monitoring/checks/:cname#.+#', method='DELETE')
         def agent_DELETE_check(cname):
             if cname not in self.checks:
                 return
@@ -625,7 +625,7 @@ class MonitoringManager(object):
             return
         
         
-        @http_export('/agent/checks/:cname#.+#', method='PUT')
+        @http_export('/monitoring/checks/:cname#.+#', method='PUT')
         def interface_PUT_agent_check(cname):
             value = request.body.getvalue()
             try:
@@ -636,13 +636,13 @@ class MonitoringManager(object):
             return
         
         
-        @http_export('/agent/services')
+        @http_export('/monitoring/services')
         def agent_services():
             response.content_type = 'application/json'
             return self.services
         
         
-        @http_export('/agent/services/:sname#.+#')
+        @http_export('/monitoring/services/:sname#.+#')
         def agent_service(sname):
             response.content_type = 'application/json'
             if sname not in self.services:
@@ -650,7 +650,7 @@ class MonitoringManager(object):
             return self.services[sname]
         
         
-        @http_export('/agent/services/:sname#.+#', method='PUT')
+        @http_export('/monitoring/services/:sname#.+#', method='PUT')
         def interface_PUT_agent_service(sname):
             value = request.body.getvalue()
             try:
@@ -661,7 +661,7 @@ class MonitoringManager(object):
             return
         
         
-        @http_export('/agent/services/:sname#.+#', method='DELETE')
+        @http_export('/monitoring/services/:sname#.+#', method='DELETE')
         def agent_DELETE_service(sname):
             if sname not in self.services:
                 return

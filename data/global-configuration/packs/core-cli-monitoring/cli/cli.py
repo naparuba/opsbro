@@ -22,9 +22,9 @@ def do_state(name=''):
     # The information is available only if the agent is started
     wait_for_agent_started(visual_wait=True)
     
-    uri = '/agent/state/%s' % name
+    uri = '/monitoring/state/%s' % name
     if not name:
-        uri = '/agent/state'
+        uri = '/monitoring/state'
     try:
         (code, r) = get_opsbro_local(uri)
     except get_request_errors(), exp:
