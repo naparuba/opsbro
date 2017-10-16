@@ -23,14 +23,6 @@ import signal
 CLI = None
 
 
-# Handle some signals
-def sig_handler(signalnum, handle):
-    """ Handle some signals """
-    sys.exit(0)
-
-
-signal.signal(signal.SIGTERM, sig_handler)
-signal.signal(signal.SIGINT, sig_handler)
 
 CONFIG = {}
 

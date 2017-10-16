@@ -75,7 +75,6 @@ def _get_tree(root):
     root_type = root.keys()[0]
     root_value = root[root_type]
     
-    print "Getting tree for", root_type, root_value
     res = None
     # some types are list based, some others are finals (leaf)
     if root_type == 'horizontal_split':
@@ -118,7 +117,6 @@ def _get_tree(root):
 
 def _get_ui_from_dashboard(dashboard):
     content = dashboard['content']
-    print "Will transform content:", content
     
     ui = _get_tree(content)
     return ui
@@ -145,8 +143,13 @@ def do_dashboards_show(dashboard_name):
         sys.exit(1)
     
     while True:
-        ui.display(dashboard['title'])
-        time.sleep(10)
+        try:
+            ui.display(dashboard['title'])
+            time.sleep(10)
+        except KeyboardInterrupt:
+            # Clean the screen before exiting
+            cprint('\033c')
+            sys.exit(0)
 
 
 def do_dashboards_list():
