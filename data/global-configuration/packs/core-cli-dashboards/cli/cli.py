@@ -120,7 +120,7 @@ def _get_ui_from_dashboard(dashboard):
     return ui
 
 
-def do_dashboards_show(dashboard_name):
+def do_dashboards_show(dashboard_name, occurences):
     import codecs
     stdout_utf8 = codecs.getwriter("utf-8")(sys.stdout)
     sys.stdout = stdout_utf8
@@ -140,6 +140,7 @@ def do_dashboards_show(dashboard_name):
         if ui is None:
             sys.exit(1)
         
+        i = 0
         while True:
             try:
                 ui.display(dashboard['title'])
@@ -148,7 +149,9 @@ def do_dashboards_show(dashboard_name):
                 # Clean the screen before exiting
                 cprint('\033c')
                 return
-
+            if occurences != 0 and i > occurences:
+                return
+            i += 1
 
 
 def do_dashboards_list():
@@ -190,6 +193,7 @@ exports = {
         'keywords'   : ['dashboards', 'show'],
         'args'       : [
             {'name': 'dashboard_name', 'description': 'Dashboard name'},
+            {'name': '--occurences', 'type': 'int', 'default': 0, 'description': 'How much refresh for the dashboards. By default 0 (means infinite)'},
         ],
         'description': 'Show a specific dashboard'
     },

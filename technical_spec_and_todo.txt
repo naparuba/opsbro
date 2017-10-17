@@ -477,6 +477,12 @@ compliance:
 
 
 
+Bon exemples d'utilisation pour du déploiement:
+https://github.com/zwindler/ansible-deploy-elasticsearch
+https://github.com/zwindler/ansible-deploy-kibana
+https://github.com/zwindler/ansible-deploy-logstash
+
+
 #### ROADMAP:
 
 
@@ -567,7 +573,6 @@ compliance:
         * detected_groups
     * RAFT avoir une valeur sure de stabilisation, et voir les indicateurs sur ce qui aide/diminue la stabilisation
     * PACK Azure
-    * PACK linux: enlever la dépendance à sysstat
     * PACK ipmi (hardware stuff)
     * PACK smart (disques)
     * PACK raid linux (md)
