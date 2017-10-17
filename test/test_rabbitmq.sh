@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
-/etc/init.d/opsbro start
+
 
 # Start rabbit mq
 rabbitmq-plugins enable rabbitmq_management
 rabbitmq-server &
 
-sleep 20
+/etc/init.d/opsbro start
 
 test/assert_group.sh "rabbitmq"
 if [ $? != 0 ]; then

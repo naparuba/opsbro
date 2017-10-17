@@ -17,66 +17,36 @@ if [ $? != 0 ]; then
    exit 2
 fi
 
-#TODO: find a way for this sleep to be useless
-# Sleep until the opsbro
-sleep 1
-
-echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Wait for initialization finish       ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
-# Will wait 60s max if the daemon is not finish to launch all the init things (collectors, generators, and co)
-time opsbro agent wait-initialized --timeout 60
-
-if [ $? != 0 ]; then
-   echo "ERROR: the agent did not initialize in time"
-   exit 2
-fi
+# NOTE: the init script already wait for agent end of initialization
 
 
 echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Info           ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
 
-LIMIT=60
-for ii in `seq 1 $LIMIT`; do
-    echo "Checking agent info, loop $ii"
-    opsbro agent info
-    if [ $? != 0 ]; then
-       if [ $ii == $LIMIT ]; then
-           echo "ERROR: information get failed!"
-           cat /var/log/opsbro/daemon.log
-           exit 2
-       fi
-       echo "Let more time to the agent to start, restart this test"
-       continue
-    fi
-    # Test OK, we can break
-    echo "DBG: FINISH loop $ii"
-    break
-done
+
+opsbro agent info
+if [ $? != 0 ]; then
+    echo "ERROR: information get failed!"
+    cat /var/log/opsbro/daemon.log
+    exit 2
+fi
 
 
 echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Address?       ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
 
 # Is there an address used by the daemon?
-LIMIT=60
-for ii in `seq 1 $LIMIT`; do
-    echo "Checking agent addr, loop $ii"
-    ADDR=$(opsbro agent info | grep Addr | awk '{print $2}')
-    if [ "$ADDR" == "None" ]; then
-       if [ $ii == $LIMIT ]; then
-           echo "The opsbro daemon do not have a valid address."
-           echo `opsbro agent info`
-           exit 2
-       fi
-       echo "Let more time to the agent to start, restart this test"
-       continue
-    fi
-    # Test OK, we can break
-    echo "    dbg: finish loop $ii"
-    break
-done
+echo "Checking agent addr"
+ADDR=$(opsbro agent info | grep Addr | awk '{print $2}')
+if [ "$ADDR" == "None" ]; then
+    echo "The opsbro daemon do not have a valid address."
+    echo `opsbro agent info`
+    exit 2
+fi
+
 
 echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Linux GROUP      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
-# Check if linux group is set
-echo "Checking agent addr, loop $ii"
 
+echo "Checking linux group"
+# Check if linux group is set
 test/assert_group.sh "linux"
 if [ $? != 0 ]; then
     echo "ERROR: the group linux is missing!"
@@ -86,7 +56,7 @@ fi
 
 echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Docker-container GROUP      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
 # Check if docker-container group is set
-echo "Checking agent docker group, loop $ii"
+echo "Checking agent docker group"
 
 test/assert_group.sh "docker-container"
 if [ $? != 0 ]; then

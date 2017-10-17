@@ -4,24 +4,21 @@ GROUP=$1
 
 printf "\n****************** [ Checking GROUP is set:  $GROUP  ] ******************\n"
 
-LIMIT=60
+# Assert group only if agent is stable
+opsbro agent wait-initialized --timeout 60
 
-for ii in `seq 1 $LIMIT`; do
-    RES=$(opsbro evaluator eval "have_group('$GROUP')" | tail -n 1)
+if [ $? != 0 ]; then
+   echo "ERROR: cannot check group is agent is not started or stable"
+   exit 2
+fi
 
-    if [ $RES != "True" ]; then
-        if [ $ii == $LIMIT ]; then
-           echo "Fail: check if group is set: have_group('$GROUP') ==> $RES"
-           opsbro agent info | grep Groups
-           opsbro evaluator eval "have_group('$GROUP')"
-           exit 2
-        fi
-        echo "Let more time to the agent to start, restart this test"
-        continue
-    fi
-    echo "    - dbg: finish loop: $ii"
-    echo "GROUP: $GROUP is OK"
-    echo ""
-    break
-done
+RES=$(opsbro evaluator eval "have_group('$GROUP')" | tail -n 1)
+if [ $RES != "True" ]; then
+   echo "Fail: check if group is set: have_group('$GROUP') ==> $RES"
+   opsbro agent info | grep Groups
+   opsbro evaluator eval "have_group('$GROUP')"
+   exit 2
+fi
+
+echo "GROUP: $GROUP is OK"
 

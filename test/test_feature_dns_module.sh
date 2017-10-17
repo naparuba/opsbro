@@ -5,7 +5,6 @@ echo "Starting to test DNS module"
 # Start it
 /etc/init.d/opsbro start
 
-sleep 2
 
 # Enable DNS module
 opsbro agent parameters add groups dns-listener

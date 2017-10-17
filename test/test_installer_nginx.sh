@@ -10,7 +10,7 @@ fi
 # Activate the installer
 touch /tmp/install_nginx
 
-# Wait a bit in order to allow opsbro to install it (and wiaht for package, etc etc)
+# Wait a bit in order to allow opsbro to install it (and wait for package, etc etc)
 sleep 30
 
 test/assert_group.sh "nginx"

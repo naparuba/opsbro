@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 
-/etc/init.d/opsbro start
-
 # Start redis
 redis-server&
 
-sleep 20
+/etc/init.d/opsbro start
+
 
 test/assert_group.sh "redis"
 if [ $? != 0 ]; then

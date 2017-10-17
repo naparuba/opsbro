@@ -135,7 +135,7 @@ OPSBRO_COLOR="\\033[94mOps\\033[0;39m*\\033[91mBro\\033[0;39m"
 COLOR_MAGENTA="\\033[95m"
 COLOR_RESET="\\033[0;39m"
 
-# Have a special started output to show that we did launch but it's not currently finished yet
+# Ok all is finish
 echo_started() {
   RES_COL=60
   MOVE_TO_COL="echo -en \\033[${RES_COL}G"
@@ -146,8 +146,23 @@ echo_started() {
   $SETCOLOR_SUCCESS
   echo -n $"√ OK"
   $SETCOLOR_NORMAL
-  echo -n "]"
+  echo -n "]           "  # lot of space to clean the initializing text
   printf "\n"
+  return 0
+}
+
+# Have a special started output to show that we did launch but it's not currently finished yet
+echo_initializing() {
+  RES_COL=60
+  MOVE_TO_COL="echo -en \\033[${RES_COL}G"
+  SETCOLOR_SUCCESS="echo -en \\033[32m"
+  SETCOLOR_NORMAL="echo -en \\033[0;39m"
+  $MOVE_TO_COL
+  echo -n "["
+  $SETCOLOR_SUCCESS
+  echo -n $"INITIALIZING..."
+  $SETCOLOR_NORMAL
+  echo -n "]"
   return 0
 }
 
@@ -179,7 +194,7 @@ echo_failed() {
   $SETCOLOR_ERROR
   echo -n $"Х ERROR"
   $SETCOLOR_NORMAL
-  echo -n "]"
+  echo -n "]             " # lot of space to clean the initializing text
   echo ""
   $SETCOLOR_ERROR
   echo $error_msg
@@ -240,22 +255,43 @@ do_stop() {
 
 ############################
 
+print_starting_bro() {
+    printf "\r$COLOR_MAGENTA""Starting$COLOR_RESET $OPSBRO_COLOR: "
+}
+
 do_start_() {
-    printf "$COLOR_MAGENTA""Starting$COLOR_RESET $OPSBRO_COLOR: "
+    print_starting_bro
     status=$(do_status)
     rc=$?
     if [ $rc -eq 0 ]; then
         echo_already_started
         return
     fi
-    startoutput=$(do_start)
+
+    [ "$DEBUG" = 1 ] && DEBUGCMD="--debug "
+    output=$(opsbro $DEBUGCMD agent start --daemon  2>&1)
     rc=$?
-    if [ $rc -eq 0 ]; then
-        echo_started
-    else
-        echo_failed "$startoutput"
+
+
+    echo_initializing
+
+    if [ $rc != 0 ]; then
+        print_starting_bro
+        echo_failed "FAILED: $output"
+        return 1
     fi
-    return $rc
+
+    WAIT=$(opsbro agent wait-initialized --timeout 60)
+    if [ $? != 0 ]; then
+        print_starting_bro
+        echo_failed "FAILED: $WAIT"
+        return 1
+    fi
+
+    print_starting_bro
+    echo_started
+
+    return 0
 }
 
 

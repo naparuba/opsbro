@@ -2,8 +2,6 @@
 
 /etc/init.d/opsbro start
 
-sleep 30
-
 echo "Starting to test APIS"
 
 

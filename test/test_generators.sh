@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
 
-sleep 30
-
 echo "Starting to test Generator"
 
 

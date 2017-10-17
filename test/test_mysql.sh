@@ -14,9 +14,6 @@ opsbro  packs parameters set local.mysql.password        secret
 
 /etc/init.d/opsbro start
 
-opsbro packs show
-
-sleep 20
 
 test/assert_group.sh "mysql"
 if [ $? != 0 ]; then

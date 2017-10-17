@@ -7,8 +7,6 @@ chown news:news /etc/passwd
 # Start daemon
 /etc/init.d/opsbro start
 
-# wait a bit that the compliance rule is executed
-sleep 10
 
 OUT=$(ls -la /etc/passwd)
 
