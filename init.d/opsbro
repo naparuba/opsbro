@@ -139,7 +139,7 @@ COLOR_RESET="\\033[0;39m"
 echo_started() {
   RES_COL=60
   MOVE_TO_COL="echo -en \\033[${RES_COL}G"
-  SETCOLOR_SUCCESS="echo -en \\033[32m"
+  SETCOLOR_SUCCESS="echo -en \\033[92m"
   SETCOLOR_NORMAL="echo -en \\033[0;39m"
   $MOVE_TO_COL
   echo -n "["
