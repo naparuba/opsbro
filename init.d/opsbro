@@ -151,20 +151,41 @@ echo_started() {
   return 0
 }
 
+SPINNER_ARRAY_IDX=0
+SPINNER_ARRAY=("⣷" "⣯" "⣟" "⡿" "⢿" "⣻" "⣽" "⣾")
+SPINNER_ARRAY_LEN=8
+
+increase_spinner(){
+   SPINNER_ARRAY_IDX=`expr $SPINNER_ARRAY_IDX + 1`
+   SPINNER_ARRAY_IDX=`expr $SPINNER_ARRAY_IDX % $SPINNER_ARRAY_LEN`
+}
+
+get_spinner(){
+   echo ${SPINNER_ARRAY[$SPINNER_ARRAY_IDX]}
+}
+
+
+
 # Have a special started output to show that we did launch but it's not currently finished yet
 echo_initializing() {
   RES_COL=60
   MOVE_TO_COL="echo -en \\033[${RES_COL}G"
-  SETCOLOR_SUCCESS="echo -en \\033[32m"
+  SETCOLOR_SPINNER="echo -en \\033[96m"
+  SETCOLOR_INIT_TEXT="echo -en \\033[94m"
   SETCOLOR_NORMAL="echo -en \\033[0;39m"
   $MOVE_TO_COL
   echo -n "["
-  $SETCOLOR_SUCCESS
-  echo -n $"INITIALIZING..."
+  increase_spinner
+  SPINNER_CHAR=`get_spinner`
+  $SETCOLOR_SPINNER
+  echo -n "$SPINNER_CHAR"
+  $SETCOLOR_INIT_TEXT
+  echo -n " initializing"
   $SETCOLOR_NORMAL
   echo -n "]"
   return 0
 }
+
 
 # Have a special started output to show that we did launch but it's not currently finished yet
 echo_already_started() {
@@ -268,12 +289,10 @@ do_start_() {
         return
     fi
 
+    #START
     [ "$DEBUG" = 1 ] && DEBUGCMD="--debug "
     output=$(opsbro $DEBUGCMD agent start --daemon  2>&1)
     rc=$?
-
-
-    echo_initializing
 
     if [ $rc != 0 ]; then
         print_starting_bro
@@ -281,13 +300,30 @@ do_start_() {
         return 1
     fi
 
-    WAIT=$(opsbro agent wait-initialized --timeout 60)
-    if [ $? != 0 ]; then
-        print_starting_bro
-        echo_failed "FAILED: $WAIT"
-        return 1
-    fi
+    # WAIT FOR INITIALISATION
+    TIMEOUT=60
 
+    for ii in `seq 1 $TIMEOUT`; do
+       print_starting_bro
+       echo_initializing
+       WAIT=$(opsbro agent wait-initialized --timeout 1)  # NOTE: timeout 1 as we are looping over it
+
+       # If bad result, maybe we are not at the limit and so we will loop again
+       if [ $? != 0 ]; then
+          # IF we reach the timeout, get out of this
+          if [ $ii == $TIMEOUT ]; then
+              print_starting_bro
+              echo_failed "FAILED (initialisation was not finish after $TIMEOUT seconds): $WAIT"
+              return 1
+          fi
+          # We did not reach the TIMEOUT, we can retry again
+          continue
+       fi
+       # We are OK? so we can quit this loop and live an happy life with our agent
+       break
+    done
+
+    # We are fully started, let's enjoy
     print_starting_bro
     echo_started
 

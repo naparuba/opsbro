@@ -24,6 +24,7 @@ from opsbro.characters import CHARACTERS
 from opsbro.misc.lolcat import lolcat
 from opsbro.library import libstore
 from opsbro.cluster import AGENT_STATE_STOPPED
+from opsbro.now import NOW
 
 # Will be populated by the opsbro CLI command
 CONFIG = None
@@ -153,9 +154,9 @@ class AnyAgent(object):
 # unix socket is available, so allow some stopped state and only exit at the end of the timeout
 def wait_for_agent_started(timeout=30, visual_wait=False, exit_if_stopped=False, wait_for_spawn=False):
     spinners = itertools.cycle(CHARACTERS.spinners)
-    start = time.time()
+    start = NOW.monotonic()  # note: thanks to monotonic, we don't care about the system get back in time during this loop
     agent_state = 'unknown'
-    while time.time() - start < timeout:
+    while NOW.monotonic() - start < timeout:
         try:
             agent_state = get_opsbro_json('/agent/state')
         except get_request_errors():
