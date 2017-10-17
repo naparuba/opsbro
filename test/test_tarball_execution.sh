@@ -12,7 +12,7 @@ fi
 
 echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Wait for initialization           ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
 
-opsbro agent wait-initialized --timeout 60
+bin/opsbro agent wait-initialized --timeout 60
 if [ $? != 0 ]; then
    echo "ERROR: daemon start failed!"
    exit 2
