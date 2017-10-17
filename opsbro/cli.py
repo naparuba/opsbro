@@ -454,9 +454,14 @@ class CLICommander(object):
                 dest = dest.replace('-', '_')
                 # add_option parameters, common ones
                 d = {'dest': dest, 'help': (description)}
-                # If bool setup it
+                # Specify the types allowed for parameters
                 if _type == 'bool':
                     d['action'] = 'store_true'
+                elif _type == 'int' or _type == 'long':
+                    d['type'] = 'int'
+                elif _type == 'float':
+                    d['type'] = 'float'
+
                 # and if we got a real default, use it
                 if not isinstance(default, Dummy):
                     d['default'] = default
