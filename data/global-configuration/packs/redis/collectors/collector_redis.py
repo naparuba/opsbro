@@ -3,6 +3,7 @@ import socket
 
 from opsbro.collector import Collector
 from opsbro.parameters import StringParameter, IntParameter
+from opsbro.now import NOW
 
 
 # Parse the result of Redis's INFO command into a Python dict
@@ -65,7 +66,7 @@ class Redis(Collector):
         port = 6379
         logger = self.logger
         
-        start = time.time()
+        start = NOW.monotonic()
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect((addr, port))
@@ -77,11 +78,11 @@ class Redis(Collector):
             return {'available': False}
         info = parse_info(buf)
         
-        now = int(time.time())
-        diff = now - self.last_launch
+        now = int(NOW.monotonic())
+        diff = now - self.last_launch  # diff cannot be negative thanks to monotonic clock
         self.last_launch = now
         
-        latency_ms = round((time.time() - start) * 1000, 2)
+        latency_ms = round((NOW.monotonic() - start) * 1000, 2)
         info['connexion_latency_ms'] = latency_ms
         info['available'] = True
         

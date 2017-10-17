@@ -3,6 +3,7 @@ import time
 import os
 
 from opsbro.collector import Collector
+from opsbro.now import NOW
 
 if os.name == 'nt':
     import opsbro.misc.wmi as wmi
@@ -17,8 +18,8 @@ class KernelStats(Collector):
     
     def launch(self):
         logger = self.logger
-        now = int(time.time())
-        diff = now - self.last_launch
+        now = int(NOW.monotonic())
+        diff = now - self.last_launch  #note: thanks to monotonic, diff cannot be negative
         self.last_launch = now
         
         logger.debug('getKernelStats: start')

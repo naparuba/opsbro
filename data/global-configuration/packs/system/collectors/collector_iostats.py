@@ -6,6 +6,7 @@ import time
 from string import digits
 
 from opsbro.collector import Collector
+from opsbro.now import NOW
 
 if os.name == 'nt':
     import opsbro.misc.wmi as wmi
@@ -128,21 +129,18 @@ class IoStats(Collector):
             return False
         
         new_stats = self._get_disk_stats()
-        new_time = time.time()
+        new_time = NOW.monotonic()
         # First loop: do a 1s loop an compute it, to directly have results
         if self.previous_time == 0:
-            self.previous_time = time.time()
+            self.previous_time = NOW.monotonic()
             self.previous_raw = new_stats
             time.sleep(1)
             new_stats = self._get_disk_stats()
-            new_time = time.time()
-        # Maybe we did return back in time? skip this turn
+            new_time = NOW.monotonic()
         
-        if (new_time - self.previous_time) < 0:
-            self.previous_time = new_time
-            self.previous_raw = new_stats
-            return False
+        # NOTE: Thanks to monotonic clock, we cannot get back in time
         
+        # So compute the diff
         iostats = self.compute_linux_disk_stats(new_stats, new_time - self.previous_time)
         self.previous_raw = new_stats
         self.previous_time = new_time

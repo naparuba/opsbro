@@ -3,6 +3,8 @@ import sys
 import time
 
 from opsbro.collector import Collector
+from opsbro.now import NOW
+
 
 if os.name == 'nt':
     import opsbro.misc.wmi as wmi
@@ -81,21 +83,18 @@ class CpuStats(Collector):
             # user, nice, system, idle, iowait, irq, softirq, steal, guest, guest_nice
             logger.debug('getCPUStats: linux2')
             new_stats = self._get_linux_abs_stats()
-            new_time = time.time()
+            new_time = NOW.monotonic()
             # First loop: do a 1s loop an compute it, to directly have results
             if self.prev_linux_time == 0:
-                self.prev_linux_time = time.time()
+                self.prev_linux_time = NOW.monotonic()
                 self.prev_linux_stats = new_stats
                 time.sleep(1)
                 new_stats = self._get_linux_abs_stats()
-                new_time = time.time()
-            # Maybe we did return back in time? skip this turn
-            
-            if (new_time - self.prev_linux_time) < 0:
-                self.prev_linux_time = new_time
-                self.prev_linux_stats = new_stats
-                return False
-            
+                new_time = NOW.monotonic()
+                
+            # NOTE: thanks to monotonic time, we cannot get back in time for diff
+
+            # So let's compute
             r = self.compute_linux_cpu_stats(new_stats, new_time - self.prev_linux_time)
             self.prev_linux_stats = new_stats
             self.prev_linux_time = new_time
