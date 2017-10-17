@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 
-/etc/init.d/opsbro start
-
 # Start mongodb
 mongod -f /etc/mongod.conf
 
-sleep 15
+/etc/init.d/opsbro start
+
+# Wait until the agent is fully initialized
+opsbro agent wait-initialized --timeout 60
 
 test/assert_group.sh "mongodb"
 if [ $? != 0 ]; then

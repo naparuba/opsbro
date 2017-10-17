@@ -1,6 +1,8 @@
 import traceback
 import urlparse
 import datetime
+import os
+import sys
 
 from opsbro.collector import Collector
 from opsbro.util import to_best_int_float
@@ -16,19 +18,37 @@ class Mongodb(Collector):
     }
     
     
+    def __init__(self):
+        super(Mongodb, self).__init__()
+        self.pymongo = None
+    
     def launch(self):
         logger = self.logger
         logger.debug('getMongoDBStatus: start')
         
-        logger.debug('getMongoDBStatus: config set')
-        
-        try:
-            import pymongo
-            from pymongo import Connection
-        except ImportError:
-            logger.warning('Unable to import pymongo library')
-            return False
-        
+        # Try to import pymongo from system (will be the best choice)
+        # but if no available, switch to the embedded one
+        # NOTE: the embedded is a 2.9.2 with centos 7.so file, but in other ditro only the c
+        # extension will not load, but it's not a real problem as we don't care about the lib perf here
+        if self.pymongo is None:
+            try:
+                import pymongo
+                self.pymongo = pymongo
+            except ImportError:
+                my_dir = os.path.abspath(os.path.dirname(__file__))
+                sys.path.insert(0, my_dir)
+                try:
+                    import pymongo
+                    self.pymongo = pymongo
+                except ImportError, exp:
+                    self.error('Unable to import pymongo library, even the embedded one (%s)' % exp)
+                    return False
+                finally:
+                    try:
+                        sys.path.remove(my_dir)
+                    except:
+                        pass
+            
         try:
             mongoURI = ''
             parsed = urlparse.urlparse(self.get_parameter('uri'))
@@ -45,13 +65,10 @@ class Mongodb(Collector):
                 mongoURI = self.get_parameter('uri')
             
             logger.debug('-- mongoURI: %s', mongoURI)
-            conn = Connection(mongoURI, slave_okay=True)
+            conn = self.pymongo.Connection(mongoURI, slave_okay=True)
             logger.debug('Connected to MongoDB')
-        except pymongo.errors.ConnectionFailure, exp:
-            logger.debug('Unable to connect to MongoDB server %s - Exception = %s' % (mongoURI, exp))
-            return False
-        except Exception, exp:
-            logger.error('Unable to connect to MongoDB server %s - Exception = %s', mongoURI, traceback.format_exc())
+        except self.pymongo.errors.ConnectionFailure, exp:
+            self.error('Unable to connect to MongoDB server %s - Exception = %s' % (mongoURI, exp))
             return False
         
         # Older versions of pymongo did not support the command()

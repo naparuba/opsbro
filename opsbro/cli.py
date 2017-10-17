@@ -132,6 +132,7 @@ class AnyAgent(object):
         if agent_state == AGENT_STATE_STOPPED:
             self.did_start_a_tmp_agent = True
             tmp_agent_cmd = 'python %s agent start' % get_current_binary()
+            logger.debug('Temporary agent command: %s' % tmp_agent_cmd)
             self.tmp_agent = subprocess.Popen(tmp_agent_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, preexec_fn=os.setsid)
             cprint('')
             cprint('# This command need a started agent, and currently no one is started', color='grey')
@@ -139,13 +140,18 @@ class AnyAgent(object):
             cprint('temporary one', color='yellow')
             cprint('# | - process pid is %s' % self.tmp_agent.pid, color='grey')
             cprint('# | - you can avoid the temporary agent by launching one with "opsbro agent start" or "/etc/init.d/opsbro start" ', color='grey')
-            time.sleep(1)
-            agent_state = wait_for_agent_started(visual_wait=True)
+            agent_state = wait_for_agent_started(visual_wait=True, wait_for_spawn=True)  # note: we wait for spawn as it can take some few seconds before the unix socket is available
         if agent_state == AGENT_STATE_STOPPED:
             raise Exception('Cannot have the agent, even a temporary one')
         
-
-def wait_for_agent_started(timeout=30, visual_wait=False, exit_if_stopped=False):
+        
+# Maybe the agent is initializing or not even started (as unix socket).
+# Timeout: wait as much time
+# visual_wait: during the wait, we can show a spinner and a text to enjoy the user
+# exit_if_stopped: if true, sys.exit() directly
+# wait_for_spawn: maybe we just did spawn the agent process, but it can take some few seconds before the
+# unix socket is available, so allow some stopped state and only exit at the end of the timeout
+def wait_for_agent_started(timeout=30, visual_wait=False, exit_if_stopped=False, wait_for_spawn=False):
     spinners = itertools.cycle(CHARACTERS.spinners)
     start = time.time()
     agent_state = 'unknown'
@@ -160,7 +166,8 @@ def wait_for_agent_started(timeout=30, visual_wait=False, exit_if_stopped=False)
                 cprint('\r', end='')
                 logger.error('The agent is stopped')
                 sys.exit(2)
-            break
+            if not wait_for_spawn:
+                break
         if agent_state == 'ok':
             break
         if visual_wait:
