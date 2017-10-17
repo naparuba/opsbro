@@ -12,7 +12,7 @@ fi
 
 echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Wait for initialization           ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
 
-bin/opsbro agent wait-initialized --timeout 60
+python bin/opsbro agent wait-initialized --timeout 60
 if [ $? != 0 ]; then
    echo "ERROR: daemon start failed!"
    exit 2
