@@ -6,16 +6,10 @@
 
 ## **OpsBro**
 
-OpsBro is a tool focus on the top 6 topics for nowaday Ops:
 
- * service discovery
- * automatic detection
- * monitoring
- * metrology
- * configuration automation
- * system compliance
+![Agent](images/cli-header.png)
 
-All the configuration / deployment is model based (aka into packs)
+All the configuration / deployment is model based (aka into **packs**)
 
 
 ## Installation
@@ -23,7 +17,7 @@ All the configuration / deployment is model based (aka into packs)
 #### Prerequites
 You will need:
 
-  * python 2.6 or 2.7
+  * python (2.6 or 2.7)
 
 
 #### Installation
@@ -46,22 +40,13 @@ On the others distributions (OpenSuse, Alpine, etc), depedencies will be take fr
 ## Start OpsBro daemon
 You can start opsbro as a daemon with:
  
-    /etc/init.d/opsbro start
-
-You can also launch it in foreground:
-
-    opsbro agent start
+    service opsbro start
 
 
 ## Stop OpsBro daemon
 Just launch:
   
-    opsbro agent stop
-
-Or use the init.d script:
-
-    /etc/init.d/opsbro stop
-
+    service opsbro stop
 
 
 ## Display OpsBro information
@@ -71,10 +56,35 @@ Just launch:
 
 You will have several information about the current opsbro agent state:
 
- 
-![Agent](images/info.png) 
+<a target="_blank" href="https://asciinema.org/a/SV1Viswbm6TDOmnA74Ej5gTnp"><img src="https://asciinema.org/a/SV1Viswbm6TDOmnA74Ej5gTnp.png" align="left" height="300" width="200" ></a>
+
+
+## Automatic detection (os, apps, location, ...)
+
+Detectors are rules that are executed by the agent to detect your server properties like
+
+ * OS (linux, redhat, centos, debian, windows, ...)
+ * Applications (mongodb, redis, mysql, apache, ...)
+ * Location (country, city, GPS Lat/Long)
+
+You should declare a json object like:
+
+    detector:
+        apply_if: "grep_file('centos', '/etc/redhat-release')"
+        add_groups:
+            - linux
+            - centos
+        interval: 3600s
+
+ * If there is the string centos in the file /etc/redhat-release
+ * Then add the group "linux" and centos" to the local agent
+ * Execute every 3600 seconds
+
 
 ## Service discovery
+
+You can use OpsBro on one or more server in an independant way, but it's full power is when you are linking them together in a cluster.
+
 #### Agent cluster membership
 
 ##### Add your local node to the node cluster
@@ -105,40 +115,16 @@ It will try to join nodes based on:
  * first try to a proxy node if present
  * if no proxy node is present, then use the fist other node
 
+![Agent](images/gossip-detect.png)
 
 ##### List your opsbro cluster members
 You can list the cluster members on all nodes with :
 
     opsbro  gossip members
 
-![Agent](images/members.png) 
-
-And you will see the new node on the UI if you enable it
+![Agent](images/gossip-members.png)
 
 
-
-
-## Automatic detection (os, apps, location, ...)
-
-Detectors are rules that are executed by the agent to detect your server properties like
-
- * OS (linux, redhat, centos, debian, windows, ...)
- * Applications (mongodb, redis, mysql, apache, ...)
- * Location (city, GPS Lat/Long)
-
-You should declare a json object like:
-
-    detector:
-        apply_if: "grep('centos', '/etc/redhat-release')"
-        add_groups:
-            - linux
-            - centos
-        interval: 3600s
-
-
- * If there is the strong centos in the file /etc/redhat-release
- * Then add the group "linux" and centos" to the local agent
- * Execute every 3600 seconds
 
 ## Metrology: collect your server metrics (cpu, kernel, databases metrics, etc)
 
@@ -149,10 +135,8 @@ You can list available collectors with the command:
     opsbro collectors list
  
  
-![Agent](images/collectors-list.png) 
+![Agent](images/collectors-list.png)
 
- * enabled: it's running well
- * disabled: it's missing a librairy for running
 
 ## How to see collected data? (metrology)
 
@@ -160,8 +144,9 @@ The opsbro agent is by default getting lot of metrology data from your OS and ap
 
     opsbro collectors show
 
+For example for the system collector:
 
-**TODO** Allow to export into json format
+![Agent](images/collectors-show-system.png)
 
 
 ## Export and store your application telemetry into the agent metric system
@@ -172,42 +157,53 @@ The statsd protocol is a great way to extract performance statistics from your a
 
 The statsd daemon part will agregate counters for 10s and will then export the min/max/average/99thpercentile to a graphite server so you can store and graph them.
 
-In order to enable the statsd listener, you must define the statsd in your local configuration:
+In order to enable the statsd listener, you must define enable it your configuration.
 
-    statsd:
-        enabled    : true
-        port       : 8125
-        interval   : 10
+You can show it with the command:
 
-  * enabled: launch or not the statsd listener
-  * port: UDP port to listen
-  * interval: store metrics into memory for X seconds, then export them into graphite for storing
+   opsbro packs show
 
-**TODO**: change the ts group that enable this feature to real *role*/addons
+And search for the statsd pack:
+
+![Agent](images/packs-show-statsd.png)
+
+All you need is to change the enabled parameter of the statsd pack.
+
+You can get a description about the parameter first with:
+
+  opsbro packs parameters get global.statsd.enabled
+
+And you can edit it with:
+
+  opsbro packs parameters set global.statsd.enabled true
 
 
-### Store your metrics for long term into Graphite
+![Agent](pack-parameters-get-statsd.png)
 
-You can store your metrics into a graphite like system, that will automatically agregate your data.
+Then restart our agent:
 
-In order to enable the graphite system, you must declare a graphite object in your local configuration:
+  service opsbro restart
 
-    graphite:
-        enabled    : true
-        port       : 2003
-        udp        : true
-        tcp        : true
 
-  * enabled: launch or not the graphite listener
-  * port: TCP and/or UDP port to listen metrics
-  * udp: listen in UDP mode
-  * tcp: listen to TCP mode
+## Grafana: view your node metrology data into Grafana
 
-**TODO**: finish the graphite part, to show storing and forwarding mode.
+You can see your metrology data into Grafana. All you need to do is to enable the grafana pack for this.
 
-## Grafana: view your node metrology data into the grafana UI
+![Agent](images/packs-show-grafana.png)
 
-**TODO**: test and show graphite /render interface of the agent into grafana
+You will need:
+  * set a grafana API key
+  * change the grafana URI if not on the same server as your agent
+  * add the group **grafana-connector** to your agent so it will start the grafana module
+
+
+  opsbro packs parameters set  global.grafana.api_key  'YOUR-API-KEY'
+  opsbro packs parameters set  global.grafana.uri      'http://YOUR-GRAFANA-SERVER:3000'
+
+And to add the group **grafana-connector** to your agent:
+  opsbro agent parameters add groups grafana-connector
+
+And voila, you will see a new data-source in your grafana.
 
 ## Monitoring
 
@@ -231,28 +227,34 @@ Evaluated check will use collectors data and should be defined with:
   * critical_output: python expression that create a string that will be shown to the user if the state is CRITICAL
   * warning_if: python expression that try to detect WARNING state
   * warning_output: python expression that create a string that will be shown to the user if the state is WARNING
-  * thresholds: [optionnal] you can set here dict of thresholds you will access from your check rule by "configuration.thresholds.XXX"
+  * interval: launch the check every X seconds
   
 The evaluation is done like this:
-  * if the critical expression is True => go CRITICAL
-  * else if warning expression is True => go WARNING
+  * if the critical expression is True => CRITICAL
+  * else if warning expression is True => WARNING
   * else go OK
   
-For example here is a cpu check on a linux server:
+For example here is a memory check on a linux server:
 
     check:
-        interval:          10s
-        if_group:          linux
-            
-        ok_output:         "'OK: cpu is great: %s%%' % (100-{collector.cpustats.cpuall.%idle})"
-            
-        critical_if:       "{collector.cpustats.cpuall.%idle} < {configuration.thresholds.cpuidle.critical}"
-        critical_output:   "'Critical: cpu is too high: %s%%' % (100-{collector.cpustats.cpuall.%idle})"
+        if_group: linux
 
-        warning_if:        "{collector.cpustats.cpuall.%idle} < {configuration.thresholds.cpuidle.warning}"
-        warning_output:    "'Warning: cpu is very high: %s%%' % (100-{collector.cpustats.cpuall.%idle})"
-            
+        ok_output: "'OK: memory is at %d%%' % {{collector.memory.phys_used}}"
 
+        critical_if: "{{collector.memory.phys_used}} > {{parameters.memory_critical}}"
+        critical_output: "'CRITICAL: memory is at %d%%' % {{collectors.memory.phys_used}}"
+
+        warning_if: "{{collector.memory.phys_used}} > {{parameters.threshold.memory_warning}}"
+        warning_output:  "'WARNING: memory is at %d%%' % {{collector.memory.phys_used}}"
+
+        interval: "30s"
+            
+You can have the result with the command:
+
+   opsbro monitoring state
+
+
+![Agent](images/monitoring-state.png)
 
 
 ### Use Nagios plugins
@@ -266,74 +268,36 @@ The parameter for this is:
   
     check:
         if_group: linux
-        script:   "$nagiosplugins$/check_mailq -w $mailq.warning$ -c $mailq.critical$"
+        script:   "/var/lib64/nagios/check_mailq -w 1 -c 2"
         interval: 60s
-    
-        mailq:
-           warning: 1
-           critical: 2
-
-
-NOTE: the $$ evaluation is not matching the previous checks, we will fix it in a future version but it will break the current version configuration.
 
 
 ## Notify check/node state change with emails
 
-You can be notified about check state changed with handlers. currently 2 are managed: email & slack
+You can be notified about check state changed with handlers. Currently 2 are managed:
 
-TODO: describe mail & slack modules
+ * email
+ * slack
 
-You must define it in your local configuration:
+### Email handlers
 
-    handler:
-        type: mail
-        severities:
-            - ok
-            - warning
-            - critical
-            - unknown
-        contacts:
-            - "admin@mydomain.com"
-        addr_from: "opsbro@mydomain.com"
-        smtp_server: localhost
-        subject_template: "email.subject.tpl"
-        text_template: "email.text.tpl"
+You can get a mail each time a check did change state. All is managed by the mail pack. You can enable it with:
 
-  * type: email
-  * severities: raise this handler only for this new states
-  * contacts: who notifies
-  * addr_from: from address to set your email from
-  * smtp_server: which SMTP server to end your notification
-  * subject_template: jinja2 template for the email subject, from the directory /templates
-  * text_template: jinja2 template for the email content, from the directory /templates
+   opsbro packs parameters set global.mail.enabled true
 
-Then your handler must be registered into your checks, in the "handlers" list.
 
-## Notify check/node state change into slack
+## Notify check & node state change into slack
 
-You can be notified about check state changed with handlers. currently only one is managed: email.
+You can be notified about check state changed with handlers:
 
-You must define it in your local configuration:
+![Agent](images/slack.png)
 
-    handler:
-       id: slack
-       type: slack
-       severities:
-          - ok
-          - warning
-          - critical
-          - unknown
-
-       token: ''
-       channel: '#alerts'
-
-  * type: slack
-  * severities: raise this handler only for this new states
   * token: your slack token. Get one at https://api.slack.com/custom-integrations/legacy-tokens
   * channel: on which channel should the alerts go. If the channel is not existing, it will try to create one
 
+  opsbro packs parameters set global.slack.enabled  true
+  opsbro packs parameters set global.slack.token    'SLACK-TOKEN'
 
-Then your handler must be registered into your checks, in the "handlers" list.
 
 ## Export your nodes and check states into Shinken or Nagios
 
@@ -342,112 +306,42 @@ You can export all your nodes informations (new, deleted or change node) into yo
   * change the host configuration (host templates) when a new group is add/removed on your agent
   * remove your host when you delete your agent (by terminating your Cloud instance for example)
 
-You must add in the agent installed on your shinken arbiter daemon the following local configuration:
+All is managed into the shinken pack.
 
-    shinken:
-        cfg_path: "/etc/shinken/agent"
+For Nagios:
+        opsbro  packs parameters set local.shinken.enabled               true
+        opsbro  packs parameters set local.shinken.cfg_path              /usr/local/nagios/etc/objects/agent
+        opsbro  packs parameters set local.shinken.external_command_file /usr/local/nagios/var/rw/nagios.cmd
+        opsbro  packs parameters set local.shinken.reload_command        "/etc/init.d/nagios reload"
+        opsbro  packs parameters set local.shinken.monitoring_tool       nagios
 
-  * cfg_path: a directory where all your nodes will be sync as shinken hosts configuration (cfg files)
+Note that you must create the /usr/local/nagios/etc/objects/agent and declare it in the nagios.cfg file.
 
-Currently it also use hard path to manage your shinken communication:
-  * the unix socket */var/lib/shinken/nagios.cmd* should be created by your shinken arbiter/receiver [named-pipe](http://shinken.io/package/named-pipe) module.
-  * it call the "/etc/init.d/shinken reload" command when a node configuration is changed(new, removed or group/template change) 
+For Shinken:
+        opsbro  packs parameters set local.shinken.enabled               true
+        opsbro  packs parameters set local.shinken.cfg_path              /etc/shinken/agent
+        opsbro  packs parameters set local.shinken.external_command_file /var/lib/shinken/shinken.cmd
+        opsbro  packs parameters set local.shinken.reload_command        "/etc/init.d/shinken reload"
+        opsbro  packs parameters set local.shinken.monitoring_tool       shinken
+
+For Shinken, note that the external unix pipe (/var/lib/shinken/shinken.cmd) is available with the receiver module [named-pipe](http://shinken.io/package/named-pipe).
 
 
 ## DNS: Access your nodes informations by DNS
 
 If you enable the DNS interface for your agent, it will start an internal DNS server that will answer to queries. So your applications will be able to easily exchange with the valid node that is still alive or launched.
 
-You must define a dns object in your local configuration to enable this interface:
+All you need is to set your agent to the dns-listener group to start the DNS listener module.
 
-    dns:
-        enabled    : true
-	    port       : 6766
-	    domain     : ".opsbro"
+   opsbro agent parameters add groups dns-listener
 
-
-  * enabled: start or not the listener
-  * port: UDP port to listen for UDP requests
-  * domain: allowed domain to request, should match a specific domain name to be redirected to this 
-
-You will be able to query it with dig for test:
-
-    $dig -p 6766 @localhost redis.group.dc1.opsbro  +short
+Then you can query your agent in DNS:
+   dig -p 6766  @127.0.0.1 linux.group.local.opsbro
     192.168.56.103
     192.168.56.105
 
-It list all available node with the "group" redis.
+It list all available node with the "group" linux.
 
-
-TODO: document the local dns redirect to link into resolv.conf
-
-
-
-
-## Get notified when there is a node change (websocket)
-
-You can get notified about a node change (new node, deleted node or new group or check state change) with a websocket interface on your local agent.
-
-All you need is to enable it on your local node configuration:
-
-    websocket:
-	   enabled    : true
-	   port       : 6769
-
-  * enabled: start or not the websocket listener
-  * port: which TCP port to listen for the websocket connections
-  
-**Note**: the HTTP UI need the websocket listener to be launched to access node states.
-
-## Store your data/configuration into the cluster (KV store)
-
-The agent expose a KV store system. It will automatically dispatch your data into 3 nodes allowed to store raw data.
-
-Write and Read queries can be done on the node you want, it don't have to be a KV storing node. The agent will forward your read/write query to the node that manage your key, and this one will synchronize the data with 2 others nodes after it did answer to the requestor.
-
-The KEY dispatching between nodes is based on a SHA1 consistent hashing.
-
-The API is:
-
-  * **/kv/** *(GET)* : list all keys store on the local node
-  * **/kv/KEY-NAME** *(GET)*: get the key value with base64 encoding
-  * **/kv/KEY-NAME** *(PUT)* : store a key value
-  * **/kv/KEY-NAME** *(DELETE)* : delete a key
-  
-
-**TODO**: change the KV store from group to a role in the configuration
-
-## Use your node states and data/configuration (KV) to keep your application configuration up-to-date
-
-// Generators
-
-
-
-
-
-## How to install applications on your system thanks to OpsBro
-
-**TODO** Document installers, and rename them in fact (asserters?)
-
-## How to see docker performance informations?
-
-If docker is launched on your server, OpsBro will get data from it, like collectors, images and performances.
-
-To list all of this just launch:
-
-    opsbro docker show
-
-
-## Get quorum strong master/slave elections thanks to RAFT
-  
-You can ask your node cluster system to elect a node for a specific task or application thanks to the RAFT implementation inside the agents
-
-**TODO**: currently in alpha stade in the code   
-
-
-## Access the agent API documentation
-
-**TODO**: this must be developed, in order to access your node API available in text or HTTP
 
 
 ## Is there an UI available?
@@ -455,12 +349,5 @@ You can ask your node cluster system to elect a node for a specific task or appl
 To see your metrology data, look at the grafana module.
 
 To see the nodes & metrology states, an UI is currently in progress. Will be not Open source but will be free of use at the opsbro.io website.
-Please contact me (naparuba _AT_ gmail.com is you are interested to test it in Beta stade).
-
-
-## specific packs:
-
-To monitor mongodb server:
-  * python-pymongo
-
+Please contact me (naparuba _AT_ gmail.com is you are interested to test it in Beta phase).
 

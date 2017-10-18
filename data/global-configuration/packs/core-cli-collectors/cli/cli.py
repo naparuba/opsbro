@@ -14,6 +14,7 @@ import json
 from opsbro.log import cprint, logger
 from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_json, print_info_title, AnyAgent
+from opsbro.cli_display import print_h1
 from opsbro.collectormanager import collectormgr
 from opsbro.library import libstore
 
@@ -94,7 +95,7 @@ def do_collectors_show(name='', all=False):
 def do_collectors_list():
     # We need an agent for this
     with AnyAgent():
-        
+        print_h1('Collectors')
         try:
             collectors = get_opsbro_json('/collectors')
         except get_request_errors(), exp:

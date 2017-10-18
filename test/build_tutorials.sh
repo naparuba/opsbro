@@ -20,7 +20,7 @@ asciinema rec -y -w 0.3 -t "OpsBro CLI" -c "/bin/bash test/tutorial-scripts/cli.
 
 
 # Show agent info
-asciinema rec -y -w 0.3 -t "OpsBro agent info" -c "/bin/bash test/tutorial-scripts/agent-info.sh"  $SHARE/agent-info.json
+asciinema rec -y -w 2 -t "OpsBro agent info" -c "/bin/bash test/tutorial-scripts/agent-info.sh"  $SHARE/agent-info.json
 
 
 # Show agent info
