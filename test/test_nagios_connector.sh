@@ -11,6 +11,7 @@ echo "Starting to test Nagios export (dummy check)"
 sleep 10
 
 /etc/init.d/opsbro stop
+sleep 1
 /etc/init.d/opsbro start
 
 sleep 10
