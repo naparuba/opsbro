@@ -56,7 +56,8 @@ Just launch:
 
 You will have several information about the current opsbro agent state:
 
-<a target="_blank" href="https://asciinema.org/a/SV1Viswbm6TDOmnA74Ej5gTnp"><img src="https://asciinema.org/a/SV1Viswbm6TDOmnA74Ej5gTnp.png" align="left" height="300" width="200" ></a>
+<a target="blank" href="https://asciinema.org/a/SV1Viswbm6TDOmnA74Ej5gTnp"><img src="https://asciinema.org/a/SV1Viswbm6TDOmnA74Ej5gTnp.png" align="left" height="300" width="200" /></a>
+
 
 
 ## Automatic detection (os, apps, location, ...)
@@ -101,19 +102,8 @@ If your nodes are on the same LAN, you can use the UDP auto-detection to list ot
 
 NOTE: if you are using an encryption key (recommanded) then you must already have set it. If not, the other node won't answer to your query.
 
-
-    opsbro gossip detect
-
-If the other nodes are present, they will be list by the command.
-
-
-If you want to auto-join the other node cluster, then you can use the --auto-join parameter:
-
     opsbro gossip detect --auto-join
 
-It will try to join nodes based on:
- * first try to a proxy node if present
- * if no proxy node is present, then use the fist other node
 
 ![Agent](images/gossip-detect.png)
 
@@ -140,13 +130,26 @@ You can list available collectors with the command:
 
 ## How to see collected data? (metrology)
 
-The opsbro agent is by default getting lot of metrology data from your OS and applications. It's done by "collctors" objets. You can easily list them and look at the colelcted data by launching:
+The opsbro agent is by default getting lot of metrology data from your OS and applications. It's done by "collctors" objets. You can easily list them and look at the collected data by launching:
 
-    opsbro collectors show
+    opsbro collectors show system
 
 For example for the system collector:
 
 ![Agent](images/collectors-show-system.png)
+
+
+## Show dashboards
+
+Packs can provide dashboards to show collected data. Here is an example of the standard linux dashboard:
+
+    opsbro dashboards show linux
+
+![Agent](images/dashboards-show-linux.png)
+
+
+To list available dashboards:
+   opsbro dashboards list
 
 
 ## Export and store your application telemetry into the agent metric system
@@ -161,7 +164,7 @@ In order to enable the statsd listener, you must define enable it your configura
 
 You can show it with the command:
 
-   opsbro packs show
+    opsbro packs show
 
 And search for the statsd pack:
 
@@ -171,18 +174,18 @@ All you need is to change the enabled parameter of the statsd pack.
 
 You can get a description about the parameter first with:
 
-  opsbro packs parameters get global.statsd.enabled
+    opsbro packs parameters get global.statsd.enabled
 
 And you can edit it with:
 
-  opsbro packs parameters set global.statsd.enabled true
+    opsbro packs parameters set global.statsd.enabled true
 
 
 ![Agent](pack-parameters-get-statsd.png)
 
 Then restart our agent:
 
-  service opsbro restart
+    service opsbro restart
 
 
 ## Grafana: view your node metrology data into Grafana
@@ -196,12 +199,13 @@ You will need:
   * change the grafana URI if not on the same server as your agent
   * add the group **grafana-connector** to your agent so it will start the grafana module
 
+    opsbro packs parameters set  global.grafana.api_key  'YOUR-API-KEY'
+    opsbro packs parameters set  global.grafana.uri      'http://YOUR-GRAFANA-SERVER:3000'
 
-  opsbro packs parameters set  global.grafana.api_key  'YOUR-API-KEY'
-  opsbro packs parameters set  global.grafana.uri      'http://YOUR-GRAFANA-SERVER:3000'
 
 And to add the group **grafana-connector** to your agent:
-  opsbro agent parameters add groups grafana-connector
+
+    opsbro agent parameters add groups grafana-connector
 
 And voila, you will see a new data-source in your grafana.
 
@@ -251,7 +255,7 @@ For example here is a memory check on a linux server:
             
 You can have the result with the command:
 
-   opsbro monitoring state
+    opsbro monitoring state
 
 
 ![Agent](images/monitoring-state.png)
@@ -283,7 +287,7 @@ You can be notified about check state changed with handlers. Currently 2 are man
 
 You can get a mail each time a check did change state. All is managed by the mail pack. You can enable it with:
 
-   opsbro packs parameters set global.mail.enabled true
+    opsbro packs parameters set global.mail.enabled true
 
 
 ## Notify check & node state change into slack
@@ -295,8 +299,8 @@ You can be notified about check state changed with handlers:
   * token: your slack token. Get one at https://api.slack.com/custom-integrations/legacy-tokens
   * channel: on which channel should the alerts go. If the channel is not existing, it will try to create one
 
-  opsbro packs parameters set global.slack.enabled  true
-  opsbro packs parameters set global.slack.token    'SLACK-TOKEN'
+    opsbro packs parameters set global.slack.enabled  true
+    opsbro packs parameters set global.slack.token    'SLACK-TOKEN'
 
 
 ## Export your nodes and check states into Shinken or Nagios
@@ -309,20 +313,22 @@ You can export all your nodes informations (new, deleted or change node) into yo
 All is managed into the shinken pack.
 
 For Nagios:
-        opsbro  packs parameters set local.shinken.enabled               true
-        opsbro  packs parameters set local.shinken.cfg_path              /usr/local/nagios/etc/objects/agent
-        opsbro  packs parameters set local.shinken.external_command_file /usr/local/nagios/var/rw/nagios.cmd
-        opsbro  packs parameters set local.shinken.reload_command        "/etc/init.d/nagios reload"
-        opsbro  packs parameters set local.shinken.monitoring_tool       nagios
+
+    opsbro  packs parameters set local.shinken.enabled               true
+    opsbro  packs parameters set local.shinken.cfg_path              /usr/local/nagios/etc/objects/agent
+    opsbro  packs parameters set local.shinken.external_command_file /usr/local/nagios/var/rw/nagios.cmd
+    opsbro  packs parameters set local.shinken.reload_command        "/etc/init.d/nagios reload"
+    opsbro  packs parameters set local.shinken.monitoring_tool       nagios
 
 Note that you must create the /usr/local/nagios/etc/objects/agent and declare it in the nagios.cfg file.
 
 For Shinken:
-        opsbro  packs parameters set local.shinken.enabled               true
-        opsbro  packs parameters set local.shinken.cfg_path              /etc/shinken/agent
-        opsbro  packs parameters set local.shinken.external_command_file /var/lib/shinken/shinken.cmd
-        opsbro  packs parameters set local.shinken.reload_command        "/etc/init.d/shinken reload"
-        opsbro  packs parameters set local.shinken.monitoring_tool       shinken
+
+    opsbro  packs parameters set local.shinken.enabled               true
+    opsbro  packs parameters set local.shinken.cfg_path              /etc/shinken/agent
+    opsbro  packs parameters set local.shinken.external_command_file /var/lib/shinken/shinken.cmd
+    opsbro  packs parameters set local.shinken.reload_command        "/etc/init.d/shinken reload"
+    opsbro  packs parameters set local.shinken.monitoring_tool       shinken
 
 For Shinken, note that the external unix pipe (/var/lib/shinken/shinken.cmd) is available with the receiver module [named-pipe](http://shinken.io/package/named-pipe).
 
@@ -333,15 +339,14 @@ If you enable the DNS interface for your agent, it will start an internal DNS se
 
 All you need is to set your agent to the dns-listener group to start the DNS listener module.
 
-   opsbro agent parameters add groups dns-listener
+    opsbro agent parameters add groups dns-listener
 
 Then you can query your agent in DNS:
-   dig -p 6766  @127.0.0.1 linux.group.local.opsbro
+    dig -p 6766  @127.0.0.1 linux.group.local.opsbro
     192.168.56.103
     192.168.56.105
 
 It list all available node with the "group" linux.
-
 
 
 ## Is there an UI available?
