@@ -1,0 +1,19 @@
+name: core-cli-tutorials
+types:
+    - cli
+topics:
+    - generic
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description:  CLI for listing/playing tutorials records with asciinema
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - cli
+    - tutorials
+
+dependencies:
+    core: ">=1.0"
+license: ""

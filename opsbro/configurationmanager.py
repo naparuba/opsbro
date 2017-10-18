@@ -38,7 +38,7 @@ class ConfigurationManager(object):
     def __init__(self):
         # Keep a list of the knowns cfg objects type we will encounter
         # NOTE: will be extend once with the modules types
-        self.known_types = set(['check', 'service', 'compliance', 'generator', 'zone', 'installor'])
+        self.known_types = set(['check', 'service', 'compliance', 'generator', 'zone', 'installor', 'tutorial'])
         
         # The cluster starts with defualt parameters, but of course configuration can set them too
         # so we will load them (in the local.yaml file) and give it back to the cluster when it will need it
@@ -78,6 +78,11 @@ class ConfigurationManager(object):
     def get_installormgr(self):
         from opsbro.installermanager import installormgr
         return installormgr
+    
+    
+    def get_tutorialmgr(self):
+        from opsbro.tutorial import tutorialmgr
+        return tutorialmgr
     
     
     def get_modulemanager(self):
@@ -141,6 +146,8 @@ class ConfigurationManager(object):
                     self.load_pack_parameters(obj, pack_name=pack_name, pack_level=pack_level)
                 elif load_focus == 'compliance':
                     self.load_compliance_object(obj, fp, pack_name=pack_name, pack_level=pack_level)
+                elif load_focus == 'tutorial':
+                    self.load_tutorial_object(obj, fp, pack_name=pack_name, pack_level=pack_level)
                 else:
                     raise Exception('Unknown load focus type! %s' % load_focus)
     
@@ -249,6 +256,14 @@ class ConfigurationManager(object):
             compliancemgr.import_compliance(compliance, fp, hname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
     
     
+    # Compliance object
+    def load_tutorial_object(self, o, fp, pack_name, pack_level):
+        if 'tutorial' in o:
+            tutorial = o['tutorial']
+            mgr = self.get_tutorialmgr()
+            mgr.import_tutorial(tutorial, fp, pack_name=pack_name, pack_level=pack_level)
+    
+    
     def load_generator_object(self, o, fp, pack_name, pack_level):
         if 'generator' in o:
             generator = o['generator']
@@ -341,6 +356,7 @@ class ConfigurationManager(object):
                       ('generators', 'generator'), ('parameters', 'parameter'),
                       ('detectors', 'detector'), ('installors', 'installor'),
                       ('compliance', 'compliance'), ('dashboards', 'dashboard'),
+                      ('tutorials', 'tutorial'),
                       ]
             for sub_dir, load_focus in _types:
                 full_sub_dir = os.path.join(dir, sub_dir)
