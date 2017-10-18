@@ -26,15 +26,12 @@ Just launch:
 
     python setup.py install
 
+Example of the installation at:
 
-Note: On the main linux distributions, it will automatically install its dependencies from the package manager (apt/yum):
-  * debian
-  * centos
-  * redhat
-  * ubuntu
+<a target="blank" href="https://asciinema.org/a/IQYFa6xv4NBTGjbcKLH8uFLtR"><img src="https://asciinema.org/a/IQYFa6xv4NBTGjbcKLH8uFLtR.png" height="300" width="200" /></a>
 
-On the others distributions (OpenSuse, Alpine, etc), depedencies will be take from pypi.
 
+Note: On the main linux distributions (debian, centos, redhat & ubuntu), it will automatically install its dependencies from the package manager (apt/yum). On the others distributions (OpenSuse, Alpine, etc), depedencies will be take from pypi.
 
 
 ## Start OpsBro daemon
@@ -56,7 +53,8 @@ Just launch:
 
 You will have several information about the current opsbro agent state:
 
-<a target="blank" href="https://asciinema.org/a/SV1Viswbm6TDOmnA74Ej5gTnp"><img src="https://asciinema.org/a/SV1Viswbm6TDOmnA74Ej5gTnp.png" align="left" height="300" width="200" /></a>
+
+<a target="blank" href="https://asciinema.org/a/SV1Viswbm6TDOmnA74Ej5gTnp"><img src="https://asciinema.org/a/SV1Viswbm6TDOmnA74Ej5gTnp.png" height="300" width="200" /></a>
 
 
 
@@ -181,7 +179,7 @@ And you can edit it with:
     opsbro packs parameters set global.statsd.enabled true
 
 
-![Agent](pack-parameters-get-statsd.png)
+![Agent](images/pack-parameters-get-statsd.png)
 
 Then restart our agent:
 
@@ -298,6 +296,8 @@ You can be notified about check state changed with handlers:
 
   * token: your slack token. Get one at https://api.slack.com/custom-integrations/legacy-tokens
   * channel: on which channel should the alerts go. If the channel is not existing, it will try to create one
+
+You can enable it with:
 
     opsbro packs parameters set global.slack.enabled  true
     opsbro packs parameters set global.slack.token    'SLACK-TOKEN'
