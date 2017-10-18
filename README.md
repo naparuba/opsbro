@@ -205,7 +205,10 @@ And to add the group **grafana-connector** to your agent:
 
     opsbro agent parameters add groups grafana-connector
 
-And voila, you will see a new data-source in your grafana.
+And voila, you will see a new data-source in your grafana:
+
+![Agent](images/grafana-screen.png)
+
 
 ## Monitoring
 
