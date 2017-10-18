@@ -342,6 +342,7 @@ All you need is to set your agent to the dns-listener group to start the DNS lis
     opsbro agent parameters add groups dns-listener
 
 Then you can query your agent in DNS:
+
     dig -p 6766  @127.0.0.1 linux.group.local.opsbro
     192.168.56.103
     192.168.56.105
