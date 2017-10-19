@@ -95,9 +95,10 @@ def do_tutorial_show(tutorial_name):
     for e in stdout_entries:
         wait_time = e[0]
         line = e[1]
+        time.sleep(wait_time)
         cprint(line, end='')
         sys.stdout.flush()
-        time.sleep(wait_time)
+
     
     cprint('\n\nTutorial is ended', color='magenta')
 
