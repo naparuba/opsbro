@@ -6,8 +6,7 @@ from opsbro.parameters import StringParameter
 from opsbro.threadmgr import threader
 from opsbro.stop import stopper
 from opsbro.gossip import gossiper
-from opsbro.httpclient import get_http_exceptions
-from opsbro.library import libstore
+from opsbro.httpclient import get_http_exceptions, httper
 
 
 class GrafanaModule(ConnectorModule):
@@ -49,9 +48,8 @@ class GrafanaModule(ConnectorModule):
         entry = {"name": data_source_name, "type": "graphite", "url": "http://%s:%d" % (addr, port), "access": "proxy"}
         uri = '%s/api/datasources' % (self.uri)
         try:
-            rq = libstore.get_requests()
-            r = rq.post(uri, data=json.dumps(entry), headers=self.__get_headers())
-            self.logger.debug("Result insert", r.text)
+            r = httper.post(uri, params=entry, headers=self.__get_headers())
+            self.logger.debug("Result insert", r)
         except get_http_exceptions(), exp:
             self.logger.error('Cannot connect to grafana datasources: %s' % exp)
             return
@@ -61,9 +59,8 @@ class GrafanaModule(ConnectorModule):
         self.logger.info('Cleaning data source %d from grafana because the node is no more' % data_source_id)
         uri = '%s/api/datasources/%d' % (self.uri, data_source_id)
         try:
-            rq = libstore.get_requests()
-            r = rq.delete(uri, headers=self.__get_headers())
-            self.logger.debug("Result delete", r.text)
+            r = httper.delete(uri, headers=self.__get_headers())
+            self.logger.debug("Result delete", r)
         except get_http_exceptions(), exp:
             self.logger.error('Cannot connect to grafana datasources: %s' % exp)
             return
@@ -73,10 +70,9 @@ class GrafanaModule(ConnectorModule):
         uri = '%s/api/datasources' % (self.uri)
         our_data_sources = {}
         try:
-            rq = libstore.get_requests()
-            r = rq.get(uri, headers=self.__get_headers())
+            api_return = httper.get(uri, headers=self.__get_headers())
             try:
-                all_data_sources = json.loads(r.text)
+                all_data_sources = json.loads(api_return)
             except (ValueError, TypeError), exp:
                 self.logger.error('Cannot load json from grafana datasources: %s' % exp)
                 return None
@@ -135,11 +131,6 @@ class GrafanaModule(ConnectorModule):
             
             # Ok, if we are not enabled, so not even talk to grafana
             if not self.enabled:
-                time.sleep(1)
-                continue
-            rq = libstore.get_requests()
-            if rq is None:
-                self.logger.error('The python requests librairy is mandatory for this module. Please install it')
                 time.sleep(1)
                 continue
             

@@ -3,6 +3,13 @@
 
 echo "Starting to test Grafana"
 
+# We will modify a pack, so overload it first
+opsbro  packs overload global.grafana
+
+# Change module parameters for Grafana
+opsbro  packs parameters set local.grafana.api_key               'eyJrIjoibmhIR0FuRnB0MTN6dFBMTlNMZDZKWjJXakFuR0I2Wk4iLCJuIjoiT3BzQnJvIiwiaWQiOjF9'
+
+
 # We can start opsbro first, as the api_key is already configured
 # and we will add the group dynamically
 

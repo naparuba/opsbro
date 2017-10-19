@@ -3,35 +3,26 @@ MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 RUN        apt-get update && apt-get install -y python
 # All need for debian, so faster test (we are testging feature here, not install)
-RUN        apt-get install -y python-requests
-RUN        apt-get install -y python-cherrypy3
-RUN        apt-get install -y python-jinja2
-RUN        apt-get install -y python-crypto
-RUN        apt-get install -y python-leveldb
+RUN        apt-get update && apt-get install -y python-jinja2
+RUN        apt-get update && apt-get install -y python-crypto
+RUN        apt-get update && apt-get install -y python-leveldb
 
 
 # Grafana: setup its repo for debian (same for all debian releases)
-RUN        apt-get install -y curl
-RUN        apt-get install -y apt-transport-https
-RUN        apt-get install -y gnupg
+RUN        apt-get update && apt-get install -y curl
+RUN        apt-get update && apt-get install -y apt-transport-https
+RUN        apt-get update && apt-get install -y gnupg
 RUN        printf "\ndeb https://packagecloud.io/grafana/stable/debian/ jessie main\n" >> /etc/apt/sources.list
 RUN        curl https://packagecloud.io/gpg.key | apt-key add -
-RUN        apt-get update
-RUN        apt-get install -y grafana
-RUN        apt-get install -y procps
-RUN        apt-get install -y net-tools
-RUN        apt-get install -y sqlite
+RUN        apt-get update && apt-get install -y grafana
+RUN        apt-get update && apt-get install -y procps
+RUN        apt-get update && apt-get install -y net-tools
+RUN        apt-get update && apt-get install -y sqlite
 
 ADD        . /root/opsbro-oss
 WORKDIR       /root/opsbro-oss
 
 RUN       python setup.py install
-
-# We will modify a pack, so overload it first
-RUN        opsbro  packs overload global.grafana
-
-# Change module parameters for Grafana
-RUN        opsbro  packs parameters set local.grafana.api_key               'eyJrIjoibmhIR0FuRnB0MTN6dFBMTlNMZDZKWjJXakFuR0I2Wk4iLCJuIjoiT3BzQnJvIiwiaWQiOjF9'
 
 
 # For manuel testing purpose only, not need by the automatic test

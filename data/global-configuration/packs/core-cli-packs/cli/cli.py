@@ -337,7 +337,7 @@ def do_overload(pack_full_id, to_level='local'):
     cprint('Pack ', end='')
     cprint('%s (%s)' % (pack_name, dir_name), color='green', end='')
     cprint(' is now overload at level ', end='')
-    cprint(' %s (%s)' % (pack_level, dest_dir), color='magenta')
+    cprint(' %s (%s)' % (to_level, dest_dir), color='magenta')
 
 
 def __get_path_pname_from_parameter_full_path(parameter_full_path):
