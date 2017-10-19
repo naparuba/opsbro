@@ -43,3 +43,6 @@ cprint('And if you want a freaking good and powerful monitoring tool for large c
 cprint('Shinken framework & Shinken Enterprise', color='magenta', end='')
 cprint(' the main projects of Shinken Solutions team at ', end='')
 cprint('https://www.shinken-enterprise.com', color='magenta')
+
+cprint('\n')
+time.sleep(5)
