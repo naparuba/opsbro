@@ -737,7 +737,7 @@ class Cluster(object):
         if os.name != 'nt':
             self.internal_http_thread = threader.create_and_launch(httpdaemon.run, name='Internal HTTP', args=('', 0, self.socket_path,), essential=True, part='agent')
         else:  # ok windows, I look at you, really
-            self.internal_http_thread = threader.create_and_launch(httpdaemon.run, name='Internal HTTP', args=('127.0.0.1', 6770, '',), essential=True, part='gossip')
+            self.internal_http_thread = threader.create_and_launch(httpdaemon.run, name='Internal HTTP', args=('127.0.0.1', 6770, '',), essential=True, part='agent')
     
     
     # The first sync thread will ask to our replicats for their lately changed value
