@@ -355,13 +355,13 @@ mod_need = {
             'amazon-linux': 'python27-requests', 'centos': 'python-requests', 'redhat': 'python-requests', 'oracle-linux': 'python-requests', 'fedora': 'python-requests',
         }
     },
-    'cherrypy': {  # note: centos: first epel to enable cherrypy get from packages
-        'packages'    : {
-            'debian'      : 'python-cherrypy3', 'ubuntu': 'python-cherrypy3',
-            'amazon-linux': 'python-cherrypy3', 'centos': ['epel-release', 'python-cherrypy'], 'redhat': 'python-cherrypy', 'oracle-linux': 'python-cherrypy', 'fedora': 'python-cherrypy',
-        },
-        'failback_pip': 'cherrypy==3.2.4',
-    },
+#    'cherrypy': {  # note: centos: first epel to enable cherrypy get from packages
+#        'packages'    : {
+#            'debian'      : 'python-cherrypy3', 'ubuntu': 'python-cherrypy3',
+#            'amazon-linux': 'python-cherrypy3', 'centos': ['epel-release', 'python-cherrypy'], 'redhat': 'python-cherrypy', 'oracle-linux': 'python-cherrypy', 'fedora': 'python-cherrypy',
+#        },
+#        'failback_pip': 'cherrypy==3.2.4',
+#    },
     'jinja2'  : {
         'packages': {
             'debian'      : 'python-jinja2', 'ubuntu': 'python-jinja2',
