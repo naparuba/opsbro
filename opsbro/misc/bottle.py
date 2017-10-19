@@ -2779,8 +2779,25 @@ class CherryPyServer(ServerAdapter):
     def run(self, handler): # pragma: no cover
         global gserver
         with CherryPyServer.lck:
-            import cherrypy
-            from cherrypy import wsgiserver
+            try:
+                import cherrypy
+                from cherrypy import wsgiserver
+            except ImportError:
+                from opsbro.log import logger
+                logger.info('The librairy cherrypy was not detected on the system, switching to an internal one instead')
+                # Cherrypy is not install on the system, try the embedded one
+                my_dir = os.path.abspath(os.path.dirname(__file__))
+                embedded_cherrypy = os.path.join(my_dir, 'internalcherrypy')
+                sys.path.insert(0, embedded_cherrypy)
+                try:
+                    import cherrypy
+                    from cherrypy import wsgiserver
+                finally:
+                    try:
+                        sys.path.remove(embedded_cherrypy)
+                    except:
+                        pass
+                
 
             _type = 'internal'
             if 'bind_addr' not in self.options:
