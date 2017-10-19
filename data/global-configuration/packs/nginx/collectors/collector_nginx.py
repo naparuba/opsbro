@@ -30,19 +30,19 @@ class Nginx(Collector):
             response = request.read()
         
         except urllib2.HTTPError, e:
-            logger.error('Unable to get Nginx status - HTTPError = %s', e)
+            self.error('Unable to get Nginx status - HTTPError = %s' % e)
             return False
         
         except urllib2.URLError, e:
-            logger.error('Unable to get Nginx status - URLError = %s', e)
+            self.error('Unable to get Nginx status - URLError = %s' % e)
             return False
         
         except httplib.HTTPException, e:
-            logger.error('Unable to get Nginx status - HTTPException = %s', e)
+            self.error('Unable to get Nginx status - HTTPException = %s' % e)
             return False
         
         except Exception, e:
-            logger.error('Unable to get Nginx status - Exception = %s', traceback.format_exc())
+            self.error('Unable to get Nginx status - Exception = %s' % traceback.format_exc())
             return False
         
         logger.debug('getNginxStatus: urlopen success, start parsing')

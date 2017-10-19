@@ -103,8 +103,7 @@ def get_local(u, local_socket, params={}, method='GET'):
 
 
 def get_request_errors():
-    rq = libstore.get_requests()
-    request_errors = (urllib2.URLError, rq.exceptions.ConnectionError,)
+    request_errors = (urllib2.URLError, )
     return request_errors
 
 
@@ -124,7 +123,7 @@ def get_json(uri, local_socket='', params={}, multi=False, method='GET'):
         r = "[{0}]".format(r.replace("}{", "},{"))
     
     try:
-        d = json.loads(r)  # was r.text from requests
+        d = json.loads(r)
     except ValueError, exp:  # bad json
         logger.debug("ERROR local unix get json raw return did raise an exception  in bad json (%s) %s" % (r, exp))
         logger.error('Bad return from the server %s: "%s"' % (exp, r))

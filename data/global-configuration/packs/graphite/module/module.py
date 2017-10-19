@@ -18,7 +18,7 @@ from opsbro.stats import STATS
 from opsbro.httpdaemon import http_export, response, request, abort
 from opsbro.util import to_best_int_float
 from opsbro.gossip import gossiper
-from opsbro.httpclient import get_http_exceptions
+from opsbro.httpclient import get_http_exceptions, httper
 from opsbro.kv import kvmgr
 from opsbro.library import libstore
 from opsbro.parameters import BoolParameter, IntParameter
@@ -404,10 +404,9 @@ class GraphiteModule(ListenerModule):
                     uri = 'http://%s:%s/render/?target=%s&from=%s' % (n['addr'], n['port'], target, _from)
                     try:
                         self.logger.debug('TS: (get /render) relaying to %s: %s' % (n['name'], uri))
-                        rq = libstore.get_requests()
-                        r = rq.get(uri)
-                        self.logger.debug('TS: get /render founded (%d)' % len(r.text))
-                        v = json.loads(r.text)
+                        r = httper.get(uri)
+                        self.logger.debug('TS: get /render founded (%d)' % len(r))
+                        v = json.loads(r)
                         self.logger.debug("TS /render relay GOT RETURN", v, "AND RES", res)
                         res.extend(v)
                         self.logger.debug("TS /render res is now", res)

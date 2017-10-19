@@ -42,7 +42,7 @@ class Apache(Collector):
         except Exception, exp:
             stack = traceback.format_exc()
             self.log = stack
-            logger.error('Unable to get Apache status - Exception = %s', exp)
+            self.error('Unable to get Apache status - Exception = %s' % exp)
             return False
         
         logger.debug('getApacheStatus: urlopen success, start parsing')

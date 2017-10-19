@@ -1,12 +1,6 @@
-import os
 import json
-import socket
 import urllib2
 import urllib
-import httplib
-from urlparse import urlsplit
-
-from opsbro.library import libstore
 
 _HTTP_EXCEPTIONS = None
 
@@ -15,13 +9,7 @@ def get_http_exceptions():
     global _HTTP_EXCEPTIONS
     if _HTTP_EXCEPTIONS is not None:
         return _HTTP_EXCEPTIONS
-    rq = libstore.get_requests()
-    # Some old requests libs do not have rq.packages.urllib3 and direclty map them to rq.exceptions.RequestException
-    # like in ubuntu 14.04 version
-    if hasattr(rq, 'packages'):
-        HTTP_EXCEPTIONS = (rq.exceptions.RequestException, rq.packages.urllib3.exceptions.HTTPError, urllib2.HTTPError)
-    else:
-        HTTP_EXCEPTIONS = (rq.exceptions.RequestException, urllib2.HTTPError)
+    HTTP_EXCEPTIONS = (urllib2.HTTPError, urllib2.URLError, )
     _HTTP_EXCEPTIONS = HTTP_EXCEPTIONS
     return _HTTP_EXCEPTIONS
 
@@ -32,7 +20,7 @@ class Httper(object):
     
     
     @staticmethod
-    def get(uri, params={}, headers={}):
+    def get(uri, params={}, headers={}, with_status_code=False):
         data = None  # always none in GET
         
         if params:
@@ -46,10 +34,14 @@ class Httper(object):
             req.add_header(k, v)
         request = url_opener.open(req)
         response = request.read()
-        # code = request.code
+        #
         # if code != 200:
         #    raise urllib2.HTTPError('')
-        return response
+        if not with_status_code:
+            return response
+        else:
+            status_code = request.code
+            return (status_code, response)
     
     
     @staticmethod
@@ -84,6 +76,30 @@ class Httper(object):
         
         req = urllib2.Request(uri, data)
         req.get_method = lambda: 'POST'
+        for (k, v) in headers.iteritems():
+            req.add_header(k, v)
+        request = url_opener.open(req)
+        response = request.read()
+        # code = request.code
+        return response
+    
+    
+    @staticmethod
+    def put(uri, data=None, params={}, headers=None):
+        #data = None  # always none in GET
+        if headers is None:
+            headers = {}
+        
+        if params:
+            # TODO: sure it's json and not urlencode?
+            # data = urllib.urlencode(params)
+            uri = "%s?%s" % (uri, urllib.urlencode(params))
+            headers['Content-Type'] = 'your/contenttype'
+        
+        url_opener = urllib2.build_opener(urllib2.HTTPHandler)
+        
+        req = urllib2.Request(uri, data)
+        req.get_method = lambda: 'PUT'
         for (k, v) in headers.iteritems():
             req.add_header(k, v)
         request = url_opener.open(req)

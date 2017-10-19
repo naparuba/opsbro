@@ -6,7 +6,7 @@ import shutil
 import hashlib
 import socket
 
-from opsbro.httpclient import get_http_exceptions
+from opsbro.httpclient import get_http_exceptions, httper
 from opsbro.stats import STATS
 from opsbro.log import LoggerFactory
 from opsbro.threadmgr import threader
@@ -351,9 +351,8 @@ class KVBackend:
             uri = 'http://%s:%s/kv/%s' % (n['addr'], n['port'], ukey)
             try:
                 logger.debug('KV: DELETE relaying to %s: %s' % (n['name'], uri))
-                rq = libstore.get_requests()
-                r = rq.delete(uri)
-                logger.debug('KV: DELETE return %s' % r.status_code)
+                httper.delete(uri)
+                logger.debug('KV: DELETE return')
                 return None
             except get_http_exceptions(), exp:
                 logger.debug('KV: DELETE error asking to %s: %s' % (n['name'], str(exp)))
@@ -381,13 +380,12 @@ class KVBackend:
             uri = 'http://%s:%s/kv/%s' % (n['addr'], n['port'], ukey)
             try:
                 logger.info('KV: (get) relaying to %s: %s' % (n['name'], uri))
-                rq = libstore.get_requests()
-                r = rq.get(uri)
-                if r.status_code == 404:
+                status_code, r = httper.get(uri, with_status_code=True)
+                if status_code == 404:
                     logger.info("GET KEY %s return a 404" % ukey)
                     return None
-                logger.info('KV: get founded (%d)' % len(r.text))
-                return r.text
+                logger.info('KV: get founded (%d)' % len(r))
+                return r
             except get_http_exceptions(), exp:
                 logger.error('KV: error asking to %s: %s' % (n['name'], str(exp)))
                 return None
@@ -447,13 +445,12 @@ class KVBackend:
                     logger.debug('KV: PUT (udp) error asking to %s: %s' % (n['name'], str(exp)))
                     return None
             # ok no allow udp here, so we switch to a classic HTTP mode :)
-            uri = 'http://%s:%s/kv/%s?ttl=%s' % (n['addr'], n['port'], ukey, ttl)
+            uri = 'http://%s:%s/kv/%s' % (n['addr'], n['port'], ukey)
             try:
                 logger.debug('KV: PUT asking %s: %s' % (n['name'], uri))
                 params = {'ttl': str(ttl)}
-                rq = libstore.get_requests()
-                r = rq.put(uri, data=value, params=params)
-                logger.debug('KV: PUT return %s' % r.status_code)
+                httper.put(uri, data=value, params=params)
+                logger.debug('KV: PUT return')
                 return None
             except get_http_exceptions(), exp:
                 logger.debug('KV: PUT error asking to %s: %s' % (n['name'], str(exp)))
@@ -515,12 +512,11 @@ class KVBackend:
                     
                     # Now send it :)
                     n = _node
-                    uri = 'http://%s:%s/kv/%s?force=True' % (n['addr'], n['port'], ukey)
+                    uri = 'http://%s:%s/kv/%s' % (n['addr'], n['port'], ukey)
                     try:
                         logger.debug('KV: PUT(force) asking %s: %s' % (n['name'], uri))
                         params = {'force': True, 'meta': json.dumps(bl['meta'])}
-                        rq = libstore.get_requests()
-                        r = rq.put(uri, data=value, params=params)
+                        r = httper.put(uri, data=value, params=params)
                         logger.debug('KV: PUT(force) return %s' % r)
                     except get_http_exceptions(), exp:
                         logger.debug('KV: PUT(force) error asking to %s: %s' % (n['name'], str(exp)))

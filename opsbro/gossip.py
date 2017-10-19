@@ -17,7 +17,7 @@ from opsbro.websocketmanager import websocketmgr
 from opsbro.pubsub import pubsub
 from opsbro.httpdaemon import http_export, response, abort, request
 from opsbro.library import libstore
-from opsbro.httpclient import get_http_exceptions
+from opsbro.httpclient import get_http_exceptions, httper
 from opsbro.zonemanager import zonemgr
 from opsbro.stop import stopper
 
@@ -1038,11 +1038,10 @@ class Gossip(object):
         uri = 'http://%s:%s/agent/push-pull' % (addr, port)
         payload = {'msg': message}
         try:
-            rq = libstore.get_requests()
-            r = rq.get(uri, params=payload)
+            r = httper.get(uri, params=payload)
             logger.debug("push-pull response", r)
             try:
-                back = json.loads(r.content)
+                back = json.loads(r)
             except ValueError, exp:
                 logger.error('ERROR CONNECTING TO %s:%s' % other, exp)
                 return False

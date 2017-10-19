@@ -349,12 +349,12 @@ if allow_black_magic:
 install_from_pip = []
 
 mod_need = {
-    'requests': {
-        'packages': {
-            'debian'      : 'python-requests', 'ubuntu': 'python-requests',
-            'amazon-linux': 'python27-requests', 'centos': 'python-requests', 'redhat': 'python-requests', 'oracle-linux': 'python-requests', 'fedora': 'python-requests',
-        }
-    },
+#    'requests': {
+#        'packages': {
+#            'debian'      : 'python-requests', 'ubuntu': 'python-requests',
+#            'amazon-linux': 'python27-requests', 'centos': 'python-requests', 'redhat': 'python-requests', 'oracle-linux': 'python-requests', 'fedora': 'python-requests',
+#        }
+#    },
 #    'cherrypy': {  # note: centos: first epel to enable cherrypy get from packages
 #        'packages'    : {
 #            'debian'      : 'python-cherrypy3', 'ubuntu': 'python-cherrypy3',

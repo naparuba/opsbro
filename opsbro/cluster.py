@@ -25,7 +25,7 @@ from opsbro.log import logger as raw_logger
 from opsbro.util import copy_dir, get_public_address, get_server_const_uuid, guess_server_const_uuid
 from opsbro.threadmgr import threader
 from opsbro.now import NOW
-from opsbro.httpclient import get_http_exceptions
+from opsbro.httpclient import get_http_exceptions, httper
 
 # now singleton objects
 from opsbro.gossip import gossiper
@@ -760,11 +760,10 @@ class Cluster(object):
                 logger.log('SYNC try to sync from %s since the time %s' % (repl['name'], self.last_alive))
                 uri = 'http://%s:%s/kv-meta/changed/%d' % (addr, port, self.last_alive)
                 try:
-                    rq = libstore.get_requests()
-                    r = rq.get(uri)
-                    logger.debug("SYNC kv-changed response from %s " % repl['name'], r)
+                    r = httper.get(uri)
+                    logger.debug("SYNC kv-changed response from %s " % repl['name'], len(r))
                     try:
-                        to_merge = json.loads(r.text)
+                        to_merge = json.loads(r)
                     except (ValueError, TypeError), exp:
                         logger.debug('SYNC : error asking to %s: %s' % (repl['name'], str(exp)))
                         continue
