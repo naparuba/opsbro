@@ -8,6 +8,10 @@ import sys
 
 pth = os.path.join(os.path.dirname(__file__), 'linux-dashboard.json')
 
+f = open('/root/counter.txt', 'a')
+f.write('%d\n' % time.time())
+f.close()
+
 f = open(pth, 'r')
 buf = f.read()
 f.close()
