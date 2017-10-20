@@ -39,14 +39,19 @@ pythonver() {
 pythonver
 
 
+
+echo "Getting the OpsBro agent code & packs "
+rm -fr /tmp/opsbro.tar.gz /tmp/opsbro
+curl -s http://linux.dashboard.static.opsbro.io/opsbro.tar.gz > /tmp/opsbro.tar.gz
 if [ $? == 0 ];then
-  echo "Getting the OpsBro agent code & packs "
-  rm -fr /tmp/opsbro.tar.gz /tmp/opsbro
-  curl -s http://linux.dashboard.static.opsbro.io/opsbro.tar.gz > /tmp/opsbro.tar.gz
-  cd /tmp
-  tar xfz opsbro.tar.gz
-  cd opsbro
+   echo "Oups: cannot get the opsbro code & packs from it's website"
+   curl http://linux.dashboard.static.opsbro.io/opsbro.tar.gz > /tmp/opsbro.tar.gz
+   exit 2
 fi
+cd /tmp
+tar xfz opsbro.tar.gz
+cd opsbro
+
 
 
 
