@@ -153,13 +153,10 @@ class ConfigurationManager(object):
     
     
     def __get_object_from_cfg_file(self, fp, force_document_comment_to_first_entry=False):
-        #is_json = fp.endswith('.json')
         is_yaml = fp.endswith('.yml')
         with open(fp, 'r') as f:
             buf = f.read()
             try:
-                #if is_json:
-                #    o = jsoner.loads(buf)
                 if is_yaml:
                     o = yamler.loads(buf, force_document_comment_to_first_entry=force_document_comment_to_first_entry)
                 else:
