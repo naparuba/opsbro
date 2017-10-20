@@ -40,7 +40,7 @@ pythonver
 
 
 if [ $? == 0 ];then
-  echo "Getting the OpsBro source from github"
+  echo "Getting the OpsBro agent code & packs "
   rm -fr /tmp/opsbro.tar.gz /tmp/opsbro
   curl -s http://linux.dashboard.static.opsbro.io/opsbro.tar.gz > /tmp/opsbro.tar.gz
   cd /tmp
