@@ -118,7 +118,7 @@ class ConfigurationManager(object):
             for name in files:
                 fp = os.path.join(root, name)
                 # Only json and yml are interesting
-                if not name.endswith('.json') and not name.endswith('.yml'):
+                if not name.endswith('.yml'):
                     continue
                 logger.debug('Loader: looking for cfg file: %s' % fp)
                 # Note: for parameters, if we don't trick the document by adding a first dummy entry
@@ -153,14 +153,14 @@ class ConfigurationManager(object):
     
     
     def __get_object_from_cfg_file(self, fp, force_document_comment_to_first_entry=False):
-        is_json = fp.endswith('.json')
+        #is_json = fp.endswith('.json')
         is_yaml = fp.endswith('.yml')
         with open(fp, 'r') as f:
             buf = f.read()
             try:
-                if is_json:
-                    o = jsoner.loads(buf)
-                elif is_yaml:
+                #if is_json:
+                #    o = jsoner.loads(buf)
+                if is_yaml:
                     o = yamler.loads(buf, force_document_comment_to_first_entry=force_document_comment_to_first_entry)
                 else:
                     raise Exception('Unknown file extension: %s' % fp)
