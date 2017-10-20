@@ -1,0 +1,28 @@
+FROM debian:9
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+RUN        apt-get update && apt-get install -y python
+RUN        apt-get update && apt-get install -y less
+RUN        apt-get update && apt-get install -y locales
+RUN        apt-get update && apt-get install -y python-leveldb
+RUN        apt-get update && apt-get install -y python-jinja2
+RUN        apt-get update && apt-get install -y python-crypto
+RUN        apt-get update && apt-get install -y python-setuptools
+
+# Locales
+RUN        cp /etc/locale.gen /etc/locale.gen.old
+RUN        sed -i "s/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g" /etc/locale.gen
+RUN        /usr/sbin/locale-gen
+
+ENV        LANG=en_US.UTF8
+
+
+ADD        . /root/opsbro-oss
+WORKDIR       /root/opsbro-oss
+
+RUN       python setup.py install
+
+
+
+ENTRYPOINT      bash spike/linux-dashboard-demi-entry.sh
+
