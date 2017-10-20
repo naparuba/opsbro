@@ -1,0 +1,19 @@
+FROM debian:9
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+RUN        apt-get update && apt-get install -y python
+RUN        apt-get update &&apt-get install -y curl
+RUN        apt-get update &&apt-get install -y vim
+RUN        apt-get update &&apt-get install -y locales
+RUN        apt-get update &&apt-get install -y gnupg
+
+RUN        curl -sL https://deb.nodesource.com/setup_8.x | bash -
+RUN        apt-get install -y nodejs
+RUN        npm install picture-tube -g
+
+
+
+# picture-tube --cols 20 image.png
+ENTRYPOINT     bin/bash
+
+# Exemple de mise en place de gtop, qui est intéressant sur sa forme pour des dashboard, à voir si ça existe en python pour l'intégrer nativement (et proposer aux utilisateurs de donner leur dashboards?)

@@ -70,5 +70,6 @@ sleep 2
 
 python bin/opsbro banner
 
-printf "Shinken Solutions Team is working on a great monitoring solution: Shinken Enterprise. Have a look if you need a powerful monitoring (/.__.)/ \(.__.\)\n"
+python bin/opsbro sponsor
+
 
