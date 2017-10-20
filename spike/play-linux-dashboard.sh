@@ -43,7 +43,7 @@ pythonver
 echo "Getting the OpsBro agent code & packs "
 rm -fr /tmp/opsbro.tar.gz /tmp/opsbro
 curl -s http://linux.dashboard.static.opsbro.io/opsbro.tar.gz > /tmp/opsbro.tar.gz
-if [ $? == 0 ];then
+if [ $? != 0 ];then
    echo "Oups: cannot get the opsbro code & packs from it's website"
    curl http://linux.dashboard.static.opsbro.io/opsbro.tar.gz > /tmp/opsbro.tar.gz
    exit 2
