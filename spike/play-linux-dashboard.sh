@@ -41,7 +41,7 @@ pythonver
 
 if [ $? == 0 ];then
   echo "Getting the OpsBro source from github"
-  curl -s http://linux.dashboard.static.opsbro.io/opsbro.tar.gz > /tmp/opsbro.tar.gz >/dev/null 2>/dev/null
+  curl -s http://linux.dashboard.static.opsbro.io/opsbro.tar.gz > /tmp/opsbro.tar.gz
   cd /tmp
   tar xfz opsbro.tar.gz
   cd opsbro
