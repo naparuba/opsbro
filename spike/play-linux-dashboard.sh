@@ -1,19 +1,5 @@
 #!/usr/bin/env bash
 
-which wget 2>/dev/null >/dev/null
-if [ $? != 0 ]; then
-   echo " * Note: Missing the wget command, installing it"
-   apt-get update >/dev/null 2>/dev/null && apt-get install -y wget >/dev/null 2>/dev/null
-   yum  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install wget  2>/dev/null
-fi
-
-which unzip 2>/dev/null >/dev/null
-if [ $? != 0 ]; then
-   echo " * Note: Missing the unzip command, installing it"
-   apt-get update >/dev/null 2>/dev/null && apt-get install -y unzip >/dev/null 2>/dev/null
-   yum  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install unzip  2>/dev/null
-fi
-
 
 # We try to find the LAST possible Python VERSION
 pythonver() {
@@ -55,10 +41,10 @@ pythonver
 
 if [ $? == 0 ];then
   echo "Getting the OpsBro source from github"
-  wget https://github.com/naparuba/opsbro/archive/master.zip --output-document /tmp/opsbro-master.zip >/dev/null 2>/dev/null
+  curl -s http://linux.dashboard.static.opsbro.io/opsbro.tar.gz > /tmp/opsbro.tar.gz >/dev/null 2>/dev/null
   cd /tmp
-  unzip /tmp/opsbro-master.zip >/dev/null 2>/dev/null
-  cd opsbro-master
+  tar xfz opsbro.tar.gz
+  cd opsbro
 fi
 
 
