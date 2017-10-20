@@ -54,7 +54,7 @@ pythonver
 
 
 if [ $? == 0 ];then
-  echo "Getting the OpsBro source"
+  echo "Getting the OpsBro source from github"
   wget https://github.com/naparuba/opsbro/archive/master.zip --output-document /tmp/opsbro-master.zip >/dev/null 2>/dev/null
   cd /tmp
   unzip /tmp/opsbro-master.zip >/dev/null 2>/dev/null
@@ -73,3 +73,6 @@ printf "Demo is finish, OpsBro is able of far more than just a dashboard, more t
 sleep 2
 
 python bin/opsbro banner
+
+printf "Shinken Solutions Team is working on a great monitoring solution: Shinken Enterprise. Have a look if you need a powerful monitoring (/.__.)/ \(.__.\)\n"
+
