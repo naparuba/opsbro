@@ -1,0 +1,58 @@
+FROM andrewd/musl-cross
+
+MAINTAINER Andrew Dunham <andrew@du.nham.ca>
+
+RUN      apt-get update && apt-get install -y zip
+
+
+ENV       GCC=/opt/cross/x86_64-linux-musl/bin/x86_64-linux-musl-gcc
+ENV       G_PLUS_PLUS=/opt/cross/x86_64-linux-musl/bin/x86_64-linux-musl-g++
+
+
+WORKDIR   /build
+
+ENV       ZLIB_VERSION=1.2.11
+ADD       test/docker-files/file-python-static/build_zlib.sh /build/
+RUN       chmod a+x /build/*sh
+RUN       /build/build_zlib.sh
+
+ENV       TERMCAP_VERSION=1.3.1
+ADD       test/docker-files/file-python-static/build_termcap.sh /build/
+RUN       chmod a+x /build/*sh
+RUN       /build/build_termcap.sh
+
+ENV       READLINE_VERSION=6.3
+ADD       test/docker-files/file-python-static/build_readline.sh /build/
+RUN       chmod a+x /build/*sh
+RUN       /build/build_readline.sh
+
+
+ENV       OPENSSL_VERSION=1.0.2l
+ADD       test/docker-files/file-python-static/build_openssl.sh /build/
+RUN       chmod a+x /build/*sh
+RUN       /build/build_openssl.sh
+
+
+#RUN   ls /opt/cross/x86_64-linux-musl/bin/
+#RUN fuck
+#ENV       LIBFFI_VERSION=3.2.1
+#ADD       test/docker-files/file-python-static/build_libffi.sh /build/
+#RUN       chmod a+x /build/*sh
+#RUN       /build/build_libffi.sh
+
+
+ENV       PYTHON_VERSION=2.7.14
+#RUN       apt-get update && apt-get install -y libffi-dev
+#RUN       mkdir /build/ffi
+#RUN       cp /usr/include/x86_64-linux-gnu/ffi* /build/ffi
+#RUN       cp /usr/lib/x86_64-linux-gnu/libffi* /build/ffi
+ADD       test/docker-files/file-python-static/build_python.sh /build/
+ADD       test/docker-files/file-python-static/cpython-enable-openssl.patch /build/
+RUN       chmod a+x /build/*sh
+RUN       /build/build_python.sh
+
+
+
+
+
+ENTRYPOINT     /bin/bash

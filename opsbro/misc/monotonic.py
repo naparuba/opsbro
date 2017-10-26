@@ -38,8 +38,11 @@
   limitations under the License.
 
 """
-import ctypes
-import ctypes.util
+try:
+    import ctypes
+    import ctypes.util
+except ImportError:  # like in static python
+    ctypes = None
 import os
 import sys
 import threading
@@ -50,126 +53,130 @@ __all__ = ('monotonic',)
 try:
     monotonic = time.monotonic
 except AttributeError:
-    try:
-        if sys.platform == 'darwin':  # OS X, iOS
-            # See Technical Q&A QA1398 of the Mac Developer Library:
-            #  <https://developer.apple.com/library/mac/qa/qa1398/>
-            libc = ctypes.CDLL('/usr/lib/libc.dylib', use_errno=True)
-            
-            
-            class mach_timebase_info_data_t(ctypes.Structure):
-                """System timebase info. Defined in <mach/mach_time.h>."""
-                _fields_ = (('numer', ctypes.c_uint32),
-                            ('denom', ctypes.c_uint32))
-            
-            
-            mach_absolute_time = libc.mach_absolute_time
-            mach_absolute_time.restype = ctypes.c_uint64
-            
-            timebase = mach_timebase_info_data_t()
-            libc.mach_timebase_info(ctypes.byref(timebase))
-            ticks_per_second = timebase.numer / timebase.denom * 1.0e9
-            
-            
-            def monotonic():
-                """Monotonic clock, cannot go backward."""
-                return mach_absolute_time() / ticks_per_second
-        
-        elif sys.platform.startswith('win32') or sys.platform.startswith('cygwin'):
-            if sys.platform.startswith('cygwin'):
-                # Note: cygwin implements clock_gettime (CLOCK_MONOTONIC = 4) since
-                # version 1.7.6. Using raw WinAPI for maximum version compatibility.
+    # if ctypes is not available, use the standard time, no luck here
+    if ctypes is None:
+        monotonic = time.time
+    else:
+        try:
+            if sys.platform == 'darwin':  # OS X, iOS
+                # See Technical Q&A QA1398 of the Mac Developer Library:
+                #  <https://developer.apple.com/library/mac/qa/qa1398/>
+                libc = ctypes.CDLL('/usr/lib/libc.dylib', use_errno=True)
                 
-                # Ugly hack using the wrong calling convention (in 32-bit mode) 
-                # because ctypes has no windll under cygwin (and it also seems that 
-                # the code letting you select stdcall in _ctypes doesn't exist under 
-                # the preprocessor definitions relevant to cygwin).
-                # This is 'safe' because:
-                # 1. The ABI of GetTickCount and GetTickCount64 is identical for 
-                #    both calling conventions because they both have no parameters.
-                # 2. libffi masks the problem because after making the call it doesn't
-                #    touch anything through esp and epilogue code restores a correct
-                #    esp from ebp afterwards.
-                try:
-                    kernel32 = ctypes.cdll.kernel32
-                except OSError:  # 'No such file or directory'
-                    kernel32 = ctypes.cdll.LoadLibrary('kernel32.dll')
-            else:
-                kernel32 = ctypes.windll.kernel32
-            
-            GetTickCount64 = getattr(kernel32, 'GetTickCount64', None)
-            if GetTickCount64:
-                # Windows Vista / Windows Server 2008 or newer.
-                GetTickCount64.restype = ctypes.c_ulonglong
+                
+                class mach_timebase_info_data_t(ctypes.Structure):
+                    """System timebase info. Defined in <mach/mach_time.h>."""
+                    _fields_ = (('numer', ctypes.c_uint32),
+                                ('denom', ctypes.c_uint32))
+                
+                
+                mach_absolute_time = libc.mach_absolute_time
+                mach_absolute_time.restype = ctypes.c_uint64
+                
+                timebase = mach_timebase_info_data_t()
+                libc.mach_timebase_info(ctypes.byref(timebase))
+                ticks_per_second = timebase.numer / timebase.denom * 1.0e9
                 
                 
                 def monotonic():
                     """Monotonic clock, cannot go backward."""
-                    return GetTickCount64() / 1000.0
+                    return mach_absolute_time() / ticks_per_second
             
-            else:
-                # Before Windows Vista.
-                GetTickCount = kernel32.GetTickCount
-                GetTickCount.restype = ctypes.c_uint32
-                
-                get_tick_count_lock = threading.Lock()
-                get_tick_count_last_sample = 0
-                get_tick_count_wraparounds = 0
-                
-                
-                def monotonic():
-                    """Monotonic clock, cannot go backward."""
-                    global get_tick_count_last_sample
-                    global get_tick_count_wraparounds
+            elif sys.platform.startswith('win32') or sys.platform.startswith('cygwin'):
+                if sys.platform.startswith('cygwin'):
+                    # Note: cygwin implements clock_gettime (CLOCK_MONOTONIC = 4) since
+                    # version 1.7.6. Using raw WinAPI for maximum version compatibility.
                     
-                    with get_tick_count_lock:
-                        current_sample = GetTickCount()
-                        if current_sample < get_tick_count_last_sample:
-                            get_tick_count_wraparounds += 1
-                        get_tick_count_last_sample = current_sample
+                    # Ugly hack using the wrong calling convention (in 32-bit mode)
+                    # because ctypes has no windll under cygwin (and it also seems that
+                    # the code letting you select stdcall in _ctypes doesn't exist under
+                    # the preprocessor definitions relevant to cygwin).
+                    # This is 'safe' because:
+                    # 1. The ABI of GetTickCount and GetTickCount64 is identical for
+                    #    both calling conventions because they both have no parameters.
+                    # 2. libffi masks the problem because after making the call it doesn't
+                    #    touch anything through esp and epilogue code restores a correct
+                    #    esp from ebp afterwards.
+                    try:
+                        kernel32 = ctypes.cdll.kernel32
+                    except OSError:  # 'No such file or directory'
+                        kernel32 = ctypes.cdll.LoadLibrary('kernel32.dll')
+                else:
+                    kernel32 = ctypes.windll.kernel32
+                
+                GetTickCount64 = getattr(kernel32, 'GetTickCount64', None)
+                if GetTickCount64:
+                    # Windows Vista / Windows Server 2008 or newer.
+                    GetTickCount64.restype = ctypes.c_ulonglong
+                    
+                    
+                    def monotonic():
+                        """Monotonic clock, cannot go backward."""
+                        return GetTickCount64() / 1000.0
+                
+                else:
+                    # Before Windows Vista.
+                    GetTickCount = kernel32.GetTickCount
+                    GetTickCount.restype = ctypes.c_uint32
+                    
+                    get_tick_count_lock = threading.Lock()
+                    get_tick_count_last_sample = 0
+                    get_tick_count_wraparounds = 0
+                    
+                    
+                    def monotonic():
+                        """Monotonic clock, cannot go backward."""
+                        global get_tick_count_last_sample
+                        global get_tick_count_wraparounds
                         
-                        final_milliseconds = get_tick_count_wraparounds << 32
-                        final_milliseconds += get_tick_count_last_sample
-                        return final_milliseconds / 1000.0
+                        with get_tick_count_lock:
+                            current_sample = GetTickCount()
+                            if current_sample < get_tick_count_last_sample:
+                                get_tick_count_wraparounds += 1
+                            get_tick_count_last_sample = current_sample
+                            
+                            final_milliseconds = get_tick_count_wraparounds << 32
+                            final_milliseconds += get_tick_count_last_sample
+                            return final_milliseconds / 1000.0
+            
+            else:
+                try:
+                    # NOTE: on alpine linux 2.7, there is a issue with find(c) that is giving back
+                    # the full path instead of just the lib name, so use os.path.basename() to strip it
+                    clock_gettime = ctypes.CDLL(os.path.basename(ctypes.util.find_library('c')), use_errno=True).clock_gettime
+                except AttributeError:
+                    clock_gettime = ctypes.CDLL(os.path.basename(ctypes.util.find_library('rt')), use_errno=True).clock_gettime
+                
+                
+                class timespec(ctypes.Structure):
+                    """Time specification, as described in clock_gettime(3)."""
+                    _fields_ = (('tv_sec', ctypes.c_long),
+                                ('tv_nsec', ctypes.c_long))
+                
+                
+                if sys.platform.startswith('linux'):
+                    CLOCK_MONOTONIC = 1
+                elif sys.platform.startswith('freebsd'):
+                    CLOCK_MONOTONIC = 4
+                elif sys.platform.startswith('sunos5'):
+                    CLOCK_MONOTONIC = 4
+                elif 'bsd' in sys.platform:
+                    CLOCK_MONOTONIC = 3
+                elif sys.platform.startswith('aix'):
+                    CLOCK_MONOTONIC = ctypes.c_longlong(10)
+                
+                
+                def monotonic():
+                    """Monotonic clock, cannot go backward."""
+                    ts = timespec()
+                    if clock_gettime(CLOCK_MONOTONIC, ctypes.pointer(ts)):
+                        errno = ctypes.get_errno()
+                        raise OSError(errno, os.strerror(errno))
+                    return ts.tv_sec + ts.tv_nsec / 1.0e9
+            
+            # Perform a sanity-check.
+            if monotonic() - monotonic() > 0:
+                raise ValueError('monotonic() is not monotonic!')
         
-        else:
-            try:
-                # NOTE: on alpine linux 2.7, there is a issue with find(c) that is giving back
-                # the full path instead of just the lib name, so use os.path.basename() to strip it
-                clock_gettime = ctypes.CDLL(os.path.basename(ctypes.util.find_library('c')), use_errno=True).clock_gettime
-            except AttributeError:
-                clock_gettime = ctypes.CDLL(os.path.basename(ctypes.util.find_library('rt')), use_errno=True).clock_gettime
-            
-            
-            class timespec(ctypes.Structure):
-                """Time specification, as described in clock_gettime(3)."""
-                _fields_ = (('tv_sec', ctypes.c_long),
-                            ('tv_nsec', ctypes.c_long))
-            
-            
-            if sys.platform.startswith('linux'):
-                CLOCK_MONOTONIC = 1
-            elif sys.platform.startswith('freebsd'):
-                CLOCK_MONOTONIC = 4
-            elif sys.platform.startswith('sunos5'):
-                CLOCK_MONOTONIC = 4
-            elif 'bsd' in sys.platform:
-                CLOCK_MONOTONIC = 3
-            elif sys.platform.startswith('aix'):
-                CLOCK_MONOTONIC = ctypes.c_longlong(10)
-            
-            
-            def monotonic():
-                """Monotonic clock, cannot go backward."""
-                ts = timespec()
-                if clock_gettime(CLOCK_MONOTONIC, ctypes.pointer(ts)):
-                    errno = ctypes.get_errno()
-                    raise OSError(errno, os.strerror(errno))
-                return ts.tv_sec + ts.tv_nsec / 1.0e9
-        
-        # Perform a sanity-check.
-        if monotonic() - monotonic() > 0:
-            raise ValueError('monotonic() is not monotonic!')
-    
-    except Exception:
-        raise RuntimeError('no suitable implementation for this system')
+        except Exception:
+            raise RuntimeError('no suitable implementation for this system')

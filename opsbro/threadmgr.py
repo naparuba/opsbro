@@ -1,5 +1,8 @@
 import threading
-import ctypes
+try:
+    import ctypes
+except ImportError:  # on python static build for example
+    ctypes = None
 import sys
 import os
 import time
@@ -25,7 +28,11 @@ except ImportError:
 # Hook threading to allow thread renaming
 if sys.platform.startswith("win"):
     def namer():
-        import ctypes
+        # If no ctypes, like in a static python build: exit
+        try:
+            import ctypes
+        except ImportError:
+            return
         import threading
         import time
         from ctypes import wintypes
@@ -87,8 +94,12 @@ if sys.platform.startswith("win"):
     del namer
 elif sys.platform.startswith("linux"):
     def namer():
-        import ctypes
-        import ctypes.util
+        # Return if python was build without ctypes (like in a static build)
+        try:
+            import ctypes
+            import ctypes.util
+        except ImportError:
+            return
         import threading
         libpthread_path = ctypes.util.find_library("pthread")
         if not libpthread_path:

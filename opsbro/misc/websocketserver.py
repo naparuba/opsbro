@@ -24,7 +24,10 @@ import hashlib
 import base64
 import socket
 import struct
-import ssl
+try:
+    import ssl
+except ImportError:  # like in static python
+    ssl = None
 import time
 import errno
 import logging
@@ -606,9 +609,12 @@ class SimpleWebSocketServer(object):
                     del self.connections[fileno]
                     self.listeners.remove(failed)
 
+PROTOCOL_TLSv1 = None
+if ssl:
+    PROTOCOL_TLSv1 = ssl.PROTOCOL_TLSv1
 
 class SimpleSSLWebSocketServer(SimpleWebSocketServer):
-    def __init__(self, host, port, websocketclass, certfile, keyfile, version=ssl.PROTOCOL_TLSv1):
+    def __init__(self, host, port, websocketclass, certfile, keyfile, version=PROTOCOL_TLSv1):
         SimpleWebSocketServer.__init__(self, host, port, websocketclass)
         
         self.cerfile = certfile

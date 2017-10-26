@@ -1090,7 +1090,16 @@ class Cluster(object):
     
     
     def do_memory_trim_thread(self):
-        import ctypes
+        try:
+            import ctypes
+        except ImportError:  # like in static python
+            ctypes = None
+            
+        if ctypes is None:  # nop
+            while not stopper.interrupted:
+                time.sleep(10)
+            return
+            
         import gc
         
         try:
