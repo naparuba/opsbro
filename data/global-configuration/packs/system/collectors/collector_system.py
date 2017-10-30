@@ -112,7 +112,7 @@ class System(Collector):
             res['publicip'] = socket.gethostbyname(socket.gethostname())
         except socket.gaierror:
             pass
-        if not res['publicip'] or res['publicip'] == '127.0.0.1':
+        if not res['publicip'] or res['publicip'].startswith('127.'):
             res['publicip'] = get_public_address()
         logger.debug('getsystem: completed, returning')
         return res
