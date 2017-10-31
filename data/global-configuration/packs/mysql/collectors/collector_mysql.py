@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+import socket
 
 from opsbro.collector import Collector
 from opsbro.parameters import StringParameter, IntParameter, BoolParameter
@@ -53,12 +54,15 @@ class Mysql(Collector):
             except MySQLdb.OperationalError, exp:  # ooooups
                 self.error('MySQL connection error (server): %s' % exp)
                 return False
-        else:
+        elif hasattr(socket, 'AF_UNIX'):
             try:
                 db = MySQLdb.connect(host='localhost', user=user, passwd=password, port=port, unix_socket=mysql_socket)
             except MySQLdb.OperationalError, exp:
                 self.error('MySQL connection error (socket): %s' % exp)
                 return False
+        else:
+            self.error('MySQL is set to connect with unix socket but it is not available for windows.')
+            return False
         
         logger.debug('getMySQLStatus: connected')
         

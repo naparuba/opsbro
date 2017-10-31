@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 
 class Characters(object):
     # Box drawing
@@ -58,6 +59,23 @@ class Characters(object):
     bar_fill = u'█'
     bar_unfill = u'▒'
 
+
+# Windows: don't know how to draw some characters, so fix them
+if os.name == 'nt':
+    # Box drawing
+    # NOTE: if you have more heavy chars, I'm interested, because all I did found is ┏ but the vertical sign is not continue (space in putty at least)
+    Characters.vbar = u'|'
+    Characters.hbar = u'-'
+    Characters.hbar_light = u'-'
+    Characters.corner_top_left = u'*'
+    Characters.corner_top_right = u'*'
+    Characters.corner_bottom_left = u'*'
+    Characters.corner_bottom_right = u'*'
+    Characters.arrow_left = u'->'
+    Characters.check = u'V'
+    Characters.cross = u'X'
+    Characters.double_exclamation = u'!!'
+    Characters.spinners = u"⠁⠂⠄⡀⢀⠠⠐⠈"
 
 CHARACTERS = Characters()
 

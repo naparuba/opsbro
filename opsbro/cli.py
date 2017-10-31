@@ -124,6 +124,16 @@ class AnyAgent(object):
             cprint('# | if you want to start the agent can launch it with the "opsbro agent start" command', color='grey')
 
 
+    @staticmethod
+    def __tmp_agent_entering():
+        os.setsid()
+        try:
+            from setproctitle import setproctitle
+            setproctitle("Temporary agent")
+        except:
+            pass
+
+
     # For some CLI we don't care if we have a running agent or just a dummy send (like
     # quick dashboards)
     def assert_one_agent(self):
@@ -132,7 +142,11 @@ class AnyAgent(object):
             self.did_start_a_tmp_agent = True
             tmp_agent_cmd = 'python %s agent start' % get_current_binary()
             logger.debug('Temporary agent command: %s' % tmp_agent_cmd)
-            self.tmp_agent = subprocess.Popen(tmp_agent_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, preexec_fn=os.setsid)
+            additional_args = {}
+            if os.name != 'nt':
+                additional_args['preexec_fn'] = self.__tmp_agent_entering
+                additional_args['close_fds'] = True
+            self.tmp_agent = subprocess.Popen(tmp_agent_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **additional_args)
             cprint('')
             cprint('# This command need a started agent, and currently no one is started', color='grey')
             cprint('# * Spawning a ', color='grey', end='')

@@ -102,6 +102,12 @@ class LolCat(object):
         r = ''
         if isinstance(s, str):
             s = s.decode('utf-8', 'replace')
+
+        # We must consider the classic CMD as a no tty, as it's just too limited
+        if os.name == 'nt':
+            if os.environ.get('ANSICON', '') == '':
+                return s
+            
         for i, c in enumerate(s):
             rgb = self.rainbow(0.1, offset + i / spread)
             if isinstance(c, str):

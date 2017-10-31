@@ -8,6 +8,13 @@ from opsbro.misc.colorama import init as init_colorama
 
 
 def is_tty():
+    # TODO: what about windows? how to have beautiful & Windows?
+    # on windows, we don't know how to have cool output
+    if os.name == 'nt':
+        # We must consider the classic CMD as a no tty, as it's just too limited
+        if os.environ.get('ANSICON', '') == '':
+            return False
+    
     # Look if we are in a tty or not
     if hasattr(sys.stdout, 'isatty'):
         return sys.stdout.isatty()

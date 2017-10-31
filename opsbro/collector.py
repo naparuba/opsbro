@@ -67,6 +67,9 @@ class Collector(ParameterBasedType):
     # NOTE: we want the error in our log file, but not in the stdout of the daemon
     # to let the stdout errors for real daemon error
     def error(self, txt):
+        # Be sure we are saving unicode string, as they can be json.dumps
+        if isinstance(txt, str):
+            txt = txt.decode('utf8', 'ignore')
         self.logger.error(txt, do_print=False)
         self.log = txt
     

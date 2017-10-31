@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 
-from fcntl import ioctl
+try:
+    from fcntl import ioctl
+    from termios import TIOCGWINSZ
+except ImportError:  # on windows: cannot have this
+    ioctl = None
+    TIOCGWINSZ = None
 import struct
-from termios import TIOCGWINSZ
 import sys
 
 from .log import cprint, logger, sprintf

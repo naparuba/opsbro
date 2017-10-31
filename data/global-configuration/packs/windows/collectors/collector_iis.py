@@ -26,7 +26,10 @@ class IIS(Collector):
             _label = c[0]
             _query = c[1]
             _delay = c[2]
-            v = wmi.wmiaccess.get_perf_data(_query, unit='double', delay=_delay)
+            try:
+                v = wmi.wmiaccess.get_perf_data(_query, unit='double', delay=_delay)
+            except WindowsError:  # no such info
+                continue
             data[_label] = v
         
         return data

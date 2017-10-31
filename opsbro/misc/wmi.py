@@ -94,6 +94,10 @@ import pythoncom
 import win32pdh
 
 import opsbro.misc.winstats as winstats
+from opsbro.log import LoggerFactory
+
+# Global logger for this part
+logger = LoggerFactory.create_logger('wmi')
 
 def signed_to_unsigned(signed):
     """Convert a (possibly signed) long to unsigned hex. Useful
@@ -1611,7 +1615,7 @@ class WMIAccess(object):
             return self.q_cache[q]
         # ok no cache, need to really compute it so ^^
         parts = q.split('\\')
-        print "PARTS", parts
+        logger.debug("PARTS: %s" % parts)
         nparts = []
         for p in parts:
             if p:
@@ -1645,10 +1649,10 @@ class WMIAccess(object):
     def get_perf_data(self, q, unit='long', delay=0):
         # english query are anble if we do not need translate
         english = not self.need_pdh_translate
-        print "NOT TRANSLATED QUERY", q
+        logger.debug("Not translated query: %s" % q)
         q = self.__parse_and_translate_query(q)
-        print "TRANSLATED QUERY:", q
-        print "QUERY IN ENGLISH?", english
+        logger.debug("Translated query: %s" % q)
+        logger.debug("Query in english? %s" % english)
         raw = winstats.get_perf_data(q, fmts=unit, delay=delay, english=english)
         # only the first element is need
         r = raw[0]

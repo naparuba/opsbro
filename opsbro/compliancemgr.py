@@ -11,6 +11,7 @@ else:
 from opsbro.log import LoggerFactory
 from opsbro.stop import stopper
 from opsbro.httpdaemon import http_export, response, abort, request
+from opsbro.evaluater import evaluater
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('compliance')
@@ -158,7 +159,7 @@ class ComplianceManager(object):
         else:
             compliance['rule'] = None
         compliance['mode'] = compliance.get('mode', 'audit')
-        compliance['if'] = compliance.get('if', 'False')
+        compliance['verify_if'] = compliance.get('verify_if', 'False')
         # Add it into the list
         self.compliances[full_path] = compliance
     
@@ -174,6 +175,14 @@ class ComplianceManager(object):
         for (compliance_id, compliance) in self.compliances.iteritems():
             mode = compliance['mode']
             rule = compliance['rule']
+            verify_if = compliance['verify_if']
+            try:
+                r = evaluater.eval_expr(verify_if)
+                if not r:
+                    continue
+            except Exception, exp:
+                logger.error(' (%s) if rule (%s) evaluation did fail: %s' % (compliance['display_name'], verify_if, exp))
+                continue
             if rule is not None:
                 rule.launch(mode)
     

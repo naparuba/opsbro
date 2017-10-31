@@ -93,7 +93,10 @@ class System(Collector):
             
             # Also get server roles
             win['features'] = []
-            _features = wmiaccess.get_table_where('Win32_ServerFeature')
+            try:
+                _features = wmiaccess.get_table_where('Win32_ServerFeature')
+            except AttributeError:  # maybe the Win32_ServerFeature is missing
+                _features = []
             for f in _features:
                 win['features'].append(f.Name)
             win['features'].sort()
