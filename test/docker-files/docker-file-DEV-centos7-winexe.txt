@@ -1,0 +1,87 @@
+FROM centos:7
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+RUN        yum --nogpgcheck  -y  upgrade
+
+RUN        yum install -y epel-release
+
+# Inspired by https://github.com/beardedeagle/winexe-rpm.git
+
+RUN       yum install -y git
+RUN       yum install -y    rpm-build
+RUN       yum install -y    gcc
+RUN       yum install -y    pkgconfig
+RUN       yum install -y    libtalloc-devel
+RUN       yum install -y    samba4-devel
+RUN       yum install -y    popt-devel
+RUN       yum install -y    mingw64-gcc
+RUN       yum install -y    mingw32-gcc
+RUN       yum install -y    perl
+RUN       yum install -y    mingw-binutils-generic
+RUN       yum install -y    mingw-filesystem-base
+RUN       yum install -y    mingw32-binutils
+RUN       yum install -y    mingw32-cpp
+RUN       yum install -y    mingw32-crt
+RUN       yum install -y    mingw32-filesystem
+RUN       yum install -y    mingw32-headers
+RUN       yum install -y    mingw64-binutils
+RUN       yum install -y    mingw64-cpp
+RUN       yum install -y    mingw64-crt
+RUN       yum install -y    mingw64-filesystem
+RUN       yum install -y    mingw64-headers
+RUN       yum install -y    libcom_err-devel
+RUN       yum install -y    zlib-devel
+RUN       yum install -y    zlib-static
+RUN       yum install -y    glibc-devel
+RUN       yum install -y    glibc-static
+RUN       yum install -y    python-devel
+RUN       yum install -y    gnutls-devel
+RUN       yum install -y    libacl-devel
+RUN       yum install -y    openldap-devel
+
+# Be sure that this lib is not present
+RUN        yum remove libbsd-devel -y
+
+RUN        mkdir /root/file-winexe
+RUN        mkdir /root/file-winexe/SPECS
+
+
+WORKDIR    /root/file-winexe
+
+
+RUN        mkdir BUILD BUILDROOT   RPMS   SOURCES   SRPMS
+
+################# Winexe source
+ENV        WINEXE_VER="1.1"
+ENV        WINEXE_GITHASH="b787d2a2c4b1abc3653bad10aec943b8efcd7aab"
+WORKDIR     /root/file-winexe/SOURCES
+RUN         git clone git://git.code.sf.net/p/winexe/winexe-waf winexe-${WINEXE_VER}
+WORKDIR     /root/file-winexe/SOURCES/winexe-${WINEXE_VER}
+RUN         git checkout ${WINEXE_GITHASH}
+WORKDIR     /root/file-winexe/SOURCES/winexe-${WINEXE_VER}/source
+RUN         sed -i 's/winexe-static/winexe/' wscript_build
+RUN         sed -i "s/lib='dl'/lib='dl gnutls'/" wscript_build
+
+
+
+
+############### Samba soure
+ENV         SAMBA_GITHASH="a6bda1f2bc85779feb9680bc74821da5ccd401c5"
+WORKDIR     /root/file-winexe/SOURCES
+RUN         git clone git://git.samba.org/samba.git samba
+WORKDIR     /root/file-winexe/SOURCES/samba
+RUN         git reset --hard ${SAMBA_GITHASH}
+
+
+################ Go build
+
+
+WORKDIR    /root/file-winexe/SOURCES/winexe-${WINEXE_VER}/source
+RUN        ./waf --samba-dir=../../samba configure build
+
+RUN        cp -rp /root/file-winexe/SOURCES/winexe-${WINEXE_VER}/source/build/winexe /root
+
+WORKDIR /root
+
+#ENTRYPOINT   winexe --uninstall --user="administrateur%Shinken13" //192.168.1.239   "powershell.exeew-object System.Net.WebClient).Downloadfile('http://avatars3.githubusercontent.com/u/445325', 'C:\avatar2.png')"
+ENTRYPOINT    /bin/bash

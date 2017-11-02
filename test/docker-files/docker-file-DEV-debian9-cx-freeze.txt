@@ -1,0 +1,135 @@
+FROM debian:9
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+RUN        apt-get update && apt-get install -y python
+# Setup test env, "standard" installation is test with other tests ^^
+RUN        apt-get update && apt-get install -y python-pip
+RUN        pip install jinja2
+RUN        pip install leveldb
+RUN        pip install pyOpenSSL
+RUN        pip install pycrypto
+#RUN        pip install requests
+RUN        pip install Crypto
+RUN        pip install pygments
+RUN        pip install coveralls
+RUN        pip install nose-cov
+RUN        pip install unittest2
+#RUN        apt-get update && apt-get install -y python-cherrypy3
+#RUN        pip install rsa
+# The internal yaml seems to not be used, thanks nose
+RUN        pip install ruamel.yaml==0.11.15
+RUN        apt-get update && apt-get install -y curl
+RUN        apt-get update && apt-get install -y vim
+RUN        apt-get update && apt-get install -y procps
+RUN        apt-get update && apt-get install -y wget
+RUN        apt-get update && apt-get install -y net-tools
+RUN        apt-get update && apt-get install -y dnsutils
+RUN        apt-get update && apt-get install -y python-apt
+RUN        apt-get update && apt-get install -y strace
+RUN        apt-get update && apt-get install -y less
+RUN        apt-get update && apt-get install -y locales
+RUN        apt-get update && apt-get install -y python3-pkg-resources asciinema
+
+# Locales
+RUN        cp /etc/locale.gen /etc/locale.gen.old
+RUN        sed -i "s/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g" /etc/locale.gen
+RUN        /usr/sbin/locale-gen
+
+ENV        LANG=en_US.UTF8
+
+
+
+#RUN        apt-get update && apt-get install  -y liblz-dev
+#RUN        apt-get update && apt-get install  -y zlib1g-dev
+#RUN        pip install cx_Freeze
+#RUN        pip install pyInstaller
+
+
+# Have python dev
+RUN        printf "\ndeb-src http://deb.debian.org/debian stretch main\n" >> /etc/apt/sources.list
+RUN        apt-get update && apt-get build-dep -y python2.7
+
+
+WORKDIR    /root
+RUN        wget https://www.python.org/ftp/python/2.7.14/Python-2.7.14.tgz
+RUN        tar xfz Python-2.7.14.tgz
+WORKDIR    /root/Python-2.7.14
+RUN        apt-get update && apt-get install -y g++
+
+#RUN        apt-get update && apt-get install -y libssl-dev
+#RUN        apt-get update && apt-get install -y zlib1g-dev
+
+# Ctypes
+#RUN        apt-get update && apt-get install -y libffi-dev
+
+# Static OK but without lot of modules
+#RUN        ./configure --prefix=/opt --enable-ipv6 --enable-unicode=ucs4 --with-dbmliborder=bdb:gdbm --with-system-expat --with-computed-gotos --with-system-ffi --with-fpectl --enable-optimizations  CFLAGS="-fPIC"  LDFLAGS="-static" --disable-shared
+
+#--with-system-ffi= have ctypes
+RUN        ./configure --prefix=/opt --disable-shared  --with-system-ffi LDFLAGS="-Wl,-no-export-dynamic -static-libgcc -static -ldl" CPPFLAGS="-static -fPIC" LINKFORSHARED=" " DYNLOADFILE="dynload_stub.o"
+
+# HACK to compile some core libs
+RUN        cp /usr/lib/gcc/x86_64-linux-gnu/6/crtbeginS.o /usr/lib/gcc/x86_64-linux-gnu/6/crtbeginT.o
+
+
+RUN       sed -e 's/#\*shared\*/\*static\*/g' Modules/Setup.dist > Modules/Setup
+
+# Allow python modules
+# Lot used from https://github.com/vulk/docker-python-static/blob/master/StaticSetup
+RUN       sed -ie 's/#array /array /g' Modules/Setup
+RUN       sed -ie 's/#cmath /cmath /g' Modules/Setup
+RUN       sed -ie 's/#math /math /g' Modules/Setup
+RUN       sed -ie 's/#_struct /_struct /g' Modules/Setup
+RUN       sed -ie 's/#time /time /g' Modules/Setup
+RUN       sed -ie 's/#operator /operator /g' Modules/Setup
+RUN       sed -ie 's/#_testcapi /_testcapi /g' Modules/Setup
+RUN       sed -ie 's/#_random /_random /g' Modules/Setup
+RUN       sed -ie 's/#_collections /_collections /g' Modules/Setup
+RUN       sed -ie 's/#_heapq /_heapq /g' Modules/Setup
+RUN       sed -ie 's/#itertools /itertools /g' Modules/Setup
+RUN       sed -ie 's/#strop /strop /g' Modules/Setup
+RUN       sed -ie 's/#_functools /_functools /g' Modules/Setup
+RUN       sed -ie 's/#_elementtree /_elementtree /g' Modules/Setup
+RUN       sed -ie 's/#datetime /datetime /g' Modules/Setup
+RUN       sed -ie 's/#_bisect /_bisect /g' Modules/Setup
+RUN       sed -ie 's/#unicodedata /unicodedata /g' Modules/Setup
+RUN       sed -ie 's/#_locale /_locale /g' Modules/Setup
+RUN       sed -ie 's/#_io /_io /g' Modules/Setup
+RUN       sed -ie 's/#fcntl /fcntl /g' Modules/Setup
+RUN       sed -ie 's/#spwd /spwd /g' Modules/Setup
+RUN       sed -ie 's/#grp /grp /g' Modules/Setup
+RUN       sed -ie 's/#select /select /g' Modules/Setup
+RUN       sed -ie 's/#mmap /mmap /g' Modules/Setup
+RUN       sed -ie 's/#_csv /_csv /g' Modules/Setup
+RUN       sed -ie 's/#_socket /_socket /g' Modules/Setup
+RUN       sed -ie 's/#termios /termios /g' Modules/Setup
+RUN       sed -ie 's/#resource /resource /g' Modules/Setup
+RUN       sed -ie 's/#_md5 /_md5 /g' Modules/Setup
+RUN       sed -ie 's/#_sha /_sha /g' Modules/Setup
+RUN       sed -ie 's/#_sha256 /_sha256 /g' Modules/Setup
+RUN       sed -ie 's/#_sha512 /_sha512 /g' Modules/Setup
+RUN       sed -ie 's/#cStringIO /cStringIO /g' Modules/Setup
+RUN       sed -ie 's/#cPickle /cPickle /g' Modules/Setup
+RUN       sed -ie 's/#zlib /zlib /g' Modules/Setup
+RUN       sed -ie 's/#binascii /binascii /g' Modules/Setup
+
+
+# Also ctypes but in the local file as missing in the Setup one
+#RUN       printf "_ctypes _ctypes/_ctypes.c _ctypes/callbacks.c _ctypes/callproc.c _ctypes/cfield.c _ctypes/malloc_closure.c _ctypes/stgdict.c -lffi \n" >> Modules/Setup.local
+#RUN       printf "_ctypes_test _ctypes/_ctypes_test.c \n" >> Modules/Setup.local
+
+#RUN       printf "_ssl _ssl.c -DUSE_SSL -I/usr/include/openssl -lssl -lcrypto \n" >> Modules/Setup.local
+#RUN       printf "_hashlib _hashopenssl.c -DUSE_SSL -I/usr/include/openssl -lssl -lcrypto \n" >> Modules/Setup.local
+RUN       printf "future_builtins future_builtins.c \n" >> Modules/Setup.local
+
+#RUN        printf "math mathmodule.c _math.c # -lm # math library functions, e.g. sin()\n" >> Modules/Setup.local
+#RUN        make -j5 LDFLAGS="-static " LINKFORSHARED=" "
+RUN         make -j5
+
+
+
+ADD        . /root/opsbro-oss
+WORKDIR       /root/opsbro-oss
+
+ENTRYPOINT      /bin/bash
+

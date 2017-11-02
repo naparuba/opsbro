@@ -1,0 +1,24 @@
+FROM debian:9
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+RUN        apt-get update && apt-get install -y python
+RUN        apt-get update && apt-get install -y curl
+RUN        apt-get update && apt-get install -y vim
+RUN        apt-get update && apt-get install -y procps
+RUN        apt-get update && apt-get install -y wget
+RUN        apt-get update && apt-get install -y net-tools
+RUN        apt-get update && apt-get install -y dnsutils
+RUN        apt-get update && apt-get install -y strace
+RUN        apt-get update && apt-get install -y less
+
+WORKDIR       /root/
+
+RUN       wget https://packetfence.org/downloads/PacketFence/debian-feature-ubuntu-14.04/pool/jessie/w/winexe/winexe_1.00-1_amd64.deb
+RUN       dpkg -i winexe_1.00-1_amd64.deb
+
+
+ENTRYPOINT      /bin/bash
+
+
+#winexe --uninstall --user=administrateur --password="Shinken13" //192.168.1.239   "powershell.exe -NoProfile -ExecutionPolicy unrestricted -Command (new-object System.Net.WebClient).Downloadfile('http://avatars3.githubusercontent.com/u/445325', 'C:\avatar2.png')"
+
