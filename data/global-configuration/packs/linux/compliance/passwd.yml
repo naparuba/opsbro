@@ -1,6 +1,6 @@
 compliance:
    display_name: passwd is root/644
-   verify_if:   "is_in_group('linux')"
+   verify_if:   "have_group('linux')"
    mode: audit
    interval: 60s
    rule:
