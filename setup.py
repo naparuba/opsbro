@@ -47,6 +47,7 @@ allow_black_magic = not is_pypi_register_upload and not is_pip_first_step
 # We will need to allow a debug of the orig_sys_argv
 orig_sys_argv = sys.argv[:]
 
+
 ##################################       Utility functions for files
 # helper function to read the README file
 def read(fname):
@@ -165,6 +166,7 @@ from opsbro.misc.bro_quotes import get_quote
 from opsbro.systempacketmanager import get_systepacketmgr
 from opsbro.cli_display import print_h1
 from opsbro.characters import CHARACTERS
+
 systepacketmgr = get_systepacketmgr()
 
 ##################################       Only root as it's a global system tool.
@@ -349,26 +351,13 @@ if allow_black_magic:
 install_from_pip = []
 
 mod_need = {
-#    'requests': {
-#        'packages': {
-#            'debian'      : 'python-requests', 'ubuntu': 'python-requests',
-#            'amazon-linux': 'python27-requests', 'centos': 'python-requests', 'redhat': 'python-requests', 'oracle-linux': 'python-requests', 'fedora': 'python-requests',
-#        }
-#    },
-#    'cherrypy': {  # note: centos: first epel to enable cherrypy get from packages
-#        'packages'    : {
-#            'debian'      : 'python-cherrypy3', 'ubuntu': 'python-cherrypy3',
-#            'amazon-linux': 'python-cherrypy3', 'centos': ['epel-release', 'python-cherrypy'], 'redhat': 'python-cherrypy', 'oracle-linux': 'python-cherrypy', 'fedora': 'python-cherrypy',
-#        },
-#        'failback_pip': 'cherrypy==3.2.4',
-#    },
-    'jinja2'  : {
+    'jinja2': {
         'packages': {
             'debian'      : 'python-jinja2', 'ubuntu': 'python-jinja2',
             'amazon-linux': 'python-jinja2', 'centos': 'python-jinja2', 'redhat': 'python-jinja2', 'oracle-linux': 'python-jinja2', 'fedora': 'python-jinja2',
         }
     },
-    'Crypto'  : {
+    'Crypto': {
         'packages': {
             'debian'      : 'python-crypto', 'ubuntu': 'python-crypto',
             'amazon-linux': 'python-crypto', 'centos': 'python-crypto', 'redhat': 'python-crypto', 'oracle-linux': 'python-crypto', 'fedora': 'python-crypto',
@@ -397,6 +386,14 @@ if not allow_black_magic:
 # We will have to look in which distro we are
 is_managed_system = systepacketmgr.is_managed_system()
 system_distro, system_distroversion, _ = systepacketmgr.get_distro()
+
+# Hack for debian 6 that is not configure to access leveldb on pypi because pypi did remove http (no S) on november 2017.
+# great....
+additionnal_pypi_repos = []
+if allow_black_magic:
+    if system_distro == 'debian' and system_distroversion.startswith('6.'):
+        additionnal_pypi_repos.append('https://pypi.python.org/pypi/leveldb/')
+
 if allow_black_magic:
     if is_managed_system:
         cprint(' * Your system ', end='')
@@ -484,7 +481,7 @@ print '\n'
 if allow_black_magic:
     title = 'Python lib installation ' + sprintf('(2/3)', color='magenta', end='')
     print_h1(title, raw_title=True)
-
+    
     cprint('  * %s opsbro python lib in progress...' % what, end='')
 sys.stdout.flush()
 
@@ -538,6 +535,9 @@ try:
         # data_files=data_files,
         # include_package_data=True,  # we need to let setup() install data files, becwause we must give it AND say it's ok to install....
         # TODO: add some more black magic here! I really hate python packaging!
+        
+        # Maybe some system need specific packages address on pypi, like add httpS on debian 6 :'(
+        dependency_links=additionnal_pypi_repos,
     )
 except Exception, exp:
     print_fail_setup(exp)
