@@ -13,6 +13,16 @@ from cStringIO import StringIO
 from glob import glob
 import atexit
 
+# We have some warnings because we reimport some libs. We don't want them to be shown at install
+import warnings
+
+
+def _disable_warns(*args, **kwargs):
+    pass
+
+
+warnings.showwarning = _disable_warns
+
 # will fail under 2.5 python version, but if really you have such a version in
 # prod you are a morron and we can't help you
 python_version = sys.version_info
