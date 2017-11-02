@@ -387,11 +387,11 @@ if not allow_black_magic:
 is_managed_system = systepacketmgr.is_managed_system()
 system_distro, system_distroversion, _ = systepacketmgr.get_distro()
 
-# Hack for debian 6 that is not configure to access leveldb on pypi because pypi did remove http (no S) on november 2017.
+# Hack for debian & centos 6 that is not configure to access leveldb on pypi because pypi did remove http (no S) on november 2017.
 # great....
 additionnal_pypi_repos = []
 if allow_black_magic:
-    if system_distro == 'debian' and system_distroversion.startswith('6.'):
+    if system_distro in ['debian', 'centos'] and system_distroversion.startswith('6.'):
         additionnal_pypi_repos.append('https://pypi.python.org/pypi/leveldb/')
 
 if allow_black_magic:
