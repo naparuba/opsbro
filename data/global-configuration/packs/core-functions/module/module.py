@@ -5,6 +5,7 @@ import filesystem
 import network
 import packages
 import system
+import ftimes
 
 
 class CoreFunctionsModule(FunctionsExportModule):
