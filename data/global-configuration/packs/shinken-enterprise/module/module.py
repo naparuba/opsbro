@@ -13,7 +13,7 @@ class ShinkenEnterpriseModule(ConnectorModule):
     
     parameters = {
         'enabled'                : BoolParameter(default=False),
-        'enterprise_callback_uri': StringParameter(default=''),
+        'file_result': StringParameter(default=''),
     }
     
     
@@ -111,26 +111,26 @@ class ShinkenEnterpriseModule(ConnectorModule):
         volumes = ','.join(collectors_data.get('diskusage', {}).get('results', {}).keys())
         if volumes:
             payload['_VOLUMES'] = volumes
-        
-        print 'Payload to send', payload
-        f = open('/tmp/shinken-local-discovery-payload.json', 'w')
-        f.write(json.dumps(payload, indent=4))
-        f.close()
 
-        enterprise_callback_uri = self.get_parameter('enterprise_callback_uri')
-        enterprise_callback_uri = enterprise_callback_uri.replace('http://', '')
-        
-        try:
-            self.logger.info('Sending back discovery data to shinken at %s' % enterprise_callback_uri)
-            conn = httplib.HTTPConnection(enterprise_callback_uri)
-            conn.set_debuglevel(1)
+        file_result = self.get_parameter('file_result')
+        if file_result:
+            f = open(file_result, 'w')
+            f.write(json.dumps(payload, indent=4))
+            f.close()
 
-            params = json.dumps({'host': payload})
-            headers = {'User-agent': 'agent', 'Accept': 'application/json'}
-            conn.request('PUT', '/v1/hosts/', params, headers)
+
+        
+        #try:
+        #    self.logger.info('Sending back discovery data to shinken at %s' % enterprise_callback_uri)
+        #    conn = httplib.HTTPConnection(enterprise_callback_uri)
+        #    conn.set_debuglevel(1)
+
+        #    params = json.dumps({'host': payload})
+        #    headers = {'User-agent': 'agent', 'Accept': 'application/json'}
+        #    conn.request('PUT', '/v1/hosts/', params, headers)
             
-            response = conn.getresponse()
-            print response.status, response.reason
-            conn.close()
-        except Exception, exp:
-            self.logger.error('Cannot send back discovery data to shinken: %s' % exp)
+        #    response = conn.getresponse()
+        #    print response.status, response.reason
+        #    conn.close()
+        #except Exception, exp:
+        #    self.logger.error('Cannot send back discovery data to shinken: %s' % exp)

@@ -7,4 +7,5 @@
 # is this module enabled
 enabled: false
 
-enterprise_callback_uri: ''
+# path of the json file result to create
+file_result: ''
