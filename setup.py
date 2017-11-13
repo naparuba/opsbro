@@ -365,12 +365,14 @@ mod_need = {
         'packages': {
             'debian'      : 'python-jinja2', 'ubuntu': 'python-jinja2',
             'amazon-linux': 'python-jinja2', 'centos': 'python-jinja2', 'redhat': 'python-jinja2', 'oracle-linux': 'python-jinja2', 'fedora': 'python-jinja2',
+            'alpine'      : 'py-jinja2',
         }
     },
     'Crypto': {
         'packages': {
             'debian'      : 'python-crypto', 'ubuntu': 'python-crypto',
             'amazon-linux': 'python-crypto', 'centos': 'python-crypto', 'redhat': 'python-crypto', 'oracle-linux': 'python-crypto', 'fedora': 'python-crypto',
+            'alpine'      : 'py-crypto',
         }
     },
 }
@@ -380,12 +382,14 @@ if os.name != 'nt':
         'packages'    : {
             'debian'      : 'python-leveldb', 'ubuntu': 'python-leveldb',
             'amazon-linux': 'python-leveldb', 'centos': 'python-leveldb', 'redhat': 'python-leveldb', 'oracle-linux': 'python-leveldb', 'fedora': 'python-leveldb',
+            'alpine'      : 'py-leveldb',
         },
         'pip_packages': {
             'debian'      : ['build-essential', 'python-dev'], 'ubuntu': ['build-essential', 'python-dev'],
             # NOTE: amazon: no python-devel/python-setuptools, only versionsed packages are available
             'amazon-linux': ['gcc', 'gcc-c++', 'python27-devel', 'libyaml-devel', 'python27-setuptools'], 'centos': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'], 'redhat': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
             'oracle-linux': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'], 'fedora': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
+            'alpine'      : ['gcc', 'linux-headers', 'musl-dev', 'libgcc', 'libgc++', 'g++', 'curl-dev', 'py-setuptools', 'python-dev'],
         },
     }
 

@@ -52,7 +52,7 @@ class AptBackend(object):
     
     
     # Maybe the apt module is not present, if so, fix it
-    def assert_apt(self):
+    def _assert_apt(self):
         global apt
         if apt is None:
             try:
@@ -64,7 +64,7 @@ class AptBackend(object):
     
     
     def has_package(self, package):
-        self.assert_apt()
+        self._assert_apt()
         if apt is None:
             return False
         t0 = time.time()
@@ -140,6 +140,64 @@ class YumBackend(object):
         return
 
 
+class ApkBackend(object):
+    def __init__(self):
+        self.apk_installed_packages = set()
+        self.apk_cache_time = 0.0
+        self.apk_cache_lock = threading.RLock()
+        self.APK_CACHE_FILE = "/lib/apk/db/installed"
+    
+    
+    # APK can give us installed packages with apk info.
+    # and the cache is the file /lib/apk/db/installed
+    def _update_apk_cache(self):
+        with self.apk_cache_lock:
+            need_reload = False
+            # If the cache file did change, we need to reload all
+            # If it do not exists, then my apk driver is bad on a alpine version, please fill
+            # a bug ^^
+            if os.path.exists(self.APK_CACHE_FILE):
+                last_change = os.stat(self.APK_CACHE_FILE).st_mtime
+                if last_change != self.apk_cache_time:
+                    need_reload = True
+                    self.apk_cache_time = last_change
+            else:
+                need_reload = True
+            
+            if need_reload:
+                p = subprocess.Popen(['apk', 'info'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                stdout, stderr = p.communicate()
+                logger.debug('APK (apk info) :: stdout/stderr: %s/%s' % (stdout, stderr))
+                if p.returncode != 0:
+                    raise Exception('APK: apk info id not succeed (%s), exiting from package listing' % (stdout + stderr))
+                packages = [pname.strip() for pname in stdout.splitlines()]
+                self.apk_installed_packages = set(packages)
+                return
+    
+    
+    def has_package(self, package):
+        # Be sure the apk cache is up to date
+        self._update_apk_cache()
+        b = (package in self.apk_installed_packages)
+        logger.debug('APK: (apk info) is package %s installed: %s' % (package, b))
+        return b
+    
+    
+    # apk --no-progress --allow-untrusted --update-cache add XXXXX
+    # --no-progress: no progress bar
+    # --allow-untrusted: do not need to validate the repos
+    # --update-cache: thanks! at least it can update before install
+    @staticmethod
+    def install_package(package):
+        logger.debug('APK :: installing package: %s' % package)
+        p = subprocess.Popen(['apk', '--no-progress', '--allow-untrusted', '--update-cache', 'add', r'%s' % package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = p.communicate()
+        logger.debug('APK (apk add) (%s):: stdout/stderr: %s/%s' % (package, stdout, stderr))
+        if p.returncode != 0:
+            raise Exception('APK: apk add id not succeed (%s), exiting from package installation (%s)' % (stdout + stderr, package))
+        return
+
+
 # Try to know in which system we are running (apt, yum, or other)
 # if cannot find a real backend, go to dummy that cannot find or install anything
 class SystemPacketMgr(object):
@@ -212,6 +270,9 @@ class SystemPacketMgr(object):
         elif distname == 'windows':
             self.distro = 'windows'
             self.managed_system = True
+        elif 'alpine' in distname:
+            self.distro = 'alpine'
+            self.managed_system = True
         else:
             # ok not managed one
             self.managed_system = False
@@ -224,6 +285,8 @@ class SystemPacketMgr(object):
                 self.backend = DummyBackend()
         elif self.distro in ['debian', 'ubuntu']:
             self.backend = AptBackend()
+        elif self.distro == 'alpine':
+            self.backend = ApkBackend()
         elif self.distro == 'fedora':
             logger.error('The fedora DNF backend is not currently managed.')
             self.backend = DummyBackend()
