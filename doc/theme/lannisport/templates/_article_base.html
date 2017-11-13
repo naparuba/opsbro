@@ -1,0 +1,16 @@
+<section>
+    <article>
+        <header>
+            <h2><a href="{{SITEURL}}/{{article.url}}" rel="bookmark">{{article.title}}</a></h2>
+            <time datetime="{{article.date.isoformat()}}">{{article.locale_date}}</time>
+	    {% if article.author %}
+	    <span class='author'>, {{article.author}}</span>
+	    {% endif %}
+
+        </header>
+
+        {% block article_content %} {% endblock %}
+        {% block article_footer %} {% endblock %}
+        </footer>
+    </article>
+</section>

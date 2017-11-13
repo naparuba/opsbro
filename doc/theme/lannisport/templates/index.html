@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    {% for article in dates_page.object_list %}
+        {% include '_article_summary.html' %}
+
+        {% if loop.last and (dates_page.has_previous()
+        or not dates_page.has_previous() and loop.length > 1) %}
+            {% include 'pagination.html' %}
+        {% endif %}
+    {% else %}
+        <section>
+            <p>Nothing here.</p>
+        </section>
+    {% endfor %}
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}{{category}} / {{SITENAME}}{% endblock %}
+
+{% block content %}
+    <section>
+    {% for article in dates %}
+        <article>
+            <time datetime="{{article.date.isoformat()}}">{{article.date.year}}</time>:
+            <a href="{{SITEURL}}/{{article.url}}">
+                {{article.title}}
+            </a>
+        </article>
+    {% endfor %}
+    </section>
+{% endblock %}

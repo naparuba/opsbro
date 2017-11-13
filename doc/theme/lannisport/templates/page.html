@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block title %}{{page.title|striptags}} / {{SITENAME}}{% endblock %}
+{% block content %}
+    <section>
+        <article>
+            <header>
+                <h2>
+                    <a href="{{SITEURL}}/{{page.url}}" rel="bookmark">
+                        {{page.title}}
+                    </a>
+                </h2>
+            </header>
+	    
+            {{page.content}}
+        </article>
+    </section>
+{% endblock %}

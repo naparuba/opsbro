@@ -1,0 +1,89 @@
+
+
+<nav>
+  <ul>
+    <li class="what">
+      <a href="/intro/index.html">What is XXX?</a>
+    </li>
+    <li class="vs-other">
+      <a href="/intro/vs/index.html">XXX vs. Other Software</a>
+      
+      {%if page.slug.startswith('intro/vs') %}
+      <ul class="nav">
+	<li class='vs-other-zk'>
+	  <a href="/intro/vs/zookeeper.html">ZooKeeper, doozerd, etcd</a>
+	  </li>
+
+	<li class="vs-other-chef">
+	  <a href="/intro/vs/chef-puppet.html">Chef, Puppet, etc.</a>
+                    </li>
+
+	<li class="vs-other-nagios-sensu-shinken">
+	  <a href="/intro/vs/nagios-sensu-shinken.html">Nagios, Sensu, Shinken</a>
+        </li>
+
+	<li class="vs-other-skydns">
+	  <a href="/intro/vs/skydns.html">SkyDNS</a>
+                    </li>
+
+	<li class="vs-other-smartstack">
+	  <a href="/intro/vs/smartstack.html">SmartStack</a>
+                    </li>
+
+	<li class="vs-other-serf-consul">
+	  <a href="/intro/vs/serf-consul.html">Serf, XXX</a>
+        </li>
+
+	<li class="vs-other-custom">
+	  <a href="/intro/vs/custom.html">Custom Solutions</a>
+	  </li>
+	</ul>
+      {%endif%}
+								 
+    </li>
+    <li class="gettingstarted">
+      <a href="/intro/getting-started/install.html">Getting Started</a>
+
+      {%if page.slug.startswith('intro/getting-started') %}
+      <ul class="nav">
+	<li class="gettingstarted-install">
+	  <a href="/intro/getting-started/install.html">Install XXX</a>
+	  </li>
+
+	<li class="gettingstarted-agent">
+	  <a href="/intro/getting-started/agent.html">Run the Agent</a>
+	  </li>
+
+	<li class="gettingstarted-services">
+	  <a href="/intro/getting-started/services.html">Services</a>
+	  </li>
+
+	<li class="gettingstarted-join">
+	  <a href="/intro/getting-started/join.html">XXX Cluster</a>
+	  </li>
+
+	<li class="gettingstarted-checks">
+	  <a href="/intro/getting-started/checks.html">Health Checks</a>
+	  </li>
+
+	<li class="gettingstarted-kv">
+	  <a href="/intro/getting-started/kv.html">Key/Value Data</a>
+	  </li>
+
+	<li class="gettingstarted-ui">
+	  <a href="/intro/getting-started/ui.html">Web UI</a>
+	  </li>
+
+	<li class="gettingstarted-nextsteps">
+	  <a href="/intro/getting-started/next-steps.html">Next Steps</a>
+	  </li>
+
+	</ul>
+      {%endif%}
+
+    </li>
+    
+  </ul>
+  
+</nav>
+

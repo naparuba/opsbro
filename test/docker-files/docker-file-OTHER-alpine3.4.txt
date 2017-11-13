@@ -1,4 +1,4 @@
-FROM alpine:3.1
+FROM alpine:3.4
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 RUN        apk update
