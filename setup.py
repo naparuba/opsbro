@@ -388,7 +388,8 @@ if os.name != 'nt':
             'debian'      : ['build-essential', 'python-dev'], 'ubuntu': ['build-essential', 'python-dev'],
             # NOTE: amazon: no python-devel/python-setuptools, only versionsed packages are available
             'amazon-linux': ['gcc', 'gcc-c++', 'python27-devel', 'libyaml-devel', 'python27-setuptools'], 'centos': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'], 'redhat': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
-            'oracle-linux': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'], 'fedora': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
+            'oracle-linux': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
+            'fedora': [r'gcc-c++', 'libcurl', 'curl', 'libcurl-devel', 'python', 'gcc',  'python-devel', 'libyaml-devel', 'python-setuptools', 'redhat-rpm-config'],  # note: python-setuptools to be sure that setup() will succeed
             'alpine'      : ['gcc', 'linux-headers', 'musl-dev', 'libgcc', 'libgc++', 'g++', 'curl-dev', 'py-setuptools', 'python-dev'],
         },
     }
@@ -405,8 +406,8 @@ system_distro, system_distroversion, _ = systepacketmgr.get_distro()
 # great....
 additionnal_pypi_repos = []
 if allow_black_magic:
-    if system_distro in ['debian', 'centos'] and system_distroversion.startswith('6.'):
-        additionnal_pypi_repos.append('https://pypi.python.org/pypi/leveldb/')
+    #if system_distro in ['debian', 'centos'] and system_distroversion.startswith('6.'):
+    additionnal_pypi_repos.append('https://pypi.python.org/pypi/leveldb/')
 
 if allow_black_magic:
     if is_managed_system:
@@ -449,7 +450,7 @@ for (m, d) in mod_need.iteritems():
                 cprint(' from system packages  : ', color='grey', end='')
                 sys.stdout.flush()
                 try:
-                    systepacketmgr.install_package(pkg)
+                    systepacketmgr.update_or_install(pkg)
                     cprint('%s' % CHARACTERS.check, color='green')
                     # __import__(m)
                 except Exception, exp:
@@ -465,9 +466,9 @@ for (m, d) in mod_need.iteritems():
                         try:
                             cprint('   - Install from system package the python lib dependency: ', color='grey', end='')
                             cprint(pip_pkg)
-                            systepacketmgr.install_package(pip_pkg)
+                            systepacketmgr.update_or_install(pip_pkg)
                         except Exception, exp:
-                            cprint('    - WARNING: cannot import python lib dependency: %s : %s' % (pip_pkg, exp))
+                            cprint('    - WARNING: cannot install python lib dependency: %s : %s' % (pip_pkg, exp))
                             
                             # Remove duplicate from pip install
 install_from_pip = set(install_from_pip)

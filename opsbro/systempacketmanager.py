@@ -23,6 +23,10 @@ class DummyBackend(object):
         raise NotImplemented()
 
 
+    def update_package(self, package):
+        raise NotImplemented()
+    
+
 # TODO: get a way to know if a service is enabled, or not
 # RUN level: [root@centos-7 ~]# systemctl get-default
 # multi-user.target   ==> 3
@@ -112,6 +116,23 @@ class AptBackend(object):
         return
 
 
+    # apt-get -q --yes --no-install-recommends install XXXXX
+    @staticmethod
+    def update_package(package):
+        logger.debug('APT :: updating package: %s' % package)
+        p = subprocess.Popen(['apt-get', 'update'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = p.communicate()
+        logger.debug('APT (apt-get update):: stdout/stderr: %s/%s' % (stdout, stderr))
+        if p.returncode != 0:
+            raise Exception('APT: apt-get update did not succeed (%s), exiting from package installation (%s)' % (stdout + stderr, package))
+        p = subprocess.Popen(['apt-get', '-q', '--yes', '--no-install-recommends', 'update', r'%s' % package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = p.communicate()
+        logger.debug('APT (apt-get update) (%s):: stdout/stderr: %s/%s' % (package, stdout, stderr))
+        if p.returncode != 0:
+            raise Exception('APT: apt-get update did not succeed (%s), exiting from package installation (%s)' % (stdout + stderr, package))
+        return
+
+
 class YumBackend(object):
     def __init__(self):
         self.yumbase = None
@@ -138,6 +159,64 @@ class YumBackend(object):
         if p.returncode != 0:
             raise Exception('YUM: Cannot install package: %s from yum: %s' % (package, stdout + stderr))
         return
+
+
+    # yum  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto  install  XXXXX
+    @staticmethod
+    def update_package(package):
+        logger.debug('YUM :: update package: %s' % package)
+        p = subprocess.Popen(['yum', '--nogpgcheck', '-y', '--rpmverbosity=error', '--errorlevel=1', '--color=auto', 'update', package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = p.communicate()
+        logger.debug('YUM (%s):: stdout: %s' % (package, stdout))
+        logger.debug('YUM (%s):: stderr: %s' % (package, stderr))
+        if p.returncode != 0:
+            raise Exception('YUM: Cannot update package: %s from yum: %s' % (package, stdout + stderr))
+        return
+
+
+class DnfBackend(object):
+    def __init__(self):
+        self.lock = threading.RLock()
+    
+    
+    # DNF: know if a package is installed: dnf list installed "XXXX"
+    # NOTE: XXXX is a regexp, so will match only installed, not the XXXX* ones
+    # NOTE: --installed do not work for fedora 25 and below
+    def has_package(self, package):
+        with self.lock:
+            logger.debug('DNF :: installing package: %s' % package)
+            p = subprocess.Popen(['dnf', 'list', 'installed', r'%s' % package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = p.communicate()
+            logger.debug('DNF (%s):: stdout: %s' % (package, stdout))
+            logger.debug('DNF (%s):: stderr: %s' % (package, stderr))
+            # Return code is enouth to know that
+            return (p.returncode == 0)
+            
+    
+    # yum  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto  install  XXXXX
+    def install_package(self, package):
+        with self.lock:
+            logger.debug('DNF :: installing package: %s' % package)
+            p = subprocess.Popen(['dnf', '--nogpgcheck', '-y', '--rpmverbosity=error', '--errorlevel=1', '--color=auto', 'install',  r'%s' % package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = p.communicate()
+            logger.debug('DNF (%s):: stdout: %s' % (package, stdout))
+            logger.debug('DNF (%s):: stderr: %s' % (package, stderr))
+            if p.returncode != 0:
+                raise Exception('DNF: Cannot install package: %s from dnf: %s' % (package, stdout + stderr))
+            return
+
+
+    def update_package(self, package):
+        # update
+        with self.lock:
+            logger.debug('DNF :: updating package: %s' % package)
+            p = subprocess.Popen(['dnf', '--nogpgcheck', '-y', '--rpmverbosity=error', '--errorlevel=1', '--color=auto', 'update',  r'%s' % package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = p.communicate()
+            logger.debug('DNF (%s):: stdout: %s' % (package, stdout))
+            logger.debug('DNF (%s):: stderr: %s' % (package, stderr))
+            if p.returncode != 0:
+                raise Exception('DNF: Cannot update package: %s from dnf: %s' % (package, stdout + stderr))
+            return
 
 
 class ApkBackend(object):
@@ -195,6 +274,22 @@ class ApkBackend(object):
         logger.debug('APK (apk add) (%s):: stdout/stderr: %s/%s' % (package, stdout, stderr))
         if p.returncode != 0:
             raise Exception('APK: apk add id not succeed (%s), exiting from package installation (%s)' % (stdout + stderr, package))
+        return
+
+
+    # apk --no-progress --allow-untrusted --update-cache --upgrade add XXXXX
+    # --no-progress: no progress bar
+    # --allow-untrusted: do not need to validate the repos
+    # --update-cache: thanks! at least it can update before install
+    # --upgrade => allow update of a package
+    @staticmethod
+    def update_package(package):
+        logger.debug('APK :: updating package: %s' % package)
+        p = subprocess.Popen(['apk', '--no-progress', '--allow-untrusted', '--update-cache', 'add', '--upgrade', r'%s' % package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = p.communicate()
+        logger.debug('APK (apk update) (%s):: stdout/stderr: %s/%s' % (package, stdout, stderr))
+        if p.returncode != 0:
+            raise Exception('APK: apk add id not succeed (%s), exiting from package updating (%s)' % (stdout + stderr, package))
         return
 
 
@@ -288,8 +383,7 @@ class SystemPacketMgr(object):
         elif self.distro == 'alpine':
             self.backend = ApkBackend()
         elif self.distro == 'fedora':
-            logger.error('The fedora DNF backend is not currently managed.')
-            self.backend = DummyBackend()
+            self.backend = DnfBackend()
         else:  # oups
             self.backend = DummyBackend()
     
@@ -313,6 +407,13 @@ class SystemPacketMgr(object):
     def install_package(self, package):
         self.backend.install_package(package)
 
+
+    def update_or_install(self, package):
+        if self.backend.has_package(package):
+            self.backend.update_package(package)
+        else:
+            self.backend.install_package(package)
+    
 
 systepacketmgr_ = None
 
