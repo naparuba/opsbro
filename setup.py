@@ -364,14 +364,14 @@ mod_need = {
     'jinja2': {
         'packages': {
             'debian'      : 'python-jinja2', 'ubuntu': 'python-jinja2',
-            'amazon-linux': 'python-jinja2', 'centos': 'python-jinja2', 'redhat': 'python-jinja2', 'oracle-linux': 'python-jinja2', 'fedora': 'python-jinja2',
+            'amazon-linux': 'python-jinja2', 'centos': 'python-jinja2', 'redhat': 'python-jinja2', 'oracle-linux': 'python-jinja2', 'fedora': 'python-jinja2', 'opensuse': 'python-Jinja2',
             'alpine'      : 'py-jinja2',
         }
     },
     'Crypto': {
         'packages': {
             'debian'      : 'python-crypto', 'ubuntu': 'python-crypto',
-            'amazon-linux': 'python-crypto', 'centos': 'python-crypto', 'redhat': 'python-crypto', 'oracle-linux': 'python-crypto', 'fedora': 'python-crypto',
+            'amazon-linux': 'python-crypto', 'centos': 'python-crypto', 'redhat': 'python-crypto', 'oracle-linux': 'python-crypto', 'fedora': 'python-crypto', 'opensuse': 'python-pycrypto',
             'alpine'      : 'py-crypto',
         }
     },
@@ -381,7 +381,7 @@ if os.name != 'nt':
     mod_need['leveldb'] = {
         'packages'    : {
             'debian'      : 'python-leveldb', 'ubuntu': 'python-leveldb',
-            'amazon-linux': 'python-leveldb', 'centos': 'python-leveldb', 'redhat': 'python-leveldb', 'oracle-linux': 'python-leveldb', 'fedora': 'python-leveldb',
+            'amazon-linux': 'python-leveldb', 'centos': 'python-leveldb', 'redhat': 'python-leveldb', 'oracle-linux': 'python-leveldb', 'fedora': 'python-leveldb', 'opensuse': 'python-leveldb',
             'alpine'      : 'py-leveldb',
         },
         'pip_packages': {
@@ -389,7 +389,7 @@ if os.name != 'nt':
             # NOTE: amazon: no python-devel/python-setuptools, only versionsed packages are available
             'amazon-linux': ['gcc', 'gcc-c++', 'python27-devel', 'libyaml-devel', 'python27-setuptools'], 'centos': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'], 'redhat': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
             'oracle-linux': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
-            'fedora': [r'gcc-c++', 'libcurl', 'curl', 'libcurl-devel', 'python', 'gcc',  'python-devel', 'libyaml-devel', 'python-setuptools', 'redhat-rpm-config'],  # note: python-setuptools to be sure that setup() will succeed
+            'fedora'      : [r'gcc-c++', 'libcurl', 'curl', 'libcurl-devel', 'python', 'gcc', 'python-devel', 'libyaml-devel', 'python-setuptools', 'redhat-rpm-config'],  # note: python-setuptools to be sure that setup() will succeed
             'alpine'      : ['gcc', 'linux-headers', 'musl-dev', 'libgcc', 'libgc++', 'g++', 'curl-dev', 'py-setuptools', 'python-dev'],
         },
     }
@@ -406,7 +406,7 @@ system_distro, system_distroversion, _ = systepacketmgr.get_distro()
 # great....
 additionnal_pypi_repos = []
 if allow_black_magic:
-    #if system_distro in ['debian', 'centos'] and system_distroversion.startswith('6.'):
+    # if system_distro in ['debian', 'centos'] and system_distroversion.startswith('6.'):
     additionnal_pypi_repos.append('https://pypi.python.org/pypi/leveldb/')
 
 if allow_black_magic:

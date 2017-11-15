@@ -21,11 +21,11 @@ class DummyBackend(object):
     
     def install_package(self, package):
         raise NotImplemented()
-
-
+    
+    
     def update_package(self, package):
         raise NotImplemented()
-    
+
 
 # TODO: get a way to know if a service is enabled, or not
 # RUN level: [root@centos-7 ~]# systemctl get-default
@@ -114,8 +114,8 @@ class AptBackend(object):
         if p.returncode != 0:
             raise Exception('APT: apt-get install did not succeed (%s), exiting from package installation (%s)' % (stdout + stderr, package))
         return
-
-
+    
+    
     # apt-get -q --yes --no-install-recommends install XXXXX
     @staticmethod
     def update_package(package):
@@ -159,8 +159,8 @@ class YumBackend(object):
         if p.returncode != 0:
             raise Exception('YUM: Cannot install package: %s from yum: %s' % (package, stdout + stderr))
         return
-
-
+    
+    
     # yum  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto  install  XXXXX
     @staticmethod
     def update_package(package):
@@ -191,31 +191,74 @@ class DnfBackend(object):
             logger.debug('DNF (%s):: stderr: %s' % (package, stderr))
             # Return code is enouth to know that
             return (p.returncode == 0)
-            
+    
     
     # yum  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto  install  XXXXX
     def install_package(self, package):
         with self.lock:
             logger.debug('DNF :: installing package: %s' % package)
-            p = subprocess.Popen(['dnf', '--nogpgcheck', '-y', '--rpmverbosity=error', '--errorlevel=1', '--color=auto', 'install',  r'%s' % package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            p = subprocess.Popen(['dnf', '--nogpgcheck', '-y', '--rpmverbosity=error', '--errorlevel=1', '--color=auto', 'install', r'%s' % package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = p.communicate()
             logger.debug('DNF (%s):: stdout: %s' % (package, stdout))
             logger.debug('DNF (%s):: stderr: %s' % (package, stderr))
             if p.returncode != 0:
                 raise Exception('DNF: Cannot install package: %s from dnf: %s' % (package, stdout + stderr))
             return
-
-
+    
+    
     def update_package(self, package):
         # update
         with self.lock:
             logger.debug('DNF :: updating package: %s' % package)
-            p = subprocess.Popen(['dnf', '--nogpgcheck', '-y', '--rpmverbosity=error', '--errorlevel=1', '--color=auto', 'update',  r'%s' % package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            p = subprocess.Popen(['dnf', '--nogpgcheck', '-y', '--rpmverbosity=error', '--errorlevel=1', '--color=auto', 'update', r'%s' % package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = p.communicate()
             logger.debug('DNF (%s):: stdout: %s' % (package, stdout))
             logger.debug('DNF (%s):: stderr: %s' % (package, stderr))
             if p.returncode != 0:
                 raise Exception('DNF: Cannot update package: %s from dnf: %s' % (package, stdout + stderr))
+            return
+
+
+class ZypperBackend(object):
+    def __init__(self):
+        self.lock = threading.RLock()
+    
+    
+    # rpm -q -a --queryformat "%{NAME}\n"
+    def has_package(self, package):
+        with self.lock:
+            logger.debug('ZYPPER :: has package: %s' % package)
+            p = subprocess.Popen(['rpm', '-q', '-a', '--queryformat', r'"%{NAME}\n"'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = p.communicate()
+            # Return code is enouth to know that
+            if p.returncode != 0:
+                raise Exception('ZYPPER: Cannot list pacakge' % (stdout + stderr))
+            return package in stdout.splitlines()
+    
+    
+    # zypper --non-interactive install  XXXXX
+    def install_package(self, package):
+        with self.lock:
+            logger.debug('ZYPPER :: installing package: %s' % package)
+            p = subprocess.Popen(['zypper', '--non-interactive', 'install', r'%s' % package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = p.communicate()
+            logger.debug('ZYPPER (%s):: stdout: %s' % (package, stdout))
+            logger.debug('ZYPPER (%s):: stderr: %s' % (package, stderr))
+            if p.returncode != 0:
+                raise Exception('ZYPPER: Cannot install package: %s from zypper: %s' % (package, stdout + stderr))
+            return
+    
+    
+    # zypper --non-interactive update  XXXXX
+    def update_package(self, package):
+        with self.lock:
+            logger.debug('ZYPPER :: installing package: %s' % package)
+            p = subprocess.Popen(['zypper', '--non-interactive', 'update', r'%s' % package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = p.communicate()
+            logger.debug('ZYPPER (%s):: stdout: %s' % (package, stdout))
+            logger.debug('ZYPPER (%s):: stderr: %s' % (package, stderr))
+            if p.returncode != 0:
+                raise Exception('ZYPPER: Cannot update package: %s from zypper: %s' % (package, stdout + stderr))
             return
 
 
@@ -275,8 +318,8 @@ class ApkBackend(object):
         if p.returncode != 0:
             raise Exception('APK: apk add id not succeed (%s), exiting from package installation (%s)' % (stdout + stderr, package))
         return
-
-
+    
+    
     # apk --no-progress --allow-untrusted --update-cache --upgrade add XXXXX
     # --no-progress: no progress bar
     # --allow-untrusted: do not need to validate the repos
@@ -368,6 +411,9 @@ class SystemPacketMgr(object):
         elif 'alpine' in distname:
             self.distro = 'alpine'
             self.managed_system = True
+        elif 'opensuse' in distname:
+            self.distro = 'opensuse'
+            self.managed_system = True
         else:
             # ok not managed one
             self.managed_system = False
@@ -384,6 +430,8 @@ class SystemPacketMgr(object):
             self.backend = ApkBackend()
         elif self.distro == 'fedora':
             self.backend = DnfBackend()
+        elif self.distro == 'opensuse':
+            self.backend = ZypperBackend()
         else:  # oups
             self.backend = DummyBackend()
     
@@ -406,14 +454,14 @@ class SystemPacketMgr(object):
     
     def install_package(self, package):
         self.backend.install_package(package)
-
-
+    
+    
     def update_or_install(self, package):
         if self.backend.has_package(package):
             self.backend.update_package(package)
         else:
             self.backend.install_package(package)
-    
+
 
 systepacketmgr_ = None
 
