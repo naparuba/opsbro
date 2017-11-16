@@ -1,3 +1,6 @@
+import os
+import json
+
 from opsbro.evaluater import export_evaluater_function
 from opsbro.gossip import gossiper
 from opsbro.misc.lolcat import lolcat
@@ -148,9 +151,39 @@ def colorize(s, color):
 
 
 
+@export_evaluater_function
+def is_plain_file(path):
+    """**is_plain_file(path)** -> return True if the file at path is a plain file
+
+ * path: (string) path to check
+
+<code>
+    Example:
+        is_plain_file('/etc/passwd')
+    Returns:
+        True
+</code>
+    """
+    return os.path.isfile(path)
 
 
 
+@export_evaluater_function
+def parse_json_file(path):
+    """**parse_json_file(path)** -> return the object read from the file at path
+
+ * path: (string) path of the json file to parse
+
+<code>
+    Example:
+        parse_json_file('/tmp/my_file.json')
+    Returns:
+        {'key':'value'}
+</code>
+    """
+    with open(path, 'r') as f:
+        o = json.load(f)
+    return o
 
 
 '''
@@ -469,43 +502,6 @@ R: root's gid is 0
 Notes: On Windows, which does not support group ids, the variable will not be defined.
 '''
 
-
-
-
-'''
-isplain
-Table of Contents
-Prototype: isplain(filename)
-Return type: boolean
-Description: Returns whether the named object filename is a plain/regular file.
-Arguments:
-filename: string, in the range: "?(/.*)
-Example:
-body common control
-{
-      bundlesequence => { "example" };
-}
-
-bundle agent example
-{
-  classes:
-
-      "fileisplain" expression => isplain("/etc/passwd");
-      "dirisnotplain" not => isplain("/");
-
-  reports:
-
-    fileisplain::
-      "/etc/passwd is plain..";
-
-    dirisnotplain::
-      "/ is not plain..";
-
-}
-Output:
-R: /etc/passwd is plain..
-R: / is not plain..
-'''
 
 
 
