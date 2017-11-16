@@ -147,10 +147,6 @@ def colorize(s, color):
     return lolcat.get_line(s, color, spread=None)
 
 
-
-
-
-
 @export_evaluater_function
 def is_plain_file(path):
     """**is_plain_file(path)** -> return True if the file at path is a plain file
@@ -165,7 +161,6 @@ def is_plain_file(path):
 </code>
     """
     return os.path.isfile(path)
-
 
 
 @export_evaluater_function
@@ -219,9 +214,6 @@ Output:
 R: The filesystem has free space
 '''
 
-
-
-
 '''
 execresult
 Table of Contents
@@ -271,7 +263,6 @@ See also: returnszero().
 Change: policy change in CFEngine 3.0.5. Previously newlines were changed for spaces, now newlines are preserved.
 '''
 
-
 '''
 findprocesses
 Table of Contents
@@ -292,8 +283,6 @@ Output:
 History: Introduced in CFEngine 3.9
 See also: processes processexists().
 '''
-
-
 
 '''
 getusers
@@ -327,7 +316,6 @@ Notes: This function is currently only available on Unix-like systems.
 History: Was introduced in version 3.1.0b1,Nova 2.0.0b1 (2010).
 See also: getuserinfo(), users.
 '''
-
 
 '''
 getenv
@@ -371,7 +359,6 @@ R: The EXAMPLE environment variable is getenv.cf
 Notes:
 History: This function was introduced in CFEngine version 3.0.4 (2010)
 '''
-
 
 '''
 getuserinfo
@@ -437,8 +424,6 @@ History: Introduced in CFEngine 3.10
 See also: getusers(), users.
 '''
 
-
-
 '''
 getuid
 Table of Contents
@@ -467,7 +452,6 @@ Output:
 R: root's uid is 0
 Notes: On Windows, which does not support user ids, the variable will not be defined.
 '''
-
 
 '''
 getgid
@@ -502,10 +486,6 @@ R: root's gid is 0
 Notes: On Windows, which does not support group ids, the variable will not be defined.
 '''
 
-
-
-
-
 '''
 laterthan
 Table of Contents
@@ -532,8 +512,6 @@ bundle agent example
 }
 See also: on()
 '''
-
-
 
 '''
 packagesmatching
@@ -608,8 +586,6 @@ History: Introduced in CFEngine 3.6
 See also: packageupdatesmatching().
 '''
 
-
-
 '''
 processexists
 Table of Contents
@@ -629,7 +605,6 @@ History: Introduced in CFEngine 3.9
 See also: processes findprocesses().
 '''
 
-
 '''
 readjson
 Table of Contents
@@ -647,7 +622,6 @@ Example:
          data =>  readjson("/tmp/data.json", 4000);
 See also: readdata(), parsejson(), storejson(), parseyaml(), readyaml(), mergedata(), and data documentation.
 '''
-
 
 '''
 registryvalue
@@ -681,7 +655,6 @@ Output:
 R: Value extracted: Sorry, no registry data is available
 Notes: Currently values of type REG_SZ (string), REG_EXPAND_SZ (expandable string) and REG_DWORD (double word) are supported.
 '''
-
 
 '''
 readfile
@@ -723,8 +696,6 @@ On Windows, the file will be read in text mode, which means that CRLF line endin
 History: Warnings about the size limit and the special 0 value were introduced in 3.6.0
 '''
 
-
-
 '''
 readcsv
 Table of Contents
@@ -755,8 +726,6 @@ Note: CSV files formatted according to RFC 4180 must end with the CRLF sequence.
 See also: readdata(), data_readstringarrayidx(),data_readstringarray(), parsejson(), storejson(), mergedata(), and data documentation.
 History: Was introduced in 3.7.0.
 '''
-
-
 
 '''
 returnszero
@@ -799,8 +768,6 @@ Notes: you should never use this function to execute commands that make changes 
 See also: execresult().
 '''
 
-
-
 '''
 readyaml
 Table of Contents
@@ -818,7 +785,6 @@ Example:
          data =>  readyaml("/tmp/data.yaml", 4000);
 See also: readdata(), parsejson(), parseyaml(), storejson(), mergedata(), and data documentation.
 '''
-
 
 '''
 readdata
@@ -874,8 +840,6 @@ R: From /tmp/file.yaml, we would get data ["a","b"]
 See also: readcsv(), readyaml(), readjson(), and data documentation.
 History: Was introduced in 3.7.0.
 '''
-
-
 
 '''
 readstringarrayidx
