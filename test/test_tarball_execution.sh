@@ -45,7 +45,7 @@ fi
 echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Linux GROUP      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
 
 echo "Checking linux group"
-RES=$(python bin/opsbro evaluator eval "have_group('linux')" | tail -n 1)
+RES=$(python bin/opsbro evaluator eval "is_in_group('linux')" | tail -n 1)
 
 if [ $RES != "True" ]; then
    echo "ERROR: the group linux is missing!"
@@ -57,7 +57,7 @@ echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪
 # Check if docker-container group is set
 
 echo "Checking agent docker group"
-RES=$(python bin/opsbro evaluator eval "have_group('docker-container')" | tail -n 1)
+RES=$(python bin/opsbro evaluator eval "is_in_group('docker-container')" | tail -n 1)
 
 if [ $RES != "True" ]; then
    echo "ERROR: the group docker-container is missing!"

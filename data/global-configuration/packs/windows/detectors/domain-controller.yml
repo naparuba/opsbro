@@ -1,6 +1,6 @@
 detector:
     add_groups:
         - domain-controller
-    apply_if: "get_os() == 'windows' and 'Active Directory Domain Controller' in {{collector.system.windows.features||[]}}"
+    apply_if: "system_get_os() == 'windows' and 'Active Directory Domain Controller' in {{collector.system.windows.features||[]}}"
     interval: 10s
 

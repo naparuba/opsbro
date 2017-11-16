@@ -35,7 +35,7 @@ class DNSModule(Module):
     
     def get_my_parameters(self):
         if_group = self.get_parameter('enabled_if_group')
-        enabled = gossiper.have_group(if_group)
+        enabled = gossiper.is_in_group(if_group)
         self.logger.debug('Looking if the group %s is matching: %s' % (if_group, enabled))
         port = self.get_parameter('port')
         domain = self.get_parameter('domain')

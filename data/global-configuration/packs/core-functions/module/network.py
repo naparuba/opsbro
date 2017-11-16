@@ -3,8 +3,10 @@ import socket
 from opsbro.misc.IPy import IP
 from opsbro.evaluater import export_evaluater_function
 
+FUNCTION_GROUP = 'network'
 
-@export_evaluater_function
+
+@export_evaluater_function(function_group=FUNCTION_GROUP)
 def ip_is_in_range(ip, range):
     """**ip_is_in_range(ip, range)** -> return True if the ip is in the ip range, False otherwise.
 
@@ -24,7 +26,7 @@ def ip_is_in_range(ip, range):
     return ip in ip_range
 
 
-@export_evaluater_function
+@export_evaluater_function(function_group=FUNCTION_GROUP)
 def check_tcp(host, port, timeout=10):
     """**check_tcp(host, port, timeout=10)** -> return True if the TCP connection can be established, False otherwise.
 
@@ -53,7 +55,7 @@ def check_tcp(host, port, timeout=10):
         return False
 
 
-@export_evaluater_function
+@export_evaluater_function(function_group=FUNCTION_GROUP)
 def ip_to_host(ip):
     """**ip_to_host(ip)** -> return the hostname if the ip is founded in the DNS server, '' otherwise.
 
@@ -77,7 +79,7 @@ def ip_to_host(ip):
         return ''
 
 
-@export_evaluater_function
+@export_evaluater_function(function_group=FUNCTION_GROUP)
 def host_to_ip(hname):
     """**host_to_ip(hname)** -> return the ip if founded, '' otherwise.
 
@@ -97,141 +99,6 @@ def host_to_ip(hname):
         return ip
     except socket.error:
         return ''
-
-
-
-
-
-'''
-network_connections
-Table of Contents
-Prototype: network_connections(regex)
-Return type: data
-Description: Return the list of current network connections.
-This function looks in /proc/net to find the current network connections.
-The returned data container has four keys:
-tcp has all the TCP connections over IPv4
-tcp6 has all the TCP connections over IPv6
-udp has all the UDP connections over IPv4
-udp6 has all the UDP connections over IPv6
-Under each key, there's an array of connection objects that all look like this:
-      {
-        "local": {
-          "address": "...source address...",
-          "port": "...source port..."
-        },
-        "remote": {
-          "address": "...remote address...",
-          "port": "...remote port..."
-        },
-        "state": "...connection state..."
-      }
-All the data is collected from the files /proc/net/tcp, /proc/net/tcp6, /proc/net/udp, and /proc/net/udp6.
-The address will be either IPv4 or IPv6 as appropriate. The port will be an integer stored as a string. The state will be a string like UNKNOWN.
-On Linux, usually a state of UNKNOWN and a remote address 0.0.0.0 or 0:0:0:0:0:0:0:0 with port 0 mean this is a listening IPv4 and IPv6 server. In addition, usually a local address of 0.0.0.0 or 0:0:0:0:0:0:0:0 means the server is listening on every IPv4 or IPv6 interface, while 127.0.0.1 (the IPv4 localhost address) or 0:100:0:0:0:0:0:0 means the server is only listening to connections coming from the same machine.
-A state of ESTABLISHED usually means you're looking at a live connection.
-Example:
-    vars:
-      "connections" data => network_connections();
-Output:
-The SSH daemon:
-   {
-     "tcp": [
-      {
-        "local": {
-          "address": "0.0.0.0",
-          "port": "22"
-        },
-        "remote": {
-          "address": "0.0.0.0",
-          "port": "0"
-        },
-        "state": "UNKNOWN"
-      }
-    ]
-   }
-The printer daemon listening only to local IPv6 connections on port 631:
-    "tcp6": [
-      {
-        "local": {
-          "address": "0:100:0:0:0:0:0:0",
-          "port": "631"
-        },
-        "remote": {
-          "address": "0:0:0:0:0:0:0:0",
-          "port": "0"
-        },
-        "state": "UNKNOWN"
-      }
-   ]
-An established connection on port 2200:
-     "tcp": [
-      {
-        "local": {
-          "address": "192.168.1.33",
-          "port": "2200"
-        },
-        "remote": {
-          "address": "1.2.3.4",
-          "port": "8533"
-        },
-        "state": "ESTABLISHED"
-      }
-    ]
-History: Introduced in CFEngine 3.9
-See also: sys.inet, sys.inet6.
-'''
-
-
-'''
-selectservers
-Table of Contents
-Prototype: selectservers(hostlist, port, query, regex, maxbytes, array)
-Return type: int
-Description: Returns the number of tcp servers from hostlist which respond with a reply matching regex to a query send to port, and populates array with their names.
-The regular expression is anchored. If query is empty, then no reply checking is performed (any server reply is deemed to be satisfactory), otherwise at most maxbytes bytes are read from the server and matched.
-This function allows discovery of all the TCP ports that are active and functioning from an ordered list, and builds an array of their names. This allows maintaining a list of pretested failover alternatives.
-Arguments:
-hostlist: string, in the range: @[(][a-zA-Z0-9_$(){}\[\].:]+[)]
-port: string, in the range: .*
-query: string, in the range: .*
-regex: regular expression, in the range: .*
-maxbyes: int, in the range: 0,99999999999
-array: string, in the range: [a-zA-Z0-9_$(){}\[\].:]+
-Example:
-    bundle agent example
-    {
-    vars:
-
-     "hosts" slist => { "slogans.iu.hio.no", "eternity.iu.hio.no", "nexus.iu.hio.no" };
-     "fhosts" slist => { "www.cfengine.com", "www.cfengine.org" };
-
-     "up_servers" int =>  selectservers("@(hosts)","80","","","100","alive_servers");
-     "has_favicon" int =>
-            selectservers(
-                "@(hosts)", "80",
-            "GET /favicon.ico HTTP/1.0$(const.n)Host: www.cfengine.com$(const.n)$(const.n)",
-            "(?s).*OK.*",
-            "200", "favicon_servers");
-
-    classes:
-
-      "someone_alive" expression => isgreaterthan("$(up_servers)","0");
-
-      "has_favicon" expression => isgreaterthan("$(has_favicon)","0");
-
-    reports:
-        "Number of active servers $(up_servers)";
-
-      someone_alive::
-        "First server $(alive_servers[0]) fails over to $(alive_servers[1])";
-
-      has_favicon::
-        "At least $(favicon_servers[0]) has a favicon.ico";
-
-    }
-If there is a multi-line response from the server, special care must be taken to ensure that newlines are matched, too. Note the use of (?s) in the example, which allows . to also match newlines in the multi-line HTTP response.
-'''
 
 
 '''
@@ -305,4 +172,3 @@ History: Introduced in CFEngine 3.8. The collecting function behavior was added 
 See also: readtcp(), mergedata(), parsejson(), about collecting functions, and data documentation.
 
 '''
-

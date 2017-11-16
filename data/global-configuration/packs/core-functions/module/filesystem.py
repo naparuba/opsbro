@@ -4,8 +4,10 @@ import re
 from opsbro.evaluater import export_evaluater_function
 from opsbro.log import logger
 
+FUNCTION_GROUP = 'filesystem'
 
-@export_evaluater_function
+
+@export_evaluater_function(function_group=FUNCTION_GROUP)
 def file_exists(path):
     """**file_exists(path)** -> return True if a path exist on the system, False otherwise.
 
@@ -26,7 +28,7 @@ def file_exists(path):
     return os.path.exists(path)
 
 
-@export_evaluater_function
+@export_evaluater_function(function_group=FUNCTION_GROUP)
 def grep_file(string, path, regexp=False):
     """**file_exists(path)** -> return True if a string or a regexp match the content of a file, False otherwise.
 
@@ -72,8 +74,7 @@ def grep_file(string, path, regexp=False):
     return False
 
 
-
-@export_evaluater_function
+@export_evaluater_function(function_group=FUNCTION_GROUP)
 def path_dirname(path):
     """**path_dirname(path)** -> Return the parent directory name for given path.
 
@@ -89,7 +90,7 @@ def path_dirname(path):
     return os.path.dirname(path)
 
 
-@export_evaluater_function
+@export_evaluater_function(function_group=FUNCTION_GROUP)
 def is_dir(path):
     """**is_dir(path)** -> Return True if the path is a directory, False overwise
 
@@ -105,8 +106,7 @@ def is_dir(path):
     return os.path.isdir(path)
 
 
-
-@export_evaluater_function
+@export_evaluater_function(function_group=FUNCTION_GROUP)
 def is_link(path):
     """**is_link(path)** -> Return True if the path is a symbolic link, False overwise
 
@@ -120,21 +120,6 @@ def is_link(path):
 </code>
     """
     return os.path.islink(path)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 '''
@@ -171,7 +156,6 @@ R: The secret changes have been accessed after the reference time
 See Also: changedbefore(), isnewerthan()
 '''
 
-
 '''
 changedbefore
 Table of Contents
@@ -204,10 +188,6 @@ Example:
 See Also: accessedbefore(), isnewerthan()
 '''
 
-
-
-
-
 '''
 countlinesmatching
 Table of Contents
@@ -236,10 +216,6 @@ bundle agent example
 Output:
 R: Found 1 lines matching
 '''
-
-
-
-
 
 '''
 filestat
@@ -327,7 +303,6 @@ The list of fields may be extended as needed by CFEngine.
 History: Was introduced in version 3.5.0,Enterprise 3.1 (2013). linktarget and linktarget_shallow were added in version 3.6.
 '''
 
-
 '''
 findfiles
 Table of Contents
@@ -359,9 +334,6 @@ Output:
 R: All files that match '/[tT][mM][pP]' = /tmp
 See also: bundlesmatching().
 '''
-
-
-
 
 '''
 filesize
@@ -395,62 +367,6 @@ R: File size 301
 R: Does not exist: $(nexists)
 History: Was introduced in version 3.1.3, Nova 2.0.2 (2010).
 '''
-
-'''
-file_hash
-Table of Contents
-Prototype: file_hash(file, algorithm)
-Return type: string
-Description: Return the hash of file using the hash algorithm.
-This function is much more efficient that calling hash() on a string with the contents of file.
-Hash functions are extremely sensitive to input. You should not expect to get the same answer from this function as you would from every other tool, since it depends on how whitespace and end of file characters are handled.
-Arguments:
-file: string, in the range: "?(/.*)
-algorithm: one of
-md5
-sha1
-sha256
-sha384
-sha512
-Example:
-Prepare:
-echo 1234567890 > FILE.txt
-chmod 0755 FILE.txt
-chown 0 FILE.txt
-chgrp 0 FILE.txt
-Run:
-body common control
-{
-      bundlesequence => { "example" };
-}
-
-bundle agent example
-
-{
-  vars:
-
-      "md5" string => file_hash("/tmp/1","md5");
-      "sha256" string => file_hash("/tmp/2","sha256");
-      "sha384" string => hash("/tmp/3","sha384");
-      "sha512" string => hash("/tmp/3","sha512");
-
-  reports:
-
-      "'1\n' hashed to: md5 $(md5)";
-      "'2\n' hashed to: sha256 $(sha256)";
-      "'3\n' hashed to: sha384 $(sha384)";
-      "'3\n' hashed to: sha512 $(sha512)";
-
-}
-Output:
-R: '1\n' hashed to: md5 b026324c6904b2a9cb4b88d6d61c81d1
-R: '2\n' hashed to: sha256 53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3
-R: '3\n' hashed to: sha384 54f7379844b41bf513c0557a7195ca96a8ac90d0f8cc87d3607ef7ab593a7c61732759387afaabaf72ca2c0bd599373e
-R: '3\n' hashed to: sha512 48b3c46b24db82059b5c87603066cf8d2165837d66e268286feb384644c808c06edf99aeaca0d879f4ee6ec70ebfaa0b98d5b77c12f7c0a68de3f7302dec6e21
-History: Introduced in CFEngine 3.7.0
-See also: hash()
-'''
-
 
 '''
 getfields
@@ -501,7 +417,6 @@ R: root's uid = 0
 Notes: This function matches lines (using a regular expression) in the named file, and splits the first matched line into fields (using a second regular expression), placing these into a named array whose elements are array[1],array[2],... This is useful for examining user data in the Unix password or group files.
 '''
 
-
 '''
 isexecutable
 Table of Contents
@@ -529,8 +444,6 @@ Output:
 R: /bin/ls is an executable file
 History: Was introduced in version 3.1.0b1,Nova 2.0.0b1 (2010)
 '''
-
-
 
 '''
 isnewerthan
@@ -568,8 +481,6 @@ Output:
 R: /tmp/later is older than /tmp/earlier
 See Also: accessedbefore(), changedbefore()
 '''
-
-
 
 '''
 lsdir

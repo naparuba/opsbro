@@ -140,7 +140,7 @@ class Gossip(object):
         self.set_alive(myself, bootstrap=True)
     
     
-    def have_group(self, group):
+    def is_in_group(self, group):
         with self.groups_lock:
             return group in self.groups
     
@@ -229,14 +229,14 @@ class Gossip(object):
         self.detected_groups = detected_groups
         
         for group in new_groups:
-            if not self.have_group(group):
+            if not self.is_in_group(group):
                 did_change = True
                 # We do not want to send a boardcast now, we have still other group to manage
                 # and send only one change
                 self.add_group(group, broadcast_when_change=False)
                 logger.info("New group detected from detector for this node: %s" % group)
         for group in deleted_groups:
-            if self.have_group(group):
+            if self.is_in_group(group):
                 did_change = True
                 # We do not want to send a boardcast now, we have still other group to manage
                 # and send only one change

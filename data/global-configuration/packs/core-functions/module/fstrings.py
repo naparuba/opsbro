@@ -1,18 +1,76 @@
-'''
-concat
-Table of Contents
-Prototype: concat(...)
-Return type: string
-Description: Concatenates all arguments into a string.
-Example:
-    commands:
-      "/usr/bin/generate_config $(config)"
-        ifvarclass => concat("have_config_", canonify("$(config)"));
-History: Was introduced in 3.2.0, Nova 2.1.0 (2011)
-'''
+from opsbro.evaluater import export_evaluater_function
+
+FUNCTION_GROUP = 'string'
 
 
+@export_evaluater_function(function_group=FUNCTION_GROUP)
+def string_upper(string):
+    """**string_upper(string)** -> return the upercase value of the string
 
+ * string: (string) string to upper case.
+
+
+<code>
+    Example:
+        string_upper('linux')
+    Returns:
+        'LINUX'
+</code>
+    """
+    return string.upper()
+
+
+@export_evaluater_function(function_group=FUNCTION_GROUP)
+def string_lower(string):
+    """**string_lower(string)** -> return the lowercase value of the string
+
+ * string: (string) string to lower case.
+
+
+<code>
+    Example:
+        string_lower('Linux')
+    Returns:
+        'linux'
+</code>
+    """
+    return string.lower()
+
+
+@export_evaluater_function(function_group=FUNCTION_GROUP)
+def string_split(string, split_character):
+    """**string_split(string, split_character)** -> return a list with the string splitted by the split_caracter
+
+ * string: (string) string to split case.
+ * split_character: (string) string to use to split
+
+
+<code>
+    Example:
+        string_split('linux,windows', ',')
+    Returns:
+        ['linux', 'windows']
+</code>
+    """
+    return string.split(split_character)
+
+
+@export_evaluater_function(function_group=FUNCTION_GROUP)
+def string_join(list, join_character):
+    """**string_join(string, join_character)** -> return a string with elements for the lsit joined by the join_character
+
+ * list: (list of strings) list of string to joins
+ * join_character: (string) character to user between strings
+
+
+<code>
+    Example:
+        string_join(['linux', 'windows'], ',')
+    Returns:
+        'linux,windows'
+</code>
+    """
+    return join_character.join(list)
 
 
 '''
@@ -45,7 +103,6 @@ In this example, the string "192.168.2.1" is "escaped" to be equivalent to "192\
 Notes:
 History: This function was introduced in CFEngine version 3.0.4 (2010)
 '''
-
 
 '''
 format
@@ -96,223 +153,4 @@ R: %07.2f on '1' => '0001.00'
 R: you killed my father... => 'hello my name is Inigo Montoya'
 R: slist = { "2", "5", "6" }, container = {"x":"y","z":true}
 Note: the underlying sprintf system call may behave differently on some platforms for some formats. Test carefully. For example, the format %08s will use spaces to fill the string up to 8 characters on libc platforms, but on Darwin (Mac OS X) it will use zeroes. According to SUSv4 the behavior is undefined for this specific case.
-'''
-
-'''
-join
-Table of Contents
-Prototype: join(glue, list)
-Return type: string
-Description: Join the items of list into a string, using the conjunction in glue.
-Converts a list or data container into a scalar variable using the join string in first argument.
-This function can accept many types of data parameters.
-Arguments:
-glue: string, in the range: .*
-list: string, in the range: .*
-Example:
-body common control
-{
-      bundlesequence => { "test" };
-}
-
-bundle agent test
-{
-  vars:
-
-      "mylist" slist => { "one", "two", "three", "four", "five" };
-      "datalist" data => parsejson('[1,2,3,
-                        "one", "two", "three",
-                        "long string",
-                        "four", "fix", "six",
-                        "one", "two", "three",]');
-
-      "mylist_str" string => format("%S", mylist);
-      "datalist_str" string => format("%S", datalist);
-      "myscalar" string => join("->", mylist);
-      "datascalar" string => join("->", datalist);
-
-  reports:
-      "Concatenated $(mylist_str): $(myscalar)";
-      "Concatenated $(datalist_str): $(datascalar)";
-}
-Output:
-R: Concatenated { "one", "two", "three", "four", "five" }: one->two->three->four->five
-R: Concatenated [1,2,3,"one","two","three","long string","four","fix","six","one","two","three"]: 1->2->3->one->two->three->long string->four->fix->six->one->two->three
-History: The collecting function behavior was added in 3.9.
-See also: string_split(), about collecting functions.
-'''
-
-
-'''
-splitstring
-Table of Contents
-Prototype: splitstring(string, regex, maxent)
-Return type: slist
-Description: Splits string into at most maxent substrings wherever regex occurs, and returns the list with those strings.
-The regular expression is unanchored.
-If the maximum number of substrings is insufficient to accommodate all the entries, the rest of the un-split string is thrown away.
-Arguments:
-string: string, in the range: .*
-regex: regular expression, in the range: .*
-maxent: int, in the range: 0,99999999999
-Example:
-body common control
-{
-      bundlesequence => { "test" };
-}
-
-bundle agent test
-{
-  vars:
-
-      "split1" slist => splitstring("one:two:three",":","10");
-      "split2" slist => splitstring("one:two:three",":","1");
-      "split3" slist => splitstring("alpha:xyz:beta","xyz","10");
-
-  reports:
-
-      "split1: $(split1)";  # will list "one", "two", and "three"
-      "split2: $(split2)";  # will list "one", "two:three" will be thrown away.
-      "split3: $(split3)";  # will list "alpha:" and ":beta"
-
-}
-Output:
-R: split1: one
-R: split1: two
-R: split1: three
-R: split2: one
-R: split3: alpha:
-R: split3: :beta
-History: Deprecated in CFEngine 3.6 in favor of string_split
-See also: string_split()
-'''
-
-
-'''
-string_downcase
-Table of Contents
-Prototype: string_downcase(data)
-Return type: string
-Description: Returns data in lower case.
-Arguments:
-data: string, in the range: .*
-Example:
-body common control
-{
-      bundlesequence => { "example" };
-}
-
-bundle agent example
-{
-  vars:
-      "downcase" string => string_downcase("ABC"); # will contain "abc"
-  reports:
-      "downcased ABC = $(downcase)";
-}
-Output:
-R: downcased ABC = abc
-History: Introduced in CFEngine 3.6
-See also: string_upcase().
-'''
-
-
-'''
-string_length
-Table of Contents
-Prototype: string_length(data)
-Return type: int
-Description: Returns the byte length of data.
-Arguments:
-data: string, in the range: .*
-Example:
-body common control
-{
-      bundlesequence => { "example" };
-}
-
-bundle agent example
-{
-  vars:
-      "length" int =>  string_length("abc"); # will contain "3"
-  reports:
-      "length of string abc = $(length)";
-}
-Output:
-R: length of string abc = 3
-History: Introduced in CFEngine 3.6
-See also: string_head(), string_tail(), string_reverse().
-'''
-
-
-
-'''
-string_upcase
-Table of Contents
-Prototype: string_upcase(data)
-Return type: string
-Description: Returns data in uppercase.
-Arguments:
-data: string, in the range: .*
-Example:
-body common control
-{
-      bundlesequence => { "example" };
-}
-
-bundle agent example
-{
-  vars:
-      "upcase" string => string_upcase("abc"); # will contain "ABC"
-  reports:
-      "upcased abc: $(upcase)";
-}
-Output:
-R: upcased abc: ABC
-History: Introduced in CFEngine 3.6
-See also: string_downcase().
-'''
-
-
-'''
-string_split
-Table of Contents
-Prototype: string_split(string, regex, maxent)
-Return type: slist
-Description: Splits string into at most maxent substrings wherever regex occurs, and returns the list with those strings.
-The regular expression is unanchored.
-If the maximum number of substrings is insufficient to accommodate all the entries, the generated slist will have maxent items and the last one will contain the rest of the string starting with the maxent-1-th delimiter. This is standard behavior in many languages like Perl or Ruby, and different from the splitstring() behavior.
-Arguments:
-string: string, in the range: .*
-regex: regular expression, in the range: .*
-maxent: int, in the range: 0,99999999999
-Example:
-body common control
-{
-      bundlesequence => { "test" };
-}
-
-bundle agent test
-{
-  vars:
-
-      "split1" slist => string_split("one:two:three", ":", "10");
-      "split2" slist => string_split("one:two:three", ":", "1");
-      "split3" slist => string_split("alpha:xyz:beta", "xyz", "10");
-
-  reports:
-
-      "split1: $(split1)";  # will list "one", "two", and "three"
-      "split2: $(split2)";  # will list "one:two:three"
-      "split3: $(split3)";  # will list "alpha:" and ":beta"
-
-}
-Output:
-R: split1: one
-R: split1: two
-R: split1: three
-R: split2: one:two:three
-R: split3: alpha:
-R: split3: :beta
-History: Introduced in CFEngine 3.6; deprecates splitstring().
-See also: splitstring()
 '''

@@ -2,17 +2,18 @@ import os
 import json
 
 from opsbro.evaluater import export_evaluater_function
-from opsbro.gossip import gossiper
 from opsbro.misc.lolcat import lolcat
 
+FUNCTION_GROUP = 'system'
 
-@export_evaluater_function
-def get_os():
-    """**get_os()** -> return a string about the os.
+
+@export_evaluater_function(function_group=FUNCTION_GROUP)
+def system_get_os():
+    """**system_get_os()** -> return a string about the os.
 
 <code>
     Example:
-        get_os()
+        system_get_os()
 
     Returns:
         'linux'
@@ -22,23 +23,7 @@ def get_os():
     return platform.system().lower()
 
 
-@export_evaluater_function
-def have_group(group):
-    """**have_group(group)** -> return True if the node have the group, False otherwise.
-
- * group: (string) group to check.
-
-
-<code>
-    Example:
-        have_group('linux')
-    Returns:
-        True
-</code>
-    """
-    return gossiper.have_group(group)
-
-
+#################### USERS
 try:
     import pwd, grp
     from pwd import getpwnam
@@ -47,15 +32,29 @@ except ImportError, exp:
     getpwnam = getgrnam = None
 
 
-@export_evaluater_function
-def user_exists(username_or_uid):
-    """**user_exists(uname_or_uid)** -> return True if the node username/uid does exists, False otherwise.
+def _uname_to_uid(uname):
+    try:
+        return getpwnam(uname)
+    except KeyError:  # no such group sorry
+        return None
+
+
+def _uid_to_uname(uid):
+    try:
+        return pwd.getpwuid(uid)
+    except KeyError:  # no such group sorry
+        return None
+
+
+@export_evaluater_function(function_group=FUNCTION_GROUP)
+def system_user_exists(username_or_uid):
+    """**system_user_exists(uname_or_uid)** -> return True if the node username/uid does exists, False otherwise.
 
  * username_or_uid: (string or int) string of the username or int for the user id.
 
 <code>
     Example:
-        user_exists('root')
+        system_user_exists('root')
     Returns:
         True
 </code>
@@ -71,23 +70,68 @@ def user_exists(username_or_uid):
     
     # Maybe we have a uid, maybe a string to search
     if uid is not None:
-        try:
-            pwd.getpwuid(uid)
-            # We can get it's data, he/she does exists
-            return True
-        except KeyError:
-            # ok no such uid
-            return False
-    # else: is a string
+        r = _uid_to_uname(uid)
+        return r is not None
+    r = _uname_to_uid(username_or_uid)
+    return r is not None
+
+
+@export_evaluater_function(function_group=FUNCTION_GROUP)
+def system_userid_from_username(username):
+    """**system_userid_from_username(username)** -> return userid that match the username, None overwise.
+
+ * username: (string) name of the user to search
+
+<code>
+    Example:
+        system_userid_from_username('root')
+    Returns:
+        0
+</code>
+    """
+    if getpwnam is None:
+        raise Exception('This function is not available on this OS')
+    
+    return _uname_to_uid(username)
+
+
+@export_evaluater_function(function_group=FUNCTION_GROUP)
+def system_username_from_userid(userid):
+    """**system_username_from_userid(userid)** -> return userid that match the username, None overwise.
+
+ * userid: (integer) id of the user to give
+
+<code>
+    Example:
+        system_username_from_userid(0)
+    Returns:
+        'root'
+</code>
+    """
+    if getpwnam is None:
+        raise Exception('This function is not available on this OS')
+    
+    return _uid_to_uname(userid)
+
+
+#################### GROUPS
+
+def _gname_to_gid(gname):
     try:
-        getpwnam(username_or_uid)
-        return True  # we can get he/she data
-    except KeyError:  # no such user sorry
-        return False
+        return getgrnam(gname)
+    except KeyError:  # no such group sorry
+        return None
 
 
-@export_evaluater_function
-def group_exists(groupname_or_gid):
+def _gid_to_gname(gid):
+    try:
+        return grp.getgrgid(gid)
+    except KeyError:  # no such group sorry
+        return None
+
+
+@export_evaluater_function(function_group=FUNCTION_GROUP)
+def system_group_exists(groupname_or_gid):
     """**group_exists(groupname_or_gid)** -> return True if the groupname/gid does exists, False otherwise.
 
  * groupname_or_gid: (string or int) string of the groupname or int for the group id.
@@ -110,22 +154,52 @@ def group_exists(groupname_or_gid):
     
     # Maybe we have a uid, maybe a string to search
     if gid is not None:
-        try:
-            grp.getgrgid(gid)
-            # We can get it's data, he/she does exists
-            return True
-        except KeyError:
-            # ok no such uid
-            return False
+        r = _gid_to_gname(gid)
+        return r is not None
     # else: is a string
-    try:
-        getgrnam(groupname_or_gid)
-        return True  # we can get he/she data
-    except KeyError:  # no such group sorry
-        return False
+    r = _gname_to_gid(groupname_or_gid)
+    return r is not None
 
 
-@export_evaluater_function
+@export_evaluater_function(function_group=FUNCTION_GROUP)
+def system_groupid_from_groupname(groupname):
+    """**system_groupid_from_groupname(groupname)** -> return groupid that match the groupname, None overwise.
+
+ * groupname: (string) name of the group to search
+
+<code>
+    Example:
+        system_groupid_from_groupname('root')
+    Returns:
+        0
+</code>
+    """
+    if getgrnam is None:
+        raise Exception('This function is not available on this OS')
+    
+    return _gname_to_gid(groupname)
+
+
+@export_evaluater_function(function_group=FUNCTION_GROUP)
+def system_groupname_from_groupid(groupid):
+    """**system_groupname_from_groupid(groupid)** -> return groupname that match the groupid, None overwise.
+
+ * groupid: (integer) id of the group to give
+
+<code>
+    Example:
+        system_groupname_from_groupid(0)
+    Returns:
+        'root'
+</code>
+    """
+    if getgrnam is None:
+        raise Exception('This function is not available on this OS')
+    
+    return _gid_to_gname(groupid)
+
+
+@export_evaluater_function(function_group=FUNCTION_GROUP)
 def colorize(s, color):
     """**colorize(s, color)** -> return the string s with the color (ainsi)
 
@@ -147,7 +221,7 @@ def colorize(s, color):
     return lolcat.get_line(s, color, spread=None)
 
 
-@export_evaluater_function
+@export_evaluater_function(function_group=FUNCTION_GROUP)
 def is_plain_file(path):
     """**is_plain_file(path)** -> return True if the file at path is a plain file
 
@@ -163,7 +237,7 @@ def is_plain_file(path):
     return os.path.isfile(path)
 
 
-@export_evaluater_function
+@export_evaluater_function(function_group=FUNCTION_GROUP)
 def parse_json_file(path):
     """**parse_json_file(path)** -> return the object read from the file at path
 
@@ -181,87 +255,21 @@ def parse_json_file(path):
     return o
 
 
-'''
-diskfree
-Table of Contents
-Prototype: diskfree(path)
-Return type: int
-Descriptions: Return the free space (in KB) available on the current partition of path.
-If path is not found, this function returns 0.
-Arguments:
-path: string, in the range: "?(/.*)
-Example:
-body common control
-{
-      bundlesequence => { "example" };
-}
+@export_evaluater_function(function_group=FUNCTION_GROUP)
+def get_env(variable):
+    """**get_env(variable)** -> return the value of the environnement variable
 
-bundle agent example
-{
-  classes:
-      "has_space" expression => isgreaterthan($(free), 0);
+ * variable: (string) name of the variable to ask
 
-  vars:
-      "free" int => diskfree("/tmp");
+<code>
+    Example:
+        get_env('LANG')
+    Returns:
+        'en_US.UTF-8'
+</code>
+    """
+    return os.environ.get(variable, '')
 
-  reports:
-    has_space::
-      "The filesystem has free space";
-    !has_space::
-      "The filesystem has NO free space";
-}
-Output:
-R: The filesystem has free space
-'''
-
-'''
-execresult
-Table of Contents
-Prototype: execresult(command, shell)
-Return type: string
-The return value is cached.
-Description: Execute command and return output as string.
-If the command is not found, the result will be the empty string.
-The shell argument decides whether a shell will be used to encapsulate the command. This is necessary in order to combine commands with pipes etc, but remember that each command requires a new process that reads in files beyond CFEngine's control. Thus using a shell is both a performance hog and a potential security issue.
-Arguments:
-command: string, in the range: .+
-shell: one of
-noshell
-useshell
-powershell
-Example:
-Prepare:
-rm -rf /tmp/testhere
-mkdir -p /tmp/testhere
-touch /tmp/testhere/a
-touch /tmp/testhere/b
-touch /tmp/testhere/c
-touch /tmp/testhere/d
-touch /tmp/testhere/e
-Run:
-body common control
-{
-      bundlesequence  => { "example" };
-}
-
-bundle agent example
-{
-  vars:
-      "my_result" string => execresult("/bin/ls /tmp/testhere","noshell");
-
-  reports:
-      "/bin/ls /tmp/testhere returned '$(my_result)'";
-}
-Output:
-R: /bin/ls /tmp/testhere returned 'a
-b
-c
-d
-e'
-Notes: you should never use this function to execute commands that make changes to the system, or perform lengthy computations. Such an operation is beyond CFEngine's ability to guarantee convergence, and on multiple passes and during syntax verification these function calls are executed, resulting in system changes that are covert. Calls to execresult should be for discovery and information extraction only. Effectively calls to this function will be also repeatedly executed by cf-promises when it does syntax checking, which is highly undesirable if the command is expensive. Consider using commands promises instead, which have locking and are not evaluated by cf-promises.
-See also: returnszero().
-Change: policy change in CFEngine 3.0.5. Previously newlines were changed for spaces, now newlines are preserved.
-'''
 
 '''
 findprocesses
@@ -315,49 +323,6 @@ R: Found just the root user: root
 Notes: This function is currently only available on Unix-like systems.
 History: Was introduced in version 3.1.0b1,Nova 2.0.0b1 (2010).
 See also: getuserinfo(), users.
-'''
-
-'''
-getenv
-Table of Contents
-Prototype: getenv(variable, maxlength)
-Return type: string
-Description: Return the environment variable variable, truncated at maxlength characters
-Returns an empty string if the environment variable is not defined. maxlength is used to avoid unexpectedly large return values, which could lead to security issues. Choose a reasonable value based on the environment variable you are querying.
-Arguments:
-variable: string, in the range: [a-zA-Z0-9_$(){}\[\].:]+
-maxlength: int, in the range: 0,99999999999
-Example:
-body common control
-{
-      bundlesequence => { "example" };
-}
-
-bundle agent example
-{
-  vars:
-
-      "myvar" string => getenv("EXAMPLE","2048");
-
-  classes:
-
-      "isdefined" not => strcmp("$(myvar)","");
-
-  reports:
-
-    isdefined::
-
-      "The EXAMPLE environment variable is $(myvar)";
-
-    !isdefined::
-
-      "The environment variable EXAMPLE does not exist";
-
-}
-Output:
-R: The EXAMPLE environment variable is getenv.cf
-Notes:
-History: This function was introduced in CFEngine version 3.0.4 (2010)
 '''
 
 '''
@@ -422,95 +387,6 @@ And variable contents:
   }
 History: Introduced in CFEngine 3.10
 See also: getusers(), users.
-'''
-
-'''
-getuid
-Table of Contents
-Prototype: getuid(username)
-Return type: int
-Description: Return the integer user id of the named user on this host
-If the named user is not registered the variable will not be defined.
-Arguments:
-username: string, in the range: .*
-Example:
-body common control
-{
-      bundlesequence => { "example" };
-}
-
-bundle agent example
-{
-  vars:
-
-      "uid" int => getuid("root");
-
-  reports:
-      "root's uid is $(uid)";
-}
-Output:
-R: root's uid is 0
-Notes: On Windows, which does not support user ids, the variable will not be defined.
-'''
-
-'''
-getgid
-Table of Contents
-Prototype: getgid(groupname)
-Return type: int
-Description: Return the integer group id of the group groupname on this host.
-If the named group does not exist, the function will fail and the variable will not be defined.
-Arguments:
-groupname: string, in the range: .*
-Example:
-body common control
-{
-      bundlesequence => { "example" };
-}
-
-bundle agent example
-{
-  vars:
-    linux|solaris|hpux::
-      "gid" int => getgid("root");
-    freebsd|darwin|openbsd::
-      "gid" int => getgid("wheel");
-    aix::
-      "gid" int => getgid("system");
-
-  reports:
-      "root's gid is $(gid)";
-}
-Output:
-R: root's gid is 0
-Notes: On Windows, which does not support group ids, the variable will not be defined.
-'''
-
-'''
-laterthan
-Table of Contents
-Prototype: laterthan(year, month, day, hour, minute, second)
-Return type: boolean
-Description: Returns whether the current time is later than the given date and time.
-The specified date/time is an absolute date in the local timezone. Note that, unlike some other functions, the month argument is 1-based (i.e. 1 corresponds to January).
-Arguments:
-year: int, in the range: 0,10000
-month: int, in the range: 0,1000
-day: int, in the range: 0,1000
-hour: int, in the range: 0,1000
-minute: int, in the range: 0,1000
-second: int, in the range: 0,40000
-Example:
-bundle agent example
-{
-    classes:
-
-      "after_deadline" expression => laterthan(2000,1,1,0,0,0);
-    reports:
-      after_deadline::
-        "deadline has passed";
-}
-See also: on()
 '''
 
 '''
@@ -606,24 +482,6 @@ See also: processes findprocesses().
 '''
 
 '''
-readjson
-Table of Contents
-Prototype: readjson(filename, maxbytes)
-Return type: data
-Description: Parses JSON data from the file filename and returns the result as a data variable. maxbytes is optional, if specified, only the first maxbytes bytes are read from filename.
-Arguments:
-filename: string, in the range: "?(/.*)
-maxbytes: int, in the range: 0,99999999999
-Example:
-    vars:
-
-      "loadthis"
-
-         data =>  readjson("/tmp/data.json", 4000);
-See also: readdata(), parsejson(), storejson(), parseyaml(), readyaml(), mergedata(), and data documentation.
-'''
-
-'''
 registryvalue
 Table of Contents
 Prototype: registryvalue(key, valueid)
@@ -657,46 +515,6 @@ Notes: Currently values of type REG_SZ (string), REG_EXPAND_SZ (expandable strin
 '''
 
 '''
-readfile
-Table of Contents
-Prototype: readfile(filename, maxbytes)
-Return type: string
-Description: Returns the first maxbytes bytes from file filename. When maxbytes is 0, the maximum possible bytes will be read from the file (but see Notes below).
-Arguments:
-filename: string, in the range: "?(/.*)
-maxbytes: int, in the range: 0,99999999999
-Example:
-Prepare:
-echo alpha > /tmp/cfe_hostlist
-echo beta >> /tmp/cfe_hostlist
-echo gamma >> /tmp/cfe_hostlist
-Run:
-body common control
-{
-      bundlesequence => { "example" };
-}
-
-bundle agent example
-{
-  vars:
-
-      "xxx"
-      string => readfile( "/tmp/cfe_hostlist" , "5" );
-  reports:
-      "first 5 characters of /tmp/cfe_hostlist: $(xxx)";
-}
-Output:
-R: first 5 characters of /tmp/cfe_hostlist: alpha
-Notes:
-To reliably read files located within /proc or /sys directories, maxsize has to be set to 0.
-At the moment, only 4095 bytes can fit into a string variable. This limitation may be removed in the future. If this should happen, a warning will be printed.
-If you request more bytes than CFEngine can read into a string variable (e.g. 999999999), a warning will also be printed.
-If either because you specified a large value, or you specified 0, more bytes are read than will fit in a string, the string is truncated to the maximum.
-On Windows, the file will be read in text mode, which means that CRLF line endings will be converted to LF line endings in the resulting variable. This can make the variable length shorter than the size of the file being read.
-History: Warnings about the size limit and the special 0 value were introduced in 3.6.0
-'''
-
-'''
 readcsv
 Table of Contents
 Description: Parses CSV data from the first 1 MB of file filename and returns the result as a data variable.
@@ -725,166 +543,4 @@ R: From /tmp/csv, got data [["1","2","3"]]
 Note: CSV files formatted according to RFC 4180 must end with the CRLF sequence. Thus a text file created on Unix with standard Unix tools like vi will not, by default, have those line endings.
 See also: readdata(), data_readstringarrayidx(),data_readstringarray(), parsejson(), storejson(), mergedata(), and data documentation.
 History: Was introduced in 3.7.0.
-'''
-
-'''
-returnszero
-Table of Contents
-Prototype: returnszero(command, shell)
-Return type: boolean
-The return value is cached.
-Description: Runs command and returns whether it has returned with exit status zero.
-This is the complement of execresult(), but it returns a class result rather than the output of the command.
-Arguments:
-command: string, in the range: .+
-shell: one of
-noshell
-useshell
-powershell
-Example:
-body common control
-{
-      bundlesequence => { "example" };
-}
-
-bundle agent example
-{
-  classes:
-
-      "my_result" expression => returnszero("/usr/local/bin/mycommand","noshell");
-
-  reports:
-
-    !my_result::
-
-      "Command failed";
-
-}
-Output:
-2014-08-18T14:13:28+0100 error: Proposed executable file '/usr/local/bin/mycommand' doesn't exist
-2014-08-18T14:13:28+0100 error: returnszero '/usr/local/bin/mycommand' is assumed to be executable but isn't
-R: Command failed
-Notes: you should never use this function to execute commands that make changes to the system, or perform lengthy computations. Such an operation is beyond CFEngine's ability to guarantee convergence, and on multiple passes and during syntax verification these function calls are executed, resulting in system changes that are covert. Calls to execresult should be for discovery and information extraction only. Effectively calls to this function will be also repeatedly executed by cf-promises when it does syntax checking, which is highly undesirable if the command is expensive. Consider using commands promises instead, which have locking and are not evaluated by cf-promises.
-See also: execresult().
-'''
-
-'''
-readyaml
-Table of Contents
-Prototype: readyaml(filename, maxbytes)
-Return type: data
-Description: Parses YAML data from the file filename and returns the result as a data variable. maxbytes is optional, if specified, only the first maxbytes bytes are read from filename.
-Arguments:
-filename: string, in the range: "?(/.*)
-maxbytes: int, in the range: 0,99999999999
-Example:
-    vars:
-
-      "loadthis"
-
-         data =>  readyaml("/tmp/data.yaml", 4000);
-See also: readdata(), parsejson(), parseyaml(), storejson(), mergedata(), and data documentation.
-'''
-
-'''
-readdata
-Table of Contents
-Prototype: readdata(filename, filetype)
-Return type: data
-Description: Parses CSV, JSON, or YAML data from file filename and returns the result as a data variable.
-When filetype is auto, the file type is guessed from the extension (ignoring case): .csv means CSV; .json means JSON; .yaml means YAML. If the file doesn't match any of those names, JSON is used.
-When filetype is CSV, this function behaves exactly like readcsv() and returns the same data structure.
-When filetype is JSON, this function behaves exactly like readjson() and returns the same data structure, except there is no data size limit (maxbytes is inf).
-When filetype is YAML, this function behaves exactly like readyaml() and returns the same data structure, except there is no data size limit (maxbytes is inf).
-Arguments:
-filename: string, in the range: "?(/.*)
-filetype: one of
-CSV
-YAML
-JSON
-auto
-Example:
-Prepare:
-echo -n 1,2,3 > /tmp/file.csv
-echo -n '{ "x": 200 }' > /tmp/file.json
-echo '- a' > /tmp/file.yaml
-echo '- b' >> /tmp/file.yaml
-Run:
-bundle agent main
-{
-  vars:
-
-      "csv" data => readdata("/tmp/file.csv", "auto"); # or file type "CSV"
-      "json" data => readdata("/tmp/file.json", "auto"); # or file type "JSON"
-
-      "csv_str" string => format("%S", csv);
-      "json_str" string => format("%S", json);
-
-    feature_yaml:: # we can only test YAML data if libyaml is compiled in
-      "yaml" data => readdata("/tmp/file.yaml", "auto"); # or file type "YAML"
-      "yaml_str" string => format("%S", yaml);
-  reports:
-
-      "From /tmp/file.csv, got data $(csv_str)";
-      "From /tmp/file.json, got data $(json_str)";
-    feature_yaml::
-      "From /tmp/file.yaml, we would get data $(yaml_str)";
-    !feature_yaml:: # show the output anyway
-      'From /tmp/file.yaml, we would get data ["a","b"]';
-
-}
-Output:
-R: From /tmp/file.csv, got data [["1","2","3"]]
-R: From /tmp/file.json, got data {"x":200}
-R: From /tmp/file.yaml, we would get data ["a","b"]
-See also: readcsv(), readyaml(), readjson(), and data documentation.
-History: Was introduced in 3.7.0.
-'''
-
-'''
-readstringarrayidx
-Table of Contents
-Prototype: readstringarrayidx(array, filename, comment, split, maxentries, maxbytes)
-Return type: int
-Description: Populates the two-dimensional array array with up to maxentries fields from the first maxbytes bytes of file filename.
-One dimension is separated by the regex split, the other by the lines in the file. The array arguments are both integer indexes, allowing for non-identifiers at first field (e.g. duplicates or names with spaces), unlike readstringarray.
-The comment field is a multiline regular expression and will strip out unwanted patterns from the file being read, leaving unstripped characters to be split into fields. Using the empty string ("") indicates no comments.
-Returns an integer number of keys in the array (i.e., the number of lines matched). If you only want the fields in the first matching line (e.g., to mimic the behavior of the getpwnam(3) on the file /etc/passwd), use getfields(), instead.
-Arguments:
-array: string, in the range: [a-zA-Z0-9_$(){}\[\].:]+
-filename: string, in the range: "?(/.*)
-comment: string, in the range: .*
-split: string, in the range: .*
-maxentries: int, in the range: 0,99999999999
-maxbytes: int, in the range: 0,99999999999
-Example:
-    vars:
-
-      "dim_array"
-
-         int =>  readstringarrayidx("array_name","/tmp/array","\s*#[^\n]*",":",10,4000);
-Input example:
-     at spaced:x:25:25:Batch jobs daemon:/var/spool/atjobs:/bin/bash
-     duplicate:x:103:105:User for Avahi:/var/run/avahi-daemon:/bin/false    # Disallow login
-     beagleindex:x:104:106:User for Beagle indexing:/var/cache/beagle:/bin/bash
-     duplicate:x:1:1:bin:/bin:/bin/bash
-     # Daemon has the default shell
-     daemon:x:2:2:Daemon:/sbin:
-Results in a systematically indexed map of the file:
-     array_name[0][0]       at spaced
-     array_name[0][1]       x
-     array_name[0][2]       25
-     array_name[0][3]       25
-     array_name[0][4]       Batch jobs daemon
-     array_name[0][5]       /var/spool/atjobs
-     array_name[0][6]       /bin/bash
-     array_name[1][0]       duplicate
-     array_name[1][1]       x
-     array_name[1][2]       103
-     array_name[1][3]       105
-     array_name[1][4]       User for Avahi
-     array_name[1][5]       /var/run/avahi-daemon
-     array_name[1][6]       /bin/false
-     ...
-
 '''

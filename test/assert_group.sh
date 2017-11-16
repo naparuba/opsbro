@@ -12,11 +12,11 @@ if [ $? != 0 ]; then
    exit 2
 fi
 
-RES=$(opsbro evaluator eval "have_group('$GROUP')" | tail -n 1)
+RES=$(opsbro evaluator eval "is_in_group('$GROUP')" | tail -n 1)
 if [ $RES != "True" ]; then
-   echo "Fail: check if group is set: have_group('$GROUP') ==> $RES"
+   echo "Fail: check if group is set: is_in_group('$GROUP') ==> $RES"
    opsbro agent info | grep Groups
-   opsbro evaluator eval "have_group('$GROUP')"
+   opsbro evaluator eval "is_in_group('$GROUP')"
    exit 2
 fi
 

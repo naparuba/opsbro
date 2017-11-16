@@ -6,6 +6,9 @@ import network
 import packages
 import system
 import ftimes
+import node
+import frandom
+import fhash
 
 
 class CoreFunctionsModule(FunctionsExportModule):

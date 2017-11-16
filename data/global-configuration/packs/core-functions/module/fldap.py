@@ -32,8 +32,6 @@ classes:
                                     "none");
 '''
 
-
-
 '''
 ldapvalue
 Table of Contents
@@ -71,8 +69,6 @@ vars:
                              "none"
                              );
 '''
-
-
 
 '''
 ldaplist
@@ -112,7 +108,6 @@ vars:
                            );
 
 '''
-
 
 '''
 regldap

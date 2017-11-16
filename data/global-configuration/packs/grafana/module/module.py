@@ -127,7 +127,7 @@ class GrafanaModule(ConnectorModule):
             
             # We go in enabled when, and only when our group is matching what we do expect
             if_group = self.get_parameter('enabled_if_group')
-            self.enabled = gossiper.have_group(if_group)
+            self.enabled = gossiper.is_in_group(if_group)
             
             # Ok, if we are not enabled, so not even talk to grafana
             if not self.enabled:

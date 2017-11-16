@@ -41,17 +41,38 @@ operators = {
 }
 
 functions = {
-    'abs': abs,
+}
+
+functions_to_groups = {
 }
 
 
-def export_evaluater_function(f):
+# This allow to have parameter for export_evaluater_function
+# Python guys: decorators are a nightmare, impossible without google for simple task...
+def parametrized(dec):
+    def layer(*args, **kwargs):
+        def repl(f):
+            return dec(f, *args, **kwargs)
+        
+        
+        return repl
+    
+    
+    return layer
+
+
+@parametrized
+def export_evaluater_function(f, function_group):
     # Export the function to the allowed functions
     fname = f.__name__
     functions[fname] = f
+    functions_to_groups[fname] = function_group
     logger.debug('Evaluater: exporting function %s' % fname)
     return f
 
+
+for f in (abs, min, max, sum, sorted, len):
+    export_evaluater_function(f, function_group='basic')
 
 names = {'True': True, 'False': False}
 
@@ -278,7 +299,7 @@ class Evaluater(object):
                     args = None
                 
                 prototype = args
-                res.append({'name': fname, 'doc': _doc, 'prototype': prototype})
+                res.append({'name': fname, 'doc': _doc, 'prototype': prototype, 'group': functions_to_groups[fname]})
             return json.dumps(res)
         
         
