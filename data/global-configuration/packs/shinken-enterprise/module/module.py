@@ -1,6 +1,4 @@
 import json
-import httplib
-import urllib
 
 from opsbro.module import ConnectorModule
 from opsbro.parameters import StringParameter, BoolParameter
@@ -12,7 +10,7 @@ class ShinkenEnterpriseModule(ConnectorModule):
     implement = 'shinken-enterprise'
     
     parameters = {
-        'enabled'                : BoolParameter(default=False),
+        'enabled'    : BoolParameter(default=False),
         'file_result': StringParameter(default=''),
     }
     
@@ -31,22 +29,10 @@ class ShinkenEnterpriseModule(ConnectorModule):
             cname, c = collectormgr.get_collector_json_extract(e)
             collectors_data[cname] = c
         
-        # TODO: push to shinken now :)
-        f = open('/tmp/shinken-local-discovery.json', 'w')
-        
-        data = {
-            'uuid'      : gossiper.uuid,
-            'templates' : groups,
-            'collectors': collectors_data,
-        }
-        f.write(json.dumps(data, indent=4))
-        f.close()
-        
         payload = {
-            '_AGENT_UUID'     : gossiper.uuid,
-            'use': ','.join([g for g in groups if '::' not in g]),
+            '_AGENT_UUID': gossiper.uuid,
+            'use'        : ','.join([g for g in groups if '::' not in g]),
         }
-        
         
         # System info
         system_results = collectors_data.get('system', {}).get('results', {})
@@ -74,7 +60,7 @@ class ShinkenEnterpriseModule(ConnectorModule):
         # Timezone
         timezone = collectors_data.get('timezone', {}).get('results', {}).get('timezone', '')
         if timezone:
-            payload['_TIMEZONE'] = timezone
+            payload['_TIMEZONE'] = timezone.decode('utf8', 'ignore')
         
         cpucount = system_results.get('cpucount', '')
         if cpucount:
@@ -108,29 +94,32 @@ class ShinkenEnterpriseModule(ConnectorModule):
             payload['_LONG'] = long
         
         # disks
-        volumes = ','.join(collectors_data.get('diskusage', {}).get('results', {}).keys())
+        try:
+            volumes = ','.join(collectors_data.get('diskusage', {}).get('results', {}).keys())
+        except AttributeError:
+            volumes = ''
         if volumes:
             payload['_VOLUMES'] = volumes
-
+        
         file_result = self.get_parameter('file_result')
         if file_result:
             f = open(file_result, 'w')
             f.write(json.dumps(payload, indent=4))
             f.close()
-
-
-        
-        #try:
+            
+            
+            
+        # try:
         #    self.logger.info('Sending back discovery data to shinken at %s' % enterprise_callback_uri)
         #    conn = httplib.HTTPConnection(enterprise_callback_uri)
         #    conn.set_debuglevel(1)
-
+        
         #    params = json.dumps({'host': payload})
         #    headers = {'User-agent': 'agent', 'Accept': 'application/json'}
         #    conn.request('PUT', '/v1/hosts/', params, headers)
-            
+        
         #    response = conn.getresponse()
         #    print response.status, response.reason
         #    conn.close()
-        #except Exception, exp:
+        # except Exception, exp:
         #    self.logger.error('Cannot send back discovery data to shinken: %s' % exp)
