@@ -31,7 +31,7 @@ class ShinkenEnterpriseModule(ConnectorModule):
         
         payload = {
             '_AGENT_UUID': gossiper.uuid,
-            'use'        : ','.join([g for g in groups if '::' not in g]),
+            'use'        : ','.join([g.replace(':', '-') for g in groups]),
         }
         
         # System info
