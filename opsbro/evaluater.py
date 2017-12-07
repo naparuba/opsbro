@@ -37,7 +37,7 @@ operators = {
     ast.BitAnd: op.and_,  # A & B
     ast.Not   : op.not_, _ast.Not: op.not_,  # not A
     ast.In    : op.contains,  # A in L
-    # NOTMANAGE ast.Subscript: op.getitem, _ast.Subscript: op.getitem,  # d[k]
+    ast.Subscript: op.getitem, _ast.Subscript: op.getitem,  # d[k]
 }
 
 functions = {
@@ -192,6 +192,12 @@ class Evaluater(object):
         elif isinstance(node, ast.Name):  # name? try to look at it
             key = node.id
             v = names.get(key, None)
+            return v
+        elif isinstance(node, ast.Subscript):  # {}['key'] access
+            # NOTE: the 'key' is node.slice.value.s
+            # and the node.value is a ast.Dict, so must be eval_
+            _d = self.eval_(node.value)
+            v = _d[node.slice.value.s]
             return v
         elif isinstance(node, ast.Call):  # call? dangerous, must be registered :)
             args = [self.eval_(arg) for arg in node.args]

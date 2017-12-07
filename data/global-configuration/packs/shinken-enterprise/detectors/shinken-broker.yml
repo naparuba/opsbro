@@ -1,0 +1,5 @@
+detector:
+    add_groups:
+        - shinken-broker
+    apply_if: "True in parse_json_file('/var/lib/shinken/context.json')['local_instances']['broker'].values()"
+    interval: 10s

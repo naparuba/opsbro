@@ -1,0 +1,5 @@
+detector:
+    add_groups:
+        - shinken-arbiter
+    apply_if: "True in parse_json_file('/var/lib/shinken/context.json')['local_instances']['arbiter'].values()"
+    interval: 10s

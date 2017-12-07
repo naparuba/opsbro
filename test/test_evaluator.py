@@ -40,7 +40,7 @@ class TestEvaluater(OpsBroTest):
             {'rule': '(1, 2, 3)', 'expected': (1, 2, 3)},
             {'rule': '(1, 2,3) == (1,2,3)', 'expected': True},
             {'rule': '"PI %.2f" % 3.14', 'expected': "PI 3.14"},
-            # NOTMANAGE {'rule': '{"k":"v"}["k"]', 'expected': 'v'},
+            {'rule': '{"k":"v"}["k"]', 'expected': 'v'},
         ]
         for r in rules:
             print "\n\n" + "#" * 30
