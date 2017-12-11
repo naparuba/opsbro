@@ -28,10 +28,16 @@ class ShinkenEnterpriseModule(ConnectorModule):
         for (ccls, e) in collectormgr.collectors.iteritems():
             cname, c = collectormgr.get_collector_json_extract(e)
             collectors_data[cname] = c
-        
+            
+        # In groups=> templates, we do not want : and . in the names
+        _mapping = {':': '--', '.': '--'}
+        use_value = ','.join(groups)
+        for (k, v) in _mapping.iteritems():
+            use_value = use_value.replace(k, v)
+
         payload = {
             '_AGENT_UUID': gossiper.uuid,
-            'use'        : ','.join([g.replace(':', '-') for g in groups]),
+            'use'        : use_value,
         }
         
         # System info
