@@ -35,12 +35,33 @@ class TestEvaluater(OpsBroTest):
             {'rule': '10 ^ 3', 'expected': 9},
             {'rule': 'True and not False', 'expected': True},
             {'rule': 'not ("a"=="a")', 'expected': False},
-            {'rule': '"a" in ["a","b"]', 'expected': True},
             {'rule': '{"k":"v"}', 'expected': {'k': 'v'}},
             {'rule': '(1, 2, 3)', 'expected': (1, 2, 3)},
             {'rule': '(1, 2,3) == (1,2,3)', 'expected': True},
             {'rule': '"PI %.2f" % 3.14', 'expected': "PI 3.14"},
+            
+            # Dicts
             {'rule': '{"k":"v"}["k"]', 'expected': 'v'},
+            {'rule': '"k" in {"k":"v"}', 'expected': True},
+            {'rule': '{"k":"v"}.values()', 'expected': ["v"]},
+            
+            # Math functions
+            {'rule': 'min([1,2,3])', 'expected': 1},
+            {'rule': 'max([1,2,3])', 'expected': 3},
+            {'rule': 'abs(-1)', 'expected': 1},
+            {'rule': 'sum([1,2,3])', 'expected': 6},
+            
+            # List & strings functions
+            {'rule': '"v2" in ["v1", "v2"]', 'expected': True},
+            {'rule': 'sorted(["v2", "v1"])', 'expected': ["v1", "v2"]},
+            {'rule': 'len([1,2,3])', 'expected': 3},
+            
+            # dict.values()
+            {'rule': 'sorted({"k":"v", "k2":"v2"}.values())', 'expected': ["v", "v2"]},
+            
+            # Sets
+            {'rule': 'set(["v1", "v2", "v2"])', 'expected': set(['v1', 'v2'])},
+        
         ]
         for r in rules:
             print "\n\n" + "#" * 30

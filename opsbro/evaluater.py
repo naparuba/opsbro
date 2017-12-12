@@ -17,27 +17,28 @@ logger = LoggerFactory.create_logger('evaluater')
 
 # supported operators
 operators = {
-    ast.Add   : op.add,  # A + B
-    ast.Sub   : op.sub,  # A - B
-    ast.Mult  : op.mul,  # A * B
-    ast.Div   : op.truediv,  # A / B
-    ast.Pow   : op.pow,  # ???
-    ast.BitXor: op.xor,  # ???
-    ast.USub  : op.neg,  # ???
-    ast.Eq    : op.eq,  # A == B
-    ast.NotEq : op.ne,  # A != B
-    ast.Gt    : op.gt,  # A > B
-    ast.Lt    : op.lt,  # A < B
-    ast.GtE   : op.ge,  # A >= B
-    ast.LtE   : op.le,  # A <= B
-    ast.Mod   : op.mod,  # A % B
-    ast.Or    : op.or_, _ast.Or: op.or_,  # A or B
-    ast.And   : op.and_, _ast.And: op.and_,  # A and B
-    ast.BitOr : op.or_,  # A | B
-    ast.BitAnd: op.and_,  # A & B
-    ast.Not   : op.not_, _ast.Not: op.not_,  # not A
-    ast.In    : op.contains,  # A in L
+    ast.Add      : op.add,  # A + B
+    ast.Sub      : op.sub,  # A - B
+    ast.Mult     : op.mul,  # A * B
+    ast.Div      : op.truediv,  # A / B
+    ast.Pow      : op.pow,  # ???
+    ast.BitXor   : op.xor,  # ???
+    ast.USub     : op.neg,  # ???
+    ast.Eq       : op.eq,  # A == B
+    ast.NotEq    : op.ne,  # A != B
+    ast.Gt       : op.gt,  # A > B
+    ast.Lt       : op.lt,  # A < B
+    ast.GtE      : op.ge,  # A >= B
+    ast.LtE      : op.le,  # A <= B
+    ast.Mod      : op.mod,  # A % B
+    ast.Or       : op.or_, _ast.Or: op.or_,  # A or B
+    ast.And      : op.and_, _ast.And: op.and_,  # A and B
+    ast.BitOr    : op.or_,  # A | B
+    ast.BitAnd   : op.and_,  # A & B
+    ast.Not      : op.not_, _ast.Not: op.not_,  # not A
+    ast.In       : op.contains,  # A in L
     ast.Subscript: op.getitem, _ast.Subscript: op.getitem,  # d[k]
+    ast.Attribute: op.attrgetter, _ast.Attribute: op.attrgetter,  # d.XXXX()
 }
 
 functions = {
@@ -61,8 +62,7 @@ def parametrized(dec):
     return layer
 
 
-@parametrized
-def export_evaluater_function(f, function_group):
+def _export_evaluater_function(f, function_group):
     # Export the function to the allowed functions
     fname = f.__name__
     functions[fname] = f
@@ -71,8 +71,14 @@ def export_evaluater_function(f, function_group):
     return f
 
 
-for f in (abs, min, max, sum, sorted, len):
-    export_evaluater_function(f, function_group='basic')
+@parametrized
+def export_evaluater_function(f, function_group):
+    return _export_evaluater_function(f, function_group)
+
+
+for f in (abs, min, max, sum, sorted, len, set):
+    # NOTE: find why, but we need to call the not decorated function... cool...
+    _export_evaluater_function(f, function_group='basic')
 
 names = {'True': True, 'False': False}
 
@@ -199,6 +205,13 @@ class Evaluater(object):
             _d = self.eval_(node.value)
             v = _d[node.slice.value.s]
             return v
+        #        elif isinstance(node, _ast.Attribute):  # o.f() call
+        #            # NOTE: for security reason, only accept functons on basic types
+        #            print "Attribute:", node, node.__dict__
+        #            return None
+        #            _d = self.eval_(node.value)
+        #            v = _d[node.slice.value.s]
+        #            return v
         elif isinstance(node, ast.Call):  # call? dangerous, must be registered :)
             args = [self.eval_(arg) for arg in node.args]
             f = None
@@ -207,9 +220,18 @@ class Evaluater(object):
             if isinstance(node.func, ast.Name):
                 fname = node.func.id
                 f = functions.get(fname, None)
+                if f is None:
+                    logger.error('Eval unknown function %s' % (fname))
+                    raise TypeError(node)
             elif isinstance(node.func, ast.Attribute):
-                logger.error('Eval UNMANAGED (ast.aTTribute) CALL: %s %s %s is refused' % (node.func, node.func.__dict__, node.func.value.__dict__))
-            
+                # Attribute is managed only if the base type is a standard one
+                _ref_object_node = node.func.value
+                if isinstance(_ref_object_node, ast.Dict) or isinstance(_ref_object_node, ast.List) or isinstance(_ref_object_node, ast.Str) or isinstance(_ref_object_node, ast.Set):
+                    _ref_object = self.eval_(_ref_object_node)
+                    f = getattr(_ref_object, node.func.attr)
+                else:
+                    logger.error('Eval UNMANAGED (ast.attribute) CALL: %s %s %s is refused' % (node.func, node.func.__dict__, node.func.value.__dict__))
+                    raise TypeError(node)
             else:
                 logger.error('Eval UNMANAGED (othercall) CALL: %s %s %s is refused' % (node.func, node.func.__dict__, node.func.value.__dict__))
                 raise TypeError(node)

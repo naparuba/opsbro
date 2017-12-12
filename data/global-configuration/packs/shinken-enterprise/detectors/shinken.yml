@@ -1,5 +1,5 @@
 detector:
     add_groups:
-        - shinken
+        - shinken-enterprise
     apply_if: "file_exists('/var/lib/shinken/context.json')"
     interval: 10s
