@@ -59,7 +59,11 @@ if __name__ == '__main__':
     
     # We need to import our libs, but can be an install or directly in the tarball (if executed directly from the install tar ball)
     install_less = False
-    my_file = os.path.abspath(os.path.dirname(__file__))
+    # In windows exe, __file__ is not set
+    if not hasattr(sys, 'frozen'):
+	    my_file = os.path.abspath(os.path.dirname(__file__))
+    else:
+	    my_file = os.path.dirname(os.path.abspath(sys.argv[0]))
     my_root_dir = os.path.dirname(my_file)
     # Both files must be present
     tar_ball_detection_files = (os.path.join(my_root_dir, 'README.md'), os.path.join(my_root_dir, 'setup.py'))
