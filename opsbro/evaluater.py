@@ -226,7 +226,7 @@ class Evaluater(object):
             elif isinstance(node.func, ast.Attribute):
                 # Attribute is managed only if the base type is a standard one
                 _ref_object_node = node.func.value
-                if isinstance(_ref_object_node, ast.Dict) or isinstance(_ref_object_node, ast.List) or isinstance(_ref_object_node, ast.Str) or isinstance(_ref_object_node, ast.Set):
+                if isinstance(_ref_object_node, ast.Dict) or isinstance(_ref_object_node, ast.List) or isinstance(_ref_object_node, ast.Str) or isinstance(_ref_object_node, ast.Set) or isinstance(_ref_object_node, ast.Subscript):
                     _ref_object = self.eval_(_ref_object_node)
                     f = getattr(_ref_object, node.func.attr)
                 else:
