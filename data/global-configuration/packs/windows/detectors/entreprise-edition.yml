@@ -1,0 +1,6 @@
+detector:
+    add_groups:
+        - entreprise-edition
+    apply_if: "system_get_os() == 'windows' and 'Entreprise' in {{collector.system.windows.caption}}"
+    interval: 86400s
+

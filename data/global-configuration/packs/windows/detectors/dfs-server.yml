@@ -1,0 +1,6 @@
+detector:
+    add_groups:
+        - dfs-server
+    apply_if: "system_get_os() == 'windows' and 'Distributed File System' in {{collector.system.windows.features||[]}}"
+    interval: 10s
+

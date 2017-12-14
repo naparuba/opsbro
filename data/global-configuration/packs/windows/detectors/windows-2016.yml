@@ -1,0 +1,6 @@
+detector:
+    add_groups:
+        - windows-2016
+    apply_if: "system_get_os() == 'windows' and '2016' in {{collector.system.windows.caption}}"
+    interval: 86400s
+

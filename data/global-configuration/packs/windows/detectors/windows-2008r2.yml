@@ -1,0 +1,6 @@
+detector:
+    add_groups:
+        - windows-2008r2
+    apply_if: "system_get_os() == 'windows' and '2008 R2' in {{collector.system.windows.caption}}"
+    interval: 86400s
+

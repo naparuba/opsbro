@@ -1,0 +1,6 @@
+detector:
+    add_groups:
+        - windows-lang::{{collector.system.windows.muilanguages.0}}
+    apply_if: "system_get_os() == 'windows'"
+    interval: 86400s
+
