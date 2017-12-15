@@ -403,8 +403,11 @@ class SystemPacketMgr(object):
             self.distro = 'oracle-linux'
             self.managed_system = True
         elif 'amzn' in distname:
-            self.distro = 'amazon-linux'
             self.managed_system = True
+            if '2.0' not in distversion:
+                self.distro = 'amazon-linux'
+            else:
+                self.distro = 'amazon-linux2'
         elif distname == 'windows':
             self.distro = 'windows'
             self.managed_system = True
@@ -418,7 +421,7 @@ class SystemPacketMgr(object):
             # ok not managed one
             self.managed_system = False
         
-        if self.distro in ['redhat', 'centos', 'amazon-linux', 'oracle-linux']:
+        if self.distro in ['redhat', 'centos', 'amazon-linux', 'amazon-linux2', 'oracle-linux']:
             if yum is not None:
                 self.backend = YumBackend()
             else:

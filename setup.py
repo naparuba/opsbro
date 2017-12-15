@@ -49,7 +49,7 @@ is_pip_real_install_step = 'bdist_wheel' in sys.argv
 # * copy /etc
 # * look for dependencies from system packages
 # * hide setup.py part
-# If not blac kmagic (like in pip first step, or pypi interaction (upload, etc)
+# If not black kmagic (like in pip first step, or pypi interaction (upload, etc)
 # we do not want any black magic thing, and we try to behave like a standard python package ^^
 # By default we love black magic, but if we are in a pip special call or pypi, we disable it
 allow_black_magic = not is_pypi_register_upload and not is_pip_first_step
@@ -363,16 +363,30 @@ install_from_pip = []
 mod_need = {
     'jinja2': {
         'packages': {
-            'debian'      : 'python-jinja2', 'ubuntu': 'python-jinja2',
-            'amazon-linux': 'python-jinja2', 'centos': 'python-jinja2', 'redhat': 'python-jinja2', 'oracle-linux': 'python-jinja2', 'fedora': 'python-jinja2', 'opensuse': 'python-Jinja2',
-            'alpine'      : 'py-jinja2',
+            'debian'       : 'python-jinja2',
+            'ubuntu'       : 'python-jinja2',
+            'amazon-linux' : 'python-jinja2',
+            'amazon-linux2': 'python-jinja2',
+            'centos'       : 'python-jinja2',
+            'redhat'       : 'python-jinja2',
+            'oracle-linux' : 'python-jinja2',
+            'fedora'       : 'python-jinja2',
+            'opensuse'     : 'python-Jinja2',
+            'alpine'       : 'py-jinja2',
         }
     },
     'Crypto': {
         'packages': {
-            'debian'      : 'python-crypto', 'ubuntu': 'python-crypto',
-            'amazon-linux': 'python-crypto', 'centos': 'python-crypto', 'redhat': 'python-crypto', 'oracle-linux': 'python-crypto', 'fedora': 'python-crypto', 'opensuse': 'python-pycrypto',
-            'alpine'      : 'py-crypto',
+            'debian'       : 'python-crypto',
+            'ubuntu'       : 'python-crypto',
+            'amazon-linux' : 'python-crypto',
+            'amazon-linux2': 'python-crypto',
+            'centos'       : 'python-crypto',
+            'redhat'       : 'python-crypto',
+            'oracle-linux' : 'python-crypto',
+            'fedora'       : 'python-crypto',
+            'opensuse'     : 'python-pycrypto',
+            'alpine'       : 'py-crypto',
         }
     },
 }
@@ -380,17 +394,28 @@ mod_need = {
 if os.name != 'nt':
     mod_need['leveldb'] = {
         'packages'    : {
-            'debian'      : 'python-leveldb', 'ubuntu': 'python-leveldb',
-            'amazon-linux': 'python-leveldb', 'centos': 'python-leveldb', 'redhat': 'python-leveldb', 'oracle-linux': 'python-leveldb', 'fedora': 'python-leveldb', 'opensuse': 'python-leveldb',
-            'alpine'      : 'py-leveldb',
+            'debian'       : 'python-leveldb',
+            'ubuntu'       : 'python-leveldb',
+            'amazon-linux' : 'python-leveldb',
+            'amazon-linux2': 'python-leveldb',
+            'centos'       : 'python-leveldb',
+            'redhat'       : 'python-leveldb',
+            'oracle-linux' : 'python-leveldb',
+            'fedora'       : 'python-leveldb',
+            'opensuse'     : 'python-leveldb',
+            'alpine'       : 'py-leveldb',
         },
         'pip_packages': {
-            'debian'      : ['build-essential', 'python-dev'], 'ubuntu': ['build-essential', 'python-dev'],
+            'debian'       : ['build-essential', 'python-dev'],
+            'ubuntu'       : ['build-essential', 'python-dev'],
             # NOTE: amazon: no python-devel/python-setuptools, only versionsed packages are available
-            'amazon-linux': ['gcc', 'gcc-c++', 'python27-devel', 'libyaml-devel', 'python27-setuptools'], 'centos': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'], 'redhat': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
-            'oracle-linux': ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
-            'fedora'      : [r'gcc-c++', 'libcurl', 'curl', 'libcurl-devel', 'python', 'gcc', 'python-devel', 'libyaml-devel', 'python-setuptools', 'redhat-rpm-config'],  # note: python-setuptools to be sure that setup() will succeed
-            'alpine'      : ['gcc', 'linux-headers', 'musl-dev', 'libgcc', 'libgc++', 'g++', 'curl-dev', 'py-setuptools', 'python-dev'],
+            'amazon-linux' : ['gcc', 'gcc-c++', 'python27-devel', 'libyaml-devel', 'python27-setuptools'],
+            'amazon-linux2': ['gcc', 'gcc-c++', 'python2-devel', 'libyaml-devel', 'python2-setuptools'],
+            'centos'       : ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
+            'redhat'       : ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
+            'oracle-linux' : ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
+            'fedora'       : [r'gcc-c++', 'libcurl', 'curl', 'libcurl-devel', 'python', 'gcc', 'python-devel', 'libyaml-devel', 'python-setuptools', 'redhat-rpm-config'],  # note: python-setuptools to be sure that setup() will succeed
+            'alpine'       : ['gcc', 'linux-headers', 'musl-dev', 'libgcc', 'libgc++', 'g++', 'curl-dev', 'py-setuptools', 'python-dev'],
         },
     }
 
