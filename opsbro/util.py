@@ -5,6 +5,7 @@ import glob
 import socket
 import struct
 import hashlib
+import json
 import uuid as libuuid
 
 try:
@@ -141,6 +142,19 @@ def _get_ec2_public_ip():
     return addr
 
 
+# On Scaleway need to get public IP from http://169.254.42.42/conf?format=json
+def _get_scaleway_public_ip():
+    uri = 'http://169.254.42.42/conf?format=json'
+    try:
+        s = httper.get(uri)
+    except get_http_exceptions(), exp:
+        logger.error('Cannot get pubic IP for your Scaleway instance from %s. Error: %s.Exiting' % (uri, exp))
+        sys.exit(2)
+    o = json.loads(s)
+    # Example: u'public_ip': {u'dynamic': False, u'id': u'96189bf3-768f-46b1-af54-41800d695ce8', u'address': u'52.15.216.218'}
+    return o['public_ip']['address']
+
+
 # Only works in linux
 def get_public_address():
     # Special case: EC2, local public IP is useless, need public IP
@@ -151,6 +165,12 @@ def get_public_address():
                 # EC2 case: need to get from special IP
                 addr = _get_ec2_public_ip()
                 return addr
+    
+    # Special case: Scaleway, local public IP is useless, need public IP
+    if os.path.exists('/etc/scw-release'):  # special to scaleway distribution
+        addr = _get_scaleway_public_ip()
+        return addr
+    
     # If I am in the DNS or in my /etc/hosts, I win
     try:
         addr = socket.gethostbyname(socket.gethostname())
