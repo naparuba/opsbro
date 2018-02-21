@@ -183,7 +183,18 @@ class Evaluater(object):
         elif isinstance(node, _ast.BoolOp):  # <elt1> OP <elt2>   TOD: manage more than 2 params
             if len(node.values) != 2:
                 raise Exception('Cannot manage and/or operators woth more than 2 parts currently.')
-            return operators[type(node.op)](self.eval_(node.values[0]), self.eval_(node.values[1]))
+            # Special case: _ast.And   if the first element is False, then we should NOT eval the right part
+            # and directly returns False
+            left_part_eval = self.eval_(node.values[0])
+            if not left_part_eval and isinstance(node.op, _ast.And):
+                return False
+            # Special case: _ast.Or   if the first element is True, then we should NOT eval the right part
+            # and directly returns True
+            left_part_eval = self.eval_(node.values[0])
+            if left_part_eval and isinstance(node.op, _ast.Or):
+                return True
+            # else, give the whole result
+            return operators[type(node.op)](left_part_eval, self.eval_(node.values[1]))
         elif isinstance(node, ast.Compare):  # <left> <operator> <right>
             left = self.eval_(node.left)
             right = self.eval_(node.comparators[0])

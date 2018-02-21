@@ -201,6 +201,7 @@ def get_server_const_uuid():
     # TODO:
     # aws
     # windows
+    # docker
     return ''
 
 

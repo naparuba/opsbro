@@ -1,5 +1,5 @@
 detector:
     add_groups:
         - shinken-receiver
-    apply_if: "True in parse_json_file('/var/lib/shinken/context.json')['local_instances']['receiver'].values()"
+    apply_if: "file_exists('/var/lib/shinken/context.json') and True in parse_json_file('/var/lib/shinken/context.json')['local_instances']['receiver'].values()"
     interval: 10s

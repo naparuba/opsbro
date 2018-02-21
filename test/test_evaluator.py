@@ -61,7 +61,12 @@ class TestEvaluater(OpsBroTest):
             
             # Sets
             {'rule': 'set(["v1", "v2", "v2"])', 'expected': set(['v1', 'v2'])},
-        
+    
+            # Do not execute functions at right in And if the first part is False
+            {'rule': 'False and missing_function()', 'expected': False},
+            # Do not execute functions at right in Or if the first part is True
+            {'rule': 'True or missing_function()', 'expected': True},
+
         ]
         for r in rules:
             print "\n\n" + "#" * 30

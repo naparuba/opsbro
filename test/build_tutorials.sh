@@ -24,7 +24,7 @@ asciinema rec -y -w 2 -t "OpsBro agent info" -c "/bin/bash test/tutorial-scripts
 
 
 # Show agent info
-asciinema rec -y -w 0.3 -t "OpsBro liux dashboard" -c "/bin/bash test/tutorial-scripts/linux-dashboard.sh"  $SHARE/linux-dashboard.json
+asciinema rec -y -w 0.3 -t "OpsBro linux dashboard" -c "/bin/bash test/tutorial-scripts/linux-dashboard.sh"  $SHARE/linux-dashboard.json
 
 
 echo "All tutorials are done"
