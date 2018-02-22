@@ -19,3 +19,20 @@ def is_in_group(group):
 </code>
     """
     return gossiper.is_in_group(group)
+
+
+@export_evaluater_function(function_group=FUNCTION_GROUP)
+def is_in_defined_group(group):
+    """**is_in_defined_group(group)** -> return True if the node have the group but was set in the configuration, not from discovery False otherwise.
+
+ * group: (string) group to check.
+
+
+<code>
+    Example:
+        is_in_defined_group('linux')
+    Returns:
+        True
+</code>
+    """
+    return gossiper.is_in_group(group)
