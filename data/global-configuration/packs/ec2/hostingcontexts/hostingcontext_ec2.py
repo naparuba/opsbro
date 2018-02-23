@@ -44,9 +44,10 @@ class EC2HostingContext(InterfaceHostingContext):
         self.__meta_data = {}
         for k in keys:
             # For placement, only take the availability-zone
+            uri_k = k
             if '/' in k:
                 k = k.split('/')[-1]
-            uri = 'http://169.254.169.254/latest/meta-data/%s' % k
+            uri = 'http://169.254.169.254/latest/meta-data/%s' % uri_k
             # Note: each call is quite fast, not a problem to get them all at daemon startup
             v = httper.get(uri)
             self.__meta_data[k] = v
@@ -60,7 +61,7 @@ class EC2HostingContext(InterfaceHostingContext):
         try:
             meta_data = self.get_meta_data()
         except Exception, exp:
-            self.logger.error('Cannot get pubic IP for your EC2 instance from %s. Error: %s' % (uri, exp))
+            self.logger.error('Cannot get pubic IP for your EC2 instance. Error: %s' % exp)
             raise
         addr = meta_data['public-ipv4']
         return addr
