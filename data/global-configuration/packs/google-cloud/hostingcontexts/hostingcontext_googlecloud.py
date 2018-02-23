@@ -86,6 +86,11 @@ class GoogleCloudHostingContext(InterfaceHostingContext):
         # We want to merge the structure into a more flatten one between compute and network
         self.__meta_data = raw_data['instance']
         
+        del self.__meta_data['serviceAccounts']
+        del self.__meta_data['virtualClock']
+        del self.__meta_data['licenses']
+        del self.__meta_data['disks']
+        
         return self.__meta_data
     
     

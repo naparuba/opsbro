@@ -1,5 +1,5 @@
 detector:
     add_groups:
-        - 'azure-vmsize::{{collector.azure.vmSize}}'
-    apply_if: "hosting_context_is_active('azure')"
+        - {{collector.googlecloud.tags}}
+    apply_if: "hosting_context_is_active('google-cloud')"
     interval: "86400s"

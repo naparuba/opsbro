@@ -1,6 +1,6 @@
 detector:
     add_groups:
-        - 'azure-location::{{collector.azure.location}}'
-    apply_if: "hosting_context_is_active('azure')"
+        - 'google-cloud-machineType::{{collector.googlecloud.machineType}}'
+    apply_if: "hosting_context_is_active('google-cloud')"
     interval: "86400s"
 

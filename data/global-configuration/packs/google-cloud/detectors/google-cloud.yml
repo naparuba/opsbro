@@ -1,6 +1,6 @@
 detector:
     add_groups:
-        - azure
-    apply_if: "hosting_context_is_active('azure')"
+        - google-cloud
+    apply_if: "hosting_context_is_active('google-cloud')"
     interval: "86400s"
 
