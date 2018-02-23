@@ -1,0 +1,5 @@
+detector:
+    add_groups:
+        - 'azure-vmsize::{{collector.azure.vmSize}}'
+    apply_if: "hosting_context_is_active('azure')"
+    interval: "86400s"
