@@ -1,5 +1,5 @@
 detector:
     add_groups:
-        - {{collector.googlecloud.tags}}
+        - '{{collector.googlecloud.tags}}'
     apply_if: "hosting_context_is_active('google-cloud')"
     interval: "86400s"

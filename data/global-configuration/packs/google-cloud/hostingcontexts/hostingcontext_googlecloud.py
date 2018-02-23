@@ -85,6 +85,9 @@ class GoogleCloudHostingContext(InterfaceHostingContext):
         
         # We want to merge the structure into a more flatten one between compute and network
         self.__meta_data = raw_data['instance']
+
+        # we want only the short name of the machine type
+        self.__meta_data['machineType'] = self.__meta_data['machineType'].split('/')[-1]
         
         del self.__meta_data['serviceAccounts']
         del self.__meta_data['virtualClock']
