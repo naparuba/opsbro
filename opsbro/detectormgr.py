@@ -76,10 +76,18 @@ class DetectorMgr(object):
                     gen['do_apply'] = do_apply
                     if do_apply:
                         groups = gen['add_groups']
+                        new_groups = []
                         try:
                             # Try to evaluate the group if need (can be an expression {} )
                             # NOTE: to_string=True to not have a json object with 'value' but directly the string value
-                            groups = [evaluater.compile(t, to_string=True) for t in groups]
+                            for t in groups:
+                                compile_group = evaluater.compile(t, to_string=True)
+                                if ',' in compile_group:
+                                    for sub_compile_group in [_g.strip() for _g in compile_group.split(',')]:
+                                        new_groups.append(sub_compile_group)
+                                else:
+                                    new_groups.append(compile_group)
+                            groups = new_groups
                         except Exception, exp:
                             logger.error('Cannot execute detector group %s: %s' % (gname, exp))
                             groups = []

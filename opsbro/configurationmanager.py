@@ -5,7 +5,6 @@ from opsbro.defaultpaths import DEFAULT_DATA_DIR
 from opsbro.log import LoggerFactory
 from opsbro.httpdaemon import http_export, response
 from opsbro.yamlmgr import yamler
-from opsbro.jsonmgr import jsoner
 from opsbro.packer import packer
 
 # Global logger for this part
@@ -374,6 +373,22 @@ class ConfigurationManager(object):
         
         # now collectors class are loaded, load instances from them
         collectormgr.load_all_collectors()
+    
+    
+    def load_hostingcontexts_from_packs(self):
+        # Load at running to avoid endless import loop
+        from opsbro.hostingcontextmanager import get_hostingcontextmgr
+        hostingctxmgr = get_hostingcontextmgr()
+        pack_directories = packer.give_pack_directories_to_load()
+        
+        for (pname, level, dir) in pack_directories:
+            # Now load collectors, an important part for packs :)
+            hostingcontext_dir = os.path.join(dir, 'hostingcontexts')
+            if os.path.exists(hostingcontext_dir):
+                hostingctxmgr.load_directory(hostingcontext_dir, pack_name=pname, pack_level=level)
+        
+        # now hosting context class are loaded, we can detect which one is our own
+        hostingctxmgr.detect()
     
     
     ############## Http interface

@@ -1,0 +1,6 @@
+detector:
+    add_groups:
+        - 'ec2-instance-type::{{collector.ec2.instance-type}}'
+    apply_if: "hosting_context_is_active('ec2')"
+    interval: "86400s"
+

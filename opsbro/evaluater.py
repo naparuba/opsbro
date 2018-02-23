@@ -93,6 +93,13 @@ class Evaluater(object):
         self.cfg_data = cfg_data
     
     
+    # We want a simple string at the end, but try to be a bit smart when doing it
+    def __change_to_string(self, o):
+        if isinstance(o, list) or isinstance(o, set):
+            return ','.join([str(e) for e in o])
+        return str(o)
+    
+    
     def compile(self, expr, check=None, to_string=False, variables={}):
         # first manage {} thing and look at them
         all_parts = self.pat.findall(expr)
@@ -139,7 +146,7 @@ class Evaluater(object):
         for (p, v) in changes:
             f = repr
             if to_string:
-                f = str
+                f = self.__change_to_string
             expr = expr.replace('%s' % p, f(v))
         
         return expr

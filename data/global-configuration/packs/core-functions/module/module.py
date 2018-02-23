@@ -9,7 +9,7 @@ import ftimes
 import node
 import frandom
 import fhash
-
+import hosting
 
 class CoreFunctionsModule(FunctionsExportModule):
     implement = 'corefunctions'

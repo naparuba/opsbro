@@ -1,0 +1,6 @@
+detector:
+    add_groups:
+        - scaleway
+    apply_if: "hosting_context_is_active('scaleway')"
+    interval: "86400s"
+

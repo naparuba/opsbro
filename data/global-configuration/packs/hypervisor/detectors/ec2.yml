@@ -1,7 +1,0 @@
-detector:
-    add_groups:
-        - ec2
-        - aws
-    apply_if: "grep_file('.amazon', '/sys/hypervisor/version/extra')"
-    interval: "10s"
-
