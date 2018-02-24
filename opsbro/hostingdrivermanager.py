@@ -1,7 +1,16 @@
 import os
 import glob
 import imp
+import socket
+import sys
 
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
+import struct
+
+from opsbro.misc.windows import windowser
 from opsbro.log import LoggerFactory
 
 # Global logger for this part
@@ -45,8 +54,117 @@ class InterfaceHostingDriver(object):
         raise NotImplemented()
     
     
+    # Get the ip address in a linux system
+    def __get_ip_address(self, ifname):
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        return socket.inet_ntoa(fcntl.ioctl(
+            s.fileno(),
+            0x8915,  # SIOCGIFADDR
+            struct.pack('256s', ifname[:15])
+        )[20:24])
+    
+    
+    def _get_linux_local_addresses(self):
+        stdin, stdout = os.popen2('hostname -I')
+        buf = stdout.read().strip()
+        stdin.close()
+        stdout.close()
+        res = [s.strip() for s in buf.split(' ') if s.strip()]
+        
+        # Some system like in alpine linux that don't have hostname -I call
+        # so try to guess
+        if len(res) == 0:
+            logger.info('Cannot use the hostname -I call for linux, trying to guess local addresses')
+            for prefi in ['bond', 'eth', 'venet']:
+                for i in xrange(0, 10):
+                    ifname = '%s%d' % (prefi, i)
+                    try:
+                        addr = self.__get_ip_address(ifname)
+                        res.append(addr)
+                    except IOError:  # no such interface
+                        pass
+        
+        res.sort(self._sort_local_addresses)
+        return res
+    
+    
+    def _is_valid_local_addr(self, addr):
+        if not addr:
+            return False
+        if addr.startswith('127.0.0.'):
+            return False
+        if addr.startswith('169.254.'):
+            return False
+        # we can check the address is localy available
+        if sys.platform == 'linux2':
+            _laddrs = self._get_linux_local_addresses()
+            if addr not in _laddrs:
+                return False
+        return True
+    
+    
+    def _sort_local_addresses(self, addr1, addr2):
+        addr1_is_192 = addr1.startswith('192.')
+        addr2_is_192 = addr2.startswith('192.')
+        addr1_is_10 = addr1.startswith('10.')
+        addr2_is_10 = addr2.startswith('10.')
+        addr1_is_172 = addr1.startswith('172.')
+        addr2_is_172 = addr2.startswith('172.')
+        addr1_is_127 = addr1.startswith('127.')
+        addr2_is_127 = addr2.startswith('127.')
+        
+        # lower is better
+        addr1_order = 4
+        if addr1_is_192:
+            addr1_order = 1
+        elif addr1_is_172:
+            addr1_order = 2
+        elif addr1_is_10:
+            addr1_order = 3
+        if addr1_is_127:
+            addr1_order = 5
+        addr2_order = 4
+        if addr2_is_192:
+            addr2_order = 1
+        elif addr2_is_172:
+            addr2_order = 2
+        elif addr2_is_10:
+            addr2_order = 3
+        if addr2_is_127:
+            addr2_order = 5
+        
+        if addr1_order > addr2_order:
+            return 1
+        elif addr1_order < addr2_order:
+            return -1
+        return 0
+    
+    
+    # If we do not have a specific hoster, we look at the most
+    # important interface, by avoiding useless interfaces like
+    # locals or dhcp not active
     def get_public_address(self):
-        raise NotImplemented()
+        # If I am in the DNS or in my /etc/hosts, I win
+        try:
+            addr = socket.gethostbyname(socket.gethostname())
+            if self._is_valid_local_addr(addr):
+                return addr
+        except Exception, exp:
+            pass
+        
+        if sys.platform == 'linux2':
+            addrs = self._get_linux_local_addresses()
+            if len(addrs) > 0:
+                return addrs[0]
+        
+        # On windows also loop over the interfaces
+        if os.name == 'nt':
+            c = windowser.get_wmi()
+            for interface in c.Win32_NetworkAdapterConfiguration(IPEnabled=1):
+                for addr in interface.IPAddress:
+                    if self._is_valid_local_addr(addr):
+                        return addr
+        return None
 
 
 # when you are not a cloud
@@ -62,11 +180,6 @@ class OnPremiseHostingDriver(InterfaceHostingDriver):
     # It's the last one, be active
     def is_active(self):
         return True
-    
-    
-    # TODO: get default system detection
-    def get_public_address(self):
-        return None
 
 
 # Try to know in which system we are running (apt, yum, or other)
@@ -121,12 +234,12 @@ class HostingDriverMgr(object):
     
     def get_public_address(self):
         return self.driver.get_public_address()
-
+    
     
     def is_driver_active(self, driver_name):
         return self.driver.name == driver_name
     
-
+    
     def get_driver(self):
         return self.driver
     
@@ -135,7 +248,7 @@ class HostingDriverMgr(object):
         if self.driver is None:
             return ''
         return self.driver.name
-    
+
 
 hostingdrivermgr_ = None
 

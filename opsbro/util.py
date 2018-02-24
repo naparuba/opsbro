@@ -1,18 +1,10 @@
 import os
-import sys
 import shutil
 import glob
 import socket
-import struct
 import hashlib
 import uuid as libuuid
 
-try:
-    import fcntl
-except ImportError:
-    fcntl = None
-
-from opsbro.misc.windows import windowser
 from opsbro.log import logger
 from opsbro.hostingdrivermanager import get_hostingdrivermgr
 
@@ -53,82 +45,6 @@ def lower_dict(d):
     return r
 
 
-def _sort_local_addresses(addr1, addr2):
-    addr1_is_192 = addr1.startswith('192.')
-    addr2_is_192 = addr2.startswith('192.')
-    addr1_is_10 = addr1.startswith('10.')
-    addr2_is_10 = addr2.startswith('10.')
-    addr1_is_172 = addr1.startswith('172.')
-    addr2_is_172 = addr2.startswith('172.')
-    addr1_is_127 = addr1.startswith('127.')
-    addr2_is_127 = addr2.startswith('127.')
-    
-    # lower is better
-    addr1_order = 4
-    if addr1_is_192:
-        addr1_order = 1
-    elif addr1_is_172:
-        addr1_order = 2
-    elif addr1_is_10:
-        addr1_order = 3
-    if addr1_is_127:
-        addr1_order = 5
-    addr2_order = 4
-    if addr2_is_192:
-        addr2_order = 1
-    elif addr2_is_172:
-        addr2_order = 2
-    elif addr2_is_10:
-        addr2_order = 3
-    if addr2_is_127:
-        addr2_order = 5
-    
-    if addr1_order > addr2_order:
-        return 1
-    elif addr1_order < addr2_order:
-        return -1
-    return 0
-
-
-def _get_linux_local_addresses():
-    stdin, stdout = os.popen2('hostname -I')
-    buf = stdout.read().strip()
-    stdin.close()
-    stdout.close()
-    res = [s.strip() for s in buf.split(' ') if s.strip()]
-    
-    # Some system like in alpine linux that don't have hostname -I call
-    # so try to guess
-    if len(res) == 0:
-        logger.info('Cannot use the hostname -I call for linux, trying to guess local addresses')
-        for prefi in ['bond', 'eth']:
-            for i in xrange(0, 10):
-                ifname = '%s%d' % (prefi, i)
-                try:
-                    addr = get_ip_address(ifname)
-                    res.append(addr)
-                except IOError:  # no such interface
-                    pass
-    
-    res.sort(_sort_local_addresses)
-    return res
-
-
-def _is_valid_local_addr(addr):
-    if not addr:
-        return False
-    if addr.startswith('127.0.0.'):
-        return False
-    if addr.startswith('169.254.'):
-        return False
-    # we can check the address is localy available
-    if sys.platform == 'linux2':
-        _laddrs = _get_linux_local_addresses()
-        if addr not in _laddrs:
-            return False
-    return True
-
-
 # The public IP can be a bit complex, as maybe the local host do not even have it in it's
 # network interface: EC2 and scaleway are example of public ip -> NAT -> private one and
 # the linux do not even know it
@@ -136,41 +52,7 @@ def get_public_address():
     hosttingctxmgr = get_hostingdrivermgr()
     
     addr = hosttingctxmgr.get_public_address()
-    if addr is not None:
-        return addr
-    
-    # If I am in the DNS or in my /etc/hosts, I win
-    try:
-        addr = socket.gethostbyname(socket.gethostname())
-        if _is_valid_local_addr(addr):
-            return addr
-    except Exception, exp:
-        pass
-    
-    if sys.platform == 'linux2':
-        addrs = _get_linux_local_addresses()
-        if len(addrs) > 0:
-            return addrs[0]
-    
-    # On windows also loop over the interfaces
-    if os.name == 'nt':
-        c = windowser.get_wmi()
-        for interface in c.Win32_NetworkAdapterConfiguration(IPEnabled=1):
-            for addr in interface.IPAddress:
-                if _is_valid_local_addr(addr):
-                    return addr
-    
-    return None
-
-
-# Get the ip address in a linux system
-def get_ip_address(ifname):
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    return socket.inet_ntoa(fcntl.ioctl(
-        s.fileno(),
-        0x8915,  # SIOCGIFADDR
-        struct.pack('256s', ifname[:15])
-    )[20:24])
+    return addr
 
 
 # Try to GET (fixed) uuid, but only if a constant one is here
