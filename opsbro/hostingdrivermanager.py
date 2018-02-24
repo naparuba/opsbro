@@ -130,6 +130,12 @@ class HostingDriverMgr(object):
     def get_driver(self):
         return self.driver
     
+    
+    def get_driver_name(self):
+        if self.driver is None:
+            return ''
+        return self.driver.name
+    
 
 hostingdrivermgr_ = None
 

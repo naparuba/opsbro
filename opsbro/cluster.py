@@ -50,6 +50,7 @@ from opsbro.monitoring import monitoringmgr
 from opsbro.installermanager import installormgr
 from opsbro.compliancemgr import compliancemgr
 from opsbro.defaultpaths import DEFAULT_LIBEXEC_DIR, DEFAULT_LOCK_PATH, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR, DEFAULT_CFG_DIR, DEFAULT_SOCK_PATH
+from .hostingdrivermanager import get_hostingdrivermgr
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('agent')
@@ -547,6 +548,7 @@ class Cluster(object):
                  'docker'     : dockermgr.get_info(),
                  'collectors' : collectormgr.get_info(),
                  'kv'         : kvmgr.get_info(),
+                 'hosting_driver': get_hostingdrivermgr().get_driver_name(),
                  }
             
             # Update the infos with modules ones

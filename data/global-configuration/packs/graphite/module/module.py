@@ -20,7 +20,6 @@ from opsbro.util import to_best_int_float
 from opsbro.gossip import gossiper
 from opsbro.httpclient import get_http_exceptions, httper
 from opsbro.kv import kvmgr
-from opsbro.library import libstore
 from opsbro.parameters import BoolParameter, IntParameter
 
 

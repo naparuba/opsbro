@@ -81,6 +81,7 @@ def do_info(show_logs):
         zone_color = 'red'
     zone_value = {'value': zone, 'color': zone_color}
     nb_threads = d.get('threads')['nb_threads']
+    hosting_driver = d.get('hosting_driver', '')
     httpservers = d.get('httpservers', {'internal': None, 'external': None})
     socket_path = d.get('socket')
     _uuid = d.get('uuid')
@@ -96,7 +97,7 @@ def do_info(show_logs):
     collectors = d.get('collectors')
     
     e = [('name', name), ('display name', display_name), ('uuid', _uuid), ('groups', groups), ('version', version), ('pid', pid), ('port', port), ('addr', addr),
-         ('zone', zone_value), ('socket', socket_path), ('threads', nb_threads)]
+         ('zone', zone_value), ('socket', socket_path), ('threads', nb_threads), ('hosting', hosting_driver)]
     
     # Normal agent information
     print_info_title('OpsBro Daemon')
