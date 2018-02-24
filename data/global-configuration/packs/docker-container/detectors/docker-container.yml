@@ -1,0 +1,6 @@
+detector:
+    add_groups:
+        - docker-container
+    apply_if: "hosting_driver_is_active('docker-container')"
+    interval: "86400s"
+
