@@ -1,15 +1,15 @@
 import os
 
 from opsbro.httpclient import get_http_exceptions, httper
-from opsbro.hostingcontextmanager import InterfaceHostingContext
+from opsbro.hostingdrivermanager import InterfaceHostingDriver
 
 
-class EC2HostingContext(InterfaceHostingContext):
+class EC2HostingDriver(InterfaceHostingDriver):
     name = 'ec2'
     
     
     def __init__(self):
-        super(EC2HostingContext, self).__init__()
+        super(EC2HostingDriver, self).__init__()
         self.__meta_data = None
     
     

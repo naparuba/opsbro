@@ -1,5 +1,5 @@
 detector:
     add_groups:
         - 'google-cloud-zone::{{collector.googlecloud.zone}}'
-    apply_if: "hosting_context_is_active('google-cloud')"
+    apply_if: "hosting_driver_is_active('google-cloud')"
     interval: "86400s"

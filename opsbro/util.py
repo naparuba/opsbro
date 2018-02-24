@@ -14,7 +14,7 @@ except ImportError:
 
 from opsbro.misc.windows import windowser
 from opsbro.log import logger
-from opsbro.hostingcontextmanager import get_hostingcontextmgr
+from opsbro.hostingdrivermanager import get_hostingdrivermgr
 
 
 def make_dir(path):
@@ -133,7 +133,7 @@ def _is_valid_local_addr(addr):
 # network interface: EC2 and scaleway are example of public ip -> NAT -> private one and
 # the linux do not even know it
 def get_public_address():
-    hosttingctxmgr = get_hostingcontextmgr()
+    hosttingctxmgr = get_hostingdrivermgr()
     
     addr = hosttingctxmgr.get_public_address()
     if addr is not None:

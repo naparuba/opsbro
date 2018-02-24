@@ -375,19 +375,19 @@ class ConfigurationManager(object):
         collectormgr.load_all_collectors()
     
     
-    def load_hostingcontexts_from_packs(self):
+    def load_hostingdrivers_from_packs(self):
         # Load at running to avoid endless import loop
-        from opsbro.hostingcontextmanager import get_hostingcontextmgr
-        hostingctxmgr = get_hostingcontextmgr()
+        from opsbro.hostingdrivermanager import get_hostingdrivermgr
+        hostingctxmgr = get_hostingdrivermgr()
         pack_directories = packer.give_pack_directories_to_load()
         
         for (pname, level, dir) in pack_directories:
             # Now load collectors, an important part for packs :)
-            hostingcontext_dir = os.path.join(dir, 'hostingcontexts')
-            if os.path.exists(hostingcontext_dir):
-                hostingctxmgr.load_directory(hostingcontext_dir, pack_name=pname, pack_level=level)
+            hostingdriver_dir = os.path.join(dir, 'hostingdrivers')
+            if os.path.exists(hostingdriver_dir):
+                hostingctxmgr.load_directory(hostingdriver_dir, pack_name=pname, pack_level=level)
         
-        # now hosting context class are loaded, we can detect which one is our own
+        # now hosting driver class are loaded, we can detect which one is our own
         hostingctxmgr.detect()
     
     

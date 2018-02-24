@@ -1,6 +1,6 @@
 detector:
     add_groups:
         - azure
-    apply_if: "hosting_context_is_active('azure')"
+    apply_if: "hosting_driver_is_active('azure')"
     interval: "86400s"
 

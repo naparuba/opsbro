@@ -2,15 +2,15 @@ import os
 import json
 
 from opsbro.httpclient import get_http_exceptions, httper
-from opsbro.hostingcontextmanager import InterfaceHostingContext
+from opsbro.hostingdrivermanager import InterfaceHostingDriver
 
 
-class ScalewayHostingContext(InterfaceHostingContext):
+class ScalewayHostingDriver(InterfaceHostingDriver):
     name = 'scaleway'
     
     
     def __init__(self):
-        super(ScalewayHostingContext, self).__init__()
+        super(ScalewayHostingDriver, self).__init__()
         self.conf = None
     
     

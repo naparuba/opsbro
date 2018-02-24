@@ -2,15 +2,15 @@ import os
 import json
 
 from opsbro.httpclient import get_http_exceptions, httper
-from opsbro.hostingcontextmanager import InterfaceHostingContext
+from opsbro.hostingdrivermanager import InterfaceHostingDriver
 
 
-class AzureHostingContext(InterfaceHostingContext):
+class AzureHostingDriver(InterfaceHostingDriver):
     name = 'azure'
     
     
     def __init__(self):
-        super(AzureHostingContext, self).__init__()
+        super(AzureHostingDriver, self).__init__()
         self.__meta_data = None
     
     

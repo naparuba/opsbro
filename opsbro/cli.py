@@ -279,8 +279,8 @@ class CLICommander(object):
         # Now that packs are load and clean, we can load collector code from it
         configmgr.load_collectors_from_packs()
         
-        # also load hosting context (like EC2 or scaleway) from packs too
-        configmgr.load_hostingcontexts_from_packs()
+        # also load hosting driver (like EC2 or scaleway) from packs too
+        configmgr.load_hostingdrivers_from_packs()
         
         # Now that packs are load and clean, we can load modules code from it
         configmgr.load_modules_from_packs()
