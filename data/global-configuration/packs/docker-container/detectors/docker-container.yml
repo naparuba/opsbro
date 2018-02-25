@@ -1,6 +1,6 @@
 detector:
     add_groups:
         - docker-container
-    apply_if: "hosting_driver_is_active('docker-container')"
+    apply_if: "file_exists('/.dockerenv')"
     interval: "86400s"
 
