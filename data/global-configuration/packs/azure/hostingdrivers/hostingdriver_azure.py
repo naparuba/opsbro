@@ -73,3 +73,15 @@ class AzureHostingDriver(InterfaceHostingDriver):
             raise
         addr = meta_data['ipv4']['ipAddress'][0]['publicIpAddress']
         return addr
+    
+    
+    # As a unique uuid we can give our vmId (that's a uuid)
+    def get_unique_uuid(self):
+        try:
+            meta_data = self.get_meta_data()
+        except Exception, exp:
+            self.logger.error('Cannot get a unique uuid for your Azure instance. Error: %s' % exp)
+            raise
+        addr = meta_data['vmId']
+        self.logger.info('Using Azure instance id as unique uuid for this node.')
+        return addr

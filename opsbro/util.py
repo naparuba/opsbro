@@ -60,18 +60,17 @@ def get_public_address():
 # * aws:   get instance uuid from url (TODO)
 # * windows: TODO
 def get_server_const_uuid():
-    # First DMI, if there is a UUID, use it
+    # Ask the hosting driver if a unique uuid is available
+    # linux:     # First DMI, if there is a UUID, use it
     # BUT not if docker one (have access to DMI but it's a container, so not unique)
-    product_uuid_p = '/sys/class/dmi/id/product_uuid'
-    if os.path.exists(product_uuid_p) and not os.path.exists('/.dockerenv'):
-        with open(product_uuid_p, 'r') as f:
-            buf = f.read()
-        logger.info('[SERVER-UUID] using the DMI (bios) uuid as server unique UUID: %s' % buf.lower())
-        return hashlib.sha1(buf.lower()).hexdigest()
+    # ec2: can use uuid from meta_data
+    hosttingdrvmgr = get_hostingdrivermgr()
+    unique_uuid = hosttingdrvmgr.get_unique_uuid()
+    if unique_uuid:
+        return hashlib.sha1(unique_uuid.lower()).hexdigest()
     # TODO:
     # aws
     # windows
-    # docker
     return ''
 
 

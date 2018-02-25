@@ -165,6 +165,19 @@ class InterfaceHostingDriver(object):
                     if self._is_valid_local_addr(addr):
                         return addr
         return None
+    
+    
+    def get_unique_uuid(self):
+        product_uuid_p = '/sys/class/dmi/id/product_uuid'
+        # Be sure not to be in a docket container, if so, will be host dmi
+        # even if the user did disable docker pack
+        if os.path.exists(product_uuid_p) and not os.path.exists('/.dockerenv'):
+            with open(product_uuid_p, 'r') as f:
+                buf = f.read().strip()
+            self.logger.info('[SERVER-UUID] using the DMI (bios) uuid as server unique UUID: %s' % buf.lower())
+            return buf
+        # TODO: windows case
+        return None
 
 
 # when you are not a cloud
@@ -234,6 +247,10 @@ class HostingDriverMgr(object):
     
     def get_public_address(self):
         return self.driver.get_public_address()
+    
+    
+    def get_unique_uuid(self):
+        return self.driver.get_unique_uuid()
     
     
     def is_driver_active(self, driver_name):

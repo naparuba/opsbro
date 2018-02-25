@@ -85,7 +85,7 @@ class GoogleCloudHostingDriver(InterfaceHostingDriver):
         
         # We want to merge the structure into a more flatten one between compute and network
         self.__meta_data = raw_data['instance']
-
+        
         # we want only the short name of the machine type
         self.__meta_data['machineType'] = self.__meta_data['machineType'].split('/')[-1]
         self.__meta_data['zone'] = self.__meta_data['zone'].split('/')[-1]
@@ -102,7 +102,19 @@ class GoogleCloudHostingDriver(InterfaceHostingDriver):
         try:
             meta_data = self.get_meta_data()
         except Exception, exp:
-            self.logger.error('Cannot get pubic IP for your Azure instance. Error: %s' % exp)
+            self.logger.error('Cannot get pubic IP for your Google cloud instance. Error: %s' % exp)
             raise
         addr = meta_data['networkInterfaces'][0]['accessConfigs'][0]['externalIp']
+        return addr
+    
+    
+    # We can give our id (as string) as a unique uuid of this node
+    def get_unique_uuid(self):
+        try:
+            meta_data = self.get_meta_data()
+        except Exception, exp:
+            self.logger.error('Cannot get a unique uuid for your Google cloud instance. Error: %s' % exp)
+            raise
+        self.logger.info('Using Google cloud instance id as unique uuid for this node.')
+        addr = str(meta_data['id'])
         return addr

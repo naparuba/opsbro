@@ -20,36 +20,36 @@ import copy
 
 
 
-from opsbro.log import LoggerFactory
-from opsbro.log import logger as raw_logger
-from opsbro.util import copy_dir, get_public_address, get_server_const_uuid, guess_server_const_uuid
-from opsbro.threadmgr import threader
-from opsbro.now import NOW
-from opsbro.httpclient import get_http_exceptions, httper
+from .log import LoggerFactory
+from .log import logger as raw_logger
+from .util import copy_dir, get_public_address, get_server_const_uuid, guess_server_const_uuid
+from .threadmgr import threader
+from .now import NOW
+from .httpclient import get_http_exceptions, httper
 
 # now singleton objects
-from opsbro.gossip import gossiper
-from opsbro.configurationmanager import configmgr
-from opsbro.kv import kvmgr
-from opsbro.broadcast import broadcaster
-from opsbro.httpdaemon import httpdaemon, http_export, response, request, abort, gserver
-from opsbro.pubsub import pubsub
-from opsbro.dockermanager import dockermgr
-from opsbro.library import libstore
-from opsbro.collectormanager import collectormgr
-from opsbro.info import VERSION
-from opsbro.stop import stopper
-from opsbro.evaluater import evaluater
-from opsbro.detectormgr import detecter
-from opsbro.generatormgr import generatormgr
-from opsbro.ts import tsmgr
-from opsbro.jsonmgr import jsoner
-from opsbro.modulemanager import modulemanager
-from opsbro.executer import executer
-from opsbro.monitoring import monitoringmgr
-from opsbro.installermanager import installormgr
-from opsbro.compliancemgr import compliancemgr
-from opsbro.defaultpaths import DEFAULT_LIBEXEC_DIR, DEFAULT_LOCK_PATH, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR, DEFAULT_CFG_DIR, DEFAULT_SOCK_PATH
+from .gossip import gossiper
+from .configurationmanager import configmgr
+from .kv import kvmgr
+from .broadcast import broadcaster
+from .httpdaemon import httpdaemon, http_export, response, request, abort, gserver
+from .pubsub import pubsub
+from .dockermanager import dockermgr
+from .library import libstore
+from .collectormanager import collectormgr
+from .info import VERSION
+from .stop import stopper
+from .evaluater import evaluater
+from .detectormgr import detecter
+from .generatormgr import generatormgr
+from .ts import tsmgr
+from .jsonmgr import jsoner
+from .modulemanager import modulemanager
+from .executer import executer
+from .monitoring import monitoringmgr
+from .installermanager import installormgr
+from .compliancemgr import compliancemgr
+from .defaultpaths import DEFAULT_LIBEXEC_DIR, DEFAULT_LOCK_PATH, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR, DEFAULT_CFG_DIR, DEFAULT_SOCK_PATH
 from .hostingdrivermanager import get_hostingdrivermgr
 
 # Global logger for this part

@@ -65,3 +65,15 @@ class EC2HostingDriver(InterfaceHostingDriver):
             raise
         addr = meta_data['public-ipv4']
         return addr
+    
+    
+    # For the unique uuid of the node, we can use the instance-id
+    def get_unique_uuid(self):
+        try:
+            meta_data = self.get_meta_data()
+        except Exception, exp:
+            self.logger.error('Cannot get unique uuid for your EC2 instance. Error: %s' % exp)
+            raise
+        addr = meta_data['instance-id']
+        self.logger.info('Using EC2 instance id as unique uuid for this node.')
+        return addr
