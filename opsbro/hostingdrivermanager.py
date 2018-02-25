@@ -16,11 +16,18 @@ from opsbro.log import LoggerFactory
 # Global logger for this part
 logger = LoggerFactory.create_logger('hosting-driver')
 
+HOSTING_DRIVER_LAYER_CLOUD = 1
+HOSTING_DRIVER_LAYER_VIRTUALISATION = 2
+HOSTING_DRIVER_LAYER_PHYSICAL = 3
+HOSTING_DRIVER_LAYER_DEFAULT = 4
+HOSTING_DRIVER_LAYER_UNSET = 5
+
 
 # Base class for hosting driver. MUST be used
 class InterfaceHostingDriver(object):
     name = '__MISSING__NAME__'
     is_default = False
+    layer = HOSTING_DRIVER_LAYER_UNSET
     
     class __metaclass__(type):
         __inheritors__ = set()
@@ -184,6 +191,7 @@ class InterfaceHostingDriver(object):
 class OnPremiseHostingDriver(InterfaceHostingDriver):
     name = 'on-premise'
     is_default = True
+    layer = HOSTING_DRIVER_LAYER_DEFAULT
     
     
     def __init__(self):
@@ -203,17 +211,14 @@ class HostingDriverMgr(object):
     
     
     def __default_last(self, cls1, cls2):
-        if cls1.is_default:
-            return 1
-        if cls2.is_default:
-            return -1
-        return 0
+        return cmp(cls1.layer, cls2.layer)
     
     
     def detect(self):
         # First get all Hosting driver class available
         hostingctx_clss = InterfaceHostingDriver.get_sub_class()
         
+        # Get first cloud > virtualisation > plysical > default > unset
         hostingctx_clss = sorted(hostingctx_clss, cmp=self.__default_last)
         
         for cls in hostingctx_clss:

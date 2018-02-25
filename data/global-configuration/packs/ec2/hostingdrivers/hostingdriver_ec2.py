@@ -1,12 +1,12 @@
 import os
 
 from opsbro.httpclient import get_http_exceptions, httper
-from opsbro.hostingdrivermanager import InterfaceHostingDriver
+from opsbro.hostingdrivermanager import InterfaceHostingDriver, HOSTING_DRIVER_LAYER_CLOUD
 
 
 class EC2HostingDriver(InterfaceHostingDriver):
     name = 'ec2'
-    
+    layer = HOSTING_DRIVER_LAYER_CLOUD
     
     def __init__(self):
         super(EC2HostingDriver, self).__init__()

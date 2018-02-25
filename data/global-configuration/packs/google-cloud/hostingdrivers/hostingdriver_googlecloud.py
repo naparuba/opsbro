@@ -2,12 +2,12 @@ import os
 import json
 
 from opsbro.httpclient import get_http_exceptions, httper
-from opsbro.hostingdrivermanager import InterfaceHostingDriver
+from opsbro.hostingdrivermanager import InterfaceHostingDriver, HOSTING_DRIVER_LAYER_CLOUD
 
 
 class GoogleCloudHostingDriver(InterfaceHostingDriver):
     name = 'google-cloud'
-    
+    layer = HOSTING_DRIVER_LAYER_CLOUD
     
     def __init__(self):
         super(GoogleCloudHostingDriver, self).__init__()

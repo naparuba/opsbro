@@ -2,11 +2,12 @@ import os
 import json
 
 from opsbro.httpclient import get_http_exceptions, httper
-from opsbro.hostingdrivermanager import InterfaceHostingDriver
+from opsbro.hostingdrivermanager import InterfaceHostingDriver, HOSTING_DRIVER_LAYER_CLOUD
 
 
 class ScalewayHostingDriver(InterfaceHostingDriver):
     name = 'scaleway'
+    layer = HOSTING_DRIVER_LAYER_CLOUD
     
     
     def __init__(self):
@@ -30,10 +31,17 @@ class ScalewayHostingDriver(InterfaceHostingDriver):
             raise
         self.conf = json.loads(s)
         self.logger.info('Get scaleway conf: %s' % self.conf)
-        return  self.conf
+        return self.conf
+    
     
     # On Scaleway need to get public IP from http://169.254.42.42/conf?format=json
     def get_public_address(self):
         conf = self.get_conf()
         # Example: u'public_ip': {u'dynamic': False, u'id': u'96189bf3-768f-46b1-af54-41800d695ce8', u'address': u'52.15.216.218'}
         return conf['public_ip']['address']
+    
+    
+    def get_unique_uuid(self):
+        conf = self.get_conf()
+        self.logger.info('Using the scaleway unique id as node uuid')
+        return conf['id']
