@@ -6,11 +6,14 @@ CASE=$1
 
 if [ $CASE == "NODE2" ]; then
     echo "Case node2, just waiting for the other node to join us then exit"
-    sleep 60
+    sleep 120
     exit 0
 fi
 
 # Case 1: try to detect and join other node
+
+# Sleep a bit to be sure that node2 is up and ready to answer us
+sleep 30
 
 opsbro gossip detect --auto-join
 cat /var/log/opsbro/gossip.log
