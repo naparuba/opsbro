@@ -16,6 +16,7 @@ fi
 
 # Sleep a bit to be sure that node2 is up and ready to answer us
 #sleep 120
+ip addr show
 
 opsbro gossip detect --auto-join
 cat /var/log/opsbro/gossip.log
@@ -24,7 +25,7 @@ NB_MEMBERS=$(opsbro gossip members | grep 'docker-container' | wc -l)
 
 if [ $NB_MEMBERS != 2 ]; then
    echo "BAD number of members: $NB_MEMBERS"
-
+   opsbro gossip members
    exit 2
 fi
 
