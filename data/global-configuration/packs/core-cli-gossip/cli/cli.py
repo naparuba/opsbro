@@ -179,6 +179,7 @@ def __print_detection_spinner():
 def do_detect_nodes(auto_join):
     print_h1('UDP broadcast LAN detection')
     print "Trying to detect other nodes on the network thanks to a UDP broadcast. Will last 5s."
+    logger.error('DEBUG START')
     cprint(' * The detection scan will be ', end='')
     cprint('5s', color='magenta', end='')
     cprint(' long.')
