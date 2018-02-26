@@ -12,7 +12,6 @@ import uuid
 import time
 import os
 
-
 if os.name == 'nt':
     import win32serviceutil
     import win32api
@@ -32,7 +31,6 @@ NO_ZONE_DEFAULT = '(no zone)'
 
 
 ############# ********************        MEMBERS management          ****************###########
-
 
 
 def __call_service_handler():
@@ -73,7 +71,8 @@ def do_info(show_logs):
     else:  # show it's a display name
         display_name = '[ ' + display_name + ' ]'
     port = d.get('port')
-    addr = d.get('addr')
+    local_addr = d.get('local_addr')
+    public_addr = d.get('public_addr')
     zone = d.get('zone')
     zone_color = 'green'
     if not zone:
@@ -96,8 +95,8 @@ def do_info(show_logs):
     _docker = d.get('docker')
     collectors = d.get('collectors')
     
-    e = [('name', name), ('display name', display_name), ('uuid', _uuid), ('groups', groups), ('version', version), ('pid', pid), ('port', port), ('addr', addr),
-         ('zone', zone_value), ('socket', socket_path), ('threads', nb_threads), ('hosting', hosting_driver)]
+    e = [('name', name), ('display name', display_name), ('uuid', _uuid), ('groups', groups), ('version', version), ('pid', pid), ('port', port), ('Local addr', local_addr),
+         ('Public addr', public_addr), ('zone', zone_value), ('socket', socket_path), ('threads', nb_threads), ('hosting', hosting_driver)]
     
     # Normal agent information
     print_info_title('OpsBro Daemon')

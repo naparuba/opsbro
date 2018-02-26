@@ -18,11 +18,9 @@ import copy
 # sysctl -w net.core.rmem_max=26214400
 
 
-
-
 from .log import LoggerFactory
 from .log import logger as raw_logger
-from .util import copy_dir, get_public_address, get_server_const_uuid, guess_server_const_uuid
+from .util import copy_dir, get_server_const_uuid, guess_server_const_uuid
 from .threadmgr import threader
 from .now import NOW
 from .httpclient import get_http_exceptions, httper
@@ -106,7 +104,13 @@ class Cluster(object):
         self.seeds = [s.strip() for s in seeds.split(',')]
         self.zone = ''
         
-        self.addr = get_public_address()
+        # The public IP can be a bit complex, as maybe the local host do not even have it in it's
+        # network interface: EC2 and scaleway are example of public ip -> NAT -> private one and
+        # the linux do not even know it
+        hosttingdrvmgr = get_hostingdrivermgr()
+        self.addr = hosttingdrvmgr.get_local_address()
+        self.public_addr = hosttingdrvmgr.get_public_address()  # can be different for cloud based env
+        
         self.listening_addr = '0.0.0.0'
         
         self.data_dir = os.path.abspath(os.path.join(DEFAULT_DATA_DIR))  # '/var/lib/opsbro/'
@@ -539,15 +543,15 @@ class Cluster(object):
         @http_export('/agent/info')
         def get_info():
             response.content_type = 'application/json'
-            r = {'agent_state': self.agent_state,
-                 'logs'       : raw_logger.get_errors(), 'pid': os.getpid(), 'name': self.name, 'display_name': self.display_name,
-                 'port'       : self.port, 'addr': self.addr, 'socket': self.socket_path, 'zone': gossiper.zone,
-                 'uuid'       : gossiper.uuid,
-                 'threads'    : threader.get_info(),
-                 'version'    : VERSION, 'groups': gossiper.groups,
-                 'docker'     : dockermgr.get_info(),
-                 'collectors' : collectormgr.get_info(),
-                 'kv'         : kvmgr.get_info(),
+            r = {'agent_state'   : self.agent_state,
+                 'logs'          : raw_logger.get_errors(), 'pid': os.getpid(), 'name': self.name, 'display_name': self.display_name,
+                 'port'          : self.port, 'local_addr': self.addr, 'public_addr': self.public_addr, 'socket': self.socket_path, 'zone': gossiper.zone,
+                 'uuid'          : gossiper.uuid,
+                 'threads'       : threader.get_info(),
+                 'version'       : VERSION, 'groups': gossiper.groups,
+                 'docker'        : dockermgr.get_info(),
+                 'collectors'    : collectormgr.get_info(),
+                 'kv'            : kvmgr.get_info(),
                  'hosting_driver': get_hostingdrivermgr().get_driver_name(),
                  }
             
@@ -1096,12 +1100,12 @@ class Cluster(object):
             import ctypes
         except ImportError:  # like in static python
             ctypes = None
-            
+        
         if ctypes is None:  # nop
             while not stopper.interrupted:
                 time.sleep(10)
             return
-            
+        
         import gc
         
         try:

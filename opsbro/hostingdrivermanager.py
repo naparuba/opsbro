@@ -150,7 +150,7 @@ class InterfaceHostingDriver(object):
     # If we do not have a specific hoster, we look at the most
     # important interface, by avoiding useless interfaces like
     # locals or dhcp not active
-    def get_public_address(self):
+    def get_local_address(self):
         # If I am in the DNS or in my /etc/hosts, I win
         try:
             addr = socket.gethostbyname(socket.gethostname())
@@ -173,6 +173,11 @@ class InterfaceHostingDriver(object):
                         return addr
         return None
     
+    
+    # If we are not in a cloud or something, our public == best local address
+    def get_public_address(self):
+        return self.get_local_address()
+        
     
     def get_unique_uuid(self):
         product_uuid_p = '/sys/class/dmi/id/product_uuid'
@@ -248,6 +253,10 @@ class HostingDriverMgr(object):
                 logger.debug('Hosting driver module loaded: %s' % m)
             except Exception, exp:
                 logger.error('Cannot load hosting driver %s: %s' % (fname, exp))
+
+
+    def get_local_address(self):
+        return self.driver.get_local_address()
     
     
     def get_public_address(self):

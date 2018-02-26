@@ -45,16 +45,6 @@ def lower_dict(d):
     return r
 
 
-# The public IP can be a bit complex, as maybe the local host do not even have it in it's
-# network interface: EC2 and scaleway are example of public ip -> NAT -> private one and
-# the linux do not even know it
-def get_public_address():
-    hosttingctxmgr = get_hostingdrivermgr()
-    
-    addr = hosttingctxmgr.get_public_address()
-    return addr
-
-
 # Try to GET (fixed) uuid, but only if a constant one is here
 # * linux: get hardware uuid from dmi (but not in docker case)
 # * aws:   get instance uuid from url (TODO)
