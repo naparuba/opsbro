@@ -161,12 +161,12 @@ def __print_detection_spinner():
     for c in spinners:
         will_quit = False
         elapsed = time.time() - start
-        # exit after 2.8 s (we did have 3s max)
-        if elapsed > 2.8:
+        # exit after 4.8 s (we did have 5s max)
+        if elapsed > 4.8:
             will_quit = True
-            elapsed = 3
+            elapsed = 5
         cprint('\r %s ' % c, color='blue', end='')
-        cprint('UDP detection in progress. %.1fs/3s.' % (elapsed), end='')
+        cprint('UDP detection in progress. %.1fs/5s.' % (elapsed), end='')
         # As we do not print the line, be sure to display it by flushing to display
         sys.stdout.flush()
         if will_quit:
@@ -178,9 +178,9 @@ def __print_detection_spinner():
 
 def do_detect_nodes(auto_join):
     print_h1('UDP broadcast LAN detection')
-    print "Trying to detect other nodes on the network thanks to a UDP broadcast. Will last 3s."
+    print "Trying to detect other nodes on the network thanks to a UDP broadcast. Will last 5s."
     cprint(' * The detection scan will be ', end='')
-    cprint('3s', color='magenta', end='')
+    cprint('5s', color='magenta', end='')
     cprint(' long.')
     threader.create_and_launch(__print_detection_spinner, (), 'spinner', essential=False)
     

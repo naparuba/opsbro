@@ -886,7 +886,7 @@ class Gossip(object):
         r = []
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        s.settimeout(3)
+        s.settimeout(5)
         p = '{"type":"detect-ping"}'
         encrypter = libstore.get_encrypter()
         enc_p = encrypter.encrypt(p)
