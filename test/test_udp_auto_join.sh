@@ -13,7 +13,7 @@ fi
 # Case 1: try to detect and join other node
 
 # Sleep a bit to be sure that node2 is up and ready to answer us
-sleep 30
+sleep 60
 
 opsbro gossip detect --auto-join
 cat /var/log/opsbro/gossip.log
