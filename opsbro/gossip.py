@@ -881,7 +881,7 @@ class Gossip(object):
         logger.debug("Detect back: return back message", ret_msg)
     
     
-    # launch a broadcast (UDP) and wait 3s for returns, and give all answers from others daemons
+    # launch a broadcast (UDP) and wait 5s for returns, and give all answers from others daemons
     def launch_gossip_detect_ping(self):
         r = []
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

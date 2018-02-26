@@ -69,7 +69,7 @@ class UnixSocketHandler(urllib2.AbstractHTTPHandler):
 
 # Get on the local socket. Beware to monkeypatch the get
 def get_local(u, local_socket, params={}, method='GET'):
-    UnixHTTPConnection.socket_timeout = 5
+    UnixHTTPConnection.socket_timeout = 10
     data = None
     special_headers = []
     
