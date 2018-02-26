@@ -9,6 +9,10 @@ if [ $CASE == "NODE2" ]; then
     ip addr show
     sleep 60
     cat /var/log/opsbro/gossip.log
+    opsbro gossip members
+    ping -c 1 172.17.0.1 -W 1
+    ping -c 1 172.17.0.2 -W 1
+    ping -c 1 172.17.0.3 -W 1
     exit 1
 fi
 
@@ -26,6 +30,10 @@ NB_MEMBERS=$(opsbro gossip members | grep 'docker-container' | wc -l)
 if [ $NB_MEMBERS != 2 ]; then
    echo "BAD number of members: $NB_MEMBERS"
    opsbro gossip members
+   ping -c 1 172.17.0.1 -W 1
+   ping -c 1 172.17.0.2 -W 1
+   ping -c 1 172.17.0.3 -W 1
+
    exit 2
 fi
 
