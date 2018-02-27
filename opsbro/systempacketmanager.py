@@ -404,7 +404,7 @@ class SystemPacketMgr(object):
             self.managed_system = True
         elif 'amzn' in distname:
             self.managed_system = True
-            if '2.' not in distversion:
+            if not distversion.startswith('2'):
                 self.distro = 'amazon-linux'
             else:
                 self.distro = 'amazon-linux2'
