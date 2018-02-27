@@ -8,12 +8,11 @@ if [ $CASE == "NODE2" ]; then
     echo "Case node2, just waiting for the other node to join us then exit"
     ip addr show
     sleep 60
-    cat /var/log/opsbro/gossip.log
+    printf "Node2 gossip view\n"
     opsbro gossip members
-    ping -c 1 172.17.0.1 -W 1
-    ping -c 1 172.17.0.2 -W 1
-    ping -c 1 172.17.0.3 -W 1
-    exit 1
+    printf "Node 2 logs:\n"
+    cat /var/log/opsbro/gossip.log
+    exit 0
 fi
 
 # Case 1: try to detect and join other node
@@ -23,21 +22,17 @@ fi
 ip addr show
 
 opsbro gossip detect --auto-join
-cat /var/log/opsbro/gossip.log
 
+opsbro gossip members
 NB_MEMBERS=$(opsbro gossip members | grep 'docker-container' | wc -l)
 
 if [ $NB_MEMBERS != 2 ]; then
    echo "BAD number of members: $NB_MEMBERS"
-   opsbro gossip members
-   ping -c 1 172.17.0.1 -W 1
-   ping -c 1 172.17.0.2 -W 1
-   ping -c 1 172.17.0.3 -W 1
-
+   cat /var/log/opsbro/gossip.log
    exit 2
 fi
 
-opsbro gossip members
+
 
 echo "Auto join is OK"
 
