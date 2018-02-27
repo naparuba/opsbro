@@ -1,11 +1,11 @@
 import os
 
-from opsbro.hostingdrivermanager import InterfaceHostingDriver, HOSTING_DRIVER_LAYER_VIRTUALISATION
+from opsbro.hostingdrivermanager import InterfaceHostingDriver, HOSTING_DRIVER_LAYER_CONTAINER
 
 
 class DockerContainerHostingDriver(InterfaceHostingDriver):
     name = 'docker-container'
-    layer = HOSTING_DRIVER_LAYER_VIRTUALISATION
+    layer = HOSTING_DRIVER_LAYER_CONTAINER
     
     
     def __init__(self):

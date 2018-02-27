@@ -9,7 +9,7 @@ class Azure(Collector):
         if not hostingctxmgr.is_driver_active('azure'):
             return False
         
-        hostingctx = hostingctxmgr.get_driver()
+        hostingctx = hostingctxmgr.get_driver('azure')
         # Now we have our scaleway code, we can dump info from it
         
         meta_data = hostingctx.get_meta_data()

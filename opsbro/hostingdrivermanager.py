@@ -16,11 +16,13 @@ from opsbro.log import LoggerFactory
 # Global logger for this part
 logger = LoggerFactory.create_logger('hosting-driver')
 
-HOSTING_DRIVER_LAYER_CLOUD = 1
+# From the most specific to the most generic
+HOSTING_DRIVER_LAYER_CONTAINER = 1
 HOSTING_DRIVER_LAYER_VIRTUALISATION = 2
-HOSTING_DRIVER_LAYER_PHYSICAL = 3
-HOSTING_DRIVER_LAYER_DEFAULT = 4
-HOSTING_DRIVER_LAYER_UNSET = 5
+HOSTING_DRIVER_LAYER_CLOUD = 3
+HOSTING_DRIVER_LAYER_PHYSICAL = 4
+HOSTING_DRIVER_LAYER_DEFAULT = 5
+HOSTING_DRIVER_LAYER_UNSET = 6
 
 
 # Base class for hosting driver. MUST be used
@@ -177,7 +179,7 @@ class InterfaceHostingDriver(object):
     # If we are not in a cloud or something, our public == best local address
     def get_public_address(self):
         return self.get_local_address()
-        
+    
     
     def get_unique_uuid(self):
         product_uuid_p = '/sys/class/dmi/id/product_uuid'
@@ -213,6 +215,7 @@ class OnPremiseHostingDriver(InterfaceHostingDriver):
 class HostingDriverMgr(object):
     def __init__(self):
         self.driver = None
+        self.drivers = []  # order is important
     
     
     def __default_last(self, cls1, cls2):
@@ -233,9 +236,12 @@ class HostingDriverMgr(object):
             
             ctx = cls()
             logger.debug('Trying hosting driver %s' % ctx.name)
-            if ctx.is_active():
-                self.driver = ctx
-                logger.debug('Hosting driver is founded: %s' % ctx.name)
+            self.drivers.append(ctx)
+        
+        for drv in self.drivers:
+            if drv.is_active():
+                self.driver = drv
+                logger.debug('Hosting driver is founded: %s' % drv.name)
                 return
     
     
@@ -253,8 +259,8 @@ class HostingDriverMgr(object):
                 logger.debug('Hosting driver module loaded: %s' % m)
             except Exception, exp:
                 logger.error('Cannot load hosting driver %s: %s' % (fname, exp))
-
-
+    
+    
     def get_local_address(self):
         return self.driver.get_local_address()
     
@@ -268,11 +274,17 @@ class HostingDriverMgr(object):
     
     
     def is_driver_active(self, driver_name):
-        return self.driver.name == driver_name
+        drv = self.get_driver(driver_name)
+        if drv is None:
+            return False
+        return drv.is_active()
     
     
-    def get_driver(self):
-        return self.driver
+    def get_driver(self, name):
+        for drv in self.drivers:
+            if drv.name == name:
+                return drv
+        return None
     
     
     def get_driver_name(self):
