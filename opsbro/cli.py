@@ -72,7 +72,8 @@ else:
         obj = json.loads(r)
         return obj
     
-    #TODO: catch the real status code?
+    
+    # TODO: catch the real status code?
     def get_opsbro_local(uri):
         r = httper.get('http://127.0.0.1:6770%s' % uri)
         status = 200  # if not, should have send an exception
@@ -100,30 +101,31 @@ class AnyAgent(object):
     def __init__(self):
         self.did_start_a_tmp_agent = False
         self.tmp_agent = None
-
-
+    
+    
     def __enter__(self):
         self.assert_one_agent()
     
-
-    def _do_agent_stop(self                      ):
+    
+    def _do_agent_stop(self):
         try:
             get_opsbro_local('/stop')
         except get_request_errors(), exp:
             logger.error(exp)
             return
     
+    
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.tmp_agent is not None:
-            cprint('# * Stopping the temporary agent:', color= 'grey', end='')
+            cprint('# * Stopping the temporary agent:', color='grey', end='')
             sys.stdout.flush()
             self._do_agent_stop()
             # Be sure to kill it
             self.tmp_agent.terminate()
             cprint('%s OK' % CHARACTERS.check, color='grey')
             cprint('# | if you want to start the agent can launch it with the "opsbro agent start" command', color='grey')
-
-
+    
+    
     @staticmethod
     def __tmp_agent_entering():
         os.setsid()
@@ -132,8 +134,8 @@ class AnyAgent(object):
             setproctitle("Temporary agent")
         except:
             pass
-
-
+    
+    
     # For some CLI we don't care if we have a running agent or just a dummy send (like
     # quick dashboards)
     def assert_one_agent(self):
@@ -156,8 +158,8 @@ class AnyAgent(object):
             agent_state = wait_for_agent_started(visual_wait=True, wait_for_spawn=True)  # note: we wait for spawn as it can take some few seconds before the unix socket is available
         if agent_state == AGENT_STATE_STOPPED:
             raise Exception('Cannot have the agent, even a temporary one')
-        
-        
+
+
 # Maybe the agent is initializing or not even started (as unix socket).
 # Timeout: wait as much time
 # visual_wait: during the wait, we can show a spinner and a text to enjoy the user
@@ -281,6 +283,9 @@ class CLICommander(object):
         
         # also load hosting driver (like EC2 or scaleway) from packs too
         configmgr.load_hostingdrivers_from_packs()
+        
+        # load all compliance drivers
+        configmgr.load_compliancebackends_from_packs()
         
         # Now that packs are load and clean, we can load modules code from it
         configmgr.load_modules_from_packs()
@@ -477,7 +482,7 @@ class CLICommander(object):
                     d['type'] = 'int'
                 elif _type == 'float':
                     d['type'] = 'float'
-
+                
                 # and if we got a real default, use it
                 if not isinstance(default, Dummy):
                     d['default'] = default

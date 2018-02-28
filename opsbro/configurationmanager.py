@@ -389,7 +389,21 @@ class ConfigurationManager(object):
         
         # now hosting driver class are loaded, we can detect which one is our own
         hostingctxmgr.detect()
+
+
+    def load_compliancebackends_from_packs(self):
+        # Load at running to avoid endless import loop
+        from opsbro.compliancemgr import compliancemgr
+        pack_directories = packer.give_pack_directories_to_load()
     
+        for (pname, level, dir) in pack_directories:
+            # Now load collectors, an important part for packs :)
+            drv_dir = os.path.join(dir, 'compliancebackends')
+            if os.path.exists(drv_dir):
+                compliancemgr.load_directory(drv_dir, pack_name=pname, pack_level=level)
+    
+        # now hosting driver class are loaded, we can load all
+        compliancemgr.load_backends()
     
     ############## Http interface
     # We must create http callbacks in running because
