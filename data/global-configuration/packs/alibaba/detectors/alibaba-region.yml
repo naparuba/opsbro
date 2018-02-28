@@ -1,0 +1,6 @@
+detector:
+    add_groups:
+        - 'alibaba-region::{{collector.alibaba.region-id}}'
+    apply_if: "hosting_driver_is_active('alibaba')"
+    interval: "86400s"
+
