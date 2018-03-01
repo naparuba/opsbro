@@ -5,21 +5,25 @@ if os.name != 'nt':
     from grp import getgrgid, getgrnam
 else:
     getpwuid = getgrgid = None
-    
+
 from opsbro.compliancemgr import InterfaceComplianceDriver
+
 
 class FileRightsDriver(InterfaceComplianceDriver):
     name = 'file-rights'
     
+    
     def __init__(self):
         super(FileRightsDriver, self).__init__()
-
-
+    
+    
     # file: /etc/passwd
     # owner: root
     # group: root
     # permissions: 644
-    def launch(self, rule, parameters, mode):
+    def launch(self, rule):
+        parameters = rule.get_parameters()
+        mode = rule.get_mode()
         file_path = parameters.get('file', '')
         owner = parameters.get('owner', '')
         group = parameters.get('group' '')
@@ -30,10 +34,10 @@ class FileRightsDriver(InterfaceComplianceDriver):
         if not os.path.exists(file_path):
             self.logger.error('The file %s do not exists' % file_path)
             return
-    
+        
         did_fixed = False
         did_error = False
-
+        
         self.logger.debug('Looking at file rights %s/%s/%s/%s with mode %s' % (file_path, owner, group, permissions, mode))
         file_stat = os.stat(file_path)
         file_permissions = int(oct(file_stat.st_mode & 0777)[1:])  # => to have something like 644
@@ -54,7 +58,9 @@ class FileRightsDriver(InterfaceComplianceDriver):
                     rule.add_fix(fix)
                     os.chown(file_path, uid, -1)  # do not touch group here
                     did_fixed = True
-    
+            else:
+                rule.add_compliance('The file %s owner (%s) is OK' % (file_path, file_owner))
+        
         if group:
             file_group = getgrgid(file_stat.st_gid).gr_name
             self.logger.debug('Comparing file group:%s and rule: %s' % (file_group, group))
@@ -68,19 +74,23 @@ class FileRightsDriver(InterfaceComplianceDriver):
                     rule.add_fix(fix)
                     os.chown(file_path, -1, gid)  # do not touch user here
                     did_fixed = True
-    
+            else:
+                rule.add_compliance('The file %s group (%s) is OK' % (file_path, file_group))
+        
         if permissions:
             if file_permissions != permissions:
                 did_error = True
                 err = 'The file %s permissions (%s) are not what is expected:%s' % (file_path, file_permissions, permissions)
                 rule.add_error(err)
                 if mode == 'enforcing':
-                    fix = 'Fixing %s into %s' % (file_permissions, permissions)
+                    fix = 'Fixing file %s permissions %s into %s' % (file_path, file_permissions, permissions)
                     rule.add_fix(fix)
                     # transform into octal fro chmod
                     os.chmod(file_path, int(str(permissions), 8))
                     did_fixed = True
-    
+            else:
+                rule.add_compliance('The file %s permissions (%s) are OK' % (file_path, file_permissions))
+        
         if not did_error:
             rule.set_compliant()
             return

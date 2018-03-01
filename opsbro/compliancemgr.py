@@ -51,43 +51,98 @@ class InterfaceComplianceDriver(object):
         self.logger = logger
     
     
-    def launch(self, rule, parameters, mode):
+    def launch(self, rule):
         rule.add_error('The driver %s is missing launch action.' % self.__class__)
 
 
 class Rule(object):
-    def __init__(self, rule):
-        self.rule = rule
+    def __init__(self, pack_name, pack_level, display_name, mode, verify_if, rule_def):
+        self.rule_def = rule_def
+        self.type = self.rule_def.get('type')
+        self.pack_name = pack_name
+        self.pack_level = pack_level
+        self.name = display_name
+        self.mode = mode
+        self.verify_if = verify_if
+        
+        self.__state = 'UNKNOWN'
+        self.__old_state = 'UNKNOWN'
+        self.__infos = []
+        self.__did_change = False
         self.reset()
     
     
     def reset(self):
-        self.state = 'UNKNOWN'
-        self.infos = []
+        self.__did_change = False
+        self.__infos = []
+    
+    
+    def get_mode(self):
+        return self.mode
+    
+    
+    def get_parameters(self):
+        return self.rule_def.get('parameters', {})
+    
+    
+    def get_type(self):
+        return self.type
+    
+    
+    def get_verify_if(self):
+        return self.verify_if
+    
+    
+    def get_name(self):
+        return self.name
     
     
     def add_success(self, txt):
-        self.infos.append(('SUCCESS', txt))
+        self.__infos.append({'state': 'SUCCESS', 'text': txt})
     
     
     def add_error(self, txt):
-        self.infos.append(('ERROR', txt))
+        self.__infos.append({'state': 'ERROR', 'text': txt})
     
     
-    def add_fix(self, fix):
-        self.infos.append(('FIX', fix))
+    def add_fix(self, txt):
+        self.__infos.append({'state': 'FIX', 'text': txt})
+    
+    
+    def add_compliance(self, txt):
+        self.__infos.append({'state': 'COMPLIANT', 'text': txt})
+        
+    
+    def __set_state(self, state):
+        if self.__state == state:
+            return
+        
+        self.__did_change = True
+        self.__old_state = self.__state
+        self.__state = state
+        logger.debug('Compliance rule %s swith from %s to %s' % (self.name, self.__old_state, self.__state))
     
     
     def set_error(self):
-        self.state = 'ERROR'
+        self.__set_state('ERROR')
     
     
     def set_compliant(self):
-        self.state = 'COMPLIANT'
+        self.__set_state('COMPLIANT')
     
     
     def set_fixed(self):
-        self.state = 'FIXED'
+        self.__set_state('FIXED')
+    
+    
+    def get_json_dump(self):
+        return {'name': self.name, 'state': self.__state, 'old_state': self.__old_state, 'infos': self.__infos, 'mode': self.mode, 'pack_level': self.pack_level, 'pack_name': self.pack_name, 'type': self.type}
+    
+    
+    def get_history_entry(self):
+        if not self.__did_change:
+            return None
+        return self.get_json_dump()
 
 
 class ComplianceManager(object):
@@ -95,6 +150,9 @@ class ComplianceManager(object):
         self.compliances = {}
         self.did_run = False
         self.drivers = {}
+        self.history_directory = None
+        
+        self.__current_history_entry = []
     
     
     def load_backends(self):
@@ -109,6 +167,14 @@ class ComplianceManager(object):
             ctx = cls()
             logger.debug('Trying compliance driver %s' % ctx.name)
             self.drivers[cls.name] = ctx
+        
+        # Prepare the history
+        from .configurationmanager import configmgr
+        data_dir = configmgr.get_data_dir()
+        self.history_directory = os.path.join(data_dir, 'compliance_history')
+        logger.debug('Asserting existence of the compliance history directory: %s' % self.history_directory)
+        if not os.path.exists(self.history_directory):
+            os.mkdir(self.history_directory)
     
     
     def load_directory(self, directory, pack_name='', pack_level=''):
@@ -128,34 +194,49 @@ class ComplianceManager(object):
     
     
     def import_compliance(self, compliance, full_path, file_name, mod_time=0, pack_name='', pack_level=''):
-        compliance['from'] = full_path
-        compliance['pack_name'] = pack_name
-        compliance['pack_level'] = pack_level
-        compliance['display_name'] = compliance.get('display_name', file_name)
+        display_name = compliance.get('display_name', file_name)
+        mode = compliance.get('mode', 'audit')
+        if mode not in ('audit', 'enforcing'):
+            logger.error('The compliance definition got a wrong mode :%s' % mode)
+            return
+        verify_if = compliance.get('verify_if', 'False')
+        
         rule_def = compliance.get('rule', None)
-        if rule_def is not None:
-            compliance['rule'] = Rule(rule_def)
-        else:
-            compliance['rule'] = None
-        compliance['mode'] = compliance.get('mode', 'audit')
-        compliance['verify_if'] = compliance.get('verify_if', 'False')
+        if rule_def is None:
+            logger.error('The compliance definition is missing a rule entry :%s' % full_path)
+            return
+        rule_type = rule_def.get('type')
+        if not rule_type:
+            logger.error('The compliance definition is missing a rule type entry :%s' % full_path)
+            return
+        
+        rule = Rule(pack_name, pack_level, display_name, mode, verify_if, rule_def)
         # Add it into the list
-        self.compliances[full_path] = compliance
+        self.compliances[full_path] = rule
     
     
-    def do_compliance_thread(self):
-        while not stopper.interrupted:
-            self.launch_compliances()
-            self.did_run = True
-            time.sleep(1)
+    def add_history_entry(self, history_entry):
+        self.__current_history_entry.append(history_entry)
+    
+    
+    def __write_history_entry(self):
+        # Noting to do?
+        if not self.__current_history_entry:
+            return
+        now = int(time.time())
+        pth = os.path.join(self.history_directory, '%d.json' % now)
+        logger.info('Saving new compliance history entry to %s' % pth)
+        buf = json.dumps(self.__current_history_entry)
+        with open(pth, 'w') as f:
+            f.write(buf)
+        # Now we can reset it
+        self.__current_history_entry = []
     
     
     def launch_compliances(self):
-        for (compliance_id, compliance) in self.compliances.iteritems():
-            mode = compliance['mode']
-            rule = compliance['rule']
-            verify_if = compliance['verify_if']
-            name = compliance['display_name']
+        for (compliance_id, rule) in self.compliances.iteritems():
+            verify_if = rule.get_verify_if()
+            name = rule.get_name()
             try:
                 r = evaluater.eval_expr(verify_if)
                 if not r:
@@ -163,40 +244,75 @@ class ComplianceManager(object):
             except Exception, exp:
                 logger.error(' (%s) if rule (%s) evaluation did fail: %s' % (name, verify_if, exp))
                 continue
-            if rule is None:
-                logger.error(' The compliance (%s) do not have rule' % (name))
-                continue
             
             # Reset previous errors
             rule.reset()
             logger.debug('Execute compliance rule: %s' % rule)
-            _type = rule.rule.get('type', '')
+            _type = rule.get_type()
             
             drv = self.drivers.get(_type)
             if drv is None:
                 logger.error('Cannot execute rule (%s) as the type is unknown: %s' % (name, _type))
                 continue
-            parameters = rule.rule.get('parameters', {})
-            drv.launch(rule, parameters, mode)
+            drv.launch(rule)
+            history_entry = rule.get_history_entry()
+            if history_entry:
+                self.add_history_entry(history_entry)
+    
+    
+    def get_history(self):
+        r = []
+        current_size = 0
+        max_size = 1024 * 1024
+        reg = self.history_directory + '/*.json'
+        history_files = glob.glob(reg)
+        # Get from the more recent to the older
+        history_files.sort()
+        history_files.reverse()
+        
+        # Do not send more than 1MB, but always a bit more, not less
+        for history_file in history_files:
+            epoch_time = int(os.path.splitext(os.path.basename(history_file))[0])
+            with open(history_file, 'r') as f:
+                e = json.loads(f.read())
+            r.append({'date': epoch_time, 'entries': e})
+            
+            # If we are now too big, return directly
+            size = os.path.getsize(history_file)
+            current_size += size
+            if current_size > max_size:
+                # Give older first
+                r.reverse()
+                return r
+        # give older first
+        r.reverse()
+        return r
+    
+    
+    def do_compliance_thread(self):
+        while not stopper.interrupted:
+            self.launch_compliances()
+            self.did_run = True
+            # For each changes, we write a history entry
+            self.__write_history_entry()
+            time.sleep(1)
     
     
     def export_http(self):
-        @http_export('/compliance/', method='GET')
-        def get_compliance():
+        @http_export('/compliance/state', method='GET')
+        def get_compliance_state():
             response.content_type = 'application/json'
             nc = {}
             for (c_id, c) in self.compliances.iteritems():
-                v = {}
-                fields = ['pack_name', 'pack_level', 'display_name', 'mode', 'if']
-                for f in fields:
-                    v[f] = c[f]
-                if c['rule'] is None:
-                    v['rule'] = None
-                else:
-                    r = c['rule']
-                    v['rule'] = {'state': r.state, 'infos': r.infos}
-                nc[c_id] = v
+                nc[c_id] = c.get_json_dump()
             return json.dumps(nc)
+        
+        
+        @http_export('/compliance/history', method='GET')
+        def get_compliance_state():
+            response.content_type = 'application/json'
+            r = self.get_history()
+            return json.dumps(r)
 
 
 compliancemgr = ComplianceManager()

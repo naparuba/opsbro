@@ -53,6 +53,10 @@ class ConfigurationManager(object):
         self.pack_parameters = {}
     
     
+    def get_data_dir(self):
+        return self.data_dir
+    
+    
     def get_monitoringmgr(self):
         # Import at runtime, to avoid loop
         from opsbro.monitoring import monitoringmgr
