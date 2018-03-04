@@ -18,6 +18,6 @@ RUN        python setup.py install
 # Copy the mail pack into a local one to enable modification
 RUN        opsbro  packs overload global.linux
 # Copy the new compliance value
-ADD        test/test-files/test-compliance/compliance/passwd.yml   /var/lib/opsbro/local-configuration/packs/linux/compliance/
+ADD        test/test-files/test-compliance-file-rights/compliance/passwd.yml   /var/lib/opsbro/local-configuration/packs/linux/compliance/
 
-ENTRYPOINT     test/test_compliance.sh
+ENTRYPOINT     test/test_feature_compliance-file-rights.sh
