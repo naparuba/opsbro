@@ -111,7 +111,7 @@ class Rule(object):
     
     def add_compliance(self, txt):
         self.__infos.append({'state': 'COMPLIANT', 'text': txt})
-        
+    
     
     def __set_state(self, state):
         if self.__state == state:
@@ -150,8 +150,8 @@ class ComplianceManager(object):
         self.compliances = {}
         self.did_run = False
         self.drivers = {}
-        self.history_directory = None
         
+        self.history_directory = None
         self.__current_history_entry = []
     
     
@@ -309,7 +309,7 @@ class ComplianceManager(object):
         
         
         @http_export('/compliance/history', method='GET')
-        def get_compliance_state():
+        def get_compliance_history():
             response.content_type = 'application/json'
             r = self.get_history()
             return json.dumps(r)

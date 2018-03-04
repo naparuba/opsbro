@@ -13,6 +13,7 @@ import subprocess
 from opsbro.configurationmanager import configmgr
 from opsbro.collectormanager import collectormgr
 from opsbro.modulemanager import modulemanager
+from .installermanager import installormgr
 from opsbro.packer import packer
 from opsbro.unixclient import get_json, get_local, get_request_errors
 from opsbro.httpclient import httper
@@ -286,6 +287,9 @@ class CLICommander(object):
         
         # load all compliance drivers
         configmgr.load_compliancebackends_from_packs()
+        
+        # The installor must check that the history directory exists
+        installormgr.prepare_history_directory()
         
         # Now that packs are load and clean, we can load modules code from it
         configmgr.load_modules_from_packs()
