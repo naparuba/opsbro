@@ -356,7 +356,7 @@ Besoins:
      * si pas de if, True, (donc closera la liste)
 
 
-installor:
+compliance install package:
     name: mysql
     note: This installer will install the mysql server if you set the server into the mysql user defined group. Support debian (8 and lower) and centos/redhat platforms.
     if:   "is_in_defined_group('mysql')"

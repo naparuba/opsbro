@@ -7,6 +7,7 @@
 
 import json
 import time
+import sys
 
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger
@@ -14,7 +15,7 @@ from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_local, AnyAgent
 from opsbro.cli_display import print_h1, print_h2
 
-STATE_COLORS = {'COMPLIANT': 'green', 'FIXED': 'cyan', 'ERROR': 'red', 'UNKNOWN': 'grey'}
+STATE_COLORS = {'COMPLIANT': 'green', 'FIXED': 'cyan', 'ERROR': 'red', 'UNKNOWN': 'grey', 'NOT-ELIGIBLE': 'grey'}
 LOG_COLORS = {'SUCCESS': 'green', 'ERROR': 'red', 'FIX': 'cyan', 'COMPLIANT': 'green'}
 
 
@@ -26,16 +27,13 @@ def __print_rule_entry(rule):
     cprint('[mode:%10s] ' % mode, color='magenta', end='')
     
     # State:
-    # * ERROR
-    # * FIXED
-    # * COMPLIANT
     state = rule['state']
     old_state = rule['old_state']
     state_color = STATE_COLORS.get(state, 'cyan')
     old_state_color = STATE_COLORS.get(old_state, 'cyan')
-    cprint('%-10s' % old_state, color=old_state_color, end='')
+    cprint('%-12s' % old_state, color=old_state_color, end='')
     cprint(' %s ' % CHARACTERS.arrow_left, color='grey', end='')
-    cprint('%-10s' % state, color=state_color)
+    cprint('%-12s' % state, color=state_color)
     
     infos = rule['infos']
     # Infos can be:
@@ -112,16 +110,71 @@ def do_compliance_history():
             print "\n"
 
 
+def do_compliance_wait_compliant(compliance_name, timeout=30):
+    import itertools
+    spinners = itertools.cycle(CHARACTERS.spinners)
+    
+    # We need an agent for this
+    with AnyAgent():
+        i = 0
+        current_state = 'UNKNOWN'
+        for i in xrange(timeout):
+            uri = '/compliance/state'
+            try:
+                (code, r) = get_opsbro_local(uri)
+            except get_request_errors(), exp:
+                logger.error(exp)
+                return
+            
+            try:
+                compliances = json.loads(r)
+            except ValueError, exp:  # bad json
+                logger.error('Bad return from the server %s' % exp)
+                return
+            compliance = None
+            for (cname, c) in compliances.iteritems():
+                if c['name'] == compliance_name:
+                    compliance = c
+            if not compliance:
+                logger.error("Cannot find the compliance '%s'" % compliance_name)
+                sys.exit(2)
+            current_state = compliance['state']
+            cprint('\r %s ' % spinners.next(), color='blue', end='')
+            cprint('%s' % compliance_name, color='magenta', end='')
+            cprint(' is ', end='')
+            cprint('%15s ' % current_state, color=STATE_COLORS.get(current_state, 'cyan'), end='')
+            cprint(' (%d/%d)' % (i, timeout), end='')
+            # As we did not \n, we must flush stdout to print it
+            sys.stdout.flush()
+            if current_state == 'COMPLIANT':
+                cprint("\nThe compliance rule %s is compliant" % compliance_name)
+                sys.exit(0)
+            logger.debug("Current state %s" % current_state)
+            
+            time.sleep(1)
+        cprint("\nThe compliance rule %s is not compliant after %s seconds (currently %s)" % (compliance_name, timeout, current_state))
+        sys.exit(2)
+
+
 exports = {
-    do_compliance_state  : {
+    do_compliance_state         : {
         'keywords'   : ['compliance', 'state'],
         'description': 'Print the current state of the node compliance',
         'args'       : [],
     },
     
-    do_compliance_history: {
+    do_compliance_history       : {
         'keywords'   : ['compliance', 'history'],
         'description': 'Print the history of the compliance rules',
         'args'       : [],
+    },
+    
+    do_compliance_wait_compliant: {
+        'keywords'   : ['compliance', 'wait-compliant'],
+        'args'       : [
+            {'name': 'compliance-name', 'description': 'Name of the compliance rule to wait for compliance state'},
+            {'name': '--timeout', 'type': 'int', 'default': 30, 'description': 'Timeout to let the initialization'},
+        ],
+        'description': 'Wait until the compliance rule is in COMPLIANT state'
     },
 }

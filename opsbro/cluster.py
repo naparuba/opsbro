@@ -45,7 +45,6 @@ from .jsonmgr import jsoner
 from .modulemanager import modulemanager
 from .executer import executer
 from .monitoring import monitoringmgr
-from .installermanager import installormgr
 from .compliancemgr import compliancemgr
 from .defaultpaths import DEFAULT_LIBEXEC_DIR, DEFAULT_LOCK_PATH, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR, DEFAULT_CFG_DIR, DEFAULT_SOCK_PATH
 from .hostingdrivermanager import get_hostingdrivermgr
@@ -354,9 +353,6 @@ class Cluster(object):
         # Export checks/services http interface
         monitoringmgr.export_http()
         
-        # Also run installor part, as it need other part to be runs
-        installormgr.export_http()
-        
         # And the configuration
         configmgr.export_http()
         
@@ -434,10 +430,6 @@ class Cluster(object):
     
     def launch_compliance_thread(self):
         threader.create_and_launch(compliancemgr.do_compliance_thread, name='System compliance', essential=True, part='compliance')
-    
-    
-    def launch_installor_thread(self):
-        threader.create_and_launch(installormgr.do_installer_thread, name='Installor scheduling', essential=True, part='installor')
     
     
     def launch_replication_backlog_thread(self):
@@ -1141,7 +1133,6 @@ class Cluster(object):
             b &= collectormgr.did_run
             b &= detecter.did_run
             b &= generatormgr.did_run
-            b &= installormgr.did_run
             b &= compliancemgr.did_run
             if b:
                 self.agent_state = AGENT_STATE_OK
@@ -1151,7 +1142,6 @@ class Cluster(object):
     # collector
     # detector
     # generator
-    # installor
     # compliance
     def wait_one_shot_end(self):
         while self.agent_state == AGENT_STATE_INITIALIZING:
@@ -1210,7 +1200,6 @@ class Cluster(object):
         if not one_shot:
             self.launch_check_thread()
         
-        self.launch_installor_thread()
         self.launch_compliance_thread()
         
         if 'kv' in gossiper.groups and not one_shot:

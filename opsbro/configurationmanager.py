@@ -37,7 +37,7 @@ class ConfigurationManager(object):
     def __init__(self):
         # Keep a list of the knowns cfg objects type we will encounter
         # NOTE: will be extend once with the modules types
-        self.known_types = set(['check', 'service', 'compliance', 'generator', 'zone', 'installor', 'tutorial'])
+        self.known_types = set(['check', 'service', 'compliance', 'generator', 'zone', 'tutorial'])
         
         # The cluster starts with defualt parameters, but of course configuration can set them too
         # so we will load them (in the local.yaml file) and give it back to the cluster when it will need it
@@ -76,11 +76,6 @@ class ConfigurationManager(object):
     def get_zonemgr(self):
         from opsbro.zonemanager import zonemgr
         return zonemgr
-    
-    
-    def get_installormgr(self):
-        from opsbro.installermanager import installormgr
-        return installormgr
     
     
     def get_tutorialmgr(self):
@@ -141,8 +136,6 @@ class ConfigurationManager(object):
                     self.load_generator_object(obj, fp, pack_name=pack_name, pack_level=pack_level)
                 elif load_focus == 'detector':
                     self.load_detector_object(obj, fp, pack_name=pack_name, pack_level=pack_level)
-                elif load_focus == 'installor':
-                    self.load_installor_object(obj, fp, pack_name=pack_name, pack_level=pack_level)
                 elif load_focus == 'dashboard':
                     self.load_dashboard_object(obj, fp, pack_name=pack_name, pack_level=pack_level)
                 elif load_focus == 'parameter':
@@ -291,19 +284,6 @@ class ConfigurationManager(object):
             detecter.import_detector(detector, 'file:%s' % fname, gname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
     
     
-    def load_installor_object(self, o, fp, pack_name, pack_level):
-        if 'installor' in o:
-            installor = o['installor']
-            if not isinstance(installor, dict):
-                logger.error('ERROR: the installor from the file %s is not a valid dict (%s found)' % (fp, type(installor)))
-                sys.exit(2)
-            mod_time = int(os.path.getmtime(fp))
-            fname = fp
-            gname = os.path.splitext(fname)[0]
-            installormgr = self.get_installormgr()
-            installormgr.import_installor(installor, fname, gname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
-    
-    
     def load_dashboard_object(self, o, fp, pack_name, pack_level):
         if 'dashboard' in o:
             dashboard = o['dashboard']
@@ -354,7 +334,7 @@ class ConfigurationManager(object):
             # dir, load_focus
             _types = [('monitoring', 'monitoring'),
                       ('generators', 'generator'), ('parameters', 'parameter'),
-                      ('detectors', 'detector'), ('installors', 'installor'),
+                      ('detectors', 'detector'),
                       ('compliance', 'compliance'), ('dashboards', 'dashboard'),
                       ('tutorials', 'tutorial'),
                       ]
@@ -393,21 +373,22 @@ class ConfigurationManager(object):
         
         # now hosting driver class are loaded, we can detect which one is our own
         hostingctxmgr.detect()
-
-
+    
+    
     def load_compliancebackends_from_packs(self):
         # Load at running to avoid endless import loop
         from opsbro.compliancemgr import compliancemgr
         pack_directories = packer.give_pack_directories_to_load()
-    
+        
         for (pname, level, dir) in pack_directories:
             # Now load collectors, an important part for packs :)
             drv_dir = os.path.join(dir, 'compliancebackends')
             if os.path.exists(drv_dir):
                 compliancemgr.load_directory(drv_dir, pack_name=pname, pack_level=level)
-    
+        
         # now hosting driver class are loaded, we can load all
         compliancemgr.load_backends()
+    
     
     ############## Http interface
     # We must create http callbacks in running because

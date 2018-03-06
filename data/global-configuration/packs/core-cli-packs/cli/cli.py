@@ -119,7 +119,7 @@ def do_packs_show():
     packs = {'global': {}, 'zone': {}, 'local': {}}
     for level in packer.packs:
         for pname in packer.packs[level]:
-            packs[level][pname] = {'checks': {}, 'module': None, 'collectors': {}, 'generators': {}, 'installors': {}}
+            packs[level][pname] = {'checks': {}, 'module': None, 'collectors': {}, 'generators': {}}
     
     from opsbro.monitoring import monitoringmgr
     checks = monitoringmgr.checks
@@ -148,14 +148,6 @@ def do_packs_show():
         pack_name = generator['pack_name']
         pack_level = generator['pack_level']
         packs[pack_level][pack_name]['generators'][gname] = generator
-    
-    from opsbro.installermanager import installormgr
-    installors = installormgr.install_rules
-    for installator in installors:
-        iname = installator.name
-        pack_name = installator.pack_name
-        pack_level = installator.pack_level
-        packs[pack_level][pack_name]['installors'][iname] = installator
     
     for level in ('global', 'zone', 'local'):
         s1 = sprintf('Packs at level ', color='yellow', end='')
@@ -191,7 +183,6 @@ def do_packs_show():
             # * collectors
             # * handlers
             # * generators
-            # * installors
             no_such_objects = []
             checks = pack_entry['checks']
             if len(checks) == 0:
@@ -248,20 +239,6 @@ def do_packs_show():
                     cprint('  - ', end='')
                     cprint('generators > %-15s' % gname.split(os.sep)[-1], color='cyan', end='')
                     cprint(' if_group=%s' % (generator['if_group']))
-            
-            # installors
-            installors = pack_entry['installors']
-            if len(installors) == 0:
-                no_such_objects.append('installors')
-            else:
-                __print_line_header(main_topic_color)
-                print_element_breadcumb(pack_name, pack_level, 'installors')
-                cprint(' (%d)' % len(installors), color='magenta')
-                for iname, installor in installors.iteritems():
-                    __print_line_header(main_topic_color)
-                    cprint('  - ', end='')
-                    cprint('installors > %-15s' % iname, color='cyan', end='')
-                    cprint('')
             
             # Display what the pack do not manage (for info)
             if no_such_objects:

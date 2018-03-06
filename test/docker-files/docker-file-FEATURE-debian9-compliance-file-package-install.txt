@@ -1,0 +1,24 @@
+FROM debian:9
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+RUN        apt-get update && apt-get install -y python
+# All need for debian, so faster test (we are testging feature here, not install)
+RUN        apt-get update && apt-get install -y python-jinja2
+RUN        apt-get update && apt-get install -y python-crypto
+RUN        apt-get update && apt-get install -y python-leveldb
+RUN        apt-get update && apt-get install -y python-setuptools
+
+
+ADD        . /root/opsbro-oss
+
+
+WORKDIR    /root/opsbro-oss
+
+RUN        python setup.py install
+
+# Copy the mail pack into a local one to enable modification
+RUN        opsbro  packs overload global.nginx
+# Copy the new compliance value
+ADD        test/test-files/test-compliance-package-install/compliance/install-nginx.yml   /var/lib/opsbro/local-configuration/packs/nginx/compliance/
+
+ENTRYPOINT     test/test_feature_compliance-package-install.sh

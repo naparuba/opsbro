@@ -4,15 +4,9 @@ import json
 import glob
 import imp
 
-if os.name != 'nt':
-    from pwd import getpwuid, getpwnam
-    from grp import getgrgid, getgrnam
-else:
-    getpwuid = getgrgid = None
-
 from opsbro.log import LoggerFactory
 from opsbro.stop import stopper
-from opsbro.httpdaemon import http_export, response, abort, request
+from opsbro.httpdaemon import http_export, response
 from opsbro.evaluater import evaluater
 
 # Global logger for this part
@@ -56,12 +50,12 @@ class InterfaceComplianceDriver(object):
 
 
 class Rule(object):
-    def __init__(self, pack_name, pack_level, display_name, mode, verify_if, rule_def):
+    def __init__(self, pack_name, pack_level, name, mode, verify_if, rule_def):
         self.rule_def = rule_def
         self.type = self.rule_def.get('type')
         self.pack_name = pack_name
         self.pack_level = pack_level
-        self.name = display_name
+        self.name = name
         self.mode = mode
         self.verify_if = verify_if
         
@@ -120,7 +114,7 @@ class Rule(object):
         self.__did_change = True
         self.__old_state = self.__state
         self.__state = state
-        logger.debug('Compliance rule %s swith from %s to %s' % (self.name, self.__old_state, self.__state))
+        logger.debug('Compliance rule %s switch from %s to %s' % (self.name, self.__old_state, self.__state))
     
     
     def set_error(self):
@@ -133,6 +127,10 @@ class Rule(object):
     
     def set_fixed(self):
         self.__set_state('FIXED')
+    
+    
+    def set_not_eligible(self):
+        self.__set_state('NOT-ELIGIBLE')
     
     
     def get_json_dump(self):
@@ -194,7 +192,7 @@ class ComplianceManager(object):
     
     
     def import_compliance(self, compliance, full_path, file_name, mod_time=0, pack_name='', pack_level=''):
-        display_name = compliance.get('display_name', file_name)
+        name = compliance.get('name', file_name)
         mode = compliance.get('mode', 'audit')
         if mode not in ('audit', 'enforcing'):
             logger.error('The compliance definition got a wrong mode :%s' % mode)
@@ -210,7 +208,7 @@ class ComplianceManager(object):
             logger.error('The compliance definition is missing a rule type entry :%s' % full_path)
             return
         
-        rule = Rule(pack_name, pack_level, display_name, mode, verify_if, rule_def)
+        rule = Rule(pack_name, pack_level, name, mode, verify_if, rule_def)
         # Add it into the list
         self.compliances[full_path] = rule
     
@@ -240,9 +238,13 @@ class ComplianceManager(object):
             try:
                 r = evaluater.eval_expr(verify_if)
                 if not r:
+                    rule.set_not_eligible()
                     continue
             except Exception, exp:
-                logger.error(' (%s) if rule (%s) evaluation did fail: %s' % (name, verify_if, exp))
+                err = ' (%s) if rule (%s) evaluation did fail: %s' % (name, verify_if, exp)
+                logger.error(err)
+                rule.add_error(err)
+                rule.set_error()
                 continue
             
             # Reset previous errors
@@ -290,6 +292,10 @@ class ComplianceManager(object):
     
     
     def do_compliance_thread(self):
+        from opsbro.collectormanager import collectormgr
+        # if the collector manager did not run, our evaluation can be invalid, so wait for all collectors to run at least once
+        while collectormgr.did_run == False:
+            time.sleep(0.25)
         while not stopper.interrupted:
             self.launch_compliances()
             self.did_run = True
