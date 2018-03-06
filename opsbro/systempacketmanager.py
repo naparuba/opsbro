@@ -38,7 +38,6 @@ class DummyBackend(object):
 # graphical.target
 
 
-
 from .system_backends.system_backend_apt import AptBackend
 from .system_backends.system_backend_apk import ApkBackend
 from .system_backends.system_backend_dnf import DnfBackend
@@ -81,7 +80,6 @@ class SystemPacketMgr(object):
         self.distro_version = distversion
         self.distro_id = distid
         
-        
         # Detect distro based on distname
         if 'debian' in distname:
             self.distro = 'debian'
@@ -120,7 +118,6 @@ class SystemPacketMgr(object):
         else:
             # ok not managed one
             self.managed_system = False
-        
         
         # Get the backend
         if self.distro in ['redhat', 'centos', 'amazon-linux', 'amazon-linux2', 'oracle-linux']:

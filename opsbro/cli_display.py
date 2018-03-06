@@ -203,6 +203,7 @@ def yml_parameter_remove(parameters_file_path, parameter_name, str_value, file_d
     cprint(' %s ' % CHARACTERS.arrow_left, end='')
     cprint(str_value, color='green')
 
+
 def get_terminal_size():
     try:
         height, width = struct.unpack('hhhh', ioctl(sys.stdout, TIOCGWINSZ, '\000' * 8))[0:2]

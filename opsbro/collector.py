@@ -35,7 +35,7 @@ class Collector(ParameterBasedType):
     
     
     def __init__(self):
-    
+        
         ParameterBasedType.__init__(self)
         
         # Global logger for this part
@@ -60,7 +60,7 @@ class Collector(ParameterBasedType):
         # The manager all back
         from collectormanager import collectormgr
         self.put_result = collectormgr.put_result
-        
+    
     
     # our run did fail, so we must exit in a clean way and keep a log
     # if we can

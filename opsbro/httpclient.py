@@ -9,7 +9,7 @@ def get_http_exceptions():
     global _HTTP_EXCEPTIONS
     if _HTTP_EXCEPTIONS is not None:
         return _HTTP_EXCEPTIONS
-    HTTP_EXCEPTIONS = (urllib2.HTTPError, urllib2.URLError, )
+    HTTP_EXCEPTIONS = (urllib2.HTTPError, urllib2.URLError,)
     _HTTP_EXCEPTIONS = HTTP_EXCEPTIONS
     return _HTTP_EXCEPTIONS
 
@@ -86,7 +86,7 @@ class Httper(object):
     
     @staticmethod
     def put(uri, data=None, params={}, headers=None):
-        #data = None  # always none in GET
+        # data = None  # always none in GET
         if headers is None:
             headers = {}
         

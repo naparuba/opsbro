@@ -7,7 +7,6 @@ UDP_PORT = 18125  # curently disable
 ### Don't espect this part to work on your server without modifing the IP :)
 
 
-
 # gauge = ' moncul.cpu.used : 90 |g'
 # counter = ' mabite : 2 |c|@0.1'
 # timer = ' montimer : 0.001 | ms'

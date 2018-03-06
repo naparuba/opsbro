@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 # -*- coding: utf-8 -*-
 
 # Copyright (C) 2014:
@@ -103,7 +102,7 @@ def get_local(u, local_socket, params={}, method='GET'):
 
 
 def get_request_errors():
-    request_errors = (urllib2.URLError, )
+    request_errors = (urllib2.URLError,)
     return request_errors
 
 

@@ -1,4 +1,5 @@
 from opsbro.log import LoggerFactory
+
 # Global logger for this part
 logger = LoggerFactory.create_logger('handler')
 

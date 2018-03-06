@@ -165,7 +165,6 @@ class TSBackend(object):
         # self.its.assume_key(key, cur_min)
         # STATS.incr('its-assume-key', time.time() - _t)
         
-        
         ### Hour now
         # Now look at if we just switch hour
         hour = divmod(cur_min, 3600)[0] * 3600

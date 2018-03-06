@@ -124,7 +124,6 @@ _project_main_devs = banner_lines[_idx_main_devs]
 _project_main_devs += u'  By     : %s' % MAIN_DEVS
 banner_lines[_idx_main_devs] = _project_main_devs
 
-
 ######### Gun RAY
 '''
 _idx_gun = 9

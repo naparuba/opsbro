@@ -12,7 +12,6 @@ except ImportError:
 from opsbro.cluster import Cluster
 from opsbro.log import logger
 
-
 REDIRECT_TO = getattr(os, "devnull", "/dev/null")
 
 
