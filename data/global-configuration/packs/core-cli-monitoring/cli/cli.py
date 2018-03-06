@@ -7,6 +7,7 @@
 
 import time
 import json
+import sys
 
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger
@@ -139,6 +140,59 @@ def do_history():
                     cprint(' ' * 4 + '| ' + line, color='grey')
 
 
+def do_wait_ok(check_name, timeout=30):
+    import itertools
+    spinners = itertools.cycle(CHARACTERS.spinners)
+    
+    name = check_name
+    # We need an agent for this
+    with AnyAgent():
+        state_string = 'UNKNOWN'
+        for i in xrange(timeout):
+            
+            uri = '/monitoring/state'
+            try:
+                (code, r) = get_opsbro_local(uri)
+            except get_request_errors(), exp:
+                logger.error(exp)
+                return
+            
+            try:
+                states = json.loads(r)
+            except ValueError, exp:  # bad json
+                logger.error('Bad return from the server %s' % exp)
+                return
+            checks = states['checks']
+            check = None
+            for (cname, c) in checks.iteritems():
+                if c['display_name'] == name:
+                    check = c
+            if not check:
+                logger.error("Cannot find the check '%s'" % name)
+                sys.exit(2)
+            state_id = check['state_id']
+            
+            c = STATE_ID_COLORS.get(state_id, 'cyan')
+            state_string = STATE_ID_STRINGS.get(state_id, 'UNKNOWN')
+            
+            current_state = check['state']
+            cprint('\r %s ' % spinners.next(), color='blue', end='')
+            cprint('%s' % name, color='magenta', end='')
+            cprint(' is ', end='')
+            cprint('%s' % state_string.ljust(10), color=c, end='')
+            cprint(' (%d/%d)' % (i, timeout), end='')
+            # As we did not \n, we must flush stdout to print it
+            sys.stdout.flush()
+            if state_id == 0:
+                cprint("\nThe check %s is OK" % name)
+                sys.exit(0)
+            logger.debug("Current state %s" % state_id)
+            
+            time.sleep(1)
+        cprint("\nThe check %s is not OK after %s seconds (currently %s)" % (name, timeout, state_string))
+        sys.exit(2)
+
+
 exports = {
     do_state  : {
         'keywords'   : ['monitoring', 'state'],
@@ -153,5 +207,14 @@ exports = {
         'keywords'   : ['monitoring', 'history'],
         'description': 'Print the history of the monitoring',
         'args'       : [],
+    },
+    
+    do_wait_ok: {
+        'keywords'   : ['monitoring', 'wait-ok'],
+        'args'       : [
+            {'name': 'check-name', 'description': 'Name of the check to wait for OK state'},
+            {'name': '--timeout', 'type': 'int', 'default': 30, 'description': 'Timeout to let the initialization'},
+        ],
+        'description': 'Wait until the check rule is in OK state'
     },
 }

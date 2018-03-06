@@ -116,7 +116,6 @@ def do_compliance_wait_compliant(compliance_name, timeout=30):
     
     # We need an agent for this
     with AnyAgent():
-        i = 0
         current_state = 'UNKNOWN'
         for i in xrange(timeout):
             uri = '/compliance/state'
