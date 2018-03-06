@@ -3,9 +3,11 @@ MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 RUN        apt-get update && apt-get install -y python
 # All need for debian, so faster test (we are testging feature here, not install)
-RUN        apt-get install -y python-jinja2
-RUN        apt-get install -y python-crypto
-RUN        apt-get install -y python-leveldb
+RUN        apt-get update && apt-get install -y python-jinja2
+RUN        apt-get update && apt-get install -y python-crypto
+RUN        apt-get update && apt-get install -y python-leveldb
+RUN        apt-get update && apt-get install -y python-setuptools
+
 RUN        DEBIAN_FRONTEND=noninteractive apt-get install -qy postfix
 
 
