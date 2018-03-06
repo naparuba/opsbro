@@ -6,16 +6,19 @@
 #    Gabes Jean, naparuba@gmail.com
 
 
-
+import time
 import json
 
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger
 from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_local, AnyAgent
-from opsbro.cli_display import print_h1
+from opsbro.cli_display import print_h1, print_h2
 
 NO_ZONE_DEFAULT = '(no zone)'
+
+STATE_ID_COLORS = {0: 'green', 2: 'red', 1: 'yellow', 3: 'cyan'}
+STATE_ID_STRINGS = {0: '%s OK' % CHARACTERS.check, 2: '%s CRITICAL' % CHARACTERS.cross, 1: '%s WARNING' % CHARACTERS.double_exclamation, 3: '%s UNKNOWN' % CHARACTERS.double_exclamation}
 
 
 def do_state(name=''):
@@ -78,24 +81,78 @@ def do_state(name=''):
                 cprint('%s ' % (check_display_name.ljust(30)), color='magenta', end='')
                 
                 state = check['state_id']
-                c = {0: 'green', 2: 'red', 1: 'yellow', 3: 'cyan'}.get(state, 'cyan')
-                state = {0: '%s OK' % CHARACTERS.check, 2: '%s CRITICAL' % CHARACTERS.cross, 1: '%s WARNING' % CHARACTERS.double_exclamation, 3: '%s UNKNOWN' % CHARACTERS.double_exclamation}.get(state, 'UNKNOWN')
+                c = STATE_ID_COLORS.get(state, 'cyan')
+                state = STATE_ID_STRINGS.get(state, 'UNKNOWN')
                 cprint('%s' % state.ljust(10), color=c)
                 # Now print output the line under
                 output = check['output']
                 output_lines = output.strip().splitlines()
                 for line in output_lines:
                     cprint(' ' * 4 + '| ' + line, color='grey')
-    
+
+
+def do_history():
+    # We need an agent for this
+    with AnyAgent():
+        uri = '/monitoring/history/checks'
+        try:
+            (code, r) = get_opsbro_local(uri)
+        except get_request_errors(), exp:
+            logger.error(exp)
+            return
+        
+        try:
+            history_entries = json.loads(r)
+        except ValueError, exp:  # bad json
+            logger.error('Bad return from the server %s' % exp)
+            return
+        
+        print_h1('History')
+        for history_entry in history_entries:
+            epoch_date = history_entry['date']
+            entries = history_entry['entries']
+            print_h2('  Date: %s ' % time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime(epoch_date)))
+            for entry in entries:
+                pname = entry['pack_name']
+                
+                check_display_name = entry['display_name']
+                
+                cprint('  - %s' % pname, color='blue', end='')
+                cprint(' > checks > ', color='grey', end='')
+                cprint('%s ' % (check_display_name.ljust(30)), color='magenta', end='')
+                
+                old_state = entry['old_state_id']
+                c = STATE_ID_COLORS.get(old_state, 'cyan')
+                old_state = STATE_ID_STRINGS.get(old_state, 'UNKNOWN')
+                cprint('%s' % old_state.ljust(10), color=c, end='')
+                
+                cprint(' %s ' % CHARACTERS.arrow_left, color='grey', end='')
+                
+                state = entry['state_id']
+                c = STATE_ID_COLORS.get(state, 'cyan')
+                state = STATE_ID_STRINGS.get(state, 'UNKNOWN')
+                cprint('%s' % state.ljust(10), color=c)
+                
+                # Now print output the line under
+                output = entry['output']
+                output_lines = output.strip().splitlines()
+                for line in output_lines:
+                    cprint(' ' * 4 + '| ' + line, color='grey')
+
 
 exports = {
-    do_state: {
+    do_state  : {
         'keywords'   : ['monitoring', 'state'],
-        'description': 'Print the state of a node',
+        'description': 'Print the monitoring state of a node',
         'args'       : [
             {'name'       : 'name', 'default': '',
              'description': 'Name of the node to print state. If void, take our localhost one'},
         ],
     },
     
+    do_history: {
+        'keywords'   : ['monitoring', 'history'],
+        'description': 'Print the history of the monitoring',
+        'args'       : [],
+    },
 }

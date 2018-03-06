@@ -9,6 +9,8 @@ import random
 import subprocess
 import socket
 import hashlib
+import threading
+import glob
 
 from opsbro.log import LoggerFactory
 from opsbro.gossip import gossiper
@@ -35,6 +37,11 @@ class MonitoringManager(object):
         
         # Compile the macro pattern once
         self.macro_pat = re.compile(r'(\$ *(.*?) *\$)+')
+        
+        # History part
+        self.history_directory = None
+        self.__current_history_entry = []
+        self.__current_history_entry_lock = threading.RLock()
     
     
     def load(self, cfg_dir, cfg_data):
@@ -70,6 +77,8 @@ class MonitoringManager(object):
         check['modification_time'] = mod_time
         check['state'] = 'pending'
         check['state_id'] = 3
+        check['old_state'] = 'pending'
+        check['old_state_id'] = 3
         check['output'] = ''
         self.checks[check['id']] = check
     
@@ -107,7 +116,7 @@ class MonitoringManager(object):
         self.link_checks()
         
         # Now we can save the received entry, but first clean unless props
-        to_remove = ['from', 'last_check', 'modification_time', 'state', 'output', 'state_id', 'id']
+        to_remove = ['from', 'last_check', 'modification_time', 'state', 'output', 'state_id', 'id', 'old_state', 'old_state_id']
         for prop in to_remove:
             try:
                 del check[prop]
@@ -167,7 +176,7 @@ class MonitoringManager(object):
             for (cid, c) in loaded.iteritems():
                 if cid in self.checks:
                     check = self.checks[cid]
-                    to_load = ['last_check', 'output', 'state', 'state_id']
+                    to_load = ['last_check', 'output', 'state', 'state_id', 'old_state', 'old_state_id']
                     for prop in to_load:
                         check[prop] = c[prop]
     
@@ -278,41 +287,35 @@ class MonitoringManager(object):
         node['checks'] = checks_entry
     
     
-    # Main thread for launching checks (each with its own thread)
-    def do_check_thread(self):
-        logger.log('CHECK thread launched')
-        cur_launchs = {}
-        while not stopper.interrupted:
+    def __prepare_history_directory(self):
+        # Prepare the history
+        from .configurationmanager import configmgr
+        data_dir = configmgr.get_data_dir()
+        self.history_directory = os.path.join(data_dir, 'monitoring_history')
+        logger.debug('Asserting existence of the monitoring history directory: %s' % self.history_directory)
+        if not os.path.exists(self.history_directory):
+            os.mkdir(self.history_directory)
+    
+    
+    def __add_history_entry(self, history_entry):
+        with self.__current_history_entry_lock:
+            self.__current_history_entry.append(history_entry)
+    
+    
+    def __write_history_entry(self):
+        # Noting to do?
+        if not self.__current_history_entry:
+            return
+        # We must lock because checks can exit in others threads
+        with self.__current_history_entry_lock:
             now = int(time.time())
-            for (cid, check) in self.checks.iteritems():
-                # maybe this chck is not a activated one for us, if so, bail out
-                if cid not in self.active_checks:
-                    continue
-                # maybe a check is already running
-                if cid in cur_launchs:
-                    continue
-                # else look at the time
-                last_check = check['last_check']
-                interval = int(check['interval'].split('s')[0])  # todo manage like it should
-                # in the conf reading phase
-                interval = random.randint(int(0.9 * interval), int(1.1 * interval))
-                
-                if last_check < now - interval:
-                    # randomize a bit the checks
-                    script = check['script']
-                    logger.debug('CHECK: launching check %s:%s' % (cid, script))
-                    t = threader.create_and_launch(self.launch_check, name='check-%s' % cid, args=(check,), part='monitoring')
-                    cur_launchs[cid] = t
-            
-            to_del = []
-            for (cid, t) in cur_launchs.iteritems():
-                if not t.is_alive():
-                    t.join()
-                    to_del.append(cid)
-            for cid in to_del:
-                del cur_launchs[cid]
-            
-            time.sleep(1)
+            pth = os.path.join(self.history_directory, '%d.json' % now)
+            logger.info('Saving new monitoring history entry to %s' % pth)
+            buf = json.dumps(self.__current_history_entry)
+            with open(pth, 'w') as f:
+                f.write(buf)
+            # Now we can reset it
+            self.__current_history_entry = []
     
     
     # Try to find the params for a macro in the foloowing objets, in that order:
@@ -382,6 +385,7 @@ class MonitoringManager(object):
         output = 'Check not configured'
         err = ''
         if critical_if or warning_if:
+            b = False
             if critical_if:
                 b = evaluater.eval_expr(critical_if, check=check)
                 if b:
@@ -416,28 +420,73 @@ class MonitoringManager(object):
                 rc = 3
         logger.debug("CHECK RETURN %s : %s %s %s" % (check['id'], rc, output, err))
         did_change = (check['state_id'] != rc)
-        check['state'] = {0: 'ok', 1: 'warning', 2: 'critical', 3: 'unknown'}.get(rc, 'unknown')
-        if 0 <= rc <= 3:
-            check['state_id'] = rc
-        else:
-            check['state_id'] = 3
+        if did_change:
+            # Then save the old state values
+            check['old_state'] = check['state']
+            check['old_state_id'] = check['state_id']
+            
+            check['state'] = {0: 'ok', 1: 'warning', 2: 'critical', 3: 'unknown'}.get(rc, 'unknown')
+            if 0 <= rc <= 3:
+                check['state_id'] = rc
+            else:
+                check['state_id'] = 3
         
         check['output'] = output + err
         check['last_check'] = int(time.time())
-        self.analyse_check(check, did_change)
+        self.__analyse_check(check, did_change)
         
         # Launch the handlers, some need the data if the element did change or not
         handlermgr.launch_check_handlers(check, did_change)
     
     
+    def __get_history_entry_from_check(self, check):
+        r = {}
+        fields = ['name', 'pack_name', 'pack_level', 'output', 'last_check', 'display_name', 'state', 'state_id', 'old_state', 'old_state_id']
+        for field in fields:
+            r[field] = check[field]
+        return r
+    
+    
+    def get_checks_history(self):
+        r = []
+        current_size = 0
+        max_size = 1024 * 1024
+        reg = self.history_directory + '/*.json'
+        history_files = glob.glob(reg)
+        # Get from the more recent to the older
+        history_files.sort()
+        history_files.reverse()
+        
+        # Do not send more than 1MB, but always a bit more, not less
+        for history_file in history_files:
+            epoch_time = int(os.path.splitext(os.path.basename(history_file))[0])
+            with open(history_file, 'r') as f:
+                e = json.loads(f.read())
+            r.append({'date': epoch_time, 'entries': e})
+            
+            # If we are now too big, return directly
+            size = os.path.getsize(history_file)
+            current_size += size
+            if current_size > max_size:
+                # Give older first
+                r.reverse()
+                return r
+        # give older first
+        r.reverse()
+        return r
+    
+    
     # get a check return and look it it did change a service state. Also save
     # the result in the __health KV
-    def analyse_check(self, check, did_change):
+    def __analyse_check(self, check, did_change):
         logger.debug('CHECK we got a check return, deal with it for %s' % check)
         
         # if did change, update the node check entry about it
         if did_change:
             gossiper.update_check_state_id(check['name'], check['state_id'])
+            # and save a history entry about it
+            history_entry = self.__get_history_entry_from_check(check)
+            self.__add_history_entry(history_entry)
         
         # by default warn others nodes if the check did change
         warn_about_our_change = did_change
@@ -513,6 +562,49 @@ class MonitoringManager(object):
         all_checks = json.dumps(names)
         key = '__health/%s' % gossiper.uuid
         kvmgr.put_key(key, all_checks)
+    
+    
+    # Main thread for launching checks (each with its own thread)
+    def do_check_thread(self):
+        # Before run, be sure we have a history directory ready
+        self.__prepare_history_directory()
+        
+        logger.log('CHECK thread launched')
+        cur_launchs = {}
+        while not stopper.interrupted:
+            now = int(time.time())
+            for (cid, check) in self.checks.iteritems():
+                # maybe this chck is not a activated one for us, if so, bail out
+                if cid not in self.active_checks:
+                    continue
+                # maybe a check is already running
+                if cid in cur_launchs:
+                    continue
+                # else look at the time
+                last_check = check['last_check']
+                interval = int(check['interval'].split('s')[0])  # todo manage like it should
+                # in the conf reading phase
+                interval = random.randint(int(0.9 * interval), int(1.1 * interval))
+                
+                if last_check < now - interval:
+                    # randomize a bit the checks
+                    script = check['script']
+                    logger.debug('CHECK: launching check %s:%s' % (cid, script))
+                    t = threader.create_and_launch(self.launch_check, name='check-%s' % cid, args=(check,), part='monitoring')
+                    cur_launchs[cid] = t
+            
+            to_del = []
+            for (cid, t) in cur_launchs.iteritems():
+                if not t.is_alive():
+                    t.join()
+                    to_del.append(cid)
+            for cid in to_del:
+                del cur_launchs[cid]
+            
+            # each seconds we try to look if there are history info to save
+            self.__write_history_entry()
+            
+            time.sleep(1)
     
     
     # Will delete all checks into the kv and update new values, but in a thread
@@ -725,6 +817,13 @@ class MonitoringManager(object):
                         service['failing-members'].append(node['name'])
             
             return service
+        
+        
+        @http_export('/monitoring/history/checks', method='GET')
+        def get_monitoring_history_checks():
+            response.content_type = 'application/json'
+            r = self.get_checks_history()
+            return json.dumps(r)
 
 
 monitoringmgr = MonitoringManager()
