@@ -42,7 +42,7 @@ class Collector(ParameterBasedType):
         self.logger = LoggerFactory.create_logger('collector.%s.%s' % (self.pack_name, self.__class__.__name__.lower()))
         
         self.pythonVersion = pythonVersion
-        self.state = 'pending'
+        self.state = 'PENDING'
         self.log = ''
         
         self.mysqlConnectionsStore = None
@@ -56,22 +56,36 @@ class Collector(ParameterBasedType):
         self.topIndex = 0
         self.os = None
         self.linuxProcFsLocation = None
-        
-        # The manager all back
-        from collectormanager import collectormgr
-        self.put_result = collectormgr.put_result
     
     
     # our run did fail, so we must exit in a clean way and keep a log
     # if we can
     # NOTE: we want the error in our log file, but not in the stdout of the daemon
     # to let the stdout errors for real daemon error
-    def error(self, txt):
+    def set_error(self, txt):
         # Be sure we are saving unicode string, as they can be json.dumps
         if isinstance(txt, str):
             txt = txt.decode('utf8', 'ignore')
         self.logger.error(txt, do_print=False)
         self.log = txt
+        self.state = 'ERROR'
+    
+    def is_in_group(self, group):
+        from opsbro.gossip import gossiper
+        return gossiper.is_in_group(group)
+    
+    
+    def set_ok(self):
+        self.state = 'OK'
+    
+    
+    def set_not_eligible(self, txt):
+        self.state = 'NOT-ELIGIBLE'
+        self.log = txt
+    
+    
+    def set_running(self):
+        self.state = 'RUNNING'
     
     
     # Execute a shell command and return the result or '' if there is an error
@@ -95,7 +109,7 @@ class Collector(ParameterBasedType):
             if err:
                 self.logger.error('Error in sub process', err)
         except Exception, exp:
-            self.error('Collector [%s] execute command [%s] error: %s' % (self.__class__.__name__.lower(), cmd, traceback.format_exc()))
+            self.set_error('Collector [%s] execute command [%s] error: %s' % (self.__class__.__name__.lower(), cmd, traceback.format_exc()))
             return False
         return output
     
@@ -129,6 +143,7 @@ class Collector(ParameterBasedType):
     
     
     def main(self):
+        from collectormanager import collectormgr
         self.logger.debug('Launching main for %s' % self.__class__)
         # Reset log
         self.log = ''
@@ -136,13 +151,18 @@ class Collector(ParameterBasedType):
             r = self.launch()
         except Exception:
             self.logger.error('Collector %s main error: %s' % (self.__class__.__name__.lower(), traceback.format_exc()))
-            self.error(traceback.format_exc())
-            # And a void result
-            if self.put_result:
-                self.put_result(self.__class__.__name__.lower(), False, [], self.log)
+            self.set_error(traceback.format_exc())
+            collectormgr.put_result(self.__class__.__name__.lower(), False, [], self.log)
             return
         
+        # If the collector send nothing, it can be ineligible
+        if not r:
+            if self.state != 'ERROR' and self.state != 'NOT-ELIGIBLE':
+                self.set_not_eligible('')
+        else:  # there was a returns, so unless the collector did export that it is not eligible
+            # we must set to ok
+            if self.state != 'NOT-ELIGIBLE':
+                self.set_ok()
         s = set()
         self.create_ts_from_data(r, [], s)
-        if self.put_result:
-            self.put_result(self.__class__.__name__.lower(), r, list(s), self.log)
+        collectormgr.put_result(self.__class__.__name__.lower(), r, list(s), self.log)

@@ -16,6 +16,10 @@ class Nginx(Collector):
     def launch(self):
         logger = self.logger
         
+        if not self.is_in_group('nginx'):
+            self.set_not_eligible('NGinx not detected. Please add the nginx group to enable it.')
+            return
+        
         logger.debug('getNginxStatus: start')
         
         logger.debug('getNginxStatus: config set')
@@ -30,19 +34,19 @@ class Nginx(Collector):
             response = request.read()
         
         except urllib2.HTTPError, e:
-            self.error('Unable to get Nginx status - HTTPError = %s' % e)
+            self.set_error('Unable to get Nginx status - HTTPError = %s' % e)
             return False
         
         except urllib2.URLError, e:
-            self.error('Unable to get Nginx status - URLError = %s' % e)
+            self.set_error('Unable to get Nginx status - URLError = %s' % e)
             return False
         
         except httplib.HTTPException, e:
-            self.error('Unable to get Nginx status - HTTPException = %s' % e)
+            self.set_error('Unable to get Nginx status - HTTPException = %s' % e)
             return False
         
         except Exception, e:
-            self.error('Unable to get Nginx status - Exception = %s' % traceback.format_exc())
+            self.set_error('Unable to get Nginx status - Exception = %s' % traceback.format_exc())
             return False
         
         logger.debug('getNginxStatus: urlopen success, start parsing')
@@ -91,5 +95,5 @@ class Nginx(Collector):
                 return False
         
         except Exception:
-            self.error('Unable to get Nginx status - %s - Exception = %s' % (response, traceback.format_exc()))
+            self.set_error('Unable to get Nginx status - %s - Exception = %s' % (response, traceback.format_exc()))
             return False

@@ -163,7 +163,6 @@ class Gossip(object):
     
     
     def __write_history_entry(self):
-        print "__write_history_entry"
         with self.__current_history_entry_lock:
             # Noting to do?
             if not self.__current_history_entry:

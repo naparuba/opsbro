@@ -26,6 +26,10 @@ class Mongodb(Collector):
         logger = self.logger
         logger.debug('getMongoDBStatus: start')
         
+        if not self.is_in_group('mongodb'):
+            self.set_not_eligible('Mongodb not detected. Please add the mongodb group to enable it.')
+            return
+        
         # Try to import pymongo from system (will be the best choice)
         # but if no available, switch to the embedded one
         # NOTE: the embedded is a 2.9.2 with centos 7.so file, but in other ditro only the c
@@ -41,7 +45,7 @@ class Mongodb(Collector):
                     import pymongo
                     self.pymongo = pymongo
                 except ImportError, exp:
-                    self.error('Unable to import pymongo library, even the embedded one (%s)' % exp)
+                    self.set_error('Unable to import pymongo library, even the embedded one (%s)' % exp)
                     return False
                 finally:
                     try:
@@ -68,7 +72,7 @@ class Mongodb(Collector):
             conn = self.pymongo.Connection(mongoURI, slave_okay=True)
             logger.debug('Connected to MongoDB')
         except self.pymongo.errors.ConnectionFailure, exp:
-            self.error('Unable to connect to MongoDB server %s - Exception = %s' % (mongoURI, exp))
+            self.set_error('Unable to connect to MongoDB server %s - Exception = %s' % (mongoURI, exp))
             return False
         
         # Older versions of pymongo did not support the command()

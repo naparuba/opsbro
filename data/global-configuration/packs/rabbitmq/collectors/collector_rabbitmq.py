@@ -22,6 +22,10 @@ class RabbitMQ(Collector):
         logger = self.logger
         logger.debug('getRabbitMQStatus: start')
         
+        if not self.is_in_group('rabbitmq'):
+            self.set_not_eligible('RabbitMQ not detected. Please add the rabbitmq group to enable it.')
+            return
+        
         uri = 'http://localhost:15672/api/overview'
         user = 'guest'
         password = 'guest'
@@ -43,17 +47,17 @@ class RabbitMQ(Collector):
             response = request.read()
         
         except (urllib2.HTTPError, urllib2.URLError, httplib.HTTPException) as e:
-            self.error('Unable to get RabbitMQ status - HTTPError = %s' % e)
+            self.set_error('Unable to get RabbitMQ status - HTTPError = %s' % e)
             return False
         
         except Exception:
-            self.error('Unable to get RabbitMQ status - Exception = %s' % traceback.format_exc())
+            self.set_error('Unable to get RabbitMQ status - Exception = %s' % traceback.format_exc())
             return False
         
         try:
             status = json.loads(response)
         except Exception, exp:
-            self.error("Rabbitmq: parsing json: %s" % exp)
+            self.set_error("Rabbitmq: parsing json: %s" % exp)
             return False
         
         return status

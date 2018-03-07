@@ -222,6 +222,9 @@ class CollectorManager:
     
     def get_collector_json_extract(self, entry):
         c = copy.copy(entry)
+        inst = c['inst']
+        c['state'] = inst.state
+        c['log'] = inst.log
         # inst are not serializable
         del c['inst']
         return (c['name'], c)

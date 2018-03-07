@@ -26,6 +26,10 @@ class Mysql(Collector):
         logger = self.logger
         logger.debug('getMySQLStatus: start')
         
+        if not self.is_in_group('mysql'):
+            self.set_not_eligible('Mysql not detected. Please add the mysql group to enable it.')
+            return
+        
         if MySQLdb is None:
             # Try import MySQLdb, if installed on the system
             try:
@@ -52,16 +56,16 @@ class Mysql(Collector):
             try:
                 db = MySQLdb.connect(host=host, user=user, passwd=password, port=port)
             except MySQLdb.OperationalError, exp:  # ooooups
-                self.error('MySQL connection error (server): %s' % exp)
+                self.set_error('MySQL connection error (server): %s' % exp)
                 return False
         elif hasattr(socket, 'AF_UNIX'):
             try:
                 db = MySQLdb.connect(host='localhost', user=user, passwd=password, port=port, unix_socket=mysql_socket)
             except MySQLdb.OperationalError, exp:
-                self.error('MySQL connection error (socket): %s' % exp)
+                self.set_error('MySQL connection error (socket): %s' % exp)
                 return False
         else:
-            self.error('MySQL is set to connect with unix socket but it is not available for windows.')
+            self.set_error('MySQL is set to connect with unix socket but it is not available for windows.')
             return False
         
         logger.debug('getMySQLStatus: connected')
@@ -225,7 +229,7 @@ class Mysql(Collector):
                 cursor.execute('SHOW SLAVE STATUS')
                 result = cursor.fetchone()
             except MySQLdb.OperationalError, message:
-                self.error('getMySQLStatus: MySQL query error when getting SHOW SLAVE STATUS = %s', message)
+                self.set_error('getMySQLStatus: MySQL query error when getting SHOW SLAVE STATUS = %s', message)
                 result = None
             
             if result != None:

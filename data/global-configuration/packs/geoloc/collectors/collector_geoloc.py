@@ -25,7 +25,7 @@ class Geoloc(Collector):
             r1 = conn.getresponse()
             data = r1.read()
         except socket.gaierror, exp:
-            self.error("Cannot contact ipinfo.io: %s" % exp)
+            self.set_error("Cannot contact ipinfo.io: %s" % exp)
             return False
         
         self.logger.debug('RAW geoloc data', data)

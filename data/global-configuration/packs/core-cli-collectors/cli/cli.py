@@ -5,10 +5,8 @@
 #    Gabes Jean, naparuba@gmail.com
 
 
-
 import sys
 import json
-
 
 from opsbro.log import cprint, logger
 from opsbro.unixclient import get_request_errors
@@ -16,6 +14,9 @@ from opsbro.cli import get_opsbro_json, print_info_title, AnyAgent
 from opsbro.cli_display import print_h1
 from opsbro.collectormanager import collectormgr
 from opsbro.library import libstore
+from opsbro.characters import CHARACTERS
+
+COLLECTORS_STATE_COLORS = {'OK': 'green', 'ERROR': 'red', 'NOT-ELIGIBLE': 'grey', 'RUNNING': 'grey'}
 
 
 def _extract_data_from_results(d, prefix, res):
@@ -91,7 +92,7 @@ def do_collectors_show(name='', all=False):
             cprint(','.join([d['name'] for d in disabled]), color='grey')
 
 
-def do_collectors_list():
+def do_collectors_state():
     # We need an agent for this
     with AnyAgent():
         print_h1('Collectors')
@@ -104,11 +105,15 @@ def do_collectors_list():
         cnames.sort()
         for cname in cnames:
             d = collectors[cname]
-            cprint(cname.ljust(15) + ':', end='')
-            if d['active']:
-                cprint('enabled', color='green')
-            else:
-                cprint('disabled', color='grey')
+            state = d['state']
+            log = d['log']
+            color = COLLECTORS_STATE_COLORS.get(state)
+            cprint(' * ', end='')
+            cprint('%s' % cname.ljust(20), color='magenta', end='')
+            cprint(' %s ' % CHARACTERS.arrow_left, end='')
+            cprint(state, color=color)
+            if log:
+                cprint('   | %s' % log, color='grey')
 
 
 def do_collectors_run(name):
@@ -125,7 +130,7 @@ def do_collectors_run(name):
 
 
 exports = {
-    do_collectors_show: {
+    do_collectors_show : {
         'keywords'   : ['collectors', 'show'],
         'args'       : [
             {'name': 'name', 'default': '', 'description': 'Show a specific'},
@@ -134,14 +139,14 @@ exports = {
         'description': 'Show collectors informations'
     },
     
-    do_collectors_list: {
-        'keywords'   : ['collectors', 'list'],
+    do_collectors_state: {
+        'keywords'   : ['collectors', 'state'],
         'args'       : [
         ],
-        'description': 'Show collectors list'
+        'description': 'Show collectors state'
     },
     
-    do_collectors_run : {
+    do_collectors_run  : {
         'keywords'   : ['collectors', 'run'],
         'args'       : [
             {'name': 'name', 'description': 'Show a specific'},
