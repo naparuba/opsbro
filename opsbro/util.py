@@ -9,9 +9,25 @@ from opsbro.log import logger
 from opsbro.hostingdrivermanager import get_hostingdrivermgr
 
 
+# Make a directory with recursive creation if need
+# Can send IOError if a file already exists with the name
 def make_dir(path):
-    if not os.path.isdir(path):
-        os.mkdir(path)
+    # Already exists as a directory
+    # NOTICE: will always ends as the root dir will exists
+    # note: '' if for windows, as I am not sure about the root directory
+    if os.path.isdir(path) or path == '':
+        return
+    # Do not exists, but the path is already there by a file!
+    if os.path.exists(path):
+        raise IOError('Asking to create the directory %s but a file already exits there' % path)
+    # assert that the parent directory does exists
+    parent, dir_name = os.path.split(path)
+    if dir_name == '':  # was ending by a /, skip this loop, dir_name is useless
+        return make_dir(parent)
+    # assert that the parent does exists
+    make_dir(parent)
+    # so now we can create the son
+    os.mkdir(path)
 
 
 def copy_dir(source_item, destination_item):

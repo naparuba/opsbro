@@ -8,6 +8,7 @@ from opsbro.log import LoggerFactory
 from opsbro.stop import stopper
 from opsbro.httpdaemon import http_export, response
 from opsbro.evaluater import evaluater
+from opsbro.util import make_dir
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('compliance')
@@ -172,7 +173,7 @@ class ComplianceManager(object):
         self.history_directory = os.path.join(data_dir, 'compliance_history')
         logger.debug('Asserting existence of the compliance history directory: %s' % self.history_directory)
         if not os.path.exists(self.history_directory):
-            os.mkdir(self.history_directory)
+            make_dir(self.history_directory)
     
     
     def load_directory(self, directory, pack_name='', pack_level=''):

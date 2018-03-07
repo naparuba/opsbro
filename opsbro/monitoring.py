@@ -22,6 +22,7 @@ from opsbro.perfdata import PerfDatas
 from opsbro.evaluater import evaluater
 from opsbro.ts import tsmgr
 from opsbro.handlermgr import handlermgr
+from opsbro.util import make_dir
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('monitoring')
@@ -294,7 +295,7 @@ class MonitoringManager(object):
         self.history_directory = os.path.join(data_dir, 'monitoring_history')
         logger.debug('Asserting existence of the monitoring history directory: %s' % self.history_directory)
         if not os.path.exists(self.history_directory):
-            os.mkdir(self.history_directory)
+            make_dir(self.history_directory)
     
     
     def __add_history_entry(self, history_entry):

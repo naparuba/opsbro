@@ -22,6 +22,7 @@ from opsbro.library import libstore
 from opsbro.httpclient import get_http_exceptions, httper
 from opsbro.zonemanager import zonemgr
 from opsbro.stop import stopper
+from opsbro.util import make_dir
 
 KGOSSIP = 10
 
@@ -158,7 +159,7 @@ class Gossip(object):
         self.history_directory = os.path.join(data_dir, 'nodes_history')
         logger.debug('Asserting existence of the nodes history directory: %s' % self.history_directory)
         if not os.path.exists(self.history_directory):
-            os.mkdir(self.history_directory)
+            make_dir(self.history_directory)
     
     
     def __write_history_entry(self):
