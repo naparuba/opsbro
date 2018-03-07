@@ -6,12 +6,12 @@ import os
 import time
 import subprocess
 
-from opsbro.library import libstore
-from opsbro.log import LoggerFactory
-from opsbro.threadmgr import threader
-from opsbro.gossip import gossiper
-from opsbro.kv import kvmgr
-from opsbro.httpdaemon import http_export, response, abort, request
+from .library import libstore
+from .log import LoggerFactory
+from .threadmgr import threader
+from .gossip import gossiper
+from .kv import kvmgr
+from .httpdaemon import http_export, response, abort, request
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('executer')

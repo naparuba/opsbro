@@ -8,9 +8,9 @@ import inspect
 import types
 import itertools
 
-from opsbro.collectormanager import collectormgr
-from opsbro.log import LoggerFactory
-from opsbro.httpdaemon import http_export, response, request
+from .collectormanager import collectormgr
+from .log import LoggerFactory
+from .httpdaemon import http_export, response, request
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('evaluater')
@@ -265,7 +265,7 @@ class Evaluater(object):
     # Try to find the params for a macro pack parameters
     def _found_params(self, m, check):
         # only import it now because if not will do an import loop
-        from opsbro.configurationmanager import configmgr
+        from .configurationmanager import configmgr
         parts = [m]
         # if we got a |, we got a default value somewhere
         if '|' in m:

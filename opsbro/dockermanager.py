@@ -3,11 +3,11 @@ import json
 import time
 import os
 
-from opsbro.log import LoggerFactory
-from opsbro.threadmgr import threader
-from opsbro.httpdaemon import http_export, response
-from opsbro.misc.cgroups import cgroupmgr
-from opsbro.unixclient import get_json, get_request_errors
+from .log import LoggerFactory
+from .threadmgr import threader
+from .httpdaemon import http_export, response
+from .misc.cgroups import cgroupmgr
+from .unixclient import get_json, get_request_errors
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('docker')

@@ -3,8 +3,8 @@ import platform
 import traceback
 import subprocess
 
-from opsbro.log import LoggerFactory
-from opsbro.parameters import ParameterBasedType
+from .log import LoggerFactory
+from .parameters import ParameterBasedType
 
 pythonVersion = platform.python_version_tuple()
 

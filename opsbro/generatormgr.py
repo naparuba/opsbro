@@ -1,14 +1,10 @@
 import time
 import os
 
-from opsbro.log import LoggerFactory
-from opsbro.stop import stopper
-from opsbro.httpdaemon import http_export, response
-from opsbro.evaluater import evaluater
-from opsbro.collectormanager import collectormgr
-from opsbro.gossip import gossiper
-from opsbro.monitoring import monitoringmgr
-from opsbro.generator import Generator
+from .log import LoggerFactory
+from .stop import stopper
+from .gossip import gossiper
+from .generator import Generator
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('generator')

@@ -13,8 +13,7 @@ import urllib
 import httplib
 from urlparse import urlsplit
 
-from opsbro.log import logger
-from opsbro.library import libstore
+from .log import logger
 
 #### For local socket handling
 DEFAULT_SOCKET_TIMEOUT = 5

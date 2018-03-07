@@ -4,11 +4,11 @@ import json
 import glob
 import imp
 
-from opsbro.log import LoggerFactory
-from opsbro.stop import stopper
-from opsbro.httpdaemon import http_export, response
-from opsbro.evaluater import evaluater
-from opsbro.util import make_dir
+from .log import LoggerFactory
+from .stop import stopper
+from .httpdaemon import http_export, response
+from .evaluater import evaluater
+from .util import make_dir
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('compliance')
@@ -293,7 +293,7 @@ class ComplianceManager(object):
     
     
     def do_compliance_thread(self):
-        from opsbro.collectormanager import collectormgr
+        from .collectormanager import collectormgr
         # if the collector manager did not run, our evaluation can be invalid, so wait for all collectors to run at least once
         while collectormgr.did_run == False:
             time.sleep(0.25)

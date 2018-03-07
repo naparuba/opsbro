@@ -10,8 +10,8 @@ except ImportError:
     fcntl = None
 import struct
 
-from opsbro.misc.windows import windowser
-from opsbro.log import LoggerFactory
+from .misc.windows import windowser
+from .log import LoggerFactory
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('hosting-driver')

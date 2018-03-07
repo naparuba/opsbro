@@ -10,9 +10,9 @@ import time
 import traceback
 import cStringIO
 import json
-from opsbro.httpdaemon import http_export, response
-from opsbro.log import logger
-from opsbro.pubsub import pubsub
+from .httpdaemon import http_export, response
+from .log import logger
+from .pubsub import pubsub
 
 # this part is doomed for windows portability, will be fun to manage :)
 try:

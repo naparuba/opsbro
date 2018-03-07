@@ -46,7 +46,6 @@ class VmwarePerformances(Collector):
         
         res = {'vmware_tools_available': False, 'cpu': {}, 'memory': {}}
         if lib_ptr is None:
-            self.error('This node is nto a vmware virtual server or do not have vmware tools installed.')
             return res
         
         res['vmware_tools_available'] = True

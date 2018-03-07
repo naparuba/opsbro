@@ -2,9 +2,9 @@
 import json
 import os
 
-from opsbro.yamlmgr import yamler
-from opsbro.log import LoggerFactory
-from opsbro.httpdaemon import http_export, response
+from .yamlmgr import yamler
+from .log import LoggerFactory
+from .httpdaemon import http_export, response
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('packs')

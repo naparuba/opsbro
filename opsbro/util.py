@@ -5,8 +5,8 @@ import socket
 import hashlib
 import uuid as libuuid
 
-from opsbro.log import logger
-from opsbro.hostingdrivermanager import get_hostingdrivermgr
+from .log import logger
+from .hostingdrivermanager import get_hostingdrivermgr
 
 
 # Make a directory with recursive creation if need

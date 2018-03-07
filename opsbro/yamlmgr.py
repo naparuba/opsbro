@@ -5,7 +5,7 @@ import shutil
 import datetime
 import time
 
-from opsbro.characters import CHARACTERS
+from .characters import CHARACTERS
 import opsbro.misc
 
 p = os.path.join(os.path.dirname(opsbro.misc.__file__), 'internalyaml')
@@ -13,7 +13,7 @@ sys.path.insert(0, p)
 
 import ruamel.yaml as yaml
 
-from opsbro.log import LoggerFactory
+from .log import LoggerFactory
 
 logger = LoggerFactory.create_logger('yaml')
 

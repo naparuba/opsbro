@@ -2,7 +2,7 @@
 
 import random
 import itertools
-from opsbro.misc.lolcat import lolcat
+from .misc.lolcat import lolcat
 
 TOPIC_SERVICE_DISCOVERY = 0x1 << 0
 TOPIC_AUTOMATIC_DECTECTION = 0x1 << 1

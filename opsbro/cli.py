@@ -10,21 +10,21 @@ import time
 import itertools
 import subprocess
 
-from opsbro.configurationmanager import configmgr
-from opsbro.collectormanager import collectormgr
-from opsbro.modulemanager import modulemanager
-from opsbro.packer import packer
-from opsbro.unixclient import get_json, get_local, get_request_errors
-from opsbro.httpclient import httper
-from opsbro.log import cprint, logger
-from opsbro.defaultpaths import DEFAULT_LOG_DIR, DEFAULT_CFG_DIR, DEFAULT_DATA_DIR, DEFAULT_SOCK_PATH
-from opsbro.info import VERSION
-from opsbro.cli_display import print_h1
-from opsbro.topic import topiker
-from opsbro.characters import CHARACTERS
-from opsbro.misc.lolcat import lolcat
-from opsbro.cluster import AGENT_STATE_STOPPED
-from opsbro.now import NOW
+from .configurationmanager import configmgr
+from .collectormanager import collectormgr
+from .modulemanager import modulemanager
+from .packer import packer
+from .unixclient import get_json, get_local, get_request_errors
+from .httpclient import httper
+from .log import cprint, logger
+from .defaultpaths import DEFAULT_LOG_DIR, DEFAULT_CFG_DIR, DEFAULT_DATA_DIR, DEFAULT_SOCK_PATH
+from .info import VERSION
+from .cli_display import print_h1
+from .topic import topiker
+from .characters import CHARACTERS
+from .misc.lolcat import lolcat
+from .cluster import AGENT_STATE_STOPPED
+from .now import NOW
 
 # Will be populated by the opsbro CLI command
 CONFIG = None

@@ -4,7 +4,8 @@ import time
 import datetime
 import logging
 import json
-from opsbro.misc.colorama import init as init_colorama
+
+from .misc.colorama import init as init_colorama
 
 
 def is_tty():
@@ -24,7 +25,7 @@ def is_tty():
 if is_tty():
     # Try to load the terminal color. Won't work under python 2.4
     try:
-        from opsbro.misc.termcolor import cprint, sprintf
+        from .misc.termcolor import cprint, sprintf
         
         # init the colorama hook, for windows print
         # will do nothing for other than windows
@@ -223,7 +224,7 @@ class Logger(object):
     
     
     def export_http(self):
-        from opsbro.httpdaemon import http_export, response
+        from .httpdaemon import http_export, response
         @http_export('/log/parts/')
         def list_parts():
             response.content_type = 'application/json'

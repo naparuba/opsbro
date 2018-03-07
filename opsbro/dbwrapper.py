@@ -1,4 +1,4 @@
-from opsbro.log import logger
+from .log import logger
 
 
 class FakeDB(object):

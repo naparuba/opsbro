@@ -3,8 +3,9 @@
 # precision, you can call this lib object NOW that will be updated 100time a sec
 
 import time
-from opsbro.threadmgr import threader
-from opsbro.misc.monotonic import monotonic as f_monotonic
+
+from .threadmgr import threader
+from .misc.monotonic import monotonic as f_monotonic
 
 
 class QuickNow(object):

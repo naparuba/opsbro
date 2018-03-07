@@ -1,11 +1,11 @@
 import os
 import sys
 
-from opsbro.defaultpaths import DEFAULT_DATA_DIR
-from opsbro.log import LoggerFactory
-from opsbro.httpdaemon import http_export, response
-from opsbro.yamlmgr import yamler
-from opsbro.packer import packer
+from .defaultpaths import DEFAULT_DATA_DIR
+from .log import LoggerFactory
+from .httpdaemon import http_export, response
+from .yamlmgr import yamler
+from .packer import packer
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('configuration')
@@ -59,47 +59,47 @@ class ConfigurationManager(object):
     
     def get_monitoringmgr(self):
         # Import at runtime, to avoid loop
-        from opsbro.monitoring import monitoringmgr
+        from .monitoring import monitoringmgr
         return monitoringmgr
     
     
     def get_handlermgr(self):
-        from opsbro.handlermgr import handlermgr
+        from .handlermgr import handlermgr
         return handlermgr
     
     
     def get_compliancemgr(self):
-        from opsbro.compliancemgr import compliancemgr
+        from .compliancemgr import compliancemgr
         return compliancemgr
     
     
     def get_zonemgr(self):
-        from opsbro.zonemanager import zonemgr
+        from .zonemanager import zonemgr
         return zonemgr
     
     
     def get_tutorialmgr(self):
-        from opsbro.tutorial import tutorialmgr
+        from .tutorial import tutorialmgr
         return tutorialmgr
     
     
     def get_modulemanager(self):
-        from opsbro.modulemanager import modulemanager
+        from .modulemanager import modulemanager
         return modulemanager
     
     
     def get_generatormgr(self):
-        from opsbro.generatormgr import generatormgr
+        from .generatormgr import generatormgr
         return generatormgr
     
     
     def get_detecter(self):
-        from opsbro.detectormgr import detecter
+        from .detectormgr import detecter
         return detecter
     
     
     def get_dashboarder(self):
-        from opsbro.dashboardmanager import get_dashboarder
+        from .dashboardmanager import get_dashboarder
         return get_dashboarder()
     
     
@@ -346,7 +346,7 @@ class ConfigurationManager(object):
     
     def load_collectors_from_packs(self):
         # Load at running to avoid endless import loop
-        from opsbro.collectormanager import collectormgr
+        from .collectormanager import collectormgr
         pack_directories = packer.give_pack_directories_to_load()
         
         for (pname, level, dir) in pack_directories:
@@ -361,7 +361,7 @@ class ConfigurationManager(object):
     
     def load_hostingdrivers_from_packs(self):
         # Load at running to avoid endless import loop
-        from opsbro.hostingdrivermanager import get_hostingdrivermgr
+        from .hostingdrivermanager import get_hostingdrivermgr
         hostingctxmgr = get_hostingdrivermgr()
         pack_directories = packer.give_pack_directories_to_load()
         
@@ -377,7 +377,7 @@ class ConfigurationManager(object):
     
     def load_compliancebackends_from_packs(self):
         # Load at running to avoid endless import loop
-        from opsbro.compliancemgr import compliancemgr
+        from .compliancemgr import compliancemgr
         pack_directories = packer.give_pack_directories_to_load()
         
         for (pname, level, dir) in pack_directories:

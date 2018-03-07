@@ -1,13 +1,13 @@
 import time
 import json
 
-from opsbro.log import LoggerFactory
-from opsbro.stop import stopper
-from opsbro.httpdaemon import http_export, response
-from opsbro.evaluater import evaluater
-from opsbro.collectormanager import collectormgr
-from opsbro.gossip import gossiper
-from opsbro.monitoring import monitoringmgr
+from .log import LoggerFactory
+from .stop import stopper
+from .httpdaemon import http_export, response
+from .evaluater import evaluater
+from .collectormanager import collectormgr
+from .gossip import gossiper
+from .monitoring import monitoringmgr
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('detector')

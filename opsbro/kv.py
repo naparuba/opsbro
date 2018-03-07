@@ -6,16 +6,16 @@ import shutil
 import hashlib
 import socket
 
-from opsbro.httpclient import get_http_exceptions, httper
-from opsbro.stats import STATS
-from opsbro.log import LoggerFactory
-from opsbro.threadmgr import threader
-from opsbro.now import NOW
-from opsbro.dbwrapper import dbwrapper
-from opsbro.httpdaemon import response, http_export, abort, request
-from opsbro.gossip import gossiper
-from opsbro.library import libstore
-from opsbro.stop import stopper
+from .httpclient import get_http_exceptions, httper
+from .stats import STATS
+from .log import LoggerFactory
+from .threadmgr import threader
+from .now import NOW
+from .dbwrapper import dbwrapper
+from .httpdaemon import response, http_export, abort, request
+from .gossip import gossiper
+from .library import libstore
+from .stop import stopper
 
 REPLICATS = 1
 

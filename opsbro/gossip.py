@@ -12,17 +12,17 @@ import os
 import glob
 
 # some singleton :)
-from opsbro.log import LoggerFactory
-from opsbro.threadmgr import threader
-from opsbro.broadcast import broadcaster
-from opsbro.websocketmanager import websocketmgr
-from opsbro.pubsub import pubsub
-from opsbro.httpdaemon import http_export, response, abort, request
-from opsbro.library import libstore
-from opsbro.httpclient import get_http_exceptions, httper
-from opsbro.zonemanager import zonemgr
-from opsbro.stop import stopper
-from opsbro.util import make_dir
+from .log import LoggerFactory
+from .threadmgr import threader
+from .broadcast import broadcaster
+from .websocketmanager import websocketmgr
+from .pubsub import pubsub
+from .httpdaemon import http_export, response, abort, request
+from .library import libstore
+from .httpclient import get_http_exceptions, httper
+from .zonemanager import zonemgr
+from .stop import stopper
+from .util import make_dir
 
 KGOSSIP = 10
 

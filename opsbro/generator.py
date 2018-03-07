@@ -6,9 +6,9 @@ import codecs
 import stat
 import shutil
 
-from opsbro.log import LoggerFactory
-from opsbro.gossip import gossiper
-from opsbro.library import libstore
+from .log import LoggerFactory
+from .gossip import gossiper
+from .library import libstore
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('generator')

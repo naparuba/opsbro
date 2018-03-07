@@ -12,17 +12,17 @@ import hashlib
 import threading
 import glob
 
-from opsbro.log import LoggerFactory
-from opsbro.gossip import gossiper
-from opsbro.kv import kvmgr
-from opsbro.httpdaemon import http_export, response, request, abort
-from opsbro.stop import stopper
-from opsbro.threadmgr import threader
-from opsbro.perfdata import PerfDatas
-from opsbro.evaluater import evaluater
-from opsbro.ts import tsmgr
-from opsbro.handlermgr import handlermgr
-from opsbro.util import make_dir
+from .log import LoggerFactory
+from .gossip import gossiper
+from .kv import kvmgr
+from .httpdaemon import http_export, response, request, abort
+from .stop import stopper
+from .threadmgr import threader
+from .perfdata import PerfDatas
+from .evaluater import evaluater
+from .ts import tsmgr
+from .handlermgr import handlermgr
+from .util import make_dir
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('monitoring')

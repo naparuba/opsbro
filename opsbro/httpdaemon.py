@@ -1,11 +1,11 @@
 import json
-from opsbro.misc.bottle import run, request, abort, error, redirect, response, gserver
-from opsbro.misc.bottle import route as bottle_route
+from .misc.bottle import run, request, abort, error, redirect, response, gserver
+from .misc.bottle import route as bottle_route
 import opsbro.misc.bottle as bottle
 
 bottle.debug(True)
 
-from opsbro.log import logger
+from .log import logger
 
 exported_functions = {}
 

@@ -5,15 +5,15 @@ import base64
 import cPickle
 import json
 
-from opsbro.stats import STATS
-from opsbro.log import LoggerFactory
-from opsbro.threadmgr import threader
-from opsbro.now import NOW
-from opsbro.dbwrapper import dbwrapper
-from opsbro.gossip import gossiper
-from opsbro.stop import stopper
-from opsbro.kv import kvmgr
-from opsbro.httpdaemon import http_export, response
+from .stats import STATS
+from .log import LoggerFactory
+from .threadmgr import threader
+from .now import NOW
+from .dbwrapper import dbwrapper
+from .gossip import gossiper
+from .stop import stopper
+from .kv import kvmgr
+from .httpdaemon import http_export, response
 
 # DO NOT FORGEET:
 # sysctl -w net.core.rmem_max=26214400

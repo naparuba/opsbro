@@ -7,15 +7,15 @@ import glob
 import imp
 import copy
 
-from opsbro.log import LoggerFactory
-from opsbro.threadmgr import threader
-from opsbro.stop import stopper
-from opsbro.httpdaemon import http_export, response
-from opsbro.collector import Collector
+from .log import LoggerFactory
+from .threadmgr import threader
+from .stop import stopper
+from .httpdaemon import http_export, response
+from .collector import Collector
 from jsonmgr import jsoner
-from opsbro.now import NOW
-from opsbro.ts import tsmgr
-from opsbro.gossip import gossiper
+from .now import NOW
+from .ts import tsmgr
+from .gossip import gossiper
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('collector')

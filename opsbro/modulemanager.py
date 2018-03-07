@@ -3,8 +3,8 @@ import sys
 import imp
 import traceback
 
-from opsbro.log import logger
-from opsbro.module import Module
+from .log import logger
+from .module import Module
 
 
 class ModuleManager(object):

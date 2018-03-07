@@ -1,6 +1,6 @@
-from opsbro.parameters import ParameterBasedType
-from opsbro.log import LoggerFactory
-from opsbro.packer import packer
+from .parameters import ParameterBasedType
+from .log import LoggerFactory
+from .packer import packer
 
 
 class Module(ParameterBasedType):
@@ -83,7 +83,7 @@ class HandlerModule(Module):
     
     def __init__(self):
         super(HandlerModule, self).__init__()
-        from opsbro.handlermgr import handlermgr
+        from .handlermgr import handlermgr
         implement = self.implement
         if not implement:
             self.logger.error('Unknown implement type for module, cannot load it.')

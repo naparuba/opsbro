@@ -9,8 +9,8 @@ try:
 except ImportError:
     resource = None
 
-from opsbro.cluster import Cluster
-from opsbro.log import logger
+from .cluster import Cluster
+from .log import logger
 
 REDIRECT_TO = getattr(os, "devnull", "/dev/null")
 
