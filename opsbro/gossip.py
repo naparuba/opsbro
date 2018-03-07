@@ -8,6 +8,8 @@ import copy
 import sys
 import bisect
 import threading
+import os
+import glob
 
 # some singleton :)
 from opsbro.log import LoggerFactory
@@ -62,7 +64,11 @@ class Gossip(object):
         # export my http uri now I got a real self
         self.export_http()
         
-        # self.ping_another_in_progress = False
+        # When something change, we save it in the history
+        self.history_directory = None
+        self.__prepare_history_directory()  # the configmgr is ready at this state
+        self.__current_history_entry = []
+        self.__current_history_entry_lock = threading.RLock()
         
         # create my own object, but do not export it to other nodes
         self.register_myself()
@@ -145,6 +151,80 @@ class Gossip(object):
             return group in self.groups
     
     
+    def __prepare_history_directory(self):
+        # Prepare the history
+        from .configurationmanager import configmgr
+        data_dir = configmgr.get_data_dir()
+        self.history_directory = os.path.join(data_dir, 'nodes_history')
+        logger.debug('Asserting existence of the nodes history directory: %s' % self.history_directory)
+        if not os.path.exists(self.history_directory):
+            os.mkdir(self.history_directory)
+    
+    
+    def __write_history_entry(self):
+        print "__write_history_entry"
+        with self.__current_history_entry_lock:
+            # Noting to do?
+            if not self.__current_history_entry:
+                return
+            now = int(time.time())
+            pth = os.path.join(self.history_directory, '%d.json' % now)
+            logger.info('Saving new compliance history entry to %s' % pth)
+            buf = json.dumps(self.__current_history_entry)
+            with open(pth, 'w') as f:
+                f.write(buf)
+            # Now we can reset it
+            self.__current_history_entry = []
+    
+    
+    def get_history(self):
+        r = []
+        current_size = 0
+        max_size = 1024 * 1024
+        reg = self.history_directory + '/*.json'
+        history_files = glob.glob(reg)
+        # Get from the more recent to the older
+        history_files.sort()
+        history_files.reverse()
+        
+        # Do not send more than 1MB, but always a bit more, not less
+        for history_file in history_files:
+            epoch_time = int(os.path.splitext(os.path.basename(history_file))[0])
+            with open(history_file, 'r') as f:
+                e = json.loads(f.read())
+            r.append({'date': epoch_time, 'entries': e})
+            
+            # If we are now too big, return directly
+            size = os.path.getsize(history_file)
+            current_size += size
+            if current_size > max_size:
+                # Give older first
+                r.reverse()
+                return r
+        # give older first
+        r.reverse()
+        return r
+    
+    
+    def __add_group_change_history_entry(self, group, action):
+        print "__add_group_change_history_entry::%s:%s" % (group, action)
+        node = self.nodes[self.uuid]
+        history_entry = {'type': 'group-%s' % action,
+                         'name': node['name'], 'display_name': node.get('display_name', ''),
+                         'uuid': node['uuid'], 'group': group,
+                         }
+        
+        with self.__current_history_entry_lock:
+            self.__current_history_entry.append(history_entry)
+    
+    
+    # Each seconds we try to save a history entry (about add/remove groups, or new nodes)
+    def do_history_save_loop(self):
+        while not stopper.interrupted:
+            self.__write_history_entry()
+            time.sleep(1)
+    
+    
     def add_group(self, group, broadcast_when_change=True):
         did_change = False
         with self.groups_lock:
@@ -155,9 +235,14 @@ class Gossip(object):
                 logger.info('The group %s was added.' % group)
             # If our groups did change and we did allow to broadcast here (like in CLI call but not in
             # auto discovery because we want to send only 1 network packet), we can broadcast it
-            if did_change and broadcast_when_change:
-                self.node_did_change(self.uuid)  # a node did change: ourselve
-                self.increase_incarnation_and_broadcast(broadcast_type='alive')
+            if did_change:
+                # We always stack a history entry, it's only save once a seconds
+                self.__add_group_change_history_entry(group, 'add')
+                # but not always network, must be done once a loop
+                if broadcast_when_change:
+                    self.node_did_change(self.uuid)  # a node did change: ourselve
+                    self.increase_incarnation_and_broadcast(broadcast_type='alive')
+        
         return did_change
     
     
@@ -171,9 +256,13 @@ class Gossip(object):
                 did_change = True
             # If our groups did change and we did allow to broadcast here (like in CLI call but not in
             # auto discovery because we want to send only 1 network packet), we can broadcast it
-            if did_change and broadcast_when_change:
-                self.node_did_change(self.uuid)  # a node did change: ourselve
-                self.increase_incarnation_and_broadcast(broadcast_type='alive')
+            if did_change:
+                # We always stack a history entry, it's only save once a seconds
+                self.__add_group_change_history_entry(group, 'remove')
+                # but not always network, must be done once a loop
+                if broadcast_when_change:
+                    self.node_did_change(self.uuid)  # a node did change: ourselve
+                    self.increase_incarnation_and_broadcast(broadcast_type='alive')
         return did_change
     
     

@@ -122,6 +122,20 @@ class DetectorMgr(object):
             return json.dumps(self.detectors.values())
         
         
+        @http_export('/agent/detectors/state')
+        @http_export('/agent/detectors/state/')
+        def get_detectors_state():
+            response.content_type = 'application/json'
+            return json.dumps(list(gossiper.detected_groups))
+        
+        
+        @http_export('/agent/detectors/history', method='GET')
+        def get_compliance_history():
+            response.content_type = 'application/json'
+            r = gossiper.get_history()
+            return json.dumps(r)
+        
+        
         @http_export('/agent/detectors/run')
         @http_export('/agent/detectors/run/:dname')
         def _runrunrunr(dname=''):

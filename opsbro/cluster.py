@@ -1224,6 +1224,7 @@ class Cluster(object):
             threader.create_and_launch(gossiper.ping_another_nodes, name='Ping other nodes', essential=True, part='gossip')
             threader.create_and_launch(gossiper.do_launch_gossip_loop, name='Cluster messages broadcasting', essential=True, part='gossip')
             threader.create_and_launch(gossiper.launch_full_sync_loop, name='Nodes full synchronization', essential=True, part='gossip')
+            threader.create_and_launch(gossiper.do_history_save_loop, name='Nodes history writing', essential=True, part='gossip')
         
         if one_shot:
             self.wait_one_shot_end()
