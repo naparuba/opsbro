@@ -152,7 +152,12 @@ def do_detect_wait_group(group_name, timeout=30):
                 return
             
             if group_name in detected_groups:
-                cprint("\nThe group %s is detected" % group_name)
+                cprint('\n %s '% CHARACTERS.arrow_left, color='grey', end='')
+                cprint('%s '% CHARACTERS.check, color='green', end='')
+                cprint('The group ', end='')
+                cprint('%s' % group_name, color='magenta', end='')
+                cprint(' is ', end='')
+                cprint('detected', color='green')
                 sys.exit(0)
             # Not detected? increase loop
             cprint('\r %s ' % spinners.next(), color='blue', end='')
