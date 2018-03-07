@@ -80,6 +80,7 @@ def do_info(show_logs):
     zone_value = {'value': zone, 'color': zone_color}
     nb_threads = d.get('threads')['nb_threads']
     hosting_driver = d.get('hosting_driver', '')
+    hosting_drivers_state = d.get('hosting_drivers_state', [])
     httpservers = d.get('httpservers', {'internal': None, 'external': None})
     socket_path = d.get('socket')
     _uuid = d.get('uuid')
@@ -120,6 +121,24 @@ def do_info(show_logs):
         print_2tab(e)
     else:
         print_info_title('HTTP (Unix Socket) info not available')
+    
+    # Show hosting drivers, and why we did chose this one
+    print_info_title('Hosting Drivers')
+    cprint(' | first founded valid driver is used as main hosting driver', color='grey')
+    main_driver_founded = False
+    hosting_drivers_state_tab = []
+    for driver_entry in hosting_drivers_state:
+        driver_name = driver_entry['name']
+        driver_is_active = driver_entry['is_active']
+        _name = driver_name
+        if not main_driver_founded and driver_is_active:
+            _name = '*%s' % _name
+            main_driver_founded = True
+        _value = {True: 'valid', False: 'invalid'}.get(driver_is_active)
+        _color = {True: 'green', False: 'grey'}.get(driver_is_active)
+        tab_entry = (_name, {'value': _value, 'color': _color})
+        hosting_drivers_state_tab.append(tab_entry)
+    print_2tab(hosting_drivers_state_tab, capitalize=False, col_size=30)  # drivers have large names
     
     # Now DNS part
     print_info_title('DNS')

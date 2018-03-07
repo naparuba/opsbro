@@ -228,7 +228,6 @@ class HostingDriverMgr(object):
         
         # Get first cloud > virtualisation > plysical > default > unset
         hostingctx_clss = sorted(hostingctx_clss, cmp=self.__default_last)
-        
         for cls in hostingctx_clss:
             # skip base module Collector
             if cls == InterfaceHostingDriver:
@@ -291,6 +290,14 @@ class HostingDriverMgr(object):
         if self.driver is None:
             return ''
         return self.driver.name
+    
+    
+    def get_drivers_state(self):
+        r = []  # order is important
+        for drv in self.drivers:
+            e = {'name': drv.name, 'is_active': drv.is_active()}
+            r.append(e)
+        return r
 
 
 hostingdrivermgr_ = None
@@ -301,6 +308,5 @@ def get_hostingdrivermgr():
     if hostingdrivermgr_ is None:
         logger.debug('Lazy creation of the hostingdrivermgr class')
         hostingdrivermgr_ = HostingDriverMgr()
-        # Launch the detection of the driver
-        hostingdrivermgr_.detect()
+        # NOTE: the detection of the driver will be done by the launcher
     return hostingdrivermgr_

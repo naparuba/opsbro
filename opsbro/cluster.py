@@ -544,7 +544,7 @@ class Cluster(object):
                  'docker'        : dockermgr.get_info(),
                  'collectors'    : collectormgr.get_info(),
                  'kv'            : kvmgr.get_info(),
-                 'hosting_driver': get_hostingdrivermgr().get_driver_name(),
+                 'hosting_driver': get_hostingdrivermgr().get_driver_name(), 'hosting_drivers_state': get_hostingdrivermgr().get_drivers_state(),
                  }
             
             # Update the infos with modules ones
