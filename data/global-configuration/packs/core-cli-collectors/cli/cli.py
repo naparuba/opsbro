@@ -6,14 +6,13 @@
 
 
 import sys
-import json
+import time
 
 from opsbro.log import cprint, logger
 from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_json, print_info_title, AnyAgent
 from opsbro.cli_display import print_h1
 from opsbro.collectormanager import collectormgr
-from opsbro.library import libstore
 from opsbro.characters import CHARACTERS
 
 COLLECTORS_STATE_COLORS = {'OK': 'green', 'ERROR': 'red', 'NOT-ELIGIBLE': 'grey', 'RUNNING': 'grey'}
@@ -32,7 +31,7 @@ def _extract_data_from_results(d, prefix, res):
     elif isinstance(d, int) or isinstance(d, float) or isinstance(d, basestring) or d is None:
         res.append((prefix, d))
     else:
-        logger.do_debug('ERROR: data %d is not managed: prefix=%s' % (str(d), prefix))
+        logger.do_debug('ERROR: data %s is not managed: prefix=%s' % (str(d), prefix))
 
 
 def pretty_print(d):
@@ -43,18 +42,8 @@ def pretty_print(d):
     flat_results = []
     _extract_data_from_results(results, '', flat_results)
     
-    # for pretty print in color, need to have both pygments and don't
-    # be in a | or a file dump >, so we need to have a tty ^^
-    pygments = libstore.get_pygments()
-    if pygments and sys.stdout.isatty():
-        lexer = pygments.lexers.get_lexer_by_name("json", stripall=False)
-        formatter = pygments.formatters.TerminalFormatter()
-        code = json.dumps(d, indent=4)
-        result = pygments.highlight(code, lexer, formatter)
-        print result
-    else:
-        pprint = libstore.get_pprint()
-        pprint.pprint(d)
+    __print_collector_state(d)
+    
     if len(flat_results) == 0:
         print "No collector data"
         return
@@ -67,6 +56,19 @@ def pretty_print(d):
         cprint('%s' % prefix.ljust(max_prefix_size), color='blue', end='')
         cprint(' = ', end='')
         cprint('%s' % (v), color='magenta')
+
+
+def __print_collector_state(collector):
+    state = collector['state']
+    log = collector['log']
+    name = collector['name']
+    color = COLLECTORS_STATE_COLORS.get(state)
+    cprint(' * ', end='')
+    cprint('%s' % name.ljust(20), color='magenta', end='')
+    cprint(' %s ' % CHARACTERS.arrow_left, end='')
+    cprint(state, color=color)
+    if log:
+        cprint('   | %s' % log, color='grey')
 
 
 def do_collectors_show(name='', all=False):
@@ -105,15 +107,7 @@ def do_collectors_state():
         cnames.sort()
         for cname in cnames:
             d = collectors[cname]
-            state = d['state']
-            log = d['log']
-            color = COLLECTORS_STATE_COLORS.get(state)
-            cprint(' * ', end='')
-            cprint('%s' % cname.ljust(20), color='magenta', end='')
-            cprint(' %s ' % CHARACTERS.arrow_left, end='')
-            cprint(state, color=color)
-            if log:
-                cprint('   | %s' % log, color='grey')
+            __print_collector_state(d)
 
 
 def do_collectors_run(name):
@@ -129,8 +123,46 @@ def do_collectors_run(name):
         pretty_print(e['results'])
 
 
+def do_collectors_wait_ok(collector_name, timeout=30):
+    import itertools
+    spinners = itertools.cycle(CHARACTERS.spinners)
+    
+    # We need an agent for this
+    with AnyAgent():
+        current_state = 'PENDING'
+        for i in xrange(timeout):
+            try:
+                collectors = get_opsbro_json('/collectors')
+            except get_request_errors(), exp:
+                logger.error(exp)
+                return
+            collector = None
+            for (cname, c) in collectors.iteritems():
+                if cname == collector_name:
+                    collector = c
+            if not collector:
+                logger.error("Cannot find the collector '%s'" % collector_name)
+                sys.exit(2)
+            current_state = collector['state']
+            cprint('\r %s ' % spinners.next(), color='blue', end='')
+            cprint('%s' % collector_name, color='magenta', end='')
+            cprint(' is ', end='')
+            cprint('%15s ' % current_state, color=COLLECTORS_STATE_COLORS.get(current_state, 'cyan'), end='')
+            cprint(' (%d/%d)' % (i, timeout), end='')
+            # As we did not \n, we must flush stdout to print it
+            sys.stdout.flush()
+            if current_state == 'OK':
+                cprint("\nThe collector %s is OK" % collector_name)
+                sys.exit(0)
+            logger.debug("Current state %s" % current_state)
+            
+            time.sleep(1)
+        cprint("\nThe collector %s is not OK after %s seconds (currently %s)" % (collector_name, timeout, current_state))
+        sys.exit(2)
+
+
 exports = {
-    do_collectors_show : {
+    do_collectors_show   : {
         'keywords'   : ['collectors', 'show'],
         'args'       : [
             {'name': 'name', 'default': '', 'description': 'Show a specific'},
@@ -139,19 +171,28 @@ exports = {
         'description': 'Show collectors informations'
     },
     
-    do_collectors_state: {
+    do_collectors_state  : {
         'keywords'   : ['collectors', 'state'],
         'args'       : [
         ],
         'description': 'Show collectors state'
     },
     
-    do_collectors_run  : {
+    do_collectors_run    : {
         'keywords'   : ['collectors', 'run'],
         'args'       : [
             {'name': 'name', 'description': 'Show a specific'},
         ],
         'description': 'Run a collector'
+    },
+    
+    do_collectors_wait_ok: {
+        'keywords'   : ['collectors', 'wait-ok'],
+        'args'       : [
+            {'name': 'collector-name', 'description': 'Name of the collector rule to wait for OK state'},
+            {'name': '--timeout', 'type': 'int', 'default': 30, 'description': 'Timeout to let the initialization'},
+        ],
+        'description': 'Wait until the collector rule is in OK state'
     },
     
 }

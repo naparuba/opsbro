@@ -21,6 +21,12 @@ if [ $? != 0 ]; then
     exit 2
 fi
 
+# Wait until the collector is ready
+opsbro collectors wait-ok mysql
+if [ $? != 0 ]; then
+    echo "ERROR: Mysql collector is not responding"
+    exit 2
+fi
 
 RES=$(opsbro evaluator eval "{{collector.mysql.max_used_connections}} == 1" | tail -n 1)
 if [ $RES != "True" ]; then

@@ -12,6 +12,14 @@ if [ $? != 0 ]; then
 fi
 
 
+# Wait until the collector is ready
+opsbro collectors wait-ok redis
+if [ $? != 0 ]; then
+    echo "ERROR: Redis collector is not responding"
+    exit 2
+fi
+
+
 RES=$(opsbro evaluator eval "{{collector.redis.available}} == True" | tail -n 1)
 if [ $RES != "True" ]; then
     echo "Fail: redis collectors is fail {{collector.redis.available}} == True => $RES"

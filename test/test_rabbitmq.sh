@@ -13,6 +13,12 @@ if [ $? != 0 ]; then
     echo "ERROR: rabbitmq group is not set"
 fi
 
+# Wait until the collector is ready
+opsbro collectors wait-ok rabbitmq
+if [ $? != 0 ]; then
+    echo "ERROR: Rabbitmq collector is not responding"
+    exit 2
+fi
 
 RES=$(opsbro evaluator eval "{{collector.rabbitmq.queue_totals.messages}} >= 0" | tail -n 1)
 if [ $RES != "True" ]; then

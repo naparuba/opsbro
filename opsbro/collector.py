@@ -56,6 +56,8 @@ class Collector(ParameterBasedType):
         self.topIndex = 0
         self.os = None
         self.linuxProcFsLocation = None
+
+        self.__state_refresh_this_loop = False
     
     
     # our run did fail, so we must exit in a clean way and keep a log
@@ -63,6 +65,7 @@ class Collector(ParameterBasedType):
     # NOTE: we want the error in our log file, but not in the stdout of the daemon
     # to let the stdout errors for real daemon error
     def set_error(self, txt):
+        self.__state_refresh_this_loop = True
         # Be sure we are saving unicode string, as they can be json.dumps
         if isinstance(txt, str):
             txt = txt.decode('utf8', 'ignore')
@@ -76,16 +79,14 @@ class Collector(ParameterBasedType):
     
     
     def set_ok(self):
+        self.__state_refresh_this_loop = True
         self.state = 'OK'
     
     
     def set_not_eligible(self, txt):
+        self.__state_refresh_this_loop = True
         self.state = 'NOT-ELIGIBLE'
         self.log = txt
-    
-    
-    def set_running(self):
-        self.state = 'RUNNING'
     
     
     # Execute a shell command and return the result or '' if there is an error
@@ -143,6 +144,8 @@ class Collector(ParameterBasedType):
     
     
     def main(self):
+        # If the collector did refresh a state, we won't try to guess it
+        self.__state_refresh_this_loop = False
         from collectormanager import collectormgr
         self.logger.debug('Launching main for %s' % self.__class__)
         # Reset log
@@ -155,13 +158,12 @@ class Collector(ParameterBasedType):
             collectormgr.put_result(self.__class__.__name__.lower(), False, [], self.log)
             return
         
-        # If the collector send nothing, it can be ineligible
-        if not r:
-            if self.state != 'ERROR' and self.state != 'NOT-ELIGIBLE':
-                self.set_not_eligible('')
-        else:  # there was a returns, so unless the collector did export that it is not eligible
-            # we must set to ok
-            if self.state != 'NOT-ELIGIBLE':
+        # We try to guess the state from the result of the collector did not refresh it this turn
+        if not self.__state_refresh_this_loop:
+            # If the collector send nothing, it can be ineligible
+            if not r:
+                self.set_not_eligible('The collector did send no data')
+            else:  # there was a returns, so should be ok
                 self.set_ok()
         s = set()
         self.create_ts_from_data(r, [], s)

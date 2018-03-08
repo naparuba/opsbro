@@ -12,6 +12,12 @@ if [ $? != 0 ]; then
     exit 2
 fi
 
+# Wait until the collector is ready
+opsbro collectors wait-ok mongodb
+if [ $? != 0 ]; then
+    echo "ERROR: Mongodb collector is not responding"
+    exit 2
+fi
 
 RES=$(opsbro evaluator eval "{{collector.mongodb.available}}==True" | tail -n 1)
 
