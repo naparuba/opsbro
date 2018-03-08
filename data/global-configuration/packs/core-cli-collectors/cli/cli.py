@@ -11,7 +11,7 @@ import time
 from opsbro.log import cprint, logger
 from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_json, print_info_title, AnyAgent
-from opsbro.cli_display import print_h1
+from opsbro.cli_display import print_h1, print_h2
 from opsbro.collectormanager import collectormgr
 from opsbro.characters import CHARACTERS
 
@@ -161,6 +161,42 @@ def do_collectors_wait_ok(collector_name, timeout=30):
         sys.exit(2)
 
 
+def do_collectors_history():
+    # We need an agent for this
+    with AnyAgent():
+        try:
+            history_entries = get_opsbro_json('/agent/collectors/history')
+        except get_request_errors(), exp:
+            logger.error(exp)
+            return
+        
+        print_h1('History')
+        for history_entry in history_entries:
+            epoch_date = history_entry['date']
+            entries = history_entry['entries']
+            print_h2('  Date: %s ' % time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime(epoch_date)))
+            for entry in entries:
+                name = entry['name']
+                
+                cprint(' * ', end='')
+                cprint('%s ' % (name.ljust(20)), color='magenta', end='')
+                
+                old_state = entry['old_state']
+                c = COLLECTORS_STATE_COLORS.get(old_state, 'cyan')
+                cprint('%s' % old_state.ljust(10), color=c, end='')
+                
+                cprint(' %s ' % CHARACTERS.arrow_left, color='grey', end='')
+                
+                state = entry['state']
+                c = COLLECTORS_STATE_COLORS.get(state, 'cyan')
+                cprint('%s' % state.ljust(10), color=c)
+                
+                # Now print output the line under
+                log = entry['log']
+                if log:
+                    cprint(' ' * 4 + '| ' + log, color='grey')
+
+
 exports = {
     do_collectors_show   : {
         'keywords'   : ['collectors', 'show'],
@@ -195,4 +231,9 @@ exports = {
         'description': 'Wait until the collector rule is in OK state'
     },
     
+    do_collectors_history: {
+        'keywords'   : ['collectors', 'history'],
+        'description': 'Print the history of the collectors states',
+        'args'       : [],
+    },
 }

@@ -35,14 +35,16 @@ class Collector(ParameterBasedType):
     
     
     def __init__(self):
-        
         ParameterBasedType.__init__(self)
         
+        self.name = self.__class__.__name__.lower()
+        
         # Global logger for this part
-        self.logger = LoggerFactory.create_logger('collector.%s.%s' % (self.pack_name, self.__class__.__name__.lower()))
+        self.logger = LoggerFactory.create_logger('collector.%s.%s' % (self.pack_name, self.name))
         
         self.pythonVersion = pythonVersion
         self.state = 'PENDING'
+        self.old_state = 'PENDING'
         self.log = ''
         
         self.mysqlConnectionsStore = None
@@ -56,11 +58,33 @@ class Collector(ParameterBasedType):
         self.topIndex = 0
         self.os = None
         self.linuxProcFsLocation = None
-
+        
         self.__state_refresh_this_loop = False
+        
+        self.__did_state_change = False
     
     
-    # our run did fail, so we must exit in a clean way and keep a log
+    def is_in_group(self, group):
+        from opsbro.gossip import gossiper
+        return gossiper.is_in_group(group)
+    
+    
+    def get_history_entry(self):
+        if not self.__did_state_change:
+            return None
+        return {'name': self.name, 'old_state': self.old_state, 'state': self.state, 'log': self.log}
+    
+    
+    def __set_state(self, state):
+        if self.state == state:
+            return
+        self.old_state = self.state
+        self.state = state
+        self.__did_state_change = True
+        
+        # our run did fail, so we must exit in a clean way and keep a log
+    
+    
     # if we can
     # NOTE: we want the error in our log file, but not in the stdout of the daemon
     # to let the stdout errors for real daemon error
@@ -71,22 +95,18 @@ class Collector(ParameterBasedType):
             txt = txt.decode('utf8', 'ignore')
         self.logger.error(txt, do_print=False)
         self.log = txt
-        self.state = 'ERROR'
-    
-    def is_in_group(self, group):
-        from opsbro.gossip import gossiper
-        return gossiper.is_in_group(group)
+        self.__set_state('ERROR')
     
     
     def set_ok(self):
         self.__state_refresh_this_loop = True
-        self.state = 'OK'
+        self.__set_state('OK')
     
     
     def set_not_eligible(self, txt):
         self.__state_refresh_this_loop = True
-        self.state = 'NOT-ELIGIBLE'
         self.log = txt
+        self.__set_state('NOT-ELIGIBLE')
     
     
     # Execute a shell command and return the result or '' if there is an error
@@ -146,6 +166,9 @@ class Collector(ParameterBasedType):
     def main(self):
         # If the collector did refresh a state, we won't try to guess it
         self.__state_refresh_this_loop = False
+        # Detect if we will change status before then end of this loop
+        self.__did_state_change = False
+        
         from collectormanager import collectormgr
         self.logger.debug('Launching main for %s' % self.__class__)
         # Reset log
@@ -168,3 +191,6 @@ class Collector(ParameterBasedType):
         s = set()
         self.create_ts_from_data(r, [], s)
         collectormgr.put_result(self.__class__.__name__.lower(), r, list(s), self.log)
+        history_entry = self.get_history_entry()
+        if history_entry:
+            collectormgr.add_history_entry(history_entry)

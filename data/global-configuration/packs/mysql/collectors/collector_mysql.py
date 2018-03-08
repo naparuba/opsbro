@@ -27,7 +27,7 @@ class Mysql(Collector):
         logger.debug('getMySQLStatus: start')
         
         if not self.is_in_group('mysql'):
-            self.set_not_eligible('Mysql not detected. Please add the mysql group to enable it.')
+            self.set_not_eligible('Please add the mysql group to enable this collector.')
             return
         
         if MySQLdb is None:

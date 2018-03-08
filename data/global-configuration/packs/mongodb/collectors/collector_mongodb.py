@@ -22,12 +22,13 @@ class Mongodb(Collector):
         super(Mongodb, self).__init__()
         self.pymongo = None
     
+    
     def launch(self):
         logger = self.logger
         logger.debug('getMongoDBStatus: start')
         
         if not self.is_in_group('mongodb'):
-            self.set_not_eligible('Mongodb not detected. Please add the mongodb group to enable it.')
+            self.set_not_eligible('Please add the mongodb group to enable this collector.')
             return
         
         # Try to import pymongo from system (will be the best choice)
@@ -52,7 +53,7 @@ class Mongodb(Collector):
                         sys.path.remove(my_dir)
                     except:
                         pass
-            
+        
         try:
             mongoURI = ''
             parsed = urlparse.urlparse(self.get_parameter('uri'))
@@ -283,7 +284,7 @@ class Mongodb(Collector):
                     if 'optimeDate' in member:  # Only available as of 1.7.2
                         deltaOptime = datetime.datetime.utcnow() - member['optimeDate']
                         status['replSet']['members'][str(member['_id'])]['optimeDate'] = (deltaOptime.microseconds + (
-                            deltaOptime.seconds + deltaOptime.days * 24 * 3600) * 10 ** 6) / 10 ** 6
+                                deltaOptime.seconds + deltaOptime.days * 24 * 3600) * 10 ** 6) / 10 ** 6
                     
                     if 'self' in member:
                         status['replSet']['myId'] = member['_id']
@@ -293,7 +294,7 @@ class Mongodb(Collector):
                         if 'lastHeartbeat' in member:
                             deltaHeartbeat = datetime.datetime.utcnow() - member['lastHeartbeat']
                             status['replSet']['members'][str(member['_id'])]['lastHeartbeat'] = (
-                                                                                                    deltaHeartbeat.microseconds + (
+                                                                                                        deltaHeartbeat.microseconds + (
                                                                                                         deltaHeartbeat.seconds + deltaHeartbeat.days * 24 * 3600) * 10 ** 6) / 10 ** 6
                     
                     if 'errmsg' in member:

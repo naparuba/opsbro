@@ -17,7 +17,7 @@ class Nginx(Collector):
         logger = self.logger
         
         if not self.is_in_group('nginx'):
-            self.set_not_eligible('NGinx not detected. Please add the nginx group to enable it.')
+            self.set_not_eligible('Please add the nginx group to enable this collector.')
             return
         
         logger.debug('getNginxStatus: start')

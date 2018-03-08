@@ -17,7 +17,7 @@ class Apache(Collector):
     def launch(self):
         
         if not self.is_in_group('apache'):
-            self.set_not_eligible('Apache not detected. Please add the apache group to enable it.')
+            self.set_not_eligible('Please add the apache group to enable this collector.')
             return
         
         logger = self.logger
