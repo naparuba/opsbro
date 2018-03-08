@@ -12,6 +12,10 @@ class Nginx(Collector):
         'uri': StringParameter(default='http://localhost/nginx_status'),
     }
     
+    def __init__(self):
+        super(Nginx, self).__init__()
+        self.nginxRequestsStore = None
+        
     
     def launch(self):
         logger = self.logger

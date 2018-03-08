@@ -6,6 +6,9 @@ from opsbro.collector import Collector
 class Sshd(Collector):
     def launch(self):
         self.logger.debug('get_sshd: starting')
+        if not os.path.exists('/etc/ssh'):
+            self.set_not_eligible('There is no ssh server. Missing /etc/ssh directory.')
+            return
         res = {}
         if os.path.exists('/etc/ssh/ssh_host_rsa_key.pub'):
             f = open('/etc/ssh/ssh_host_rsa_key.pub', 'r')

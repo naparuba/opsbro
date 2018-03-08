@@ -19,7 +19,7 @@ class KernelStats(Collector):
     def launch(self):
         logger = self.logger
         now = int(NOW.monotonic())
-        diff = now - self.last_launch  #note: thanks to monotonic, diff cannot be negative
+        diff = now - self.last_launch  # note: thanks to monotonic, diff cannot be negative
         self.last_launch = now
         
         logger.debug('getKernelStats: start')
@@ -83,5 +83,5 @@ class KernelStats(Collector):
             return data
         
         else:
-            logger.debug('getKernelStats: other platform, returning')
+            self.set_not_eligible('This system is not managed')
             return False

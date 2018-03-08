@@ -13,6 +13,11 @@ class Apache(Collector):
         'password': StringParameter(default=''),
     }
     
+
+    def __init__(self):
+        super(Apache, self).__init__()
+        self.apacheTotalAccesses = None
+        
     
     def launch(self):
         

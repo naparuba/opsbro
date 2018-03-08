@@ -11,7 +11,7 @@ class LoadAverage(Collector):
         try:
             loadAvrgs_1, loadAvrgs_5, loadAvrgs_15 = os.getloadavg()
         except (AttributeError, OSError):
-            # If not available, return nothing
+            self.set_not_eligible('Load average is only availabe on unix systems')
             return False
         
         self.logger.debug('getLoadAvrgs: parsing')

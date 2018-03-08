@@ -230,6 +230,5 @@ class NetworkTraffic(Collector):
             return interfaces
         
         else:
-            logger.debug('getNetworkTraffic: other platform, returning')
-            
+            self.set_not_eligible('This system is not managed by this collector.')
             return False

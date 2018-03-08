@@ -1,12 +1,9 @@
 import os
-import platform
 import traceback
 import subprocess
 
 from .log import LoggerFactory
 from .parameters import ParameterBasedType
-
-pythonVersion = platform.python_version_tuple()
 
 
 class Collector(ParameterBasedType):
@@ -42,22 +39,9 @@ class Collector(ParameterBasedType):
         # Global logger for this part
         self.logger = LoggerFactory.create_logger('collector.%s.%s' % (self.pack_name, self.name))
         
-        self.pythonVersion = pythonVersion
         self.state = 'PENDING'
         self.old_state = 'PENDING'
         self.log = ''
-        
-        self.mysqlConnectionsStore = None
-        self.mysqlSlowQueriesStore = None
-        self.mysqlVersion = None
-        
-        self.nginxRequestsStore = None
-        self.mongoDBStore = None
-        self.apacheTotalAccesses = None
-        self.plugins = None
-        self.topIndex = 0
-        self.os = None
-        self.linuxProcFsLocation = None
         
         self.__state_refresh_this_loop = False
         

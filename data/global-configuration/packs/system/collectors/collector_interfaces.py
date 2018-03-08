@@ -52,5 +52,5 @@ class Interfaces(Collector):
                     if 'interface' in r:
                         res[r['interface']] = r
                 return res
-        
+        self.set_not_eligible('Your system is not managed, missing the ifconfig command.')
         return res

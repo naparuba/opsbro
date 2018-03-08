@@ -29,6 +29,7 @@ class Postfix(Collector):
     
     def launch(self):
         if not os.path.exists(self.postfix_dir):
+            self.set_not_eligible('There is no postfix spool directory.')
             return False
         for t in self.types:
             c = self.count_sub_dir(t)

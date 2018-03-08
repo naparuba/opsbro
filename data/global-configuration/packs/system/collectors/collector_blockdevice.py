@@ -8,6 +8,7 @@ class Blockdevice(Collector):
         self.logger.debug('getBlockdevice: start')
         res = {}
         if not os.path.exists('/sys/block/'):
+            self.set_not_eligible('This collector is only availabe on linux')
             return res
         names = os.listdir('/sys/block/')
         # We will need to remove 0 size block device

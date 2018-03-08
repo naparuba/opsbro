@@ -5,7 +5,6 @@ import time
 from opsbro.collector import Collector
 from opsbro.now import NOW
 
-
 if os.name == 'nt':
     import opsbro.misc.wmi as wmi
 
@@ -91,9 +90,9 @@ class CpuStats(Collector):
                 time.sleep(1)
                 new_stats = self._get_linux_abs_stats()
                 new_time = NOW.monotonic()
-                
+            
             # NOTE: thanks to monotonic time, we cannot get back in time for diff
-
+            
             # So let's compute
             r = self.compute_linux_cpu_stats(new_stats, new_time - self.prev_linux_time)
             self.prev_linux_stats = new_stats
@@ -101,7 +100,5 @@ class CpuStats(Collector):
             return r
         else:
             logger.debug('getCPUStats: unsupported platform')
+            self.set_not_eligible('This collector is not available on your system.')
             return False
-        
-        self.logger.debug('getCPUStats: completed, returning')
-        return cpuStats

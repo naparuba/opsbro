@@ -62,6 +62,10 @@ class Redis(Collector):
     
     
     def launch(self):
+        if not self.is_in_group('redis'):
+            self.set_not_eligible('Please add the redis group to enable this collector.')
+            return
+        
         addr = '127.0.0.1'
         port = 6379
         logger = self.logger

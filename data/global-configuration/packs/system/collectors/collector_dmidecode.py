@@ -33,6 +33,7 @@ class Dmidecode(Collector):
                     buf = commands.getoutput('LANG=C dmidecode -s %s' % p).strip()
                     if 'No such file or directory' in buf:
                         logger.warning('Cannot access to dmi information with dmidecode command, exiting this collector.')
+                        self.set_not_eligible('Cannot get DMI informations because the dmidecode command is missing.')
                         return res
                     res[p.replace('-', '_').strip()] = buf
             logger.debug('getdmidecode: completed, returning')

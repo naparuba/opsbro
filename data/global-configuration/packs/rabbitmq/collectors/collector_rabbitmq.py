@@ -23,7 +23,7 @@ class RabbitMQ(Collector):
         logger.debug('getRabbitMQStatus: start')
         
         if not self.is_in_group('rabbitmq'):
-            self.set_not_eligible('RabbitMQ not detected. Please add the rabbitmq group to enable it.')
+            self.set_not_eligible('Please add the rabbitmq group to enable this collector.')
             return
         
         uri = 'http://localhost:15672/api/overview'

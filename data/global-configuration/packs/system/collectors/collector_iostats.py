@@ -125,7 +125,7 @@ class IoStats(Collector):
             return iostats
         
         if sys.platform != 'linux2':
-            logger.debug('getIOStats: unsupported platform')
+            self.set_not_eligible('Unsupported platform for this collector')
             return False
         
         new_stats = self._get_disk_stats()

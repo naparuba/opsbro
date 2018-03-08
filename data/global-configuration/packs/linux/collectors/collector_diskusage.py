@@ -11,6 +11,7 @@ class DiskUsage(Collector):
         
         # logger.debug('getDiskUsage: attempting Popen')
         if os.name == 'nt':
+            self.set_not_eligible('This collector is not availabe on windows currently.')
             return False
         
         _cmd = 'df -k -x smbfs -x tmpfs -x cifs -x iso9660 -x udf -x nfsv4 -x udev -x devtmpfs'

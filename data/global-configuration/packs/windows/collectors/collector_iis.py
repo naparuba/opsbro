@@ -9,7 +9,11 @@ class IIS(Collector):
     def launch(self):
         # logger.debug('getMemoryUsage: start')
         if os.name != 'nt':
+            self.set_not_eligible('This collector is only available on Windows')
             return False
+        
+        if not self.is_in_group('iis-server'):
+            self.set_not_eligible('Please add the iis-server group to enable this collector.')
         
         data = {}
         counters = [

@@ -21,6 +21,8 @@ class Mongodb(Collector):
     def __init__(self):
         super(Mongodb, self).__init__()
         self.pymongo = None
+        self.mongoDBStore = None
+        
     
     
     def launch(self):

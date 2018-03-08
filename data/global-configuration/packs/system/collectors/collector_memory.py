@@ -339,5 +339,5 @@ class Memory(Collector):
                     'swapFree': swapParts[2], 'cached': 'NULL'}
         
         else:
-            logger.debug('getMemoryUsage: other platform, returning')
+            self.set_not_eligible('This system is not managed by this collector.')
             return False

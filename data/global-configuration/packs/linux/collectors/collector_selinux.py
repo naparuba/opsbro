@@ -9,6 +9,7 @@ class Selinux(Collector):
         self.logger.debug('getSelinux: start')
         
         if sys.platform != 'linux2':
+            self.set_not_eligible('SeLinux is only available on linux. not kidding.')
             return {}
         
         res = {'enabled': False, 'mode': 'disabled'}

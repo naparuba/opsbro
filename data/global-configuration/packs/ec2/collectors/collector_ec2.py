@@ -7,6 +7,7 @@ class EC2(Collector):
         # We are active only if the hosting driver is scaleway
         hostingctxmgr = get_hostingdrivermgr()
         if not hostingctxmgr.is_driver_active('ec2'):
+            self.set_not_eligible('This server is not hosted on AWS/EC2')
             return False
         
         hostingctx = hostingctxmgr.get_driver('ec2')

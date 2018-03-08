@@ -7,6 +7,7 @@ class GoogleCloud(Collector):
         # We are active only if the hosting driver is scaleway
         hostingctxmgr = get_hostingdrivermgr()
         if not hostingctxmgr.is_driver_active('google-cloud'):
+            self.set_not_eligible('This server is not hosted on google-cloud')
             return False
         
         hostingctx = hostingctxmgr.get_driver('google-cloud')

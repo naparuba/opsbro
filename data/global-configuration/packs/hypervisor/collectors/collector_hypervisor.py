@@ -147,7 +147,7 @@ class Hypervisor(Collector):
         try:
             cpu = CPUID()
         except Exception, exp:
-            self.logger.warning('Cannot get cpuid/hypervisor information: %s' % exp)
+            self.set_error('Cannot get cpuid/hypervisor information: %s' % exp)
             return res
         
         hypervisor = struct.pack('IIII', *cpu(HYPERVISOR_INFO_LEAF)).decode('ascii', 'ignore')

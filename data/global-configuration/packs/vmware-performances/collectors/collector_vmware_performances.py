@@ -46,6 +46,7 @@ class VmwarePerformances(Collector):
         
         res = {'vmware_tools_available': False, 'cpu': {}, 'memory': {}}
         if lib_ptr is None:
+            self.set_not_eligible('The vmware tools are not installed on this server.')
             return res
         
         res['vmware_tools_available'] = True
