@@ -9,4 +9,4 @@ check:
     warning_if: "{{collector.diskusage./.pct_used}} > {{parameters.diskuse_warning}}"
     warning_output:  "'WARNING: / is at %s%%' % {{collector.diskusage./.pct_used}}"
     
-    interval: "60s"
+    interval: 60s

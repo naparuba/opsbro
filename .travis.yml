@@ -25,6 +25,8 @@ env:
 - TEST_SUITE=UBUNTU
 # Some tests are with 2 docker that must run together. I hope it will be maintainable
 - TEST_SUITE=DUO1
+# This one is with 3 containers, trying to join together
+- TEST_SUITE=DUO2
 
 
 # command to run tests

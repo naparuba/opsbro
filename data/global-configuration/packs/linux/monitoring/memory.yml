@@ -9,4 +9,4 @@ check:
     warning_if: "{{collector.memory.phys_used}} > {{parameters.threshold.memory_warning}}"
     warning_output:  "'WARNING: memory is at %d%%' % {{collector.memory.phys_used}}"
 
-    interval: "30s"
+    interval: 30s
