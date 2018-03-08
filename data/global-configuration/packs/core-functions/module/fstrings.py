@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from opsbro.evaluater import export_evaluater_function
 
 FUNCTION_GROUP = 'string'

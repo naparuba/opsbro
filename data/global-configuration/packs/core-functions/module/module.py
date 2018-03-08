@@ -10,6 +10,9 @@ import node
 import frandom
 import fhash
 import hosting
+import fstrings
+import fdisplay
+
 
 class CoreFunctionsModule(FunctionsExportModule):
     implement = 'corefunctions'
