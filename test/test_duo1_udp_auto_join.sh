@@ -4,6 +4,9 @@ CASE=$1
 
 # If node2: wait and quite
 
+# Set a valid display name for debug
+opsbro agent parameters set display_name "$CASE"
+
 if [ $CASE == "NODE2" ]; then
     echo "Case node2, just waiting for the other node to join us then exit"
     ip addr show
