@@ -207,13 +207,22 @@ class Gossip(object):
     
     
     def __add_group_change_history_entry(self, group, action):
-        print "__add_group_change_history_entry::%s:%s" % (group, action)
         node = self.nodes[self.uuid]
         history_entry = {'type': 'group-%s' % action,
                          'name': node['name'], 'display_name': node.get('display_name', ''),
                          'uuid': node['uuid'], 'group': group,
                          }
         
+        with self.__current_history_entry_lock:
+            self.__current_history_entry.append(history_entry)
+    
+    
+    def __add_node_state_change_history_entry(self, node, old_state, new_state):
+        history_entry = {'type': 'node-state-change',
+                         'name': node['name'], 'display_name': node.get('display_name', ''),
+                         'uuid': node['uuid'], 'old_state': old_state, 'state': new_state,
+                         }
+        logger.info('__add_node_state_change_history_entry:: %s' % history_entry)
         with self.__current_history_entry_lock:
             self.__current_history_entry.append(history_entry)
     
@@ -445,13 +454,14 @@ class Gossip(object):
         # maybe the prev was out by another thread?
         if prev is None:
             return
-        change = (prev['state'] != state)
+        prev_state = prev['state']
+        change = (prev_state != state)
         
         # If the data is not just new, bail out
         if not strong and incarnation <= prev['incarnation']:
             return
         
-        logger.debug('ALIVENODE', name, prev['state'], state, strong, change, incarnation, prev['incarnation'], (strong and change), (incarnation > prev['incarnation']))
+        logger.debug('ALIVENODE', name, prev_state, state, strong, change, incarnation, prev['incarnation'], (strong and change), (incarnation > prev['incarnation']))
         # only react to the new data if they are really new :)
         if strong or incarnation > prev['incarnation']:
             # protect the nodes access with the lock so others threads are happy :)
@@ -465,6 +475,9 @@ class Gossip(object):
                 self.node_did_change(uuid)
                 # and external ones
                 self.stack_alive_broadcast(node)
+                if change:
+                    # Save this change into our history
+                    self.__add_node_state_change_history_entry(node, prev_state, node['state'])
     
     
     # Someone suspect a node, so believe it
@@ -488,7 +501,8 @@ class Gossip(object):
         
         # We only case about into about alive nodes, dead and suspect
         # are not interesting :)
-        if node['state'] != 'alive':
+        prev_state = node['state']
+        if prev_state != 'alive':
             return
         
         # Maybe it's us?? We need to say FUCKING NO, I'm alive!!
@@ -505,6 +519,8 @@ class Gossip(object):
         
         # warn internal elements
         self.node_did_change(uuid)
+        # Save this change into our history
+        self.__add_node_state_change_history_entry(node, prev_state, node['state'])
         # and external ones
         self.stack_suspect_broadcast(node)
     
@@ -528,8 +544,9 @@ class Gossip(object):
         if node is None:
             return
         
+        prev_state = node['state']
         # Maybe we already know it's leaved, so don't update it
-        if node['state'] == 'leave':
+        if prev_state == 'leave':
             return
         
         # If for me it must be with my own incarnation number so we are sure it's really us that should leave
@@ -574,6 +591,8 @@ class Gossip(object):
         
         # warn internal elements
         self.node_did_change(uuid)
+        # Save this change into our history
+        self.__add_node_state_change_history_entry(node, prev_state, node['state'])
         # and external ones
         self.stack_leave_broadcast(node)
     
@@ -601,12 +620,13 @@ class Gossip(object):
         # * dead : we already know it
         # * suspect : we already did receive it
         # * leave : it is already out in a way
-        if node['state'] != 'alive':
+        prev_state = node['state']
+        if prev_state != 'alive':
             return
         
         # Maybe it's us?? We need to say FUCKING NO, I'm alive!!
         if uuid == self.uuid:
-            logger.warning('SUSPECT: SOMEONE THINK I AM SUSPECT, BUT I AM ALIVE')
+            logger.warning('DEAD: SOMEONE THINK I AM DEAD, BUT I AM ALIVE')
             self.increase_incarnation_and_broadcast(broadcast_type='alive')
             return
         
@@ -618,6 +638,8 @@ class Gossip(object):
         
         # warn internal elements
         self.node_did_change(uuid)
+        # Save this change into our history
+        self.__add_node_state_change_history_entry(node, prev_state, node['state'])
         # and external ones
         self.stack_dead_broadcast(node)
     
@@ -1022,35 +1044,37 @@ class Gossip(object):
         # * prioritary messages
         # * less send first
         broadcaster.sort()
-        for b in broadcaster.broadcasts:
-            # not a valid node for this message, skip it
-            if 'group' in b and b['group'] not in groups:
-                continue
-            old_message = message
-            # only delete message if we consume it (our zone)
-            if consume:
-                send = b['send']
-                if send >= KGOSSIP:
-                    to_del.append(b)
-            bmsg = b['msg']
-            stack.append(bmsg)
-            message = json.dumps(stack)
-            # Maybe we are now too large and we do not have just one
-            # fucking big message, so we fail back to the old_message that was
-            # in the good size and send it now
-            if len(message) > 1400 and len(stack) != 1:
-                message = old_message
-                stack = stack[:-1]
-                logger.debug("__do_gossip_push:: overload message %s. skipping new ones" % len(stack))
-                break
-            # Increase message send number but only if we need to consume it (our zone send)
-            if consume:
-                # stack a sent to this broadcast message
-                b['send'] += 1
+        with broadcaster.broadcasts_lock:
+            for b in broadcaster.broadcasts:
+                # not a valid node for this message, skip it
+                if 'group' in b and b['group'] not in groups:
+                    continue
+                old_message = message
+                # only delete message if we consume it (our zone)
+                if consume:
+                    send = b['send']
+                    if send >= KGOSSIP:
+                        to_del.append(b)
+                bmsg = b['msg']
+                stack.append(bmsg)
+                message = json.dumps(stack)
+                # Maybe we are now too large and we do not have just one
+                # fucking big message, so we fail back to the old_message that was
+                # in the good size and send it now
+                if len(message) > 1400 and len(stack) != 1:
+                    message = old_message
+                    stack = stack[:-1]
+                    logger.debug("__do_gossip_push:: overload message %s. skipping new ones" % len(stack))
+                    break
+                # Increase message send number but only if we need to consume it (our zone send)
+                if consume:
+                    # stack a sent to this broadcast message
+                    b['send'] += 1
         
-        # Clean too much broadcasted messages
-        for b in to_del:
-            broadcaster.broadcasts.remove(b)
+        with broadcaster.broadcasts_lock:
+            # Clean too much broadcasted messages
+            for b in to_del:
+                broadcaster.broadcasts.remove(b)
         
         # Void message? bail out
         if len(message) == 0:
@@ -1208,6 +1232,11 @@ class Gossip(object):
                 if stime < (now - suspect_timeout):
                     logger.info("SUSPECT: NODE", node['name'], node['incarnation'], node['state'], "is NOW DEAD")
                     node['state'] = 'dead'
+                    # warn internal elements
+                    self.node_did_change(node['uuid'])
+                    # Save this change into our history
+                    self.__add_node_state_change_history_entry(node, 'suspect', 'dead')
+                    # and external ones
                     self.stack_dead_broadcast(node)
         
         # Now for leave nodes, this time we will really remove the entry from our nodes
@@ -1279,7 +1308,7 @@ class Gossip(object):
         msg = self.create_alive_msg(node)
         # Node messages are before all others
         b = {'send': 0, 'msg': msg, 'prioritary': True}
-        broadcaster.broadcasts.append(b)
+        broadcaster.append(b)
         # Also send it to the websocket if there
         self.forward_to_websocket(msg)
         return
@@ -1288,14 +1317,14 @@ class Gossip(object):
     def stack_event_broadcast(self, payload):
         msg = self.create_event_msg(payload)
         b = {'send': 0, 'msg': msg}
-        broadcaster.broadcasts.append(b)
+        broadcaster.append(b)
         return
     
     
     def stack_new_ts_broadcast(self, key):
         msg = self.create_new_ts_msg(key)
         b = {'send': 0, 'msg': msg, 'groups': 'ts'}
-        broadcaster.broadcasts.append(b)
+        broadcaster.append(b)
         return
     
     
@@ -1303,7 +1332,7 @@ class Gossip(object):
         msg = self.create_suspect_msg(node)
         # Node messages are before all others
         b = {'send': 0, 'msg': msg, 'prioritary': True}
-        broadcaster.broadcasts.append(b)
+        broadcaster.append(b)
         # Also send it to the websocket if there
         self.forward_to_websocket(msg)
         return b
@@ -1313,7 +1342,7 @@ class Gossip(object):
         msg = self.create_leave_msg(node)
         # Node messages are before all others
         b = {'send': 0, 'msg': msg, 'prioritary': True}
-        broadcaster.broadcasts.append(b)
+        broadcaster.append(b)
         # Also send it to the websocket if there
         self.forward_to_websocket(msg)
         return b
@@ -1323,7 +1352,7 @@ class Gossip(object):
         msg = self.create_dead_msg(node)
         # Node messages are before all others
         b = {'send': 0, 'msg': msg, 'prioritary': True}
-        broadcaster.broadcasts.append(b)
+        broadcaster.append(b)
         self.forward_to_websocket(msg)
         return b
     
@@ -1364,6 +1393,13 @@ class Gossip(object):
             with self.nodes_lock:
                 nodes = copy.copy(self.nodes)
             return nodes
+        
+        
+        @http_export('/agent/members/history', method='GET')
+        def agent_members_history():
+            response.content_type = 'application/json'
+            r = gossiper.get_history()
+            return json.dumps(r)
         
         
         @http_export('/agent/join/:other')

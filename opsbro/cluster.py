@@ -952,7 +952,7 @@ class Cluster(object):
     def stack_event_broadcast(self, payload):
         msg = gossiper.create_event_msg(payload)
         b = {'send': 0, 'msg': msg}
-        broadcaster.broadcasts.append(b)
+        broadcaster.append(b)
         return
     
     
@@ -992,7 +992,7 @@ class Cluster(object):
                 return
         # ok new one, add a broadcast so we diffuse it, and manage it
         b = {'send': 0, 'msg': m}
-        broadcaster.broadcasts.append(b)
+        broadcaster.append(b)
         with self.events_lock:
             self.events[eventid] = m
         

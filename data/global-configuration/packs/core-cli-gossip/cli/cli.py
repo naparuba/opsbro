@@ -5,7 +5,6 @@
 #    Gabes Jean, naparuba@gmail.com
 
 
-
 import sys
 import json
 import time
@@ -16,10 +15,13 @@ from opsbro.log import cprint, logger, sprintf
 from opsbro.library import libstore
 from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, put_opsbro_json, wait_for_agent_started
-from opsbro.cli_display import print_h1
+from opsbro.cli_display import print_h1, print_h2
 from opsbro.threadmgr import threader
 
 NO_ZONE_DEFAULT = '(no zone)'
+
+NODE_STATE_COLORS = {'alive': 'green', 'dead': 'red', 'suspect': 'yellow', 'leave': 'cyan'}
+NODE_STATE_PREFIXS = {'alive': CHARACTERS.check, 'dead': CHARACTERS.cross, 'suspect': CHARACTERS.double_exclamation, 'leave': CHARACTERS.arrow_bottom}
 
 
 ############# ********************        MEMBERS management          ****************###########
@@ -82,8 +84,8 @@ def do_members(detail=False):
                 cprint('%s  ' % name.ljust(max_name_size), color='magenta', end='')
             else:
                 cprint(' %s  %s  ' % (m['uuid'], name.ljust(max_name_size)), end='')
-            c = {'alive': 'green', 'dead': 'red', 'suspect': 'yellow', 'leave': 'cyan'}.get(state, 'cyan')
-            state_prefix = {'alive': CHARACTERS.check, 'dead': CHARACTERS.cross, 'suspect': CHARACTERS.double_exclamation, 'leave': CHARACTERS.arrow_bottom}.get(state, CHARACTERS.double_exclamation)
+            c = NODE_STATE_COLORS.get(state, 'cyan')
+            state_prefix = NODE_STATE_PREFIXS.get(state, CHARACTERS.double_exclamation)
             cprint(('%s %s' % (state_prefix, state)).ljust(9), color=c, end='')  # 7 for the maximum state string + 2 for prefix
             s = ' %s:%s ' % (addr, port)
             s = s.ljust(max_addr_size + 2)  # +2 for the spaces
@@ -95,6 +97,46 @@ def do_members(detail=False):
             if detail:
                 cprint('%5d' % m['incarnation'], end='')
             cprint(' %s ' % ','.join(groups))
+
+
+def do_members_history():
+    # The information is available only if the agent is started
+    wait_for_agent_started(visual_wait=True)
+    
+    try:
+        history_entries = get_opsbro_json('/agent/members/history')
+    except get_request_errors(), exp:
+        logger.error('Cannot join opsbro agent: %s' % exp)
+        sys.exit(1)
+    
+    print_h1('History')
+    for history_entry in history_entries:
+        epoch_date = history_entry['date']
+        # We want only group type events
+        entries = [entry for entry in history_entry['entries'] if entry['type'] == 'node-state-change']
+        if not entries:
+            continue
+        print_h2('  Date: %s ' % time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime(epoch_date)))
+        for entry in entries:
+            name = entry['name']
+            if entry.get('display_name', ''):
+                name = '[ ' + entry.get('display_name') + ' ]'
+            #            print "Entry", entry
+            old_state = entry['old_state']
+            new_state = entry['state']
+            
+            old_color = NODE_STATE_COLORS.get(old_state, 'cyan')
+            old_state_prefix = NODE_STATE_PREFIXS.get(old_state, CHARACTERS.double_exclamation)
+            
+            new_color = NODE_STATE_COLORS.get(new_state, 'cyan')
+            new_state_prefix = NODE_STATE_PREFIXS.get(new_state, CHARACTERS.double_exclamation)
+            
+            cprint('%s  ' % name.ljust(20), color='magenta', end='')
+            cprint(('%s %s' % (old_state_prefix, old_state)).ljust(9), color=old_color, end='')  # 7 for the maximum state string + 2 for prefix
+            
+            cprint(' %s ' % CHARACTERS.arrow_left, color='grey', end='')
+            
+            cprint(('%s %s' % (new_state_prefix, new_state)).ljust(9), color=new_color)  # 7 for the maximum state string + 2 for prefix
 
 
 def do_leave(nuuid=''):
@@ -229,7 +271,7 @@ def do_detect_nodes(auto_join):
 
 
 exports = {
-    do_members     : {
+    do_members        : {
         'keywords'   : ['gossip', 'members'],
         'args'       : [
             {'name': '--detail', 'type': 'bool', 'default': False, 'description': 'Show detail mode for the cluster members'},
@@ -237,7 +279,14 @@ exports = {
         'description': 'List the cluster members'
     },
     
-    do_join        : {
+    do_members_history: {
+        'keywords'   : ['gossip', 'history'],
+        'args'       : [
+        ],
+        'description': 'Show the history of the gossip nodes'
+    },
+    
+    do_join           : {
         'keywords'   : ['gossip', 'join'],
         'description': 'Join another node cluster',
         'args'       : [
@@ -245,7 +294,7 @@ exports = {
         ],
     },
     
-    do_leave       : {
+    do_leave          : {
         'keywords'   : ['gossip', 'leave'],
         'description': 'Put in leave a cluster node',
         'args'       : [
@@ -254,7 +303,7 @@ exports = {
         ],
     },
     
-    do_zone_change : {
+    do_zone_change    : {
         'keywords'   : ['gossip', 'zone', 'change'],
         'args'       : [
             {'name': 'name', 'default': '', 'description': 'Change to the zone'},
@@ -262,7 +311,7 @@ exports = {
         'description': 'Change the zone of the node'
     },
     
-    do_detect_nodes: {
+    do_detect_nodes   : {
         'keywords'   : ['gossip', 'detect'],
         'args'       : [
             {'name': '--auto-join', 'default': False, 'description': 'Try to join the first detected proxy node. If no proxy is founded, join the first one.', 'type': 'bool'},

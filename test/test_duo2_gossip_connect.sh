@@ -99,6 +99,9 @@ if [ "$NODE_NB" == "3" ]; then
    assert_count "leave" "1"
 
    echo "All states are good, exiting"
+
+   cat /var/lib/opsbro/nodes_history/*
+
    exit 0
 fi
 

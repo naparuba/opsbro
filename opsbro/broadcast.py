@@ -21,6 +21,11 @@ class Broadcaster(object):
         return cmp(b1['send'], b2['send'])
     
     
+    def append(self, msg):
+        with self.broadcasts_lock:
+            self.broadcasts.append(msg)
+    
+    
     def sort(self):
         with self.broadcasts_lock:
             self.broadcasts.sort(cmp=self.__sort_function)
