@@ -19,4 +19,4 @@ RUN       python setup.py install
 RUN       opsbro agent parameters set encryption_key NGNjZWI2ZmEyMzEyMTFlOA==
 
 # The node1 will try to connect to node2 and auto join it
-ENTRYPOINT    test_duo2_gossip_connect.sh "3"
+ENTRYPOINT    test/test_duo2_gossip_connect.sh "3"
