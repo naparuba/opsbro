@@ -15,4 +15,4 @@ WORKDIR       /root/opsbro-oss
 RUN       python setup.py install
 
 # The node1 will try to connect to node2 and auto join it
-ENTRYPOINT    test/test_one_linux_installation.sh   && test/test_udp_auto_join.sh "NODE1"
+ENTRYPOINT    test/test_one_linux_installation.sh   && test/test_duo1_udp_auto_join.sh "NODE1"

@@ -21,4 +21,4 @@ ADD        test/test-files/test-generators/   /var/lib/opsbro/global-configurati
 RUN        ls -R /var/lib/opsbro/global-configuration/packs/
 RUN        cp   /var/lib/opsbro/global-configuration/packs/test-generators/generators/authorized_keys.txt  /tmp/
 
-ENTRYPOINT     test/test_one_linux_installation.sh   && test/test_generators.sh
+ENTRYPOINT     test/test_one_linux_installation.sh   && test/test_feature_generators.sh

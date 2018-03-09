@@ -17,6 +17,6 @@ WORKDIR    /root/opsbro-oss
 
 RUN        python setup.py install
 
-ENTRYPOINT   test/test_rabbitmq.sh
+ENTRYPOINT   test/test_pack_rabbitmq.sh
 
 

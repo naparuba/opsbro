@@ -17,4 +17,4 @@ ADD        . /root/opsbro-oss
 WORKDIR    /root/opsbro-oss
 
 
-ENTRYPOINT     test/test_tarball_execution.sh
+ENTRYPOINT     test/test_feature_tarball_execution.sh

@@ -17,6 +17,6 @@ WORKDIR    /root/opsbro-oss
 
 RUN        python setup.py install
 
-ENTRYPOINT      test/test_redis.sh
+ENTRYPOINT      test/test_pack_redis.sh
 
 

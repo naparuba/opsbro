@@ -42,4 +42,4 @@ ADD        . /root/opsbro-oss
 WORKDIR       /root/opsbro-oss
 
 
-ENTRYPOINT     /bin/bash test/build_tutorials.sh
+ENTRYPOINT     /bin/bash test/feature_build_tutorials.sh

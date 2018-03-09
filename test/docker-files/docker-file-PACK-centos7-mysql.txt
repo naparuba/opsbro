@@ -10,7 +10,6 @@ RUN        yum --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=a
 RUN        yum --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install libyaml-devel
 RUN        yum --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install python-setuptools
 
-
 RUN        yum --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install mariadb-server
 
 RUN        mysql_install_db --user=mysql --basedir=/usr/ --ldata=/var/lib/mysql/
@@ -20,6 +19,6 @@ WORKDIR    /root/opsbro-oss
 
 RUN        python setup.py install
 
-ENTRYPOINT      test/test_mysql.sh
+ENTRYPOINT      test/test_pack_mysql.sh
 
 

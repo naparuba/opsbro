@@ -22,4 +22,4 @@ RUN       python setup.py install
 # Copy the new checks
 ADD        test/test-files/test-nagios-checks   /var/lib/opsbro/global-configuration/packs/
 
-ENTRYPOINT     test/test_one_linux_installation.sh   && test/test_nagios_checks.sh
+ENTRYPOINT     test/test_one_linux_installation.sh   && test/test_feature_nagios_checks.sh
