@@ -24,6 +24,16 @@ NO_ZONE_DEFAULT = '(no zone)'
 
 ############# ********************        MEMBERS management          ****************###########
 
+def __sorted_members(m1, m2):
+    n1 = m1.get('display_name', '')
+    if not n1:
+        n1 = m1.get('name')
+    n2 = m2.get('display_name', '')
+    if not n2:
+        n2 = m2.get('name')
+    return cmp(n1, n2)
+
+
 def do_members(detail=False):
     # The information is available only if the agent is started
     wait_for_agent_started(visual_wait=True)
@@ -33,7 +43,7 @@ def do_members(detail=False):
     except get_request_errors(), exp:
         logger.error('Cannot join opsbro agent: %s' % exp)
         sys.exit(1)
-    members = sorted(members, key=lambda e: e['name'])
+    members = sorted(members, cmp=__sorted_members)
     pprint = libstore.get_pprint()
     logger.debug('Raw members: %s' % (pprint.pformat(members)))
     # If there is a display_name, use it
@@ -83,7 +93,7 @@ def do_members(detail=False):
             else:
                 cprint('      ', end='')
             if detail:
-                cprint('%5d' % m['incarnation'])
+                cprint('%5d' % m['incarnation'], end='')
             cprint(' %s ' % ','.join(groups))
 
 

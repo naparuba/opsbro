@@ -517,7 +517,7 @@ class Gossip(object):
         uuid = leaved['uuid']
         state = 'leave'
         
-        logger.debug('SET_LEAVE::', uuid, leaved['name'])
+        logger.info('SET_LEAVE::', uuid, leaved['name'], incarnation)
         
         # Maybe we didn't even have this nodes in our list?
         if uuid not in self.nodes:
@@ -541,21 +541,24 @@ class Gossip(object):
         else:
             # If not for me, use the classic 'not already known' rule
             if incarnation < node['incarnation']:
-                logger.debug('Dropping old information (leave) about a node')
+                logger.info('Dropping old information (LEAVE) about a node (%s). Our memory incarnation: %s Message incarnation:%s' % (uuid, node['incarnation'], incarnation))
                 return
         
         # Maybe it's us?? If so we must send our broadcast and exit in few seconds
         if uuid == self.uuid:
             logger.info('LEAVE: someone is asking me for leaving.')
+            # Mark myself as leave so
+            node['state'] = state
             self.increase_incarnation_and_broadcast(broadcast_type='leave')
             
             
             # Define a function that will wait 10s to let the others nodes know that we did leave
             # and then ask for a clean stop of the daemon
             def bailout_after_leave(self):
-                logger.log('Bailing out in few seconds. I was put in leave state')
+                wait_time = 10
+                logger.info('Waiting out %s seconds before exiting as we are set in leave state' % wait_time)
                 time.sleep(10)
-                logger.log('Exiting from a self leave message')
+                logger.info('Exiting from a self leave message')
                 # Will set self.interrupted = True to every thread that loop
                 pubsub.pub('interrupt')
             
@@ -1015,6 +1018,10 @@ class Gossip(object):
         to_del = []
         stack = []
         groups = dest.get('groups', [])
+        # Be sure we will have first:
+        # * prioritary messages
+        # * less send first
+        broadcaster.sort()
         for b in broadcaster.broadcasts:
             # not a valid node for this message, skip it
             if 'group' in b and b['group'] not in groups:
@@ -1034,6 +1041,7 @@ class Gossip(object):
             if len(message) > 1400 and len(stack) != 1:
                 message = old_message
                 stack = stack[:-1]
+                logger.debug("__do_gossip_push:: overload message %s. skipping new ones" % len(stack))
                 break
             # Increase message send number but only if we need to consume it (our zone send)
             if consume:
@@ -1056,7 +1064,7 @@ class Gossip(object):
             enc_message = encrypter.encrypt(message)
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
             sock.sendto(enc_message, (addr, port))
-            logger.debug('BROADCAST: sent %d message (len=%d) to %s:%s' % (len(stack), len(enc_message), addr, port))
+            logger.info('BROADCAST: sent %d message (len=%d) to %s:%s (uuid=%s)' % (len(stack), len(enc_message), addr, port, dest['uuid']))
         except (socket.timeout, socket.gaierror), exp:
             logger.debug("ERROR: cannot sent the message %s" % exp)
         try:
@@ -1187,7 +1195,7 @@ class Gossip(object):
         probe_interval = 1
         suspicion_mult = 5
         suspect_timeout = suspicion_mult * node_scale * probe_interval
-        leave_timeout = suspect_timeout * 3  # something like 30s
+        leave_timeout = suspect_timeout * 30  # something like 300s
         
         # print "SUSPECT timeout", suspect_timeout
         now = int(time.time())
@@ -1269,7 +1277,8 @@ class Gossip(object):
     
     def stack_alive_broadcast(self, node):
         msg = self.create_alive_msg(node)
-        b = {'send': 0, 'msg': msg}
+        # Node messages are before all others
+        b = {'send': 0, 'msg': msg, 'prioritary': True}
         broadcaster.broadcasts.append(b)
         # Also send it to the websocket if there
         self.forward_to_websocket(msg)
@@ -1292,7 +1301,8 @@ class Gossip(object):
     
     def stack_suspect_broadcast(self, node):
         msg = self.create_suspect_msg(node)
-        b = {'send': 0, 'msg': msg}
+        # Node messages are before all others
+        b = {'send': 0, 'msg': msg, 'prioritary': True}
         broadcaster.broadcasts.append(b)
         # Also send it to the websocket if there
         self.forward_to_websocket(msg)
@@ -1301,7 +1311,8 @@ class Gossip(object):
     
     def stack_leave_broadcast(self, node):
         msg = self.create_leave_msg(node)
-        b = {'send': 0, 'msg': msg}
+        # Node messages are before all others
+        b = {'send': 0, 'msg': msg, 'prioritary': True}
         broadcaster.broadcasts.append(b)
         # Also send it to the websocket if there
         self.forward_to_websocket(msg)
@@ -1310,7 +1321,8 @@ class Gossip(object):
     
     def stack_dead_broadcast(self, node):
         msg = self.create_dead_msg(node)
-        b = {'send': 0, 'msg': msg}
+        # Node messages are before all others
+        b = {'send': 0, 'msg': msg, 'prioritary': True}
         broadcaster.broadcasts.append(b)
         self.forward_to_websocket(msg)
         return b

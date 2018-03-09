@@ -3,9 +3,11 @@ MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 RUN        apt-get update && apt-get install -y python
 # allow fast install (docker cache)
-RUN        apt-get install -y python-pip
-RUN        apt-get install -y python-leveldb
-RUN        apt-get install -y python-cherrypy3
+RUN        apt-get update && apt-get install -y python-jinja2
+RUN        apt-get update && apt-get install -y python-crypto
+RUN        apt-get update && apt-get install -y python-leveldb
+RUN        apt-get update && apt-get install -y python-setuptools
+RUN        apt-get update && apt-get install -y python-apt
 
 
 ADD        . /root/opsbro-oss

@@ -7,6 +7,7 @@ RUN        apt-get update && apt-get install -y python-jinja2
 RUN        apt-get update && apt-get install -y python-crypto
 RUN        apt-get update && apt-get install -y python-leveldb
 RUN        apt-get update && apt-get install -y python-setuptools
+RUN        apt-get update && apt-get install -y python-apt
 
 ADD        . /root/opsbro-oss
 
