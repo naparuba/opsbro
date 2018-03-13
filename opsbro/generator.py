@@ -147,7 +147,7 @@ class Generator(object):
                 # As we will pslit lines and so lost the \n we should look if the last one was ending with one or not
                 orig_content_finish_with_new_line = (orig_content[-1] == '\n')
                 lines = orig_content.splitlines()
-                logger.debug('ORIGIANL CONTENT: %s' % orig_content)
+                logger.debug('ORIGINLL CONTENT: %s' % orig_content)
                 del orig_content
                 f.close()
                 # find the part to remove between start and end of the partial

@@ -14,7 +14,7 @@ from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger, sprintf
 from opsbro.library import libstore
 from opsbro.unixclient import get_request_errors
-from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, put_opsbro_json, wait_for_agent_started
+from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, put_opsbro_json, wait_for_agent_started, AnyAgent
 from opsbro.cli_display import print_h1, print_h2
 from opsbro.threadmgr import threader
 
@@ -75,6 +75,7 @@ def do_members(detail=False):
             if m.get('display_name', ''):
                 name = '[ ' + m.get('display_name') + ' ]'
             groups = m.get('groups', [])
+            groups.sort()
             port = m['port']
             addr = m['addr']
             state = m['state']
@@ -193,17 +194,35 @@ def do_zone_change(name=''):
     if not name:
         print "Need a zone name"
         return
-    # The information is available only if the agent is started
-    wait_for_agent_started(visual_wait=True)
-    
-    print "Switching to zone", name
-    try:
-        r = put_opsbro_json('/agent/zone', name)
-    except get_request_errors(), exp:
-        logger.error(exp)
-        return
-    print_info_title('Result')
-    print r
+    with AnyAgent():
+        print "Switching to zone", name
+        try:
+            r = put_opsbro_json('/agent/zone', name)
+        except get_request_errors(), exp:
+            logger.error(exp)
+            return
+        print_info_title('Result')
+        print r
+
+
+def do_zone_list():
+    with AnyAgent():
+        print_h1('Known zones')
+        try:
+            zones = get_opsbro_json('/agent/zones')
+        except get_request_errors(), exp:
+            logger.error(exp)
+            return
+        for (zname, zone) in zones.iteritems():
+            cprint(' * ', end='')
+            cprint(zname, color='magenta')
+            sub_zones = zone.get('sub-zones', [])
+            if not sub_zones:
+                continue
+            cprint('  Sub zones:')
+            for sub_zname in sub_zones:
+                cprint('    - ', end='')
+                cprint(sub_zname, color='cyan')
 
 
 def __print_detection_spinner():
@@ -309,6 +328,13 @@ exports = {
             {'name': 'name', 'default': '', 'description': 'Change to the zone'},
         ],
         'description': 'Change the zone of the node'
+    },
+    
+    do_zone_list      : {
+        'keywords'   : ['gossip', 'zone', 'list'],
+        'args'       : [
+        ],
+        'description': 'List all known zones of the node'
     },
     
     do_detect_nodes   : {

@@ -1,0 +1,6 @@
+detector:
+    add_groups:
+        - "zone::{{collector.gossip.zone}}"
+    apply_if: "True"
+    interval: "10s"
+

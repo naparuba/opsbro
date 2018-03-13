@@ -1,3 +1,6 @@
+import threading
+
+
 class Zone(object):
     def __init__(self):
         pass
@@ -7,6 +10,7 @@ class Zone(object):
 class ZoneManager(object):
     def __init__(self):
         self.zones = {}
+        self.zones_lock = threading.RLock()
         self._dirty_tree = True
         self.tree_top_to_bottom = {}
         self.tree_bottom_to_top = {}
@@ -14,20 +18,21 @@ class ZoneManager(object):
     
     # Reset trees and compute bottom->top and top->bottom tree/indexed y the zone name
     def __relink(self):
-        self._dirty_tree = True
-        self.tree_top_to_bottom = {}
-        self.tree_bottom_to_top = {}
-        
-        for (zname, zone) in self.zones.iteritems():
-            sub_zones = zone.get('sub-zones', [])
-            self.tree_top_to_bottom[zname] = sub_zones
-            for sub_zname in sub_zones:
-                if sub_zname not in self.tree_bottom_to_top:
-                    self.tree_bottom_to_top[sub_zname] = []
-                self.tree_bottom_to_top[sub_zname].append(zname)
-        
-        # We are clean now
-        self._dirty_tree = False
+        with self.zones_lock:
+            self._dirty_tree = True
+            self.tree_top_to_bottom = {}
+            self.tree_bottom_to_top = {}
+            
+            for (zname, zone) in self.zones.iteritems():
+                sub_zones = zone.get('sub-zones', [])
+                self.tree_top_to_bottom[zname] = sub_zones
+                for sub_zname in sub_zones:
+                    if sub_zname not in self.tree_bottom_to_top:
+                        self.tree_bottom_to_top[sub_zname] = []
+                    self.tree_bottom_to_top[sub_zname].append(zname)
+            
+            # We are clean now
+            self._dirty_tree = False
     
     
     def add(self, zone):
@@ -48,6 +53,11 @@ class ZoneManager(object):
         return self.tree_bottom_to_top[zname]
     
     
+    def is_top_zone_from(self, from_zone, checked_zone):
+        top_zones = self.get_top_zones_from(from_zone)
+        return checked_zone in top_zones
+    
+    
     def get_sub_zones_from(self, zname):
         # If we are dirty or never relink/not up to date, recompute the trees
         if self._dirty_tree:
@@ -55,6 +65,15 @@ class ZoneManager(object):
         if zname not in self.tree_top_to_bottom:
             return []
         return self.tree_top_to_bottom[zname]
+    
+    
+    def is_sub_zone_from(self, from_zone, checked_zone):
+        sub_zones = self.get_sub_zones_from(from_zone)
+        return checked_zone in sub_zones
+    
+    
+    def get_zones(self):
+        return self.zones
 
 
 zonemgr = ZoneManager()

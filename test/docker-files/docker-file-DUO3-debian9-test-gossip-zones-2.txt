@@ -1,0 +1,25 @@
+FROM debian:9
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+RUN        apt-get update && apt-get install -y python
+# allow fast install (docker cache)
+RUN        apt-get update && apt-get install -y python-jinja2
+RUN        apt-get update && apt-get install -y python-crypto
+RUN        apt-get update && apt-get install -y python-leveldb
+RUN        apt-get update && apt-get install -y python-setuptools
+RUN        apt-get update && apt-get install -y python-apt
+
+
+ADD        . /root/opsbro-oss
+WORKDIR       /root/opsbro-oss
+
+RUN       python setup.py install
+
+# Ask for an encrypted test
+RUN       opsbro agent parameters set encryption_key NGNjZWI2ZmEyMzEyMTFlOA==
+
+RUN       rm -fr /etc/opsbro/zones/*
+ADD       test/test-files/test-gossip-zones/zones/*   /etc/opsbro/zones/
+
+# The node1 will try to connect to node2 and auto join it
+ENTRYPOINT    test/test_duo3_gossip_zones.sh "2"

@@ -115,7 +115,7 @@ class Gossip(object):
                 logger.info("We have %d dirty nodes to remove because their zone is not valid from our own zone (%s)" % (len(to_del), self.zone))
             for nuuid in to_del:
                 node = self.nodes[nuuid]
-                logger.info('CLEANING dirty zone node: %s/%s (was in zone %s)' % (nuuid, node['name'], node['zone']))
+                logger.info('CLEANING we are in zone %s so we are removing a node from a unmanaged/distant zone: %s/%s (was in zone %s)' % (self.zone, nuuid, node['name'], node['zone']))
                 del self.nodes[nuuid]
     
     
@@ -223,6 +223,16 @@ class Gossip(object):
                          'uuid': node['uuid'], 'old_state': old_state, 'state': new_state,
                          }
         logger.info('__add_node_state_change_history_entry:: %s' % history_entry)
+        with self.__current_history_entry_lock:
+            self.__current_history_entry.append(history_entry)
+    
+    
+    def __add_node_zone_change_history_entry(self, node, old_zone, new_zone):
+        history_entry = {'type': 'node-zone-change',
+                         'name': node['name'], 'display_name': node.get('display_name', ''),
+                         'uuid': node['uuid'], 'old_zone': old_zone, 'zone': new_zone,
+                         }
+        logger.info('__add_node_zone_change_history_entry:: %s' % history_entry)
         with self.__current_history_entry_lock:
             self.__current_history_entry.append(history_entry)
     
@@ -373,12 +383,31 @@ class Gossip(object):
     
     
     def change_zone(self, zname):
+        if self.zone == zname:
+            return
+        logger.info('Switching to zone: %s' % zname)
         self.zone = zname
         self.nodes[self.uuid]['zone'] = zname
         # let the others nodes know it
         self.increase_incarnation_and_broadcast('alive')
         # As we did change, we need to update our own node list to keep only what we should
         self.clean_nodes_from_zone()
+    
+    
+    def get_zone_from_node(self, node_uuid=''):
+        if not node_uuid:
+            node_uuid = self.uuid
+        node = self.nodes.get(node_uuid, None)
+        if node is None:
+            return ''
+        node_zone = node.get('zone', '')
+        logger.info('get_zone_from_node:: giving back %s' % node_zone)
+        return node_zone
+    
+    
+    def get_number_of_nodes(self):
+        with self.nodes_lock:
+            return len(self.nodes)
     
     
     # get my own node entry
@@ -400,9 +429,20 @@ class Gossip(object):
     
     # Got a new node, great! Warn others about this
     # but if it's a bootstrap, only change memory, do not export to other nodes
-    def add_new_node(self, node, bootstrap=False):
+    def __add_new_node(self, node, bootstrap=False):
         logger.info("New node detected", node)
         nuuid = node['uuid']
+        node_zone = node['zone']
+        
+        # Maybe it's from another zone:
+        # * top zone: we want only proxy nodes
+        # * lower zones: all nodes are interesting
+        if node_zone != self.zone:
+            if zonemgr.is_top_zone_from(self.zone, node_zone):
+                if not node['is_proxy']:
+                    logger.info('A node from a top zone cannot be inserted unless is it a proxy node. Skiping the node %s' % nuuid)
+                    return
+        
         # Add the node but in a protected mode
         with self.nodes_lock:
             self.nodes[nuuid] = node
@@ -432,7 +472,7 @@ class Gossip(object):
         uuid = node['uuid']
         state = node['state'] = 'alive'
         
-        # Maybe it's me? we must look for a specilal case:
+        # Maybe it's me? we must look for a special case:
         # maybe we did clean all our local data, and the others did remember us (we did keep
         # our uuid). But then we will never update our information. so we must increase our
         # incarnation to be the new master on our own information
@@ -447,7 +487,7 @@ class Gossip(object):
         
         # Maybe it's a new node that just enter the cluster?
         if uuid not in self.nodes:
-            self.add_new_node(node, bootstrap=bootstrap)
+            self.__add_new_node(node, bootstrap=bootstrap)
             return
         
         prev = self.nodes.get(uuid, None)
@@ -455,13 +495,13 @@ class Gossip(object):
         if prev is None:
             return
         prev_state = prev['state']
-        change = (prev_state != state)
+        change_state = (prev_state != state)
         
         # If the data is not just new, bail out
         if not strong and incarnation <= prev['incarnation']:
             return
         
-        logger.debug('ALIVENODE', name, prev_state, state, strong, change, incarnation, prev['incarnation'], (strong and change), (incarnation > prev['incarnation']))
+        logger.debug('ALIVENODE', name, prev_state, state, strong, change_state, incarnation, prev['incarnation'], (strong and change_state), (incarnation > prev['incarnation']))
         # only react to the new data if they are really new :)
         if strong or incarnation > prev['incarnation']:
             # protect the nodes access with the lock so others threads are happy :)
@@ -469,13 +509,13 @@ class Gossip(object):
                 self.nodes[uuid] = node
             
             # Only broadcast if it's a new data from somewhere else
-            if (strong and change) or incarnation > prev['incarnation']:
+            if (strong and change_state) or incarnation > prev['incarnation']:
                 logger.debug("Updating alive a node", prev, 'with', node)
                 # warn internal elements
                 self.node_did_change(uuid)
                 # and external ones
                 self.stack_alive_broadcast(node)
-                if change:
+                if change_state:
                     # Save this change into our history
                     self.__add_node_state_change_history_entry(node, prev_state, node['state'])
     
@@ -648,7 +688,6 @@ class Gossip(object):
     def merge_nodes(self, nodes):
         for (k, node) in nodes.iteritems():
             # Maybe it's me? bail out
-            # if node['addr'] == self.addr and node['port'] == self.port:
             if node['uuid'] == self.uuid:
                 logger.debug('SKIPPING myself node entry in merge nodes')
                 continue
@@ -688,7 +727,7 @@ class Gossip(object):
             # if our zone, will be OK
             nzone = n['zone']
             if nzone != self.zone:
-                # if not, must be a relay and in directly top or sub zone
+                # if not, must be a relay and in directly top zone
                 if not n['is_proxy']:
                     continue
                 if nzone not in top_zones:
@@ -1196,7 +1235,7 @@ class Gossip(object):
             return nodes
         
         # Ok look if in sub zones: if found, all they need to know is
-        # my realm proxy nodes,
+        # my realm proxy nodes
         sub_zones = zonemgr.get_sub_zones_from(self.zone)
         if other_node_zone in sub_zones:
             only_my_zone_proxies = {}
@@ -1458,6 +1497,12 @@ class Gossip(object):
             response.content_type = 'application/json'
             r = self.remove_group(gname)
             return json.dumps(r)
+        
+        
+        @http_export('/agent/zones', method='GET', protected=True)
+        def get_zones():
+            response.content_type = 'application/json'
+            return json.dumps(zonemgr.get_zones())
 
 
 gossiper = Gossip()

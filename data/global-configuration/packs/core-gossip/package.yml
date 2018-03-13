@@ -1,0 +1,19 @@
+name: core-gossip
+topics:
+    - service discovery
+types:
+    - pack
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description: Look for gossip data
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - gossip
+dependencies:
+    core: ">=1.0"
+license: ""
+

@@ -36,3 +36,20 @@ def is_in_defined_group(group):
 </code>
     """
     return gossiper.is_in_group(group)
+
+
+@export_evaluater_function(function_group=FUNCTION_GROUP)
+def gossip_get_zone(node_uuid=''):
+    """**gossip_get_zone(node_uuid='')** -> return the zone (as string) of the node with the uuid node_uuid. If uset, get the current node.
+
+ * node_uuid: (string) uuid of the element to get zone.
+
+
+<code>
+    Example:
+        gossip_get_zone()
+    Returns:
+        'internet'
+</code>
+    """
+    return gossiper.get_zone_from_node(node_uuid)
