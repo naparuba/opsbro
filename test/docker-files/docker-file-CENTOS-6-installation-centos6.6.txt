@@ -1,7 +1,10 @@
 FROM centos:6.6
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-RUN        yum --nogpgcheck  -y  upgrade
+# NOTE: old centos versions have issues with docker overlay
+# => Rpmdb checksum is invalid: dCDPT(pkg checksums):
+RUN         yum install -y yum-plugin-ovl
+
 ADD        . /root/opsbro-oss
 
 WORKDIR    /root/opsbro-oss

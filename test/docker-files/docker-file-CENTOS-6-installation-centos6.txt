@@ -1,7 +1,6 @@
 FROM centos:6
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-RUN        yum --nogpgcheck  -y  upgrade
 ADD        . /root/opsbro-oss
 
 WORKDIR    /root/opsbro-oss
