@@ -439,6 +439,7 @@ class Gossip(object):
         # * lower zones: all nodes are interesting
         if node_zone != self.zone:
             if zonemgr.is_top_zone_from(self.zone, node_zone):
+                logger.debug('NEW NODE IS FROM A TOP ZONE')
                 if not node['is_proxy']:
                     logger.info('A node from a top zone cannot be inserted unless is it a proxy node. Skiping the node %s' % nuuid)
                     return

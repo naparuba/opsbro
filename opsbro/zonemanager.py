@@ -6,6 +6,10 @@ class Zone(object):
         pass
 
 
+# When you have more than 32 zones level, you fuck up with a loop in fact :)
+MAX_ZONE_LEVELS = 32
+
+
 # Will manage the global websocket server if need
 class ZoneManager(object):
     def __init__(self):
@@ -17,22 +21,46 @@ class ZoneManager(object):
     
     
     # Reset trees and compute bottom->top and top->bottom tree/indexed y the zone name
+    # but in a recursive way so we will have ALL bottom and all TOP zones for each zone
     def __relink(self):
         with self.zones_lock:
             self._dirty_tree = True
             self.tree_top_to_bottom = {}
             self.tree_bottom_to_top = {}
             
-            for (zname, zone) in self.zones.iteritems():
-                sub_zones = zone.get('sub-zones', [])
-                self.tree_top_to_bottom[zname] = sub_zones
-                for sub_zname in sub_zones:
-                    if sub_zname not in self.tree_bottom_to_top:
-                        self.tree_bottom_to_top[sub_zname] = []
-                    self.tree_bottom_to_top[sub_zname].append(zname)
+            for zname in self.zones:
+                sub_zone_set = set()
+                self.__get_sub_zones_rec(zname, sub_zone_set, 0)
+                self.tree_top_to_bottom[zname] = sub_zone_set
+                self.tree_bottom_to_top[zname] = set()  # prepare the next loop
+            
+            for (zname, sub_zones) in self.tree_top_to_bottom.iteritems():
+                for sub_zone_name in sub_zones:
+                    self.tree_bottom_to_top[sub_zone_name].add(zname)
             
             # We are clean now
             self._dirty_tree = False
+    
+    
+    # NOTE1: the sub_zones_set will MUTATE between calls, that's why it's a pointer
+    #        => yes, I don't give a fuck about a "golden imutability rule" here, I'm in a lock and 2 functions
+    # NOTE2: it's not optimal as we will loop a lot even for each sub zone, but we won't have so much
+    def __get_sub_zones_rec(self, zname, sub_zones_set, level):
+        zone = self.zones.get(zname, None)
+        # Missing zone, don't care about it, it was error if I don't break it
+        if zone is None:
+            return
+        if level > MAX_ZONE_LEVELS:
+            return
+        sub_zones = zone.get('sub-zones', [])
+        for sub_zone_name in sub_zones:
+            sub_zone = self.zones.get(sub_zone_name, None)
+            if sub_zone is None:
+                continue
+            # add this sub zone in the parent set
+            sub_zones_set.add(sub_zone_name)
+            # and loop below
+            self.__get_sub_zones_rec(sub_zone_name, sub_zones_set, level + 1)
     
     
     def add(self, zone):

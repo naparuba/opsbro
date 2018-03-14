@@ -1,0 +1,6 @@
+zone:
+    name: internet
+    sub-zones:
+        - customer-1
+
+

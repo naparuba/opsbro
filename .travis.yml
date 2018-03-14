@@ -29,6 +29,8 @@ env:
 - TEST_SUITE=DUO2
 # This one is with 4 containers, in 2 zones, one is sub level of another
 - TEST_SUITE=DUO3
+# This one is with 4 containers, in 3 zones, one is sub level of another
+- TEST_SUITE=DUO4
 
 
 # command to run tests
