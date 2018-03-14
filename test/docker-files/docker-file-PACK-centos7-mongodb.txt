@@ -12,7 +12,7 @@ RUN        yum --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=a
 
 RUN        printf '[mongodb-org-3.4]\nname=MongoDB Repository\nbaseurl=https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/3.4/x86_64/\ngpgcheck=1\nenabled=1\ngpgkey=https://www.mongodb.org/static/pgp/server-3.4.asc\n[mongodb-org-3.2]\nname=MongoDB Repository\nbaseurl=https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/3.2/x86_64/\ngpgcheck=1\nenabled=1\ngpgkey=https://www.mongodb.org/static/pgp/server-3.2.asc\n' > /etc/yum.repos.d/mongodb-org.repo
 RUN        yum --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install mongodb-org
-#RUN        yum --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install python-pymongo
+
 
 ADD        . /root/opsbro-oss
 WORKDIR    /root/opsbro-oss

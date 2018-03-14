@@ -1,0 +1,10 @@
+FROM centos:6.7
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+RUN        yum --nogpgcheck  -y  upgrade
+ADD        . /root/opsbro-oss
+
+WORKDIR    /root/opsbro-oss
+ENTRYPOINT        test/test_one_linux_installation.sh && test/assert_group.sh "centos"
+
+

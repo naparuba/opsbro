@@ -1,0 +1,8 @@
+FROM ubuntu:18.04
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+RUN        apt-get update && apt-get install -y python
+ADD        . /root/opsbro-oss
+
+ENTRYPOINT    test/test_one_linux_installation.sh  && test/assert_group.sh "ubuntu"
+WORKDIR       /root/opsbro-oss
