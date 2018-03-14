@@ -176,7 +176,7 @@ def do_info(show_logs):
         cprint('No statsd configured')
     else:
         s = statsd['statsd_configuration']
-        e = [('enabled', s['enabled']), ('port', s['port']), ('interval', s['interval'])]
+        e = [('enabled_if_group', s['enabled_if_group']), ('port', s['port']), ('interval', s['interval'])]
         print_2tab(e)
     
     # Now collectors part
@@ -497,10 +497,10 @@ def do_agent_parameters_add(parameter_name, str_value):
         try:
             did_change = get_opsbro_json('/agent/parameters/add/groups/%s' % str_value)
         except get_request_errors():
-            cprint('* The agent seems to not be started. Skipping hot group addition.', color='grey')
+            cprint('  | The agent seems to not be started. Skipping hot group addition.', color='grey')
             return
         if did_change:
-            cprint("* The agent groups are updated too. You don't need to restart your daemon.")
+            cprint("  | The agent groups are updated too. You don't need to restart your daemon.", color='grey')
         return
     cprint('NOTE: only the yml configuration file is modified. You need to restart your agent to use this modification', color='grey')
     return
@@ -517,10 +517,10 @@ def do_agent_parameters_remove(parameter_name, str_value):
         try:
             did_change = get_opsbro_json('/agent/parameters/remove/groups/%s' % str_value)
         except get_request_errors():
-            cprint('* The agent seems to not be started. Skipping hot group removing.', color='grey')
+            cprint('  | The agent seems to not be started. Skipping hot group removing.', color='grey')
             return
         if did_change:
-            cprint("* The agent groups are updated too. You don't need to restart your daemon.")
+            cprint("  | The agent groups are updated too. You don't need to restart your daemon.", color='grey')
         return
     cprint('NOTE: only the yml configuration file is modified. You need to restart your agent to use this modification', color='grey')
     return

@@ -1,7 +1,7 @@
 
-# is the statsd listener module enabled
-# default to false
-enabled :  false
+# set in group the statsd listener to enable the module
+enabled_if_group:  statsd-listener
+
 
 # Which port to listen for statsd packet (UDP)
 port :     8125

@@ -15,6 +15,9 @@ class AptBackend(object):
         self.DEB_CACHE_MAX_AGE = 60  # if we cannot look at dpkg data age, allow a max cache of 60s to get a new apt update from disk
         self.DPKG_CACHE_PATH = '/var/cache/apt/pkgcache.bin'
         self.dpkg_cache_last_modification_epoch = 0.0
+        
+        self.need_reload = True
+        
         # query cache, invalidate as soon as the apt cache is gone too
         self.has_cache = {}
         
@@ -46,22 +49,25 @@ class AptBackend(object):
             self.deb_cache = self.apt.Cache()
             self.deb_cache_update_time = int(time.time())
             self.has_cache = {}
+            # Cache is now load
+            self.need_reload = False
         else:  # ok already existing, look if we should update it
             # because if there was a package installed, it's no more in cache
-            need_reload = False
             if os.path.exists(self.DPKG_CACHE_PATH):
                 last_change = os.stat(self.DPKG_CACHE_PATH).st_mtime
                 if last_change != self.dpkg_cache_last_modification_epoch:
-                    need_reload = True
+                    self.need_reload = True
                     self.dpkg_cache_last_modification_epoch = last_change
             else:  # ok we cannot look at the dpkg file age, must limit by time
                 # the cache is just a memory view, so if too old, need to udpate it
                 if self.deb_cache_update_time < time.time() - self.DEB_CACHE_MAX_AGE:
-                    need_reload = True
-            if need_reload:
+                    self.need_reload = True
+            # Maybe the cache (in memory) was invalided
+            if self.need_reload:
                 self.deb_cache.open(None)
                 self.deb_cache_update_time = int(time.time())
                 self.has_cache = {}
+                self.need_reload = False
         b = self.has_cache.get(package, None)
         if b is None:
             b = (package in self.deb_cache and self.deb_cache[package].is_installed)
@@ -70,8 +76,7 @@ class AptBackend(object):
     
     
     # apt-get -q --yes --no-install-recommends install XXXXX
-    @staticmethod
-    def install_package(package):
+    def install_package(self, package):
         logger.debug('APT :: installing package: %s' % package)
         p = subprocess.Popen(['apt-get', 'update'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
@@ -83,12 +88,13 @@ class AptBackend(object):
         logger.debug('APT (apt-get install) (%s):: stdout/stderr: %s/%s' % (package, stdout, stderr))
         if p.returncode != 0:
             raise Exception('APT: apt-get install did not succeed (%s), exiting from package installation (%s)' % (stdout + stderr, package))
+        # we did install a package, so our internal cache is wrong
+        self.need_reload = True
         return
     
     
     # apt-get -q --yes --no-install-recommends install XXXXX
-    @staticmethod
-    def update_package(package):
+    def update_package(self, package):
         logger.debug('APT :: updating package: %s' % package)
         p = subprocess.Popen(['apt-get', 'update'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
@@ -100,4 +106,6 @@ class AptBackend(object):
         logger.debug('APT (apt-get update) (%s):: stdout/stderr: %s/%s' % (package, stdout, stderr))
         if p.returncode != 0:
             raise Exception('APT: apt-get update did not succeed (%s), exiting from package installation (%s)' % (stdout + stderr, package))
+        # we did install a package, so our internal cache is wrong
+        self.need_reload = True
         return
