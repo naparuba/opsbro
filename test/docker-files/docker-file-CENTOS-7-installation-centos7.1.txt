@@ -1,6 +1,10 @@
 FROM centos:7.1.1503
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
+# NOTE: old centos versions have issues with docker overlay
+# => Rpmdb checksum is invalid: dCDPT(pkg checksums):
+RUN         yum install -y yum-plugin-ovl
+
 ADD        . /root/opsbro-oss
 
 WORKDIR    /root/opsbro-oss
