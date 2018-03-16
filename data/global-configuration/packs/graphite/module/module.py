@@ -43,7 +43,7 @@ class GraphiteModule(ListenerModule):
         self.enabled = False
         self.graphite_port = 2003
         self.addr = '0.0.0.0'
-
+        
         self.graphite_tcp_sock = None
         self.graphite_udp_sock = None
     
@@ -79,7 +79,9 @@ class GraphiteModule(ListenerModule):
     
     
     def get_info(self):
-        return {'graphite_configuration': self.get_config(), 'graphite_info': None}
+        state = 'STARTED' if self.enabled else 'DISABLED'
+        log = ''
+        return {'configuration': self.get_config(), 'state': state, 'log': log}
     
     
     def launch(self):
@@ -220,7 +222,7 @@ class GraphiteModule(ListenerModule):
     
     # Export end points to get/list TimeSeries
     def export_http(self):
-    
+        
         @http_export('/metrics/find/')
         @http_export('/metrics/find')
         def get_graphite_metrics_find():

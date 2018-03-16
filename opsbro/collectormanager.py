@@ -22,6 +22,9 @@ from .util import make_dir
 # Global logger for this part
 logger = LoggerFactory.create_logger('collector')
 
+# Common rule for printing the COLLECTORS for the outside world
+COLLECTORS_STATE_COLORS = {'OK': 'green', 'ERROR': 'red', 'NOT-ELIGIBLE': 'grey', 'RUNNING': 'grey'}
+
 
 def get_collectors(self):
     collector_dir = os.path.dirname(__file__)
@@ -126,7 +129,7 @@ class CollectorManager:
         res = {}
         with self.results_lock:
             for (cname, e) in self.collectors.iteritems():
-                d = {'name': e['name'], 'active': e['active'], 'log': e['log']}
+                d = {'name': e['name'], 'state': e['inst'].state, 'log': e['inst'].log}
                 res[cname] = d
         return res
     

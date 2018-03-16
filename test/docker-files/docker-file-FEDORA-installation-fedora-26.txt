@@ -4,11 +4,7 @@ MAINTAINER Jean Gabes <naparuba@gmail.com>
 RUN       yum  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install python
 # NOTE: there is a bug in fedora 26 with a pypi connection impossible without the glibc update
 RUN       dnf --nogpgcheck -y --rpmverbosity=error --errorlevel=1 --color=auto update glibc
-#RUN       yum  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install libcurl-devel
-#RUN       yum  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install gcc
-#RUN       yum  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install gcc-c++
-#RUN       yum  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install redhat-rpm-config
-#RUN       yum  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install python-devel
+
 
 ADD        . /root/opsbro-oss
 

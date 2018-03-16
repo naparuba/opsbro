@@ -219,6 +219,8 @@ class HostingDriverMgr(object):
     
     
     def __default_last(self, cls1, cls2):
+        if cls1.layer == cls2.layer:
+            return cmp(cls1.name, cls2.name)
         return cmp(cls1.layer, cls2.layer)
     
     

@@ -1,6 +1,6 @@
 
 # Is this module enable or not
-enabled:  true
+enabled:  false
 
 ## Shinken configuration
 

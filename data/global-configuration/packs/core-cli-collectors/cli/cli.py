@@ -12,10 +12,8 @@ from opsbro.log import cprint, logger
 from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_json, print_info_title, AnyAgent
 from opsbro.cli_display import print_h1, print_h2
-from opsbro.collectormanager import collectormgr
+from opsbro.collectormanager import collectormgr, COLLECTORS_STATE_COLORS
 from opsbro.characters import CHARACTERS
-
-COLLECTORS_STATE_COLORS = {'OK': 'green', 'ERROR': 'red', 'NOT-ELIGIBLE': 'grey', 'RUNNING': 'grey'}
 
 
 def _extract_data_from_results(d, prefix, res):
@@ -63,7 +61,7 @@ def __print_collector_state(collector):
     log = collector['log']
     name = collector['name']
     color = COLLECTORS_STATE_COLORS.get(state)
-    cprint(' * ', end='')
+    cprint(' - ', end='')
     cprint('%s' % name.ljust(20), color='magenta', end='')
     cprint(' %s ' % CHARACTERS.arrow_left, end='')
     cprint(state, color=color)

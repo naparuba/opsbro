@@ -23,13 +23,15 @@ class WebSocketModule(ListenerModule):
     
     
     def get_info(self):
-        r = {}
-        r['websocket_configuration'] = self.websocket
+        r = {'log': ''}
         
+        r['configuration'] = self.websocket
+        r['state'] = 'STARTED' if self.websocket['enabled'] else 'DISABLED'
         if not self.webso:
             r['websocket_info'] = None
         else:
             r['websocket_info'] = self.webso.get_info()
+        
         return r
     
     

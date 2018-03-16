@@ -549,7 +549,7 @@ class Cluster(object):
             
             # Update the infos with modules ones
             mod_infos = modulemanager.get_infos()
-            r.update(mod_infos)
+            r['modules'] = mod_infos
             
             r['httpservers'] = {}
             # Look at both http servers

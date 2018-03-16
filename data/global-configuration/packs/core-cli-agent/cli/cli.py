@@ -17,7 +17,7 @@ if os.name == 'nt':
     from opsbro.windows_service.windows_service import Service
 
 from opsbro.characters import CHARACTERS
-from opsbro.log import cprint, logger
+from opsbro.log import cprint, logger, sprintf
 from opsbro.launcher import Launcher
 from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, print_2tab, CONFIG, wait_for_agent_started
@@ -25,6 +25,7 @@ from opsbro.cli_display import print_h1, yml_parameter_set, yml_parameter_get, y
 from opsbro.defaultpaths import DEFAULT_LOCK_PATH, DEFAULT_CFG_FILE
 from opsbro.configurationmanager import configmgr
 from opsbro.cluster import AGENT_STATE_INITIALIZING, AGENT_STATE_OK, AGENT_STATE_STOPPED
+from opsbro.collectormanager import COLLECTORS_STATE_COLORS
 
 NO_ZONE_DEFAULT = '(no zone)'
 
@@ -84,10 +85,12 @@ def do_info(show_logs):
     httpservers = d.get('httpservers', {'internal': None, 'external': None})
     socket_path = d.get('socket')
     _uuid = d.get('uuid')
-    graphite = d.get('graphite')
-    statsd = d.get('statsd')
-    websocket = d.get('websocket')
-    dns = d.get('dns')
+    # Modules groking
+    modules = d.get('modules', {})
+    graphite = modules.get('graphite')
+    statsd = modules.get('statsd')
+    websocket = modules.get('websocket')
+    dns = modules.get('dns')
     # Get groups as sorted
     groups = d.get('groups')
     groups.sort()
@@ -126,35 +129,37 @@ def do_info(show_logs):
     print_info_title('Hosting Drivers')
     cprint(' | first founded valid driver is used as main hosting driver', color='grey')
     main_driver_founded = False
-    hosting_drivers_state_tab = []
+    strs = []
     for driver_entry in hosting_drivers_state:
         driver_name = driver_entry['name']
         driver_is_active = driver_entry['is_active']
         _name = driver_name
         if not main_driver_founded and driver_is_active:
-            _name = '*%s' % _name
+            strs.append(sprintf('[%s]' % _name, color='magenta'))
             main_driver_founded = True
-        _value = {True: 'valid', False: 'invalid'}.get(driver_is_active)
-        _color = {True: 'green', False: 'grey'}.get(driver_is_active)
-        tab_entry = (_name, {'value': _value, 'color': _color})
-        hosting_drivers_state_tab.append(tab_entry)
-    print_2tab(hosting_drivers_state_tab, capitalize=False, col_size=30)  # drivers have large names
+        elif driver_is_active:
+            strs.append(sprintf(_name, color='green'))
+        else:
+            strs.append(sprintf(_name, color='grey'))
+    
+    _hosting_drivers_state_string = sprintf(' %s ' % CHARACTERS.arrow_left, color='grey').join(strs)
+    cprint(' ' + _hosting_drivers_state_string)
     
     # Now DNS part
     print_info_title('DNS')
-    if not dns or 'dns_configuration' not in dns:
+    if not dns or 'configuration' not in dns:
         cprint('No dns configured')
     else:
-        w = dns['dns_configuration']
+        w = dns['configuration']
         e = [('enabled_if_group', w['enabled_if_group']), ('port', w['port']), ('domain', w['domain'])]
         print_2tab(e)
     
     # Now websocket part
     print_info_title('Websocket')
-    if not websocket or 'websocket_configuration' not in websocket:
+    if not websocket or 'configuration' not in websocket:
         cprint('No websocket configured')
     else:
-        w = websocket['websocket_configuration']
+        w = websocket['configuration']
         st = websocket.get('websocket_info', None)
         e = [('enabled', w['enabled']), ('port', w['port'])]
         if st:
@@ -163,34 +168,50 @@ def do_info(show_logs):
     
     # Now graphite part
     print_info_title('Graphite')
-    if not graphite or 'graphite_configuration' not in graphite:
+    if not graphite or 'configuration' not in graphite:
         cprint('No graphite configured')
     else:
-        g = graphite['graphite_configuration']
+        g = graphite['configuration']
         e = [('enabled', g['enabled']), ('port', g['port']), ('udp', g['udp']), ('tcp', g['tcp'])]
         print_2tab(e)
     
     # Now statsd part
     print_info_title('Statsd')
-    if not statsd or 'statsd_configuration' not in statsd:
+    if not statsd or 'configuration' not in statsd:
         cprint('No statsd configured')
     else:
-        s = statsd['statsd_configuration']
+        s = statsd['configuration']
         e = [('enabled_if_group', s['enabled_if_group']), ('port', s['port']), ('interval', s['interval'])]
         print_2tab(e)
     
     # Now collectors part
     print_info_title('Collectors')
+    cprint(' | Note: you can have details about the collectors with the command: opsbro collectors state', color='grey')
     cnames = collectors.keys()
     cnames.sort()
     e = []
+    collectors_states = {}
     for cname in cnames:
         v = collectors[cname]
-        color = 'green'
-        if not v['active']:
-            color = 'grey'
-        e.append((cname, {'value': v['active'], 'color': color}))
-    print_2tab(e, capitalize=False)
+        collector_state = v['state']
+        if collector_state not in collectors_states:
+            collectors_states[collector_state] = []
+        collectors_states[collector_state].append(cname)
+        
+        # e.append((cname, {'value': v['state'], 'color': color}))
+    # print_2tab(e, capitalize=False)
+    possible_states = COLLECTORS_STATE_COLORS.keys()
+    possible_states.sort()
+    for possible_state in possible_states:
+        collectors_in_state = collectors_states.get(possible_state, [])
+        if not collectors_in_state:
+            continue
+        collectors_in_state.sort()
+        color = COLLECTORS_STATE_COLORS.get(possible_state, 'grey')
+        cprint(' - ', end='')
+        cprint('%-15s' % possible_state, color=color, end='')
+        cprint(': ', end='')
+        cprint(sprintf(',', color='grey', end='').join([sprintf(cname, color=color, end='') for cname in collectors_in_state]))
     
     # Now statsd part
     print_info_title('Docker')

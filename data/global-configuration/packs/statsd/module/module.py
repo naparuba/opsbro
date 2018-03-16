@@ -89,7 +89,12 @@ class StatsdModule(ListenerModule):
     
     
     def get_info(self):
-        return {'statsd_configuration': self.get_config(), 'statsd_info': None}
+        state = 'STARTED' if self.enabled else 'DISABLED'
+        log = ''
+        if self.enabled and self.np is None:
+            log = 'ERROR: cannot start the module: missing python-numpy package'
+            state = 'ERROR'
+        return {'configuration': self.get_config(), 'state': state, 'log': log}
     
     
     def launch(self):

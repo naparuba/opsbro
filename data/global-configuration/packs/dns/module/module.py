@@ -48,7 +48,10 @@ class DNSModule(Module):
     
     
     def get_info(self):
-        return {'dns_configuration': self.get_config(), 'dns_info': None}
+        state = 'STARTED' if self.enabled else 'DISABLED'
+        log = ''
+        return {'configuration': self.get_config(), 'state': state, 'log': log}
+
     
     
     def launch(self):

@@ -3,7 +3,6 @@ MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 RUN       yum  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install python
 
-
 ADD        . /root/opsbro-oss
 
 ENTRYPOINT    test/test_one_linux_installation.sh  && test/assert_group.sh "fedora"

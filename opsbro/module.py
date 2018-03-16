@@ -43,7 +43,7 @@ class Module(ParameterBasedType):
     
     
     def get_info(self):
-        return {}
+        return {'configuration': self.get_config(), 'state': 'DISABLED', 'log': ''}
     
     
     def prepare(self):
