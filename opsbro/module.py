@@ -2,9 +2,16 @@ from .parameters import ParameterBasedType
 from .log import LoggerFactory
 from .packer import packer
 
+TYPES_DESCRIPTIONS = {'generic'  : 'Generic module', 'functions_export': 'Such modules give functions that are useful by evaluation rules',
+                      'connector': 'Suchs modules will export data to external tools',
+                      'listener' : 'Such module will listen to external queries',
+                      'handler'  : 'Such module will add new handlers'}
+
+MODULE_STATE_COLORS = {'STARTED': 'green', 'DISABLED': 'grey'}
 
 class Module(ParameterBasedType):
     implement = ''
+    module_type = 'generic'
     
     class __metaclass__(type):
         __inheritors__ = set()

@@ -3,7 +3,7 @@ import time
 import traceback
 
 from opsbro.threadmgr import threader
-from opsbro.module import Module
+from opsbro.module import ListenerModule
 from opsbro.stop import stopper
 from opsbro.parameters import StringParameter, IntParameter
 from opsbro.detectormgr import detecter
@@ -12,7 +12,7 @@ from opsbro.gossip import gossiper
 from dnsquery import DNSQuery
 
 
-class DNSModule(Module):
+class DNSModule(ListenerModule):
     implement = 'dns'
     
     parameters = {

@@ -26,6 +26,7 @@ from opsbro.defaultpaths import DEFAULT_LOCK_PATH, DEFAULT_CFG_FILE
 from opsbro.configurationmanager import configmgr
 from opsbro.cluster import AGENT_STATE_INITIALIZING, AGENT_STATE_OK, AGENT_STATE_STOPPED
 from opsbro.collectormanager import COLLECTORS_STATE_COLORS
+from opsbro.module import TYPES_DESCRIPTIONS, MODULE_STATE_COLORS
 
 NO_ZONE_DEFAULT = '(no zone)'
 
@@ -145,44 +146,45 @@ def do_info(show_logs):
     _hosting_drivers_state_string = sprintf(' %s ' % CHARACTERS.arrow_left, color='grey').join(strs)
     cprint(' ' + _hosting_drivers_state_string)
     
-    # Now DNS part
-    print_info_title('DNS')
-    if not dns or 'configuration' not in dns:
-        cprint('No dns configured')
-    else:
-        w = dns['configuration']
-        e = [('enabled_if_group', w['enabled_if_group']), ('port', w['port']), ('domain', w['domain'])]
-        print_2tab(e)
+    # We will print modules by modules types
+    print_info_title('Modules')
+    modules_types = {}
+    for (module_name, module) in modules.iteritems():
+        module_type = module['module_type']
+        if module_type not in modules_types:
+            modules_types[module_type] = {}
+        modules_types[module_type][module_name] = module
     
-    # Now websocket part
-    print_info_title('Websocket')
-    if not websocket or 'configuration' not in websocket:
-        cprint('No websocket configured')
-    else:
-        w = websocket['configuration']
-        st = websocket.get('websocket_info', None)
-        e = [('enabled', w['enabled']), ('port', w['port'])]
-        if st:
-            e.append(('Nb connexions', st.get('nb_connexions')))
-        print_2tab(e)
+    modules_type_names = modules_types.keys()
+    modules_type_names.sort()
     
-    # Now graphite part
-    print_info_title('Graphite')
-    if not graphite or 'configuration' not in graphite:
-        cprint('No graphite configured')
-    else:
-        g = graphite['configuration']
-        e = [('enabled', g['enabled']), ('port', g['port']), ('udp', g['udp']), ('tcp', g['tcp'])]
-        print_2tab(e)
-    
-    # Now statsd part
-    print_info_title('Statsd')
-    if not statsd or 'configuration' not in statsd:
-        cprint('No statsd configured')
-    else:
-        s = statsd['configuration']
-        e = [('enabled_if_group', s['enabled_if_group']), ('port', s['port']), ('interval', s['interval'])]
-        print_2tab(e)
+    for (module_type, _modules) in modules_types.iteritems():
+        cprint(' - [', end='')
+        cprint(' %-10s ' % module_type.capitalize(), color='magenta', end='')
+        cprint(' ]: ', end='')
+        cprint(TYPES_DESCRIPTIONS.get(module_type, 'unknown module type'), color='grey')
+        
+        module_names = _modules.keys()
+        module_names.sort()
+        for module_name in module_names:
+            module = _modules[module_name]
+            state = module['state']
+            state_color = MODULE_STATE_COLORS.get(state, 'grey')
+            log = module['log']
+            configuration = module['configuration']
+            kwcolor = {'color': 'grey'} if state == 'DISABLED' else {}
+            cprint('     * ', end='', **kwcolor)
+            cprint('%-20s ' % module_name, color=state_color, end='')
+            cprint(state, color=state_color)
+            if state != 'DISABLED' and log:
+                cprint('       | Log: %s' % log, color='grey')
+            if state != 'DISABLED' and configuration:
+                cprint('       | Configuration:', color='grey')
+                cfg_keys = configuration.keys()
+                cfg_keys.sort()
+                for cfg_key in cfg_keys:
+                    cfg_value = configuration[cfg_key]
+                    cprint('       |  %s %s %s' % (cfg_key, CHARACTERS.arrow_left, cfg_value), color='grey')
     
     # Now collectors part
     print_info_title('Collectors')

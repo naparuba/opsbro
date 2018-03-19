@@ -24,4 +24,4 @@ class CoreFunctionsModule(FunctionsExportModule):
     
     
     def get_info(self):
-        return {'configuration': self.get_config(), 'state': 'ENABLED', 'log': ''}
+        return {'configuration': self.get_config(), 'state': 'STARTED', 'log': ''}

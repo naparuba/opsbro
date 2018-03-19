@@ -114,6 +114,7 @@ class ModuleManager(object):
         r = {}
         for mod in self.modules:
             mod_info = mod.get_info()
+            mod_info['module_type'] = mod.module_type
             r[mod.implement] = mod_info
         return r
     
