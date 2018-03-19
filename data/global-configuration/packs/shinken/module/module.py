@@ -37,6 +37,7 @@ class ShinkenModule(ConnectorModule):
         self.reload_command = ''
         self.monitoring_tool = 'shinken'
         self.external_command_file = '/var/lib/shinken/shinken.cmd'
+        self.enabled = False
     
     
     def prepare(self):
@@ -56,16 +57,22 @@ class ShinkenModule(ConnectorModule):
     
     
     def new_node_callback(self, node_uuid=None):
+        if not self.enabled:
+            return
         self.node_changes.append(('new-node', node_uuid))
         self.regenerate_flag = True
     
     
     def delete_node_callback(self, node_uuid=None):
+        if not self.enabled:
+            return
         self.node_changes.append(('delete-node', node_uuid))
         self.regenerate_flag = True
     
     
     def change_node_callback(self, node_uuid=None):
+        if not self.enabled:
+            return
         self.node_changes.append(('change-node', node_uuid))
         self.regenerate_flag = True
     
@@ -251,6 +258,11 @@ class ShinkenModule(ConnectorModule):
         # If the detector did not run, we are not sure about the groups of the local node
         # so wait for it to be run, so we can generate shinken file ok from start
         while detecter.did_run == False:
+            time.sleep(1)
+        
+        self.enabled = self.get_parameter('enabled')
+        while not self.enabled:
+            self.enabled = self.get_parameter('enabled')
             time.sleep(1)
         
         if self.cfg_path is not None:
