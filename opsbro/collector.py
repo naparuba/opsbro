@@ -112,7 +112,8 @@ class Collector(ParameterBasedType):
             except Exception, e:
                 pass
             if err:
-                self.logger.error('Error in sub process', err)
+                self.set_error('Error in sub process: %s' % err)
+                return False
         except Exception, exp:
             self.set_error('Collector [%s] execute command [%s] error: %s' % (self.__class__.__name__.lower(), cmd, traceback.format_exc()))
             return False

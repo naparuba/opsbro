@@ -18,9 +18,12 @@ class OpenPorts(Collector):
         
         try:
             _cmd = 'netstat -tuln'
-            netstat = self.execute_shell(_cmd)
-            if not netstat:
-                logger.error('get_open_ports: exception in launching command')
+            try:
+                netstat = self.execute_shell(_cmd)
+            except Exception, exp:
+                self.set_error('get_open_ports: exception in launching command: %s' % exp)
+                return False
+            if netstat is False:
                 return False
             
             for line in netstat.splitlines():
@@ -61,7 +64,7 @@ class OpenPorts(Collector):
                     print "Unknown protocol??"
         
         except Exception:
-            logger.error('get_open_ports: exception = %s', traceback.format_exc())
+            self.set_error('get_open_ports: exception = %s' % traceback.format_exc())
             return False
         
         open_ports = list(open_ports)

@@ -5,6 +5,7 @@ import shutil
 import hashlib
 import subprocess
 import json
+import codecs
 
 from opsbro.module import ConnectorModule
 from opsbro.parameters import StringParameter, BoolParameter
@@ -46,10 +47,17 @@ class ShinkenModule(ConnectorModule):
         self.reload_command = self.get_parameter('reload_command')
         self.monitoring_tool = self.get_parameter('monitoring_tool')
         self.external_command_file = self.get_parameter('external_command_file')
+        self.enabled = self.get_parameter('enabled')
         # register to node events
         pubsub.sub('new-node', self.new_node_callback)
         pubsub.sub('delete-node', self.delete_node_callback)
         pubsub.sub('change-node', self.change_node_callback)
+    
+    
+    def get_info(self):
+        state = 'STARTED' if self.enabled else 'DISABLED'
+        log = ''
+        return {'configuration': self.get_config(), 'state': state, 'log': log}
     
     
     def launch(self):
@@ -100,7 +108,7 @@ class ShinkenModule(ConnectorModule):
             check = json.loads(v)
             self.logger.debug('CHECK VALUE %s' % check)
             try:
-                f = open(p, 'a')
+                f = codecs.open(p, 'a', encoding="utf-8")
                 cmd = '[%s] PROCESS_SERVICE_CHECK_RESULT;%s;%s;%d;%s\n' % (int(time.time()), nuuid, self.sanatize_check_name(cname), check['state_id'], check['output'])
                 self.logger.debug('SAVING COMMAND %s' % cmd)
                 f.write(cmd)

@@ -3,18 +3,20 @@
 
 echo "Starting to test Nagios export (dummy check)"
 
-
-
 /etc/init.d/opsbro start
+
+/etc/init.d/nagios reload
+
+
 
 # It will restart nagios
 sleep 10
 
-/etc/init.d/opsbro stop
-sleep 1
-/etc/init.d/opsbro start
+#/etc/init.d/opsbro restart
+#sleep 1
+#/etc/init.d/opsbro start
 
-sleep 10
+#sleep 10
 
 /usr/local/nagios/bin/nagios -v /usr/local/nagios/etc/nagios.cfg
 
@@ -38,6 +40,11 @@ if [ $? != 0 ]; then
     exit 2
 fi
 
+ls -thor /var/log/opsbro/
+
+cat /var/log/opsbro/module.shinken.log
+
+opsbro agent info
 
 # There sould be some alerts now in nagios log
 EXPORTED_CHECKS=$(cat  /usr/local/nagios/var/nagios.log | grep 'SERVICE ALERT' | grep Agent-dummy | wc -l)
