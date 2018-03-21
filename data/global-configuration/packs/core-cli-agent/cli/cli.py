@@ -63,7 +63,6 @@ def do_info(show_logs):
         sys.exit(1)
     logs = d.get('logs')
     version = d.get('version')
-    pid = d.get('pid')
     name = d.get('name')
     display_name = d.get('display_name', '')
     # A failback to display name is the name (hostname)
@@ -81,54 +80,40 @@ def do_info(show_logs):
         zone_color = 'red'
     zone_value = {'value': zone, 'color': zone_color}
     nb_threads = d.get('threads')['nb_threads']
-    hosting_driver = d.get('hosting_driver', '')
     hosting_drivers_state = d.get('hosting_drivers_state', [])
     httpservers = d.get('httpservers', {'internal': None, 'external': None})
     socket_path = d.get('socket')
     _uuid = d.get('uuid')
     # Modules groking
     modules = d.get('modules', {})
-    graphite = modules.get('graphite')
-    statsd = modules.get('statsd')
-    websocket = modules.get('websocket')
-    dns = modules.get('dns')
     # Get groups as sorted
     groups = d.get('groups')
     groups.sort()
     groups = ','.join(groups)
-    _docker = d.get('docker')
     collectors = d.get('collectors')
     
-    e = [('name', name), ('display name', display_name), ('uuid', _uuid), ('groups', groups), ('version', version), ('pid', pid), ('port', port), ('Local addr', local_addr),
-         ('Public addr', public_addr), ('zone', zone_value), ('socket', socket_path), ('threads', nb_threads), ('hosting', hosting_driver)]
+    e = [('name', name), ('display name', display_name), ('uuid', _uuid), ('groups', groups), ('version', version), ('UDP port', port), ('Local addr', local_addr),
+         ('Public addr', public_addr), ('zone', zone_value), ('threads', nb_threads), ]
     
     # Normal agent information
     print_info_title('OpsBro Daemon')
     print_2tab(e)
     
     # Normal agent information
-    int_server = httpservers.get('external', None)
-    if int_server:
-        e = (('threads', int_server['nb_threads']), ('idle_threads', int_server['idle_threads']),
-             ('queue', int_server['queue']))
-        print_info_title('HTTP (LAN)')
-        print_2tab(e)
-    else:
-        print_info_title('HTTP (LAN) info not available')
+    print_info_title('HTTP (LAN & private unix socket)')
+    ext_server = httpservers.get('external')
+    int_server = httpservers.get('internal')
+    ext_threads = '%d/%d' % (ext_server['nb_threads'] - ext_server['idle_threads'], ext_server['nb_threads'])
+    int_threads = '%d/%d' % (int_server['nb_threads'] - int_server['idle_threads'], int_server['nb_threads'])
     
-    # Unix socket http daemon
-    int_server = httpservers.get('internal', None)
-    if int_server:
-        e = (('threads', int_server['nb_threads']), ('idle_threads', int_server['idle_threads']),
-             ('queue', int_server['queue']))
-        print_info_title('HTTP (Unix Socket)')
-        print_2tab(e)
-    else:
-        print_info_title('HTTP (Unix Socket) info not available')
+    print_2tab([('LAN', ext_threads)])
+    cprint('   | Listen on the TCP port %s' % port, color='grey')
+    print_2tab([('private socket', int_threads)])
+    cprint('   | Listen on the unix socket %s' % socket_path, color='grey')
     
     # Show hosting drivers, and why we did chose this one
     print_info_title('Hosting Drivers')
-    cprint(' | first founded valid driver is used as main hosting driver', color='grey')
+    
     main_driver_founded = False
     strs = []
     for driver_entry in hosting_drivers_state:
@@ -136,7 +121,7 @@ def do_info(show_logs):
         driver_is_active = driver_entry['is_active']
         _name = driver_name
         if not main_driver_founded and driver_is_active:
-            strs.append(sprintf('[%s]' % _name, color='magenta'))
+            strs.append(sprintf('[', color='magenta') + sprintf(_name, color='green') + sprintf(']', color='magenta'))
             main_driver_founded = True
         elif driver_is_active:
             strs.append(sprintf(_name, color='green'))
@@ -145,6 +130,7 @@ def do_info(show_logs):
     
     _hosting_drivers_state_string = sprintf(' %s ' % CHARACTERS.arrow_left, color='grey').join(strs)
     cprint(' ' + _hosting_drivers_state_string)
+    cprint('   | Note: first founded valid driver is used as main hosting driver', color='grey')
     
     # We will print modules by modules types
     print_info_title('Modules')
@@ -171,27 +157,18 @@ def do_info(show_logs):
             state = module['state']
             state_color = MODULE_STATE_COLORS.get(state, 'grey')
             log = module['log']
-            configuration = module['configuration']
             kwcolor = {'color': 'grey'} if state == 'DISABLED' else {}
             cprint('     * ', end='', **kwcolor)
             cprint('%-20s ' % module_name, color=state_color, end='')
             cprint(state, color=state_color)
             if state != 'DISABLED' and log:
                 cprint('       | Log: %s' % log, color='grey')
-            if state != 'DISABLED' and configuration:
-                cprint('       | Configuration:', color='grey')
-                cfg_keys = configuration.keys()
-                cfg_keys.sort()
-                for cfg_key in cfg_keys:
-                    cfg_value = configuration[cfg_key]
-                    cprint('       |  %s %s %s' % (cfg_key, CHARACTERS.arrow_left, cfg_value), color='grey')
+    cprint(' | Note: you can look at modules configuration with the command  opsbro packs show', color='grey')
     
     # Now collectors part
     print_info_title('Collectors')
-    cprint(' | Note: you can have details about the collectors with the command: opsbro collectors state', color='grey')
     cnames = collectors.keys()
     cnames.sort()
-    e = []
     collectors_states = {}
     for cname in cnames:
         v = collectors[cname]
@@ -214,23 +191,7 @@ def do_info(show_logs):
         cprint('%-15s' % possible_state, color=color, end='')
         cprint(': ', end='')
         cprint(sprintf(',', color='grey', end='').join([sprintf(cname, color=color, end='') for cname in collectors_in_state]))
-    
-    # Now statsd part
-    print_info_title('Docker')
-    _d = _docker
-    if _d['connected']:
-        e = [('enabled', _d['enabled']), ('connected', _d['connected']),
-             ('version', _d['version']), ('api', _d['api']),
-             ('containers', len(_d['containers'])),
-             ('images', len(_d['images'])),
-             ]
-    else:
-        e = [
-            ('enabled', {'value': _d['enabled'], 'color': 'grey'}),
-            ('connected', {'value': _d['connected'], 'color': 'grey'}),
-        ]
-    
-    print_2tab(e)
+    cprint(' | Note: you can have details about the collectors with the command: opsbro collectors state', color='grey')
     
     # Show errors logs if any
     print_info_title('Logs')
@@ -249,6 +210,10 @@ def do_info(show_logs):
         e.append(('warning', len(warnings)))
     
     print_2tab(e)
+    
+    # If there are errors or warnings, help the user to know it can print them
+    if not show_logs and (len(errors) > 0 or len(warnings) > 0):
+        cprint('   | Note: you can show logs with the --show-logs options', color='grey')
     
     if show_logs:
         if len(errors) > 0:

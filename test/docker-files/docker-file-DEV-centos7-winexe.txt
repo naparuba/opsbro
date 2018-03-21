@@ -83,5 +83,5 @@ RUN        cp -rp /root/file-winexe/SOURCES/winexe-${WINEXE_VER}/source/build/wi
 
 WORKDIR /root
 
-#ENTRYPOINT   winexe --uninstall --user="administrateur%Shinken13" //192.168.1.239   "powershell.exeew-object System.Net.WebClient).Downloadfile('http://avatars3.githubusercontent.com/u/445325', 'C:\avatar2.png')"
+#ENTRYPOINT   winexe --uninstall --user="administrateur%XXX" //192.168.1.XXX   "powershell.exeew-object System.Net.WebClient).Downloadfile('http://avatars3.githubusercontent.com/u/445325', 'C:\avatar2.png')"
 ENTRYPOINT    /bin/bash
