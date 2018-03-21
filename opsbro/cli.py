@@ -16,7 +16,7 @@ from .modulemanager import modulemanager
 from .packer import packer
 from .unixclient import get_json, get_local, get_request_errors
 from .httpclient import httper
-from .log import cprint, logger
+from .log import cprint, logger, sprintf
 from .defaultpaths import DEFAULT_LOG_DIR, DEFAULT_CFG_DIR, DEFAULT_DATA_DIR, DEFAULT_SOCK_PATH
 from .info import VERSION
 from .cli_display import print_h1
@@ -566,6 +566,9 @@ class CLICommander(object):
     def __print_sub_level_tree(self, ptr, prefix):
         cmds = ptr.keys()
         cmds.sort()
+        # We want to colorize only the first element, then
+        # grey common parts
+        full_colorize = True
         for k in cmds:
             entry = ptr[k]
             # Tree not finish? go for it
@@ -574,14 +577,33 @@ class CLICommander(object):
                 continue
             s = k.ljust(25)
             if prefix:
-                s = '%s %s' % (prefix, k)
-                s = s.ljust(25)
+                if full_colorize:
+                    s = '%s %s' % (prefix, sprintf(k, color='green'))
+                    s = s.ljust(25)
+                    # Maybe the prefix was long, if so, do not
+                    _elts = prefix.split(' ')
+                    
+                    new_elts = []
+                    new_elts.append((_elts[0], sprintf(_elts[0], color='grey')))
+                    for p in _elts[1:]:
+                        new_elts.append((p, sprintf(p, color='green')))
+                    for (p, changed_p) in new_elts:
+                        s = s.replace(p, changed_p, 1)
+                    full_colorize = False
+                else:
+                    s = '%s %s' % (prefix, k)
+                    s = s.ljust(25)
+                    s = s.replace(prefix, sprintf(prefix, color='grey'), 1)
+                    s = s.replace(k, sprintf(k, color='green'), 1)
+            else:
+                s = sprintf(s, color='green')
             topic_color_ix = topiker.get_color_id_by_topic_string(entry.topic)
             topic_prefix = '%s' % (lolcat.get_line(CHARACTERS.vbar, topic_color_ix, spread=None))
             cprint(topic_prefix, end='')
             cprint('  opsbro ', color='grey', end='')
-            cprint('%s ' % s, 'green', end='')
+            cprint('%s ' % s, end='')
             cprint(': %s' % entry.description)
+        # print "__print_sub_level_tree::finish"
     
     
     def print_list(self, keyword=''):
