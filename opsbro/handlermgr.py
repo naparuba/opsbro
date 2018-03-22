@@ -14,10 +14,17 @@ class HandlerManager(object):
     
     
     def launch_check_handlers(self, check, did_change):
-        logger.debug('Launch handlers: %s (didchange=%s)' % (check['name'], did_change))
+        logger.debug('Launch handlers(check): %s (didchange=%s)' % (check['name'], did_change))
         
         for (htype, module) in self.handler_modules.iteritems():
             module.handle(check, {'evt_type': 'check_execution', 'evt_data': {'check_did_change': did_change}})
+    
+    
+    def launch_group_handlers(self, group, what):
+        logger.debug('Launch handlers(group): %s (what=%s)' % (group, what))
+        
+        for (htype, module) in self.handler_modules.iteritems():
+            module.handle(group, {'evt_type': 'group_change', 'evt_data': {'modification': what}})
 
 
 handlermgr = HandlerManager()

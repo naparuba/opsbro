@@ -23,17 +23,22 @@ class SlackHandlerModule(HandlerModule):
         super(SlackHandlerModule, self).__init__()
     
     
-    def try_to_send_message(self, slack, attachments, channel):
+    def __try_to_send_message(self, slack, attachments, channel):
         r = slack.chat.post_message(channel=channel, text='', as_user=True, attachments=attachments)
         self.logger.debug('[SLACK] return of the send: %s %s %s' % (r.successful, r.__dict__['body']['channel'], r.__dict__['body']['ts']))
     
     
-    def send_slack(self, check):
+    def __get_token(self):
         token = self.get_parameter('token')
         if not token:
             token = os.environ.get('SLACK_TOKEN', '')
+        return token
+    
+    
+    def send_slack_check(self, check):
+        token = self.__get_token()
         
-        if token:
+        if not token:
             self.logger.error('[SLACK] token is not configured on the slack module. skipping slack messages.')
             return
         slack = Slacker(token)
@@ -51,8 +56,36 @@ class SlackHandlerModule(HandlerModule):
         ]
         attachment['fields'] = fields
         attachments = [attachment]
+        self.__do_send_message(slack, attachments, channel)
+    
+    
+    def send_slack_group(self, group, group_modification):
+        token = self.__get_token()
+        
+        if not token:
+            self.logger.error('[SLACK] token is not configured on the slack module. skipping slack messages.')
+            return
+        slack = Slacker(token)
+        # title = '{date_num} {time_secs} [node:`%s`][addr:`%s`] Check `%s` is going %s' % (gossiper.display_name, gossiper.addr, check['name'], check['state'])
+        content = 'The group %s was %s' % (group, group_modification)
+        channel = self.get_parameter('channel')
+        colors = {'remove': 'danger', 'add': 'good'}
+        node_name = '%s (%s)' % (gossiper.name, gossiper.addr)
+        if gossiper.display_name:
+            node_name = '%s [%s]' % (node_name, gossiper.display_name)
+        attachment = {"pretext": ' ', "text": content, 'color': colors.get(group_modification, '#764FA5'), 'author_name': node_name, 'footer': 'Send by OpsBro on %s' % node_name, 'ts': int(time.time())}
+        fields = [
+            {"title": "Node", "value": node_name, "short": True},
+            {"title": "Group:%s" % group_modification, "value": group, "short": True},
+        ]
+        attachment['fields'] = fields
+        attachments = [attachment]
+        self.__do_send_message(slack, attachments, channel)
+    
+    
+    def __do_send_message(self, slack, attachments, channel):
         try:
-            self.try_to_send_message(slack, attachments, channel)
+            self.__try_to_send_message(slack, attachments, channel)
         except Exception, exp:
             self.logger.error('[SLACK] Cannot send alert: %s (%s) %s %s %s' % (exp, type(exp), str(exp), str(exp) == 'channel_not_found', exp.__dict__))
             # If it's just that the channel do not exists, try to create it
@@ -65,7 +98,7 @@ class SlackHandlerModule(HandlerModule):
                     return
                 # Now try to resend the message
                 try:
-                    self.try_to_send_message(slack, attachments, channel)
+                    self.__try_to_send_message(slack, attachments, channel)
                 except Exception, exp:
                     self.logger.error('[SLACK] Did create channel %s but we still cannot send the message: %s' % (channel, exp))
     
@@ -83,4 +116,9 @@ class SlackHandlerModule(HandlerModule):
             evt_data = event['evt_data']
             check_did_change = evt_data['check_did_change']
             if check_did_change:
-                self.send_slack(obj)
+                self.send_slack_check(obj)
+        
+        if evt_type == 'group_change':
+            evt_data = event['evt_data']
+            group_modification = evt_data['modification']
+            self.send_slack_group(obj, group_modification)

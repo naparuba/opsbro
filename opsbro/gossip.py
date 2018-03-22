@@ -23,6 +23,7 @@ from .httpclient import get_http_exceptions, httper
 from .zonemanager import zonemgr
 from .stop import stopper
 from .util import make_dir
+from .handlermgr import handlermgr
 
 KGOSSIP = 10
 
@@ -257,6 +258,8 @@ class Gossip(object):
             if did_change:
                 # We always stack a history entry, it's only save once a seconds
                 self.__add_group_change_history_entry(group, 'add')
+                # Let the handlers known about it
+                handlermgr.launch_group_handlers(group, 'add')
                 # but not always network, must be done once a loop
                 if broadcast_when_change:
                     self.node_did_change(self.uuid)  # a node did change: ourselve
@@ -278,6 +281,9 @@ class Gossip(object):
             if did_change:
                 # We always stack a history entry, it's only save once a seconds
                 self.__add_group_change_history_entry(group, 'remove')
+                # Let the handlers known about it
+                handlermgr.launch_group_handlers(group, 'remove')
+                
                 # but not always network, must be done once a loop
                 if broadcast_when_change:
                     self.node_did_change(self.uuid)  # a node did change: ourselve
