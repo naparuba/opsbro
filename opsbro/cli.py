@@ -19,7 +19,7 @@ from .httpclient import httper
 from .log import cprint, logger, sprintf
 from .defaultpaths import DEFAULT_LOG_DIR, DEFAULT_CFG_DIR, DEFAULT_DATA_DIR, DEFAULT_SOCK_PATH
 from .info import VERSION
-from .cli_display import print_h1
+from .cli_display import print_h1, get_terminal_size
 from .topic import topiker
 from .characters import CHARACTERS
 from .misc.lolcat import lolcat
@@ -563,9 +563,18 @@ class CLICommander(object):
         return
     
     
-    def __print_sub_level_tree(self, ptr, prefix):
+    def __chunker(self, seq, size):
+        return [seq[pos:pos + size] for pos in xrange(0, len(seq), size)]
+    
+    
+    # Ok magic ahead: we will try to look at printing the options with color
+    # AND by looking at the terminal width to have a responsive display
+    def __print_sub_level_tree(self, ptr, prefix, first_level=False):
         cmds = ptr.keys()
         cmds.sort()
+        
+        _, term_width = self.__get_terminal_size()
+        
         # We want to colorize only the first element, then
         # grey common parts
         full_colorize = True
@@ -575,16 +584,28 @@ class CLICommander(object):
             if isinstance(entry, dict):
                 self.__print_sub_level_tree(entry, '%s %s' % (prefix, k))
                 continue
+            nb_chars = 0
             s = k.ljust(25)
             if prefix:
                 if full_colorize:
+                    # We need to get the size of the colorless verion, to have the number of spaces need
+                    colorless_s = '%s %s' % (prefix, k)
+                    len_colorless_raw = len(colorless_s)
+                    colorless_s = colorless_s.ljust(25)
+                    nb_chars += len(colorless_s)
+                    # now really colorize it
                     s = '%s %s' % (prefix, sprintf(k, color='green'))
-                    s = s.ljust(25)
+                    # print "COLORLESS", len_colorless_raw
+                    if len_colorless_raw < 25:
+                        s = s + ' ' * (25 - len_colorless_raw)
+                    
                     # Maybe the prefix was long, if so, do not
                     _elts = prefix.split(' ')
                     
+                    # The very first element must be green, then we must the prefix as grey
+                    first_part_color = 'green' if first_level else 'grey'
                     new_elts = []
-                    new_elts.append((_elts[0], sprintf(_elts[0], color='grey')))
+                    new_elts.append((_elts[0], sprintf(_elts[0], color=first_part_color)))
                     for p in _elts[1:]:
                         new_elts.append((p, sprintf(p, color='green')))
                     for (p, changed_p) in new_elts:
@@ -593,17 +614,39 @@ class CLICommander(object):
                 else:
                     s = '%s %s' % (prefix, k)
                     s = s.ljust(25)
+                    nb_chars += len(s)
                     s = s.replace(prefix, sprintf(prefix, color='grey'), 1)
                     s = s.replace(k, sprintf(k, color='green'), 1)
             else:
+                # Simple level parameters, so banner, version, etc
+                nb_chars += len(s)  # note: before colorize it
                 s = sprintf(s, color='green')
             topic_color_ix = topiker.get_color_id_by_topic_string(entry.topic)
             topic_prefix = '%s' % (lolcat.get_line(CHARACTERS.vbar, topic_color_ix, spread=None))
             cprint(topic_prefix, end='')
             cprint('  opsbro ', color='grey', end='')
+            nb_chars += 13
             cprint('%s ' % s, end='')
-            cprint(': %s' % entry.description)
-        # print "__print_sub_level_tree::finish"
+            available_width = max(10, term_width - nb_chars)
+            cprint(': ', end='')
+            
+            # Responsive description display
+            description = entry.description
+            chunks = self.__chunker(description, available_width)
+            cprint(chunks[0])
+            if len(chunks) > 1:
+                for chunk in chunks[1:]:
+                    cprint(topic_prefix, end='')
+                    cprint(' ' * (nb_chars - 1), end='')
+                    cprint(chunk)
+    
+    
+    def __get_terminal_size(self):
+        try:
+            height, width = get_terminal_size()
+        except:
+            height = width = 999
+        return height, width
     
     
     def print_list(self, keyword=''):
@@ -631,6 +674,6 @@ class CLICommander(object):
             cprint(u'%-15s' % cmd, color='magenta', end='')
             numerical = 's' if len(topics_strings) > 1 else ''
             cprint(' (topic%s: %s)' % (numerical, ', '.join([topic_string for topic_string in topics_strings])), color='grey')
-            self.__print_sub_level_tree(d, prefix)
+            self.__print_sub_level_tree(d, prefix, first_level=True)
             cprint('')
         return
