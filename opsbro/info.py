@@ -5,6 +5,7 @@ from .characters import CHARACTERS
 from .misc.lolcat import lolcat
 from .topic import TOPICS, TOPICS_LABELS, TOPICS_LABEL_BANNER, TOPICS_COLORS, TOPICS_SUB_TITLES, MAX_TOPICS_LABEL_SIZE, TOPICS_COLORS_RANDOM_VALUES_LOOP
 from .log import sprintf
+from .cli_display import get_terminal_size
 
 VERSION = '0.4b1'
 
@@ -106,12 +107,24 @@ banner_lines[_idx + 1] = line_after
 
 _idx_topics = 5
 
-banner_lines[_idx_topics] += '  %sOps%s*%sBro%s goal: solve most common use cases of theses %s%s6%s Topics' % (_BLUE, _RESET, _RED, _RESET, _BOLD, _MAGENTA, _RESET)
+try:
+    _, terminal_width = get_terminal_size()
+except:
+    terminal_width = 999
+
+banner_lines[_idx_topics - 1] += '  %sOps%s*%sBro%s solve common' % (_BLUE, _RESET, _RED, _RESET)
+banner_lines[_idx_topics] += '  use cases of %s%s6%s Topics:' % (_BOLD, _MAGENTA, _RESET)
 for (i, topic) in enumerate(TOPICS):
     _color_id = TOPICS_COLORS[topic]
     topic_label = lolcat.get_line(TOPICS_LABEL_BANNER[topic].ljust(MAX_TOPICS_LABEL_SIZE), _color_id, spread=None)
-    topic_sub_text = sprintf(TOPICS_SUB_TITLES[topic], color='grey', end='')
-    suffix = '  %s %s %s' % (topic_label, CHARACTERS.arrow_left, topic_sub_text)
+    topic_sub_text = TOPICS_SUB_TITLES[topic]
+    # We want to have a responsive sub title that do not print outside the terminal
+    # NOTE: 28 = bro width
+    #       5  = space and arrow
+    max_topic_sub_text_len = terminal_width - MAX_TOPICS_LABEL_SIZE - 28 - 5
+    topic_sub_text = topic_sub_text[:max_topic_sub_text_len]
+    colored_topic_sub_text = sprintf(topic_sub_text, color='grey', end='')
+    suffix = '  %s %s %s' % (topic_label, CHARACTERS.arrow_left, colored_topic_sub_text)
     banner_lines[_idx_topics + i + 1] += suffix
 
 _idx_project_home = _idx_topics + len(TOPICS) + 2
