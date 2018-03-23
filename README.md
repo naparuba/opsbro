@@ -302,7 +302,7 @@ You can be notified about check state changed with handlers:
 
 You can enable it with:
 
-    opsbro packs parameters set global.slack.enabled  true
+    opsbro agent parameters add groups slack
     opsbro packs parameters set global.slack.token    'SLACK-TOKEN'
 
 

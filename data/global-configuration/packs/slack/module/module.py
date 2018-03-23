@@ -5,22 +5,34 @@ from slacker import Slacker
 
 from opsbro.module import HandlerModule
 from opsbro.gossip import gossiper
-from opsbro.parameters import BoolParameter, StringParameter, StringListParameter
+from opsbro.parameters import StringParameter, StringListParameter
 
 
 class SlackHandlerModule(HandlerModule):
     implement = 'slack'
     
     parameters = {
-        'enabled'   : BoolParameter(default=False),
-        'severities': StringListParameter(default=['ok', 'warning', 'critical', 'unknown']),
-        'token'     : StringParameter(default=''),
-        'channel'   : StringParameter(default='#alerts'),
+        'enabled_if_group': StringParameter(default='slack'),
+        'severities'      : StringListParameter(default=['ok', 'warning', 'critical', 'unknown']),
+        'token'           : StringParameter(default=''),
+        'channel'         : StringParameter(default='#alerts'),
     }
     
     
     def __init__(self):
         super(SlackHandlerModule, self).__init__()
+        self.enabled = False
+    
+    
+    def prepare(self):
+        if_group = self.get_parameter('enabled_if_group')
+        self.enabled = gossiper.is_in_group(if_group)
+    
+    
+    def get_info(self):
+        state = 'STARTED' if self.enabled else 'DISABLED'
+        log = ''
+        return {'configuration': self.get_config(), 'state': state, 'log': log}
     
     
     def __try_to_send_message(self, slack, attachments, channel):
@@ -35,7 +47,7 @@ class SlackHandlerModule(HandlerModule):
         return token
     
     
-    def send_slack_check(self, check):
+    def __send_slack_check(self, check):
         token = self.__get_token()
         
         if not token:
@@ -59,7 +71,7 @@ class SlackHandlerModule(HandlerModule):
         self.__do_send_message(slack, attachments, channel)
     
     
-    def send_slack_group(self, group, group_modification):
+    def __send_slack_group(self, group, group_modification):
         token = self.__get_token()
         
         if not token:
@@ -104,9 +116,10 @@ class SlackHandlerModule(HandlerModule):
     
     
     def handle(self, obj, event):
-        enabled = self.get_parameter('enabled')
-        if not enabled:
-            self.logger.debug('Mail module is not enabled, skipping check alert sent')
+        if_group = self.get_parameter('enabled_if_group')
+        self.enabled = gossiper.is_in_group(if_group)
+        if not self.enabled:
+            self.logger.debug('Slack module is not enabled, skipping check alert sent')
             return
         
         self.logger.info('Manage an obj event: %s (event=%s)' % (obj, event))
@@ -116,9 +129,9 @@ class SlackHandlerModule(HandlerModule):
             evt_data = event['evt_data']
             check_did_change = evt_data['check_did_change']
             if check_did_change:
-                self.send_slack_check(obj)
+                self.__send_slack_check(obj)
         
         if evt_type == 'group_change':
             evt_data = event['evt_data']
             group_modification = evt_data['modification']
-            self.send_slack_group(obj, group_modification)
+            self.__send_slack_group(obj, group_modification)

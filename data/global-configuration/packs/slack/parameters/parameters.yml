@@ -1,6 +1,6 @@
 
 # By default slack is not enabled
-enabled: false
+enabled_if_group:  slack
 
 # which check severities to send to slack
 severities:
@@ -9,8 +9,8 @@ severities:
         - critical
         - unknown
 
-# Set your slack token here.
+# Set your slack token here. You can get it at https://api.slack.com/custom-integrations/legacy-tokens
 token: ''
 
-# Which channel to post to. If missing, will try to create it. You can get it at https://api.slack.com/custom-integrations/legacy-tokens
+# Which channel to post to. If missing, will try to create it.
 channel: '#alerts'

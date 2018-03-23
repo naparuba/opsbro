@@ -1,0 +1,14 @@
+compliance:
+   name: Install numpy if slack module enabled
+   verify_if:   "is_in_group('slack')"
+   mode: enforcing
+   interval: 1s
+   note: This installer will install the python requests librairy is the slack module goes enabled
+   rule:
+      type: package-install
+      parameters:
+         environments:
+            - name: linux
+              if:   "system_get_os() == 'linux'"
+              packages:
+                 - python-requests

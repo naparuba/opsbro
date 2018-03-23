@@ -47,7 +47,7 @@ class TTLDatabase(object):
             STATS.incr('ttl-db-cache-miss', 1)
             with self.lock:
                 # Maybe during the lock get one other thread succedd in getting the cdb
-                if not h in self.dbs:
+                if h not in self.dbs:
                     # Ok really load it, but no more than self.db_cache_size
                     # databases (number of open files can increase quickly)
                     if len(self.dbs) > self.db_cache_size:
@@ -121,7 +121,7 @@ class TTLDatabase(object):
     
     # Thread that will manage the delete of the ttld-die key
     def ttl_cleaning_thread(self):
-        while True:
+        while not stopper.interrupted:
             time.sleep(5)
             self.clean_old()
 
