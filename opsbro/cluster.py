@@ -48,6 +48,7 @@ from .monitoring import monitoringmgr
 from .compliancemgr import compliancemgr
 from .defaultpaths import DEFAULT_LIBEXEC_DIR, DEFAULT_LOCK_PATH, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR, DEFAULT_CFG_DIR, DEFAULT_SOCK_PATH
 from .hostingdrivermanager import get_hostingdrivermgr
+from .topic import topiker, TOPIC_SERVICE_DISCOVERY, TOPIC_AUTOMATIC_DECTECTION, TOPIC_MONITORING, TOPIC_METROLOGY, TOPIC_CONFIGURATION_AUTOMATION, TOPIC_SYSTEM_COMPLIANCE
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('agent')
@@ -59,7 +60,7 @@ AGENT_STATE_STOPPED = 'stopped'
 
 
 class Cluster(object):
-    def __init__(self, port=6768, name='', bootstrap=False, seeds='', groups='', cfg_dir='', libexec_dir=''):
+    def __init__(self, cfg_dir='', libexec_dir=''):
         self.set_exit_handler()
         
         # We need to keep a trace about in what state we are globally
@@ -91,17 +92,25 @@ class Cluster(object):
         
         # By default, we are not a proxy, and with default port
         self.is_proxy = False
-        self.port = port
-        self.name = name
+        self.port = 6768
+        self.name = ''
         self.display_name = ''
         self.hostname = socket.gethostname()
         if not self.name:
             self.name = '%s' % self.hostname
-        self.groups = [s.strip() for s in groups.split(',') if s.strip()]
+        self.groups = []
         
-        self.bootstrap = bootstrap
-        self.seeds = [s.strip() for s in seeds.split(',')]
+        self.bootstrap = False
+        self.seeds = []
         self.zone = ''
+        
+        # Topics
+        self.service_discovery_topic_enabled = True
+        self.automatic_detection_topic_enabled = True
+        self.monitoring_topic_enabled = True
+        self.metrology_topic_enabled = True
+        self.configuration_automation_topic_enabled = True
+        self.system_compliance_topic_enabled = True
         
         # The public IP can be a bit complex, as maybe the local host do not even have it in it's
         # network interface: EC2 and scaleway are example of public ip -> NAT -> private one and
@@ -137,6 +146,13 @@ class Cluster(object):
         # open the log file
         raw_logger.load(self.log_dir, self.name)
         raw_logger.export_http()
+        
+        topiker.set_topic_state(TOPIC_SERVICE_DISCOVERY, self.service_discovery_topic_enabled)
+        topiker.set_topic_state(TOPIC_AUTOMATIC_DECTECTION, self.automatic_detection_topic_enabled)
+        topiker.set_topic_state(TOPIC_MONITORING, self.monitoring_topic_enabled)
+        topiker.set_topic_state(TOPIC_METROLOGY, self.metrology_topic_enabled)
+        topiker.set_topic_state(TOPIC_CONFIGURATION_AUTOMATION, self.configuration_automation_topic_enabled)
+        topiker.set_topic_state(TOPIC_SYSTEM_COMPLIANCE, self.system_compliance_topic_enabled)
         
         # Look if our encryption key is valid or not
         encrypter = libstore.get_encrypter()
@@ -454,6 +470,9 @@ class Cluster(object):
     
     
     def launch_udp_listener(self):
+        # If we do not have the right, do not listen for UDP messages
+        while not topiker.is_topic_enabled(TOPIC_SERVICE_DISCOVERY):
+            time.sleep(1)
         self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
         self.udp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)  # Allow Broadcast (useful for node discovery)
         logger.info("OPENING UDP", self.addr)
@@ -545,6 +564,7 @@ class Cluster(object):
                  'collectors'    : collectormgr.get_info(),
                  'kv'            : kvmgr.get_info(),
                  'hosting_driver': get_hostingdrivermgr().get_driver_name(), 'hosting_drivers_state': get_hostingdrivermgr().get_drivers_state(),
+                 'topics'        : topiker.get_topic_states(),
                  }
             
             # Update the infos with modules ones
@@ -1064,7 +1084,8 @@ class Cluster(object):
     
     # We are joining the seed members and lock until we reach at least one
     def join(self):
-        gossiper.join()
+        if topiker.is_topic_enabled(TOPIC_SERVICE_DISCOVERY):
+            gossiper.join()
     
     
     # each second we look for all old events in order to clean and delete them :)

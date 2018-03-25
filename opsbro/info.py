@@ -122,7 +122,8 @@ for (i, topic) in enumerate(TOPICS):
     # NOTE: 28 = bro width
     #       5  = space and arrow
     max_topic_sub_text_len = terminal_width - MAX_TOPICS_LABEL_SIZE - 28 - 5
-    topic_sub_text = topic_sub_text[:max_topic_sub_text_len]
+    if len(topic_sub_text) > max_topic_sub_text_len:
+        topic_sub_text = topic_sub_text[:max_topic_sub_text_len-1] + sprintf(CHARACTERS.three_dots, color='yellow', end='')
     colored_topic_sub_text = sprintf(topic_sub_text, color='grey', end='')
     suffix = '  %s %s %s' % (topic_label, CHARACTERS.arrow_left, colored_topic_sub_text)
     banner_lines[_idx_topics + i + 1] += suffix

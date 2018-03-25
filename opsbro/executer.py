@@ -12,6 +12,7 @@ from .threadmgr import threader
 from .gossip import gossiper
 from .kv import kvmgr
 from .httpdaemon import http_export, response, abort, request
+from .topic import topiker, TOPIC_CONFIGURATION_AUTOMATION
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('executer')
@@ -273,6 +274,8 @@ class Executer(object):
             response.content_type = 'application/json'
             if self.mfkey_priv is None:
                 return abort(400, 'No master private key')
+            if not topiker.is_topic_enabled(TOPIC_CONFIGURATION_AUTOMATION):
+                return abort(400, 'Configuration automation is not allowed for this node')
             cmd = request.GET.get('cmd', 'uname -a')
             uid = self.launch_exec(cmd, group)
             return uid

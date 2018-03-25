@@ -61,3 +61,45 @@ log_level: INFO
 
 # Place to store nagios compatible plugins (deprecated)
 libexec: /var/lib/opsbro/libexec/
+
+
+############### Topics
+# There are 6 topics you can enable or disable
+
+# Service Discovery:
+# Will listen to other nodes and ping then at regular interval
+# If set to disabled, won't ping/answer to other nodes
+service_discovery_topic_enabled: true
+
+
+# Automatic Detection:
+# Will launch detection rules and add new groups from it
+# If disabled, detection rules won't be executed
+automatic_detection_topic_enabled: true
+
+
+# Monitoring:
+# Will launch checks at regular interval, if checks goes bad, notifications
+# will be launched
+# If disabled, checks won't be launched
+monitoring_topic_enabled: true
+
+
+# Metrology:
+# Will collect data from the system so checks & some detection rules can use them
+# If disabled, data collection won't be launched
+metrology_topic_enabled: true
+
+
+# Configuration Automation:
+#
+configuration_automation_topic_enabled: true
+
+# System compliance:
+# Will launch compliance rule that will check at various rules and can:
+# * raise alerts about it
+# * if allowed, fix it
+# If disabled, compliance rules won't be launched
+system_compliance_topic_enabled: true
+
+

@@ -43,9 +43,12 @@ class Characters(object):
     small_9 = u'₉'
     small_close = u'₎'
     
+    # Dots
+    three_dots = u'…'
+    
     # Topic display prefix
     topic_display_prefix = u'¦'
-    topic_small_picto = u'█'
+    topic_small_picto = u'▒'
     
     # Gun
     higer_gun = u'߹'

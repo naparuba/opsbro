@@ -9,6 +9,7 @@ from .stop import stopper
 from .httpdaemon import http_export, response
 from .evaluater import evaluater
 from .util import make_dir
+from .topic import topiker, TOPIC_SYSTEM_COMPLIANCE
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('compliance')
@@ -298,7 +299,8 @@ class ComplianceManager(object):
         while collectormgr.did_run == False:
             time.sleep(0.25)
         while not stopper.interrupted:
-            self.launch_compliances()
+            if topiker.is_topic_enabled(TOPIC_SYSTEM_COMPLIANCE):
+                self.launch_compliances()
             self.did_run = True
             # For each changes, we write a history entry
             self.__write_history_entry()

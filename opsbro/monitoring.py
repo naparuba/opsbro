@@ -23,6 +23,7 @@ from .evaluater import evaluater
 from .ts import tsmgr
 from .handlermgr import handlermgr
 from .util import make_dir
+from .topic import topiker, TOPIC_MONITORING
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('monitoring')
@@ -573,6 +574,10 @@ class MonitoringManager(object):
         logger.log('CHECK thread launched')
         cur_launchs = {}
         while not stopper.interrupted:
+            # If we are not allowed to do monitoring stuff, do nothing
+            if not topiker.is_topic_enabled(TOPIC_MONITORING):
+                time.sleep(1)
+                continue
             now = int(time.time())
             for (cid, check) in self.checks.iteritems():
                 # maybe this chck is not a activated one for us, if so, bail out

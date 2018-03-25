@@ -2,6 +2,7 @@
 
 import random
 import itertools
+
 from .misc.lolcat import lolcat
 
 TOPIC_SERVICE_DISCOVERY = 0x1 << 0
@@ -92,6 +93,28 @@ TOPICS_COLORS_RANDOM_VALUES_LOOP = itertools.cycle(_TOPICS_COLORS_VALUES)
 
 # Yes, there is a pokemon word play with a french pokemon. I love pokemon and my son too. Deal with it ( •_•)      ( •_•)>⌐■-■       (⌐■_■)
 class Topiker(object):
+    def __init__(self):
+        self.topic_enabled = {}
+        for topic in TOPICS:
+            self.topic_enabled[topic] = True
+    
+    
+    def get_topic_states(self):
+        return self.topic_enabled
+    
+    
+    def set_topic_state(self, topic, state):
+        if topic not in TOPICS:
+            raise Exception('The topic %s is not an allowed one' % topic)
+        self.topic_enabled[topic] = state
+    
+    
+    def is_topic_enabled(self, topic):
+        if topic not in TOPICS:
+            raise Exception('The topic %s is not an allowed one' % topic)
+        return self.topic_enabled[topic]
+    
+    
     def get_color_id_by_topic_string(self, topic_s):
         if topic_s not in TOPIC_ID_BY_STRING:
             return DEFAULT_COLOR_ID

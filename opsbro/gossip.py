@@ -24,6 +24,8 @@ from .zonemanager import zonemgr
 from .stop import stopper
 from .util import make_dir
 from .handlermgr import handlermgr
+from .topic import topiker, TOPIC_SERVICE_DISCOVERY
+
 
 KGOSSIP = 10
 
@@ -748,7 +750,9 @@ class Gossip(object):
     # sync with it
     def launch_full_sync_loop(self):
         while not stopper.interrupted:
-            self.launch_full_sync()
+            # Only sync if we are allowed to do service discovery
+            if topiker.is_topic_enabled(TOPIC_SERVICE_DISCOVERY):
+                self.launch_full_sync()
             time.sleep(15)
     
     
@@ -775,7 +779,8 @@ class Gossip(object):
     #       data/state of the upper zone, they only need to know about the public states, so the proxy nodes
     def do_launch_gossip_loop(self):
         while not stopper.interrupted:
-            self.launch_gossip()
+            if topiker.is_topic_enabled(TOPIC_SERVICE_DISCOVERY):
+                self.launch_gossip()
             time.sleep(1)
     
     
@@ -862,7 +867,8 @@ class Gossip(object):
     # THREAD: every second send a Gossip UDP ping to another node, random choice
     def ping_another_nodes(self):
         while not stopper.interrupted:
-            self.ping_another()
+            if topiker.is_topic_enabled(TOPIC_SERVICE_DISCOVERY):
+                self.ping_another()
             time.sleep(1)
     
     

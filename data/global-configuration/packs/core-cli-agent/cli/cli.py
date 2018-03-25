@@ -86,6 +86,7 @@ def do_info(show_logs):
     _uuid = d.get('uuid')
     # Modules groking
     modules = d.get('modules', {})
+    topics = d.get('topics', {})
     # Get groups as sorted
     groups = d.get('groups')
     groups.sort()
@@ -98,6 +99,19 @@ def do_info(show_logs):
     # Normal agent information
     print_info_title('OpsBro Daemon')
     print_2tab(e)
+    
+    print_info_title('Topics')
+    from opsbro.topic import TOPICS_LABELS
+    # Json ids are always string, must have int
+    topic_ids = [int(topic_id) for topic_id in topics.keys()]
+    topic_ids.sort()
+    for topic_id in topic_ids:
+        topic_label = TOPICS_LABELS.get(topic_id)
+        is_enabled = topics[str(topic_id)]
+        topic_color = {True: 'green', False: 'grey'}.get(is_enabled)
+        topic_state = {True: 'ENABLED', False: 'DISABLED'}.get(is_enabled)
+        cprint(' - %-25s: ' % topic_label, color='blue', end='')
+        cprint(topic_state, color=topic_color)
     
     # Normal agent information
     print_info_title('HTTP (LAN & private unix socket)')
