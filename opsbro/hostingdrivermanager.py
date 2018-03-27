@@ -194,13 +194,17 @@ class InterfaceHostingDriver(object):
         # windows: we ask to WMI for the baord serial number
         if os.name == 'nt':
             c = windowser.get_wmi()
-            board = c.Win32_BaseBoard()[0]  # NOTE: I take only the first board, sorry for super clusters
-            try:
-                buf = board.SerialNumber.strip().lower()
-                self.logger.info('[SERVER-UUID] using the DMI (bios) uuid as server unique UUID: %s' % buf)
-                return buf
-            except AttributeError, exp:
-                self.logger.error('[SERVER-UUID] Cannot get the unique bios/board serial number: %s' % exp)
+            boards = c.Win32_BaseBoard()  # NOTE: somve VM in cloud do not even have a board...
+            if len(boards) == 0:
+                self.logger.error('[SERVER-UUID] Cannot get the unique bios/board serial number as no mother board is present in WMI')
+            else:
+                board = c.Win32_BaseBoard()[0]
+                try:
+                    buf = board.SerialNumber.strip().lower()
+                    self.logger.info('[SERVER-UUID] using the DMI (bios) uuid as server unique UUID: %s' % buf)
+                    return buf
+                except AttributeError, exp:
+                    self.logger.error('[SERVER-UUID] Cannot get the unique bios/board serial number: %s' % exp)
     
         # Cannot find: we will have to guess it
         return None
