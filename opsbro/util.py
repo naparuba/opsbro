@@ -74,9 +74,7 @@ def get_server_const_uuid():
     unique_uuid = hosttingdrvmgr.get_unique_uuid()
     if unique_uuid:
         return hashlib.sha1(unique_uuid.lower()).hexdigest()
-    # TODO:
-    # aws
-    # windows
+
     return ''
 
 
