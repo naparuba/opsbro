@@ -36,7 +36,7 @@ class GeneratorMgr(object):
         # Template must be from configuration path
         gen_base_dir = os.path.dirname(fr)
         
-        generator['template'] = os.path.normpath(os.path.join(gen_base_dir, generator['template']))
+        generator['template'] = os.path.normpath(os.path.join(gen_base_dir, 'templates', generator['template']))
         # and path must be a abs path
         generator['path'] = os.path.abspath(generator['path'])
         
@@ -65,7 +65,7 @@ class GeneratorMgr(object):
                 logger.debug('LOOK AT GENERATOR', gen, 'to be apply on', gen['if_group'], 'with our groups', gossiper.groups)
                 if_group = gen['if_group']
                 # Maybe this generator is not for us...
-                if if_group != '*' and if_group not in gossiper.groups:
+                if not gossiper.is_in_group(if_group):
                     continue
                 logger.debug('Generator %s will runs' % gname)
                 g = Generator(gen)

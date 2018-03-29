@@ -5,6 +5,7 @@ import subprocess
 import codecs
 import stat
 import shutil
+from collections import deque
 
 from .log import LoggerFactory
 from .gossip import gossiper
@@ -15,17 +16,25 @@ logger = LoggerFactory.create_logger('generator')
 
 
 # Get all nodes that are defining a service sname and where the service is OK
-def ok_nodes(service=''):
-    sname = service
-    with gossiper.nodes_lock:
-        nodes = copy.copy(gossiper.nodes)  # just copy the dict, not the nodes themselves
-    res = []
-    for n in nodes.values():
-        if n['state'] != 'alive':
-            continue
-        for s in n['services'].values():
-            if s['name'] == sname and s['state_id'] == 0:
-                res.append((n, s))
+# TODO: give a direct link to object, must copy it?
+def ok_nodes(group=''):
+    res = deque()
+    if group == '':
+        with gossiper.nodes_lock:
+            nodes = copy.copy(gossiper.nodes)  # just copy the dict, not the nodes themselves
+        res = []
+        for n in nodes.values():
+            if n['state'] != 'alive':
+                continue
+            res.append(n)
+    else:
+        nodes_uuids = gossiper.find_group_nodes(group)
+        for node_uuid in nodes_uuids:
+            n = gossiper.get(node_uuid)
+            if n is not None:
+                res.append(n)
+    # Be sure to always give nodes in the same order, if not, files will be generated too ofthen
+    res = sorted(res, key=lambda node: node['uuid'])
     return res
 
 

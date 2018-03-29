@@ -1,0 +1,36 @@
+compliance:
+   name: TEST HAPROXY
+   verify_if:   "is_in_group('demo_haproxy')"
+   mode: enforcing
+   interval: 1s
+   note: This installer will install the haproxy application is the group is detected
+   rule:
+      type: package-install
+      parameters:
+         # You can set variables in order to not repeat yourself in the if rules
+         variables:
+            is_debian: "{{collector.system.os.linux.distribution}} == 'debian'"
+            is_centos: "{{collector.system.os.linux.distribution}} == 'centos'"
+            is_redhat: "{{collector.system.os.linux.distribution}} == 'redhat'"
+            is_ubuntu: "{{collector.system.os.linux.distribution}} == 'ubuntu'"
+            is_alpine: "{{collector.system.os.linux.distribution}} == 'alpine'"
+         environments:
+            - name: ubuntu
+              if:   "{{variables.is_ubuntu}}"
+              packages:
+                 - haproxy
+
+            - name: debian9
+              if: "{{variables.is_debian}} and {{collector.system.os.linux.major_version}} == 9"
+              packages:
+                 - haproxy
+            # same package but it's for the test
+            - name: debian9
+              if: "{{variables.is_debian}}"
+              packages:
+                 - haproxy
+
+            - name: alpine
+              if: "{{variables.is_alpine}}"
+              packages:
+                 - haproxy

@@ -1,0 +1,27 @@
+FROM debian:9
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+RUN        apt-get update && apt-get install -y python
+# allow fast install (docker cache)
+RUN        apt-get update && apt-get install -y python-jinja2
+RUN        apt-get update && apt-get install -y python-crypto
+RUN        apt-get update && apt-get install -y python-leveldb
+RUN        apt-get update && apt-get install -y python-setuptools
+RUN        apt-get update && apt-get install -y python-apt
+
+
+# Node client
+RUN        apt-get update && apt-get install -y procps
+RUN        apt-get update && apt-get install -y curl
+RUN        apt-get update && apt-get install -y dnsutils
+
+ADD        . /root/opsbro-oss
+WORKDIR       /root/opsbro-oss
+
+RUN       python setup.py install
+
+# Ask for an encrypted test
+RUN       opsbro agent parameters set encryption_key NGNjZWI2ZmEyMzEyMTFlOA==
+
+# The node1 will try to connect to node2 and auto join it
+ENTRYPOINT    test/test_demo1_http.sh "NODE-CLIENT"

@@ -1,0 +1,34 @@
+FROM debian:9
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+RUN        apt-get update && apt-get install -y python
+# allow fast install (docker cache)
+RUN        apt-get update && apt-get install -y python-jinja2
+RUN        apt-get update && apt-get install -y python-crypto
+RUN        apt-get update && apt-get install -y python-leveldb
+RUN        apt-get update && apt-get install -y python-setuptools
+RUN        apt-get update && apt-get install -y python-apt
+
+
+# To check localy the haproxy
+RUN        apt-get update && apt-get install -y procps
+RUN        apt-get update && apt-get install -y curl
+
+ADD        . /root/opsbro-oss
+WORKDIR       /root/opsbro-oss
+
+RUN       python setup.py install
+
+# Ask for an encrypted test
+RUN       opsbro agent parameters set encryption_key NGNjZWI2ZmEyMzEyMTFlOA==
+
+
+RUN        opsbro  packs overload global.haproxy
+# Copy the new compliance value
+ADD        test/test-files/test-demo1-http/compliance/install-haproxy.yml   /var/lib/opsbro/local-configuration/packs/haproxy/compliance/
+ADD        test/test-files/test-demo1-http/generators                       /var/lib/opsbro/local-configuration/packs/haproxy/generators/
+ADD        test/test-files/test-demo1-http/detectors                        /var/lib/opsbro/local-configuration/packs/haproxy/detectors/
+
+
+# The node1 will try to connect to node2 and auto join it
+ENTRYPOINT    test/test_demo1_http.sh "NODE-HAPROXY"

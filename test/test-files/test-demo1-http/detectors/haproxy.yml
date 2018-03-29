@@ -1,0 +1,6 @@
+detector:
+    add_groups:
+        - haproxy
+    apply_if: "has_package('haproxy')"
+    interval: "10s"
+

@@ -1,0 +1,6 @@
+detector:
+    add_groups:
+        - apache
+    apply_if: "has_package('apache2')"
+    interval: "10s"
+

@@ -1,4 +1,4 @@
-import httplib  # Used only for handling httplib.HTTPException (case #26701)
+import httplib
 import re
 import urllib2
 import traceback

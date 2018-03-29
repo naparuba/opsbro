@@ -34,6 +34,11 @@ env:
 - TEST_SUITE=DUO3
 # This one is with 4 containers, in 3 zones, one is sub level of another
 - TEST_SUITE=DUO4
+# This is a full DEMO with 4 containers, for a distributed HTTP with
+# 2 real servers
+# 1 haproxy (generators to the 2 http)
+# 1 customer, with DNS module
+- TEST_SUITE=DEMO1
 
 
 # command to run tests
