@@ -3,8 +3,9 @@
 
 echo "Starting to test Generator"
 
-
+echo "**********************************************"
 cat /tmp/authorized_keys.txt
+echo "**********************************************"
 
 grep "FIRST LINE" /tmp/authorized_keys.txt
 if [ $? != 0 ]; then

@@ -81,7 +81,7 @@ if [ "X$TRAVIS" == "Xtrue" ]; then
    NB_CPUS=3
    echo "Travis detected, using $NB_CPUS CPUs"
    # if stats with DUO, allow far more than this
-   if [[ $TEST_SUITE == DUO* ]]; then
+   if [[ $TEST_SUITE == DUO* ]] || [[ $TEST_SUITE == DEMO* ]]; then
       NB_CPUS=6
       echo "Travis detected, and also DUO test based. Allow more CPUs; $NB_CPUS"
    fi

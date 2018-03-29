@@ -1,5 +1,5 @@
 generator:
-    if_group:   linux
+    if_group:   ssh-key-sample
     path:       /root/authorized_keys.txt
     template:   ssh_keys.txt
     partial_start: ###### SSH Key deploy start
