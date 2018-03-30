@@ -191,8 +191,6 @@ if [ $CASE == "NODE-CLIENT" ]; then
    done
 
    echo "CLIENT:  `date` try to detect haproxy address"
-   dig -p 6766  @127.0.0.1 haproxy.group.local.opsbro
-
    dig haproxy.group.local.opsbro +short A
 
    ping -c 1 haproxy.group.local.opsbro
@@ -208,7 +206,8 @@ if [ $CASE == "NODE-CLIENT" ]; then
       sync
       OUT=$(curl -s http://haproxy.group.local.opsbro)
       if [[ "$OUT" != "NODE-HTTP-1" ]] && [[ "$OUT" != "NODE-HTTP-2" ]]; then
-         echo "Cannot reach real HTTP servers from the client: $OUT"
+         echo "CLIENT (test $ii/$TOTAL) Cannot reach real HTTP servers from the client: $OUT"
+         curl -v http://haproxy.group.local.opsbro
          exit 2
       fi
       printf "$OUT %d/%d" $ii $TOTAL
