@@ -32,4 +32,4 @@ ADD        test/test-files/test-demo1-http/detectors                        /var
 
 
 # The node1 will try to connect to node2 and auto join it
-ENTRYPOINT    test/test_demo1_http.sh "NODE-HAPROXY"
+ENTRYPOINT    service rsyslog start; test/test_demo1_http.sh "NODE-HAPROXY"
