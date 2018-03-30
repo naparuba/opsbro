@@ -45,13 +45,13 @@ function try_installation {
 
    DOCKER_FILE=`basename $FULL_PATH`
    NOW=$(date +"%H:%M:%S")
-   print_color "$DOCKER_FILE : starting at $NOW \n" "magenta"
+   print_color "$DO_WHAT  $DOCKER_FILE : BUILD starting at $NOW \n" "magenta"
    LOG=/tmp/build-and-run.$DOCKER_FILE.log
    rm -fr $LOG
    BUILD=$(docker build --quiet -f $FULL_PATH .  2>&1)
    if [ $? != 0 ]; then
        echo "$BUILD" > $LOG
-       print_color "ERROR:$DOCKER_FILE" "red"
+       print_color "$DO_WHAT  ERROR: $DOCKER_FILE" "red"
        printf " `date` Cannot build. Look at $LOG\n"
        printf "$DOCKER_FILE\n" >> $FAIL_FILE
        cat $LOG
@@ -59,22 +59,23 @@ function try_installation {
    fi
 
    if [ "$DO_WHAT" == "BUILD_ONLY" ];then
-      echo "Ask build only, good finish"
+      print_color "OK: $DOCKER_FILE  build only phase finish" "green"
       return
    fi
 
    SHA=`echo $BUILD|cut -d':' -f2`
 
+   print_color "$DO_WHAT  $DOCKER_FILE : RUN starting at $NOW \n" "magenta"
    docker run --interactive -a stdout -a stderr --rm=true  "$SHA" 2>>$LOG >>$LOG
    if [ $? != 0 ]; then
-       print_color "ERROR: `date` $DOCKER_FILE" "red"
+       print_color "$DO_WHAT  ERROR: `date` $DOCKER_FILE" "red"
        printf "  Cannot run. Look at $LOG\n"
        printf "$DOCKER_FILE\n" >> $FAIL_FILE
        cat $LOG
        return
    fi
    NOW=$(date +"%H:%M:%S")
-   print_color "OK: $DOCKER_FILE" "green"
+   print_color "$DO_WHAT  OK: $DOCKER_FILE" "green"
    printf " at $NOW (log=$LOG)\n"
    printf "$DOCKER_FILE\n" >> $SUCCESS_FILE
 }
@@ -83,6 +84,7 @@ function try_installation {
 export -f try_installation
 
 NB_CPUS=`python -c "import multiprocessing;print multiprocessing.cpu_count()"`
+echo "Detected number of CPUs: $NB_CPUS"
 # Travis: be sure to use the 2 CPU available, and in fact to allow // connections so we keep the test time bellow the limit
 if [ "X$TRAVIS" == "Xtrue" ]; then
    NB_CPUS=3
@@ -97,11 +99,12 @@ fi
 
 # export TRAVIS var so xargs calls with have it
 export TRAVIS=$TRAVIS
-echo "Building all images first:"
+echo "================================================= Building all images first:"
 echo $DOCKER_FILES | xargs --delimiter=' ' --no-run-if-empty -n 1 -P $NB_CPUS -I {} bash -c 'try_installation "{}" "BUILD_ONLY"'
 
 # Run must be synchronizer if possible, will allow to have less issues in synchronized tests (like DUO or DEMO)
-echo "Then Running all images:"
+printf "\n\n\n"
+echo "================================================= Then Running all images:"
 echo $DOCKER_FILES | xargs --delimiter=' ' --no-run-if-empty -n 1 -P $NB_CPUS -I {} bash -c 'try_installation "{}" "RUN"'
 
 
