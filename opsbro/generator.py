@@ -139,6 +139,7 @@ class Generator(object):
                 f.write(self.output)
                 f.close()
                 logger.info('Generator %s did generate a new file at %s' % (self.g['name'], self.g['path']))
+                logger.info('Regenerate result: %s' % self.output)
                 return True
             except IOError, exp:
                 logger.error('Cannot write path file %s : %s' % (self.g['path'], exp))
