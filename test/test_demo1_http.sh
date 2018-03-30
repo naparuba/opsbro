@@ -90,7 +90,7 @@ if [ $CASE == "NODE-HTTP-1" ] || [ $CASE == "NODE-HTTP-2" ]; then
    sleep $TIMEOUT_WAIT_END
 
    echo "Finish, exiting  `date`"
-   exit 0
+   exit 2
 fi
 
 

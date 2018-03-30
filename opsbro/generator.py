@@ -138,7 +138,7 @@ class Generator(object):
                 f = codecs.open(self.g['path'], "w", "utf-8")
                 f.write(self.output)
                 f.close()
-                logger.log('Generator %s did generate a new file at %s' % (self.g['name'], self.g['path']))
+                logger.info('Generator %s did generate a new file at %s' % (self.g['name'], self.g['path']))
                 return True
             except IOError, exp:
                 logger.error('Cannot write path file %s : %s' % (self.g['path'], exp))
@@ -210,7 +210,7 @@ class Generator(object):
                 prev_permissions = prev_stats[stat.ST_MODE]
                 logger.debug('PREV UID GID PERMISSIONS: %s %s %s' % (prev_uid, prev_gid, prev_permissions))
                 os.chmod(tmp_path, prev_permissions)
-                logger.log('Generator %s did generate a new file at %s' % (self.g['name'], self.g['path']))
+                logger.info('Generator %s did generate a new file at %s' % (self.g['name'], self.g['path']))
                 shutil.move(tmp_path, self.g['path'])
                 return True
             except IOError, exp:
@@ -227,9 +227,9 @@ class Generator(object):
         cmd = self.g.get('command', '')
         if not cmd:
             return
+        
         try:
-            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True,
-                                 preexec_fn=os.setsid)
+            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, preexec_fn=os.setsid)
         except Exception, exp:
             logger.error('Generator %s command launch (%s) fail : %s' % (self.g['name'], cmd, exp))
             return
@@ -238,4 +238,4 @@ class Generator(object):
         if rc != 0:
             logger.error('Generator %s command launch (%s) error (rc=%s): %s' % (self.g['name'], cmd, rc, '\n'.join([output, err])))
             return
-        logger.debug("Generator %s command succeded" % self.g['name'])
+        logger.info('Generator %s command launch (%s) SUCCESS (rc=%s): %s' % (self.g['name'], cmd, rc, '\n'.join([output, err])))
