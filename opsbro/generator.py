@@ -198,7 +198,7 @@ class Generator(object):
                 tmp_path = '%s.temporary-generator' % self.g['path']
                 f2 = codecs.open(tmp_path, 'w', 'utf-8')
                 f2.write(new_content)
-                logger.debug('DID GENERATE: %s' % new_content)
+                logger.info('DID GENERATE NEW CONTENT: %s' % new_content)
                 f2.close()
                 # now the second file is ok, move it to the first one place, but with:
                 # * same user/group
