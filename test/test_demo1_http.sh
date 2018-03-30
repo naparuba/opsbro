@@ -46,8 +46,10 @@ echo "Sleeping while others nodes pop up too"
 sleep 30
 
 MEMBERS=$(opsbro gossip members)
-
 NB_MEMBERS=$(echo "$MEMBERS" | grep 'docker-container' | wc -l)
+
+printf "Current members: `date` $MEMBERS\n"
+
 
 # Must have all 4 nodes available
 if [ $NB_MEMBERS != 4 ]; then
