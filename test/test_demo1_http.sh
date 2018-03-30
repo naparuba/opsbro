@@ -3,6 +3,8 @@
 CASE=$1
 
 
+echo "Is a travis run? $TRAVIS"
+
 # Set a valid display name for debug
 opsbro agent parameters set display_name "$CASE"
 
@@ -26,6 +28,8 @@ fi
 # We are ready, launch the whole daemons
 /etc/init.d/opsbro start
 
+echo "Daemon started `date`"
+
 # For debug purpose
 ip addr show | grep 'scope global'
 
@@ -35,6 +39,7 @@ sleep 60
 
 # Let the nodes join them selve.
 # NOTE: the haproxy node will be slower to get here, because he need to install haproxy during the start
+echo "Launching UDP detection `date`"
 opsbro gossip detect --auto-join
 
 echo "Sleeping while others nodes pop up too"
@@ -46,7 +51,7 @@ NB_MEMBERS=$(echo "$MEMBERS" | grep 'docker-container' | wc -l)
 
 # Must have all 4 nodes available
 if [ $NB_MEMBERS != 4 ]; then
-   echo "BAD number of members: $NB_MEMBERS"
+   echo "`date` BAD number of members: $NB_MEMBERS"
    echo "$MEMBERS"
    cat /var/log/opsbro/gossip.log
    exit 2
@@ -58,27 +63,28 @@ if [ $CASE == "NODE-HTTP-1" ] || [ $CASE == "NODE-HTTP-2" ]; then
    PAYLOAD=$(curl -s http://localhost/)
    echo "PAYLOAD $PAYLOAD"
    if [ "$PAYLOAD" != "$CASE" ]; then
-      echo "ERROR: the http page is not ready"
+      echo "ERROR: `date` the http page is not ready"
       exit 2
    fi
 
    # They must have the apache group
    opsbro detectors wait-group 'apache'
    if [ $? != 0 ];then
-      echo "ERROR: the apache group was not detected"
+      echo "ERROR:  `date` the apache group was not detected"
       exit 2
    fi
 
-   echo "$CASE will wait for queries"
+   echo "$CASE  `date` will wait for queries"
    sleep 120
 
-   echo "Finish, exiting"
+   echo "Finish, exiting  `date`"
    exit 0
 fi
 
 
 # Haproxy compliance must have installed the haproxy package
 if [ $CASE == "NODE-HAPROXY" ]; then
+    echo "HAPROXY: look to see if haproxy is installed  `date`"
     opsbro compliance wait-compliant "TEST HAPROXY" --timeout=60
     if [ $? != 0 ]; then
         echo "Haproxy compliance cannot be fixed in COMPLIANCE state in 60s"
@@ -86,7 +92,7 @@ if [ $CASE == "NODE-HAPROXY" ]; then
         exit 2
     fi
 
-    echo "Compliance history that did install HAPROXY"
+    echo "Compliance history that did install HAPROXY   `date`"
     opsbro compliance state
 
 
@@ -106,6 +112,7 @@ if [ $CASE == "NODE-HAPROXY" ]; then
        exit 2
     fi
 
+    echo "HAPROXY: look if local proxying is valid  `date`"
     OUT=$(curl -s http://localhost)
     if [[ "$OUT" != "NODE-HTTP-1" ]] && [[ "$OUT" != "NODE-HTTP-2" ]]; then
          echo "Cannot reach real HTTP servers from the local HAPROXY: $OUT"
@@ -144,23 +151,24 @@ if [ $CASE == "NODE-HAPROXY" ]; then
     fi
 
 
-    echo "HAPROXY node will wait for client queries"
+    echo "HAPROXY node will wait for client queries  `date`"
     sleep 120
-    echo "HAPROXY node exiting"
+    echo "HAPROXY node exiting  `date`"
+    exit 0
 fi
 
 
 
 if [ $CASE == "NODE-CLIENT" ]; then
 
-   # Trying to curl all IPS just for debug purpose
+   echo "CLIENT: Trying to curl all IPS just for debug purpose  `date`"
    for ii in `seq 1 6`; do
       echo " - Trying http://172.17.0.$ii"
-      curl http://172.17.0.$ii
+      curl -s http://172.17.0.$ii
       echo ""
    done
 
-   echo "try to detect haproxy address"
+   echo "CLIENT:  `date` try to detect haproxy address"
    dig -p 6766  @127.0.0.1 haproxy.group.local.opsbro
 
    dig haproxy.group.local.opsbro +short A
@@ -185,7 +193,7 @@ if [ $CASE == "NODE-CLIENT" ]; then
       sleep 0.2
    done
    printf "\n"
-   echo "Test IS full OK, we did reach our servers"
+   echo "CLIENT  `date` Test IS full OK, we did reach our servers"
    exit 0
 fi
 

@@ -50,7 +50,7 @@ function try_installation {
    if [ $? != 0 ]; then
        echo "$BUILD" > $LOG
        print_color "ERROR:$DOCKER_FILE" "red"
-       printf " Cannot build. Look at $LOG\n"
+       printf " `date` Cannot build. Look at $LOG\n"
        printf "$DOCKER_FILE\n" >> $FAIL_FILE
        cat $LOG
        return
@@ -60,7 +60,7 @@ function try_installation {
 
    docker run --interactive -a stdout -a stderr --rm=true  "$SHA" 2>>$LOG >>$LOG
    if [ $? != 0 ]; then
-       print_color "ERROR: $DOCKER_FILE" "red"
+       print_color "ERROR: `date` $DOCKER_FILE" "red"
        printf "  Cannot run. Look at $LOG\n"
        printf "$DOCKER_FILE\n" >> $FAIL_FILE
        cat $LOG
