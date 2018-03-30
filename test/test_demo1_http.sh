@@ -7,10 +7,8 @@ TIMEOUT_POST_START=60
 TIMEOUT_POST_DETECT=30
 TIMEOUT_WAIT_END=120
 
+TIMEOUT_WAIT_HTTP_UP=60
 
-TIMEOUT_POST_START=120
-TIMEOUT_POST_DETECT=60
-TIMEOUT_WAIT_END=240
 
 echo "Is a travis run? $TRAVIS"
 
@@ -96,6 +94,10 @@ fi
 
 # Haproxy compliance must have installed the haproxy package
 if [ $CASE == "NODE-HAPROXY" ]; then
+
+    echo "HAPROXY `date` wait for http nodes to be up"
+    sleep $TIMEOUT_WAIT_HTTP_UP
+
     echo "HAPROXY: look to see if haproxy is installed  `date`"
     opsbro compliance wait-compliant "TEST HAPROXY" --timeout=60
     if [ $? != 0 ]; then
@@ -182,6 +184,9 @@ fi
 
 
 if [ $CASE == "NODE-CLIENT" ]; then
+
+   echo "CLIENT `date` wait for http nodes to be up"
+   sleep $TIMEOUT_WAIT_HTTP_UP
 
    echo "CLIENT: Trying to curl all IPS just for debug purpose  `date`"
    for ii in `seq 1 6`; do
