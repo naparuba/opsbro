@@ -13,6 +13,7 @@ RUN        apt-get update && apt-get install -y python-apt
 # To check localy the haproxy
 RUN        apt-get update && apt-get install -y procps
 RUN        apt-get update && apt-get install -y curl
+RUN        apt-get update && apt-get install -y rsyslog
 
 ADD        . /root/opsbro-oss
 WORKDIR       /root/opsbro-oss

@@ -3,6 +3,15 @@
 CASE=$1
 
 
+TIMEOUT_POST_START=60
+TIMEOUT_POST_DETECT=30
+TIMEOUT_WAIT_END=120
+
+
+TIMEOUT_POST_START=120
+TIMEOUT_POST_DETECT=60
+TIMEOUT_WAIT_END=240
+
 echo "Is a travis run? $TRAVIS"
 
 # Set a valid display name for debug
@@ -34,7 +43,8 @@ echo "Daemon started `date`"
 ip addr show | grep 'scope global'
 
 
-sleep 60
+sleep $TIMEOUT_POST_START
+
 
 
 # Let the nodes join them selve.
@@ -43,7 +53,7 @@ echo "Launching UDP detection `date`"
 opsbro gossip detect --auto-join
 
 echo "Sleeping while others nodes pop up too"
-sleep 30
+sleep $TIMEOUT_POST_DETECT
 
 MEMBERS=$(opsbro gossip members)
 NB_MEMBERS=$(echo "$MEMBERS" | grep 'docker-container' | wc -l)
@@ -77,7 +87,7 @@ if [ $CASE == "NODE-HTTP-1" ] || [ $CASE == "NODE-HTTP-2" ]; then
    fi
 
    echo "$CASE  `date` will wait for queries"
-   sleep 120
+   sleep $TIMEOUT_WAIT_END
 
    echo "Finish, exiting  `date`"
    exit 0
@@ -164,7 +174,7 @@ if [ $CASE == "NODE-HAPROXY" ]; then
 
 
     echo "HAPROXY node will wait for client queries  `date`"
-    sleep 120
+    sleep $TIMEOUT_WAIT_END
     echo "HAPROXY node exiting  `date`"
     exit 0
 fi
