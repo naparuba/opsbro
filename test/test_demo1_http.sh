@@ -133,6 +133,7 @@ if [ $CASE == "NODE-HAPROXY" ]; then
     ls -thor /var/log/haproxy
     cat /var/log/haproxy*
     cat /var/log/haproxy/*
+    cat /var/log/messages
 
     echo "HAPROXY: look if local proxying is valid  `date`"
     OUT=$(curl -s http://localhost)

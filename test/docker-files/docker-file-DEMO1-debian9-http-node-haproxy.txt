@@ -13,7 +13,12 @@ RUN        apt-get update && apt-get install -y python-apt
 # To check localy the haproxy
 RUN        apt-get update && apt-get install -y procps
 RUN        apt-get update && apt-get install -y curl
+
+# Enable rsyslog & udp listening
 RUN        apt-get update && apt-get install -y rsyslog
+RUN        printf '\n$ModLoad imtcp\n' >> /etc/rsyslog.conf
+RUN        printf '\n$InputTCPServerRun 514\n' >> /etc/rsyslog.conf
+
 
 ADD        . /root/opsbro-oss
 WORKDIR       /root/opsbro-oss
