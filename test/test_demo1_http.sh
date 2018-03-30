@@ -129,6 +129,11 @@ if [ $CASE == "NODE-HAPROXY" ]; then
        exit 2
     fi
 
+    ls -thor /var/log
+    ls -thor /var/log/haproxy
+    cat /var/log/haproxy*
+    cat /var/log/haproxy/*
+
     echo "HAPROXY: look if local proxying is valid  `date`"
     OUT=$(curl -s http://localhost)
     if [[ "$OUT" != "NODE-HTTP-1" ]] && [[ "$OUT" != "NODE-HTTP-2" ]]; then
