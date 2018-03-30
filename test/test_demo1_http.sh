@@ -129,19 +129,24 @@ if [ $CASE == "NODE-HAPROXY" ]; then
        cat /etc/haproxy/haproxy.cfg
        exit 2
     fi
+    echo "HAPROXY: `date` NODE-HTTP-2 is present"
+
     grep 'NODE-HTTP-1' /etc/haproxy/haproxy.cfg > /dev/null
     if [ $? != 0 ];then
        echo "ERROR: cannot find the NODE-HTTP-1 in the haproxy configuration"
        cat /etc/haproxy/haproxy.cfg
        exit 2
     fi
+    echo "HAPROXY: `date` NODE-HTTP-1 is present"
 
     echo "Haproxy stats"
     STATS=$(curl -s "http://admin:admin@localhost/stats;csv;norefresh")
     NB=$(echo "$STATS" | grep 'back_http' | grep -v BACKEND | wc -l)
     if [ "$NB" != "2" ];then
-       echo "Bad total number of back http in haproxy $NB"
+       echo "ERROR: Bad total number of back http in haproxy $NB"
        echo "$STATS"
+       cat /var/log/opsbro/generator.log
+       cat /etc/haproxy/haproxy.cfg
        exit 2
     fi
 
