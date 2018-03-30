@@ -10,7 +10,9 @@ TIMEOUT_WAIT_END=120
 TIMEOUT_WAIT_HTTP_UP=60
 
 
-echo "Is a travis run? $TRAVIS"
+
+echo "$CASE starts to run `date` $TRAVIS"
+
 
 # Set a valid display name for debug
 opsbro agent parameters set display_name "$CASE"
@@ -130,12 +132,9 @@ if [ $CASE == "NODE-HAPROXY" ]; then
     echo "HAPROXY: look if local proxying is valid  `date`"
     OUT=$(curl -s http://localhost)
     if [[ "$OUT" != "NODE-HTTP-1" ]] && [[ "$OUT" != "NODE-HTTP-2" ]]; then
-         echo "Cannot reach real HTTP servers from the local HAPROXY: $OUT"
+         echo "HAPROXY `date` Cannot reach real HTTP servers from the local HAPROXY: $OUT"
          cat /var/log/opsbro/generator.log
          cat /etc/haproxy/haproxy.cfg
-         ls -thor /var/log/haproxy
-         cat /etc/log/haproxy*
-         cat /etc/log/haproxy/*
          exit 2
     fi
 
