@@ -109,6 +109,7 @@ if [ $CASE == "NODE-HAPROXY" ]; then
     if [ $? != 0 ];then
        echo "ERROR: the haproxy daemon is not running"
        cat /var/log/opsbro/generator.log
+       cat /etc/haproxy/haproxy.cfg
        exit 2
     fi
 
@@ -117,6 +118,7 @@ if [ $CASE == "NODE-HAPROXY" ]; then
     if [[ "$OUT" != "NODE-HTTP-1" ]] && [[ "$OUT" != "NODE-HTTP-2" ]]; then
          echo "Cannot reach real HTTP servers from the local HAPROXY: $OUT"
          cat /var/log/opsbro/generator.log
+         cat /etc/haproxy/haproxy.cfg
          exit 2
     fi
 
