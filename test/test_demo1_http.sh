@@ -121,6 +121,9 @@ if [ $CASE == "NODE-HAPROXY" ]; then
          echo "Cannot reach real HTTP servers from the local HAPROXY: $OUT"
          cat /var/log/opsbro/generator.log
          cat /etc/haproxy/haproxy.cfg
+         ls -thor /var/log/haproxy
+         cat /etc/log/haproxy*
+         cat /etc/log/haproxy/*
          exit 2
     fi
 
