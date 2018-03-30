@@ -41,6 +41,8 @@ export FAIL_FILE=/tmp/opsbro.test.installation.fail
 
 function try_installation {
    FULL_PATH=$1
+   DO_WHAT=$2
+
    DOCKER_FILE=`basename $FULL_PATH`
    NOW=$(date +"%H:%M:%S")
    print_color "$DOCKER_FILE : starting at $NOW \n" "magenta"
@@ -54,6 +56,11 @@ function try_installation {
        printf "$DOCKER_FILE\n" >> $FAIL_FILE
        cat $LOG
        return
+   fi
+
+   if [ "$DO_WHAT" == "BUILD_ONLY" ];then
+      echo "Ask build only, good finish"
+      return
    fi
 
    SHA=`echo $BUILD|cut -d':' -f2`
@@ -90,7 +97,13 @@ fi
 
 # export TRAVIS var so xargs calls with have it
 export TRAVIS=$TRAVIS
-echo $DOCKER_FILES | xargs --delimiter=' ' --no-run-if-empty -n 1 -P $NB_CPUS -I {} bash -c 'try_installation "{}"'
+echo "Building all images first:"
+echo $DOCKER_FILES | xargs --delimiter=' ' --no-run-if-empty -n 1 -P $NB_CPUS -I {} bash -c 'try_installation "{}" "BUILD_ONLY"'
+
+# Run must be synchronizer if possible, will allow to have less issues in synchronized tests (like DUO or DEMO)
+echo "Then Running all images:"
+echo $DOCKER_FILES | xargs --delimiter=' ' --no-run-if-empty -n 1 -P $NB_CPUS -I {} bash -c 'try_installation "{}" "RUN"'
+
 
 printf "Some tests are OK:\n"
 cat $SUCCESS_FILE
