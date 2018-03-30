@@ -58,8 +58,9 @@ function try_installation {
        return
    fi
 
+   NOW=$(date +"%H:%M:%S")
    if [ "$DO_WHAT" == "BUILD_ONLY" ];then
-      print_color "OK: $DOCKER_FILE  build only phase finish" "green"
+      print_color "OK: $DOCKER_FILE  build only phase finish at $NOW \n" "green"
       return
    fi
 
