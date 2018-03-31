@@ -13,31 +13,32 @@ services:
 
 
 env:
-#- TEST_SUITE=API
-#- TEST_SUITE=ALPINE
-#- TEST_SUITE=AMAZONLINUX
-#- TEST_SUITE=CENTOS-6
-#- TEST_SUITE=CENTOS-7
-#- TEST_SUITE=DEBIAN
-#- TEST_SUITE=FEDORA
-#- TEST_SUITE=FEATURE
-#- TEST_SUITE=OTHER
-#- TEST_SUITE=OPENSUSE
-#- TEST_SUITE=PYTHON
-#- TEST_SUITE=PACK
-#- TEST_SUITE=UBUNTU
+- TEST_SUITE=API
+- TEST_SUITE=ALPINE
+- TEST_SUITE=AMAZONLINUX
+- TEST_SUITE=CENTOS-6
+- TEST_SUITE=CENTOS-7
+- TEST_SUITE=DEBIAN
+- TEST_SUITE=FEDORA
+- TEST_SUITE=FEATURE
+- TEST_SUITE=OTHER
+- TEST_SUITE=OPENSUSE
+- TEST_SUITE=PYTHON
+- TEST_SUITE=PACK
+- TEST_SUITE=UBUNTU
 # Some tests are with 2 docker that must run together. I hope it will be maintainable
-#- TEST_SUITE=DUO1
+- TEST_SUITE=DUO1
 # This one is with 3 containers, trying to join together
-#- TEST_SUITE=DUO2
+- TEST_SUITE=DUO2
 # This one is with 4 containers, in 2 zones, one is sub level of another
-#- TEST_SUITE=DUO3
+- TEST_SUITE=DUO3
 # This one is with 4 containers, in 3 zones, one is sub level of another
-#- TEST_SUITE=DUO4
+- TEST_SUITE=DUO4
 # This is a full DEMO with 4 containers, for a distributed HTTP with
 # 2 real servers
 # 1 haproxy (generators to the 2 http)
 # 1 customer, with DNS module
+# TODO: unlock until we have a real cluster lock managments
 - TEST_SUITE=DEMO1
 
 
