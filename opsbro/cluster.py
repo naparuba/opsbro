@@ -316,11 +316,6 @@ class Cluster(object):
         if self.configuration_dir:
             self.configuration_dir = os.path.abspath(self.configuration_dir)
         
-        # Our main events dict, should not be too old or we will delete them
-        self.events_lock = threading.RLock()
-        self.events = {}
-        self.max_event_age = 30
-        
         # We will receive a list of path to update for libexec, and we will manage them
         # in athread so the upd thread is not blocking
         self.libexec_to_update = []
@@ -633,7 +628,7 @@ class Cluster(object):
                 kvmgr.put_key(key, buf64)
                 
                 payload = {'type': 'libexec', 'path': path, 'hash': _hash}
-                self.stack_event_broadcast(payload)
+                gossiper.stack_event_broadcast(payload)
         
         
         @http_export('/agent/propagate/configuration', method='GET')
@@ -674,7 +669,7 @@ class Cluster(object):
                 kvmgr.put_key(key, buf64)
                 
                 payload = {'type': 'configuration', 'path': path, 'hash': _hash}
-                self.stack_event_broadcast(payload)
+                gossiper.stack_event_broadcast(payload)
             
             ok_files = [fname[len(os.path.abspath(self.configuration_dir)) + 1:] for fname in all_files]
             logger.debug("propagate configuration All files", ok_files)
@@ -683,7 +678,7 @@ class Cluster(object):
             zj64 = base64.b64encode(zj)
             kvmgr.put_key('__configuration', zj64)
             payload = {'type': 'configuration-cleanup'}
-            self.stack_event_broadcast(payload)
+            gossiper.stack_event_broadcast(payload)
         
         
         @http_export('/configuration/update', method='PUT')
@@ -969,13 +964,6 @@ class Cluster(object):
                 logger.error('Cannot remove lock file %s: %s' % (self.lock_path, exp))
     
     
-    def stack_event_broadcast(self, payload):
-        msg = gossiper.create_event_msg(payload)
-        b = {'send': 0, 'msg': msg}
-        broadcaster.append(b)
-        return
-    
-    
     # interface for manage_message, in pubsub
     def manage_message_pub(self, msg=None):
         if msg is None:
@@ -1007,14 +995,14 @@ class Cluster(object):
         eventid = m.get('eventid', '')
         payload = m.get('payload', {})
         # if bad event or already known one, delete it
-        with self.events_lock:
-            if not eventid or not payload or eventid in self.events:
+        with gossiper.events_lock:
+            if not eventid or not payload or eventid in gossiper.events:
                 return
         # ok new one, add a broadcast so we diffuse it, and manage it
         b = {'send': 0, 'msg': m}
         broadcaster.append(b)
-        with self.events_lock:
-            self.events[eventid] = m
+        with gossiper.events_lock:
+            gossiper.events[eventid] = m
         
         # I am the sender for this event, do not handle it
         if m.get('from', '') == self.uuid:
@@ -1086,26 +1074,6 @@ class Cluster(object):
     def join(self):
         if topiker.is_topic_enabled(TOPIC_SERVICE_DISCOVERY):
             gossiper.join()
-    
-    
-    # each second we look for all old events in order to clean and delete them :)
-    def clean_old_events(self):
-        now = int(time.time())
-        to_del = []
-        with self.events_lock:
-            for (cid, e) in self.events.iteritems():
-                ctime = e.get('ctime', 0)
-                if ctime < now - self.max_event_age:
-                    to_del.append(cid)
-        # why sleep here? because I don't want to take the lock twice as quick is an udp thread
-        # is also waiting for it, he is prioritary, not me
-        time.sleep(0.01)
-        with self.events_lock:
-            for cid in to_del:
-                try:
-                    del self.events[cid]
-                except IndexError:  # if already delete, we don't care
-                    pass
     
     
     def do_memory_trim_thread(self):
@@ -1268,7 +1236,7 @@ class Cluster(object):
             
             self.retention_nodes()
             
-            self.clean_old_events()
+            gossiper.clean_old_events()
             
             # Look if we lost some threads or not
             threader.check_alives()

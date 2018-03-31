@@ -39,7 +39,7 @@ env:
 # 1 haproxy (generators to the 2 http)
 # 1 customer, with DNS module
 # TODO: unlock until we have a real cluster lock managments
-- TEST_SUITE=DEMO1
+#- TEST_SUITE=DEMO1
 
 
 # command to run tests

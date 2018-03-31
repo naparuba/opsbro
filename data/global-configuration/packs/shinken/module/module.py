@@ -322,5 +322,8 @@ class ShinkenModule(ConnectorModule):
                 stdout += stderr
                 if p.returncode != 0:
                     self.logger.error('Cannot reload monitoring daemon: %s' % stdout)
-                else:
-                    self.logger.info('Monitoring daemon reload: OK')
+                    return
+                
+                self.logger.info('Monitoring daemon reload: OK')
+                payload = {'type': 'shinken-restart'}
+                gossiper.stack_event_broadcast(payload)

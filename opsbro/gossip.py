@@ -26,7 +26,6 @@ from .util import make_dir
 from .handlermgr import handlermgr
 from .topic import topiker, TOPIC_SERVICE_DISCOVERY
 
-
 KGOSSIP = 10
 
 # LIMIT= 4 * math.ceil(math.log10(float(2 + 1)))
@@ -61,6 +60,11 @@ class Gossip(object):
         # list of uuid to ping back because we though they were dead
         self.to_ping_back = []
         
+        # Our main events dict, should not be too old or we will delete them
+        self.events_lock = threading.RLock()
+        self.events = {}
+        self.max_event_age = 30
+        
         # We update our nodes list based on our current zone. We keep our zone, only proxy from top zone
         # and all the sub zones
         self.clean_nodes_from_zone()
@@ -80,6 +84,23 @@ class Gossip(object):
     
     def __getitem__(self, uuid):
         return self.nodes[uuid]
+    
+    
+    # each second we look for all old events in order to clean and delete them :)
+    def __clean_old_events(self):
+        now = int(time.time())
+        to_del = []
+        with self.events_lock:
+            for (cid, e) in self.events.iteritems():
+                ctime = e.get('ctime', 0)
+                if ctime < now - self.max_event_age:
+                    to_del.append(cid)
+            
+            for cid in to_del:
+                try:
+                    del self.events[cid]
+                except IndexError:  # if already delete, we don't care
+                    pass
     
     
     # We should clean nodes that are not from our zone or direct top/sub one
@@ -781,6 +802,7 @@ class Gossip(object):
         while not stopper.interrupted:
             if topiker.is_topic_enabled(TOPIC_SERVICE_DISCOVERY):
                 self.launch_gossip()
+            self.__clean_old_events()
             time.sleep(1)
     
     
@@ -1516,6 +1538,17 @@ class Gossip(object):
         def get_zones():
             response.content_type = 'application/json'
             return json.dumps(zonemgr.get_zones())
+        
+        
+        @http_export('/agent/event/:event_type', method='GET', protected=True)
+        def get_event(event_type):
+            response.content_type = 'application/json'
+            evt = None
+            with self.events_lock:
+                for (cid, e) in self.events.iteritems():
+                    if e.get('type') == event_type:
+                        evt = e
+            return json.dumps(evt)
 
 
 gossiper = Gossip()

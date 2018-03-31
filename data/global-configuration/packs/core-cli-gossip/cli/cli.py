@@ -288,6 +288,47 @@ def do_detect_nodes(auto_join):
     do_join(to_connect)
 
 
+def do_wait_event(event_type, timeout=30):
+    import itertools
+    spinners = itertools.cycle(CHARACTERS.spinners)
+    
+    # We need an agent for this
+    with AnyAgent():
+        for i in xrange(timeout):
+            uri = '/agent/events/%s' % event_type
+            try:
+                (code, r) = get_opsbro_local(uri)
+            except get_request_errors(), exp:
+                logger.error(exp)
+                return
+            
+            try:
+                evt = json.loads(r)
+            except ValueError, exp:  # bad json
+                logger.error('Bad return from the server %s' % exp)
+                return
+            print evt
+            if evt != None:
+                cprint('\n %s ' % CHARACTERS.arrow_left, color='grey', end='')
+                cprint('%s ' % CHARACTERS.check, color='green', end='')
+                cprint('The group ', end='')
+                cprint('%s' % event_type, color='magenta', end='')
+                cprint(' is ', end='')
+                cprint('detected', color='green')
+                sys.exit(0)
+            # Not detected? increase loop
+            cprint('\r %s ' % spinners.next(), color='blue', end='')
+            cprint('%s' % event_type, color='magenta', end='')
+            cprint(' is ', end='')
+            cprint('NOT DETECTED', color='magenta', end='')
+            cprint(' (%d/%d)' % (i, timeout), end='')
+            # As we did not \n, we must flush stdout to print it
+            sys.stdout.flush()
+            time.sleep(1)
+        cprint("\nThe event %s was not detected after %s seconds" % (event_type, timeout))
+        sys.exit(2)
+
+
 exports = {
     do_members        : {
         'keywords'   : ['gossip', 'members'],
@@ -342,6 +383,15 @@ exports = {
             {'name': '--auto-join', 'default': False, 'description': 'Try to join the first detected proxy node. If no proxy is founded, join the first one.', 'type': 'bool'},
         ],
         'description': 'Try to detect (broadcast) others nodes in the network'
+    },
+    
+    do_wait_event     : {
+        'keywords'   : ['gossip', 'wait-event'],
+        'args'       : [
+            {'name': 'event-type', 'description': 'Name of the event to wait for'},
+            {'name': '--timeout', 'type': 'int', 'default': 30, 'description': 'Timeout to let the initialization'},
+        ],
+        'description': 'Wait until the event is detected'
     },
     
 }
