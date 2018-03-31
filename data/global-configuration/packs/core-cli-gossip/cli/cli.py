@@ -225,18 +225,18 @@ def do_zone_list():
                 cprint(sub_zname, color='cyan')
 
 
-def __print_detection_spinner():
+def __print_detection_spinner(timeout):
     spinners = itertools.cycle(CHARACTERS.spinners)
     start = time.time()
     for c in spinners:
         will_quit = False
         elapsed = time.time() - start
         # exit after 4.8 s (we did have 5s max)
-        if elapsed > 4.8:
+        if elapsed > timeout - 0.2:  # 4.8:
             will_quit = True
-            elapsed = 5
+            elapsed = timeout
         cprint('\r %s ' % c, color='blue', end='')
-        cprint('UDP detection in progress. %.1fs/5s.' % (elapsed), end='')
+        cprint('UDP detection in progress. %.1fs/%ds.' % (elapsed, timeout), end='')
         # As we do not print the line, be sure to display it by flushing to display
         sys.stdout.flush()
         if will_quit:
@@ -246,13 +246,13 @@ def __print_detection_spinner():
     cprint("")
 
 
-def do_detect_nodes(auto_join):
+def do_detect_nodes(auto_join, timeout=5):
     print_h1('UDP broadcast LAN detection')
     print "Trying to detect other nodes on the network thanks to a UDP broadcast. Will last 5s."
     cprint(' * The detection scan will be ', end='')
-    cprint('5s', color='magenta', end='')
+    cprint('%ds' % timeout, color='magenta', end='')
     cprint(' long.')
-    threader.create_and_launch(__print_detection_spinner, (), 'spinner', essential=False)
+    threader.create_and_launch(__print_detection_spinner, (timeout,), 'spinner', essential=False)
     
     # Send UDP broadcast packets from the daemon
     try:
@@ -329,6 +329,74 @@ def do_wait_event(event_type, timeout=30):
         sys.exit(2)
 
 
+def do_wait_members(name='', display_name='', group='', count=1, timeout=30):
+    import itertools
+    spinners = itertools.cycle(CHARACTERS.spinners)
+    
+    # We need an agent for this
+    with AnyAgent():
+        for i in xrange(timeout):
+            try:
+                members = get_opsbro_json('/agent/members').values()
+            except get_request_errors(), exp:
+                logger.error(exp)
+                return
+            if name:
+                for m in members:
+                    if m['name'] == name:
+                        cprint('\n %s ' % CHARACTERS.arrow_left, color='grey', end='')
+                        cprint('%s ' % CHARACTERS.check, color='green', end='')
+                        cprint('The member ', end='')
+                        cprint('%s' % name, color='magenta', end='')
+                        cprint(' is ', end='')
+                        cprint('detected', color='green')
+                        sys.exit(0)
+            elif display_name:
+                for m in members:
+                    print "Member:", m
+                    if m['display_name'] == display_name:
+                        cprint('\n %s ' % CHARACTERS.arrow_left, color='grey', end='')
+                        cprint('%s ' % CHARACTERS.check, color='green', end='')
+                        cprint('The member ', end='')
+                        cprint('%s' % display_name, color='magenta', end='')
+                        cprint(' is ', end='')
+                        cprint('detected', color='green')
+                        sys.exit(0)
+            
+            elif group:
+                founded = []
+                for m in members:
+                    if group in m['groups']:
+                        founded.append(m)
+                
+                if len(founded) > count:
+                    cprint('\n %s ' % CHARACTERS.arrow_left, color='grey', end='')
+                    cprint('%s ' % CHARACTERS.check, color='green', end='')
+                    cprint('The group ', end='')
+                    cprint('%s' % group, color='magenta', end='')
+                    cprint(' is ', end='')
+                    cprint('detected', color='green')
+                    cprint(' with %d members' % len(founded), end='')
+                    sys.exit(0)
+            
+            # Not detected? increase loop
+            cprint('\r %s ' % spinners.next(), color='blue', end='')
+            if name:
+                cprint('%s' % name, color='magenta', end='')
+            elif display_name:
+                cprint('%s' % display_name, color='magenta', end='')
+            else:
+                cprint('%s' % group, color='magenta', end='')
+            cprint(' is ', end='')
+            cprint('NOT DETECTED', color='magenta', end='')
+            cprint(' (%d/%d)' % (i, timeout), end='')
+            # As we did not \n, we must flush stdout to print it
+            sys.stdout.flush()
+            time.sleep(1)
+        cprint("\nThe name/display_name/group was not detected after %s seconds" % (timeout))
+        sys.exit(2)
+
+
 exports = {
     do_members        : {
         'keywords'   : ['gossip', 'members'],
@@ -381,6 +449,7 @@ exports = {
         'keywords'   : ['gossip', 'detect'],
         'args'       : [
             {'name': '--auto-join', 'default': False, 'description': 'Try to join the first detected proxy node. If no proxy is founded, join the first one.', 'type': 'bool'},
+            {'name': '--timeout', 'type': 'int', 'default': 5, 'description': 'Timeout used for the discovery'},
         ],
         'description': 'Try to detect (broadcast) others nodes in the network'
     },
@@ -392,6 +461,18 @@ exports = {
             {'name': '--timeout', 'type': 'int', 'default': 30, 'description': 'Timeout to let the initialization'},
         ],
         'description': 'Wait until the event is detected'
+    },
+    
+    do_wait_members   : {
+        'keywords'   : ['gossip', 'wait-members'],
+        'args'       : [
+            {'name': '--name', 'description': 'Name of the members to wait for be alive'},
+            {'name': '--display-name', 'description': 'Display name of the members to wait for be alive'},
+            {'name': '--group', 'description': 'Group of the members to wait for be alive'},
+            {'name': '--count', 'description': 'Number of alive member of the group to wait for'},
+            {'name': '--timeout', 'type': 'int', 'default': 30, 'description': 'Timeout to let the initialization'},
+        ],
+        'description': 'Wait until alive members are detected based on name, display name or group'
     },
     
 }

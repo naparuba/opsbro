@@ -19,4 +19,4 @@ RUN       python setup.py install
 RUN       opsbro agent parameters set encryption_key NGNjZWI2ZmEyMzEyMTFlOA==
 
 # The node2 will just wait for node1 to connect
-ENTRYPOINT    test/test_one_linux_installation.sh   && test/test_duo1_udp_auto_join.sh "NODE2"
+ENTRYPOINT    test/test_duo1_udp_auto_join.sh "NODE2"

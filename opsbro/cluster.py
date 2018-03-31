@@ -1236,8 +1236,6 @@ class Cluster(object):
             
             self.retention_nodes()
             
-            gossiper.clean_old_events()
-            
             # Look if we lost some threads or not
             threader.check_alives()
             
