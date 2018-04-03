@@ -973,7 +973,7 @@ class Cluster(object):
     
     # Manage a udp message
     def manage_message(self, m):
-        logger.debug('MESSAGE %s' % m)
+        logger.debug('MESSAGE', m)
         t = m.get('type', None)
         if t is None:  # bad message, skip it
             return
@@ -1001,8 +1001,9 @@ class Cluster(object):
         # ok new one, add a broadcast so we diffuse it, and manage it
         b = {'send': 0, 'msg': m}
         broadcaster.append(b)
-        with gossiper.events_lock:
-            gossiper.events[eventid] = m
+        
+        # Remember this event to not spam it
+        gossiper.add_event(m)
         
         # I am the sender for this event, do not handle it
         if m.get('from', '') == self.uuid:
@@ -1037,7 +1038,7 @@ class Cluster(object):
         elif _type == 'configuration-cleanup':
             threader.create_and_launch(self.do_configuration_cleanup, name='configuration-cleanup')
         else:
-            logger.debug('UNKNOWN EVENT %s' % m)
+            logger.error('UNKNOWN EVENT %s' % m)
             return
     
     

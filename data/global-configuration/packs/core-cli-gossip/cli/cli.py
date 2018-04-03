@@ -14,7 +14,7 @@ from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger, sprintf
 from opsbro.library import libstore
 from opsbro.unixclient import get_request_errors
-from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, put_opsbro_json, wait_for_agent_started, AnyAgent
+from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, put_opsbro_json, wait_for_agent_started, AnyAgent, post_opsbro_json
 from opsbro.cli_display import print_h1, print_h2
 from opsbro.threadmgr import threader
 
@@ -295,23 +295,17 @@ def do_wait_event(event_type, timeout=30):
     # We need an agent for this
     with AnyAgent():
         for i in xrange(timeout):
-            uri = '/agent/events/%s' % event_type
+            uri = '/agent/event/%s' % event_type
             try:
-                (code, r) = get_opsbro_local(uri)
+                evt = get_opsbro_json(uri)
             except get_request_errors(), exp:
                 logger.error(exp)
                 return
             
-            try:
-                evt = json.loads(r)
-            except ValueError, exp:  # bad json
-                logger.error('Bad return from the server %s' % exp)
-                return
-            print evt
             if evt != None:
                 cprint('\n %s ' % CHARACTERS.arrow_left, color='grey', end='')
                 cprint('%s ' % CHARACTERS.check, color='green', end='')
-                cprint('The group ', end='')
+                cprint('The event ', end='')
                 cprint('%s' % event_type, color='magenta', end='')
                 cprint(' is ', end='')
                 cprint('detected', color='green')
@@ -327,6 +321,22 @@ def do_wait_event(event_type, timeout=30):
             time.sleep(1)
         cprint("\nThe event %s was not detected after %s seconds" % (event_type, timeout))
         sys.exit(2)
+
+
+def do_gossip_add_event(event_type):
+    # We need an agent for this
+    with AnyAgent():
+        try:
+            r = post_opsbro_json('/agent/event', {'event_type': event_type})
+        except get_request_errors(), exp:
+            logger.error(exp)
+            return
+        cprint('\n %s ' % CHARACTERS.arrow_left, color='grey', end='')
+        cprint('%s ' % CHARACTERS.check, color='green', end='')
+        cprint('The event ', end='')
+        cprint('%s' % event_type, color='magenta', end='')
+        cprint(' is ', end='')
+        cprint('added', color='green')
 
 
 def do_wait_members(name='', display_name='', group='', count=1, timeout=30):
@@ -398,7 +408,7 @@ def do_wait_members(name='', display_name='', group='', count=1, timeout=30):
 
 
 exports = {
-    do_members        : {
+    do_members         : {
         'keywords'   : ['gossip', 'members'],
         'args'       : [
             {'name': '--detail', 'type': 'bool', 'default': False, 'description': 'Show detail mode for the cluster members'},
@@ -406,14 +416,14 @@ exports = {
         'description': 'List the cluster members'
     },
     
-    do_members_history: {
+    do_members_history : {
         'keywords'   : ['gossip', 'history'],
         'args'       : [
         ],
         'description': 'Show the history of the gossip nodes'
     },
     
-    do_join           : {
+    do_join            : {
         'keywords'   : ['gossip', 'join'],
         'description': 'Join another node cluster',
         'args'       : [
@@ -421,7 +431,7 @@ exports = {
         ],
     },
     
-    do_leave          : {
+    do_leave           : {
         'keywords'   : ['gossip', 'leave'],
         'description': 'Put in leave a cluster node',
         'args'       : [
@@ -430,7 +440,7 @@ exports = {
         ],
     },
     
-    do_zone_change    : {
+    do_zone_change     : {
         'keywords'   : ['gossip', 'zone', 'change'],
         'args'       : [
             {'name': 'name', 'default': '', 'description': 'Change to the zone'},
@@ -438,14 +448,14 @@ exports = {
         'description': 'Change the zone of the node'
     },
     
-    do_zone_list      : {
+    do_zone_list       : {
         'keywords'   : ['gossip', 'zone', 'list'],
         'args'       : [
         ],
         'description': 'List all known zones of the node'
     },
     
-    do_detect_nodes   : {
+    do_detect_nodes    : {
         'keywords'   : ['gossip', 'detect'],
         'args'       : [
             {'name': '--auto-join', 'default': False, 'description': 'Try to join the first detected proxy node. If no proxy is founded, join the first one.', 'type': 'bool'},
@@ -454,8 +464,8 @@ exports = {
         'description': 'Try to detect (broadcast) others nodes in the network'
     },
     
-    do_wait_event     : {
-        'keywords'   : ['gossip', 'wait-event'],
+    do_wait_event      : {
+        'keywords'   : ['gossip', 'events', 'wait'],
         'args'       : [
             {'name': 'event-type', 'description': 'Name of the event to wait for'},
             {'name': '--timeout', 'type': 'int', 'default': 30, 'description': 'Timeout to let the initialization'},
@@ -463,7 +473,15 @@ exports = {
         'description': 'Wait until the event is detected'
     },
     
-    do_wait_members   : {
+    do_gossip_add_event: {
+        'keywords'   : ['gossip', 'events', 'add'],
+        'args'       : [
+            {'name': 'event-type', 'description': 'Name of the event to add'},
+        ],
+        'description': 'Add a event to the gossip members'
+    },
+    
+    do_wait_members    : {
         'keywords'   : ['gossip', 'wait-members'],
         'args'       : [
             {'name': '--name', 'description': 'Name of the members to wait for be alive'},

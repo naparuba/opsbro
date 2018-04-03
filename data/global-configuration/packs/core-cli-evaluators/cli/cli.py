@@ -4,13 +4,15 @@
 # Copyright (C) 2014:
 #    Gabes Jean, naparuba@gmail.com
 
-
+import sys
 import json
 import base64
+import time
 
+from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger
 from opsbro.unixclient import get_request_errors
-from opsbro.cli import get_opsbro_local, print_info_title, post_opsbro_json, wait_for_agent_started, AnyAgent, print_h1
+from opsbro.cli import get_opsbro_local, print_info_title, post_opsbro_json, AnyAgent, print_h1
 
 
 def do_evaluator_list(details=False):
@@ -82,19 +84,62 @@ def do_evaluator_eval(expr):
         print r
 
 
+def do_evaluator_wait_eval_true(expr, timeout=30):
+    import itertools
+    spinners = itertools.cycle(CHARACTERS.spinners)
+    
+    # We need an agent for this
+    with AnyAgent():
+        for i in xrange(timeout):
+            expr_64 = base64.b64encode(expr)
+            try:
+                r = post_opsbro_json('/agent/evaluator/eval', {'expr': expr_64})
+            except get_request_errors(), exp:
+                logger.error(exp)
+                return
+            
+            if r is True:
+                cprint('\n %s ' % CHARACTERS.arrow_left, color='grey', end='')
+                cprint('%s ' % CHARACTERS.check, color='green', end='')
+                cprint('The expression ', end='')
+                cprint('%s' % expr, color='magenta', end='')
+                cprint(' is now evaluated to ', end='')
+                cprint('True', color='green')
+                sys.exit(0)
+            # Not detected? increase loop
+            cprint('\r %s ' % spinners.next(), color='blue', end='')
+            cprint('%s' % expr, color='magenta', end='')
+            cprint(' is ', end='')
+            cprint('not True', color='magenta', end='')
+            cprint(' (%d/%d)' % (i, timeout), end='')
+            # As we did not \n, we must flush stdout to print it
+            sys.stdout.flush()
+            time.sleep(1)
+        cprint("\nThe expression %s was not evaluated to True after %s seconds" % (expr, timeout))
+        sys.exit(2)
+
+
 exports = {
-    do_evaluator_list: {
+    do_evaluator_list          : {
         'keywords'   : ['evaluator', 'list'],
         'args'       : [
             {'name': '--details', 'type': 'bool', 'default': False, 'description': 'Also print the details & documentation of the functions'},
         ],
         'description': 'List evaluator functions'
     },
-    do_evaluator_eval: {
+    do_evaluator_eval          : {
         'keywords'   : ['evaluator', 'eval'],
         'args'       : [
         ],
         'description': 'Evaluate an expression'
     },
     
+    do_evaluator_wait_eval_true: {
+        'keywords'   : ['evaluator', 'wait-eval-true'],
+        'args'       : [
+            {'name': 'expr', 'description': 'Expression to evaluate'},
+            {'name': '--timeout', 'type': 'int', 'default': 30, 'description': 'Timeout to let for the expression to be True'},
+        ],
+        'description': 'Wait until the expression is returned True'
+    },
 }

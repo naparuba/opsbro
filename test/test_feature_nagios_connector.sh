@@ -5,18 +5,15 @@ echo "Starting to test Nagios export (dummy check)"
 
 /etc/init.d/opsbro start
 
-/etc/init.d/nagios reload
 
+#opsbro evaluator wait-eval-true "gossip_have_event_type('shinken-restart') == True"
+opsbro gossip events wait 'shinken-restart' --timeout 60
+if [ $? != 0 ]; then
+    echo "ERROR: the nagios module did not restart nagios"
+    cat /var/log/opsbro/module.shinken.log
+    exit 2
+fi
 
-
-# It will restart nagios
-sleep 10
-
-#/etc/init.d/opsbro restart
-#sleep 1
-#/etc/init.d/opsbro start
-
-#sleep 10
 
 /usr/local/nagios/bin/nagios -v /usr/local/nagios/etc/nagios.cfg
 
@@ -46,6 +43,9 @@ cat /var/log/opsbro/module.shinken.log
 
 opsbro agent info
 
+# Let a loop for opsbro to send checks to Nagios
+sleep 1
+
 # There sould be some alerts now in nagios log
 EXPORTED_CHECKS=$(cat  /usr/local/nagios/var/nagios.log | grep 'SERVICE ALERT' | grep Agent-dummy | wc -l)
 
@@ -55,4 +55,4 @@ if [ $EXPORTED_CHECKS == 0 ]; then
     exit 2
 fi
 
-echo "OK:  nagios cfg export is working as expected (node is exported into CFG and checks are launched and received by Nagios"
+echo "OK:  nagios cfg export is working as expected (node is exported into CFG and checks are launched and received by Nagios)"

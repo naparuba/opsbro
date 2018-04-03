@@ -12,13 +12,15 @@ class Broadcaster(object):
     
     
     def __sort_function(self, b1, b2):
-        # if there is a prioritaty, send it first
-        if b1.get('prioritary', False):
+        b1_send = b1['send']
+        b2_send = b2['send']
+        # if there is a prioritaty with 0 or 1 send (maybe the first did miss), send it in priority
+        if b1.get('prioritary', False) and b1_send <= 2:
             return -1
-        if b2.get('prioritary', False):
+        if b2.get('prioritary', False) and b2_send <= 2:
             return 1
         # Less send first
-        return cmp(b1['send'], b2['send'])
+        return cmp(b1_send, b2_send)
     
     
     def append(self, msg):

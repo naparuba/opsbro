@@ -23,8 +23,19 @@ if [ $CASE == "NODE2" ]; then
     printf "Node2 gossip view\n"
     opsbro gossip members
 
-    # Let the other node reach us
-    sleep 60
+    # Warn the first node we are done
+    opsbro gossip events add 'NODE2-END'
+    # Be sure we are sending it to the other node
+    sleep 2
+    opsbro gossip events wait 'NODE1-END' --timeout=10
+    #opsbro evaluator wait-eval-true "gossip_have_event_type('NODE1-END')" --timeout 10
+    if [ $? != 0 ]; then
+       echo "ERROR: NODE1 did not end after after 60s"
+       cat /var/log/opsbro/gossip.log | grep --color event
+       exit 2
+    fi
+
+    echo "NODE2 is OK"
     exit 0
 fi
 
@@ -44,9 +55,17 @@ if [ $? != 0 ]; then
 fi
 
 
+# Warn the first node we are done
+opsbro gossip events add 'NODE1-END'
+# Be sure we are sending it to the other node
+sleep 2
+opsbro gossip events wait 'NODE2-END' --timeout=10
+#opsbro evaluator wait-eval-true "gossip_have_event_type('NODE2-END')" --timeout 10
+if [ $? != 0 ]; then
+   echo "ERROR: NODE2 did not end after after 60s"
+   cat /var/log/opsbro/gossip.log | grep --color event
+   exit 2
+fi
+
 
 echo "Auto join is OK"
-
-# Let the other node reach us
-sleep 60
-

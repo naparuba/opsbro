@@ -63,7 +63,7 @@ class Gossip(object):
         # Our main events dict, should not be too old or we will delete them
         self.events_lock = threading.RLock()
         self.events = {}
-        self.max_event_age = 30
+        self.max_event_age = 300
         
         # We update our nodes list based on our current zone. We keep our zone, only proxy from top zone
         # and all the sub zones
@@ -101,6 +101,24 @@ class Gossip(object):
                     del self.events[cid]
                 except IndexError:  # if already delete, we don't care
                     pass
+    
+    
+    def have_event_type(self, event_type):
+        with self.events_lock:
+            for e in self.events.values():
+                e_type = e.get('payload', {}).get('type', None)
+                if e_type == event_type:
+                    return True
+        return False
+    
+    
+    def add_event(self, event):
+        logger.info('ADD NEW EVENT %s' % event)
+        eventid = event.get('eventid', None)
+        if eventid is None:
+            return
+        with self.events_lock:
+            self.events[eventid] = event
     
     
     # We should clean nodes that are not from our zone or direct top/sub one
@@ -343,12 +361,18 @@ class Gossip(object):
         return nuuid
     
     
-    def count(self, state=''):
+    def count(self, state='', group=''):
         with self.nodes_lock:
-            if state:
-                return len([n for n in self.nodes.values() if n['state'] == state])
-            else:  # no filter, take all
-                return len(self.nodes)
+            if group:
+                if state:
+                    return len([n for n in self.nodes.values() if group in n['groups'] and n['state'] == state])
+                else:  # no filter, take all
+                    return len([n for n in self.nodes.values() if group in n['groups']])
+            else:
+                if state:
+                    return len([n for n in self.nodes.values() if n['state'] == state])
+                else:  # no filter, take all
+                    return len(self.nodes)
     
     
     # Another module/part did give a new group, take it and warn others node about this
@@ -1138,7 +1162,7 @@ class Gossip(object):
                 if len(message) > 1400 and len(stack) != 1:
                     message = old_message
                     stack = stack[:-1]
-                    logger.debug("__do_gossip_push:: overload message %s. skipping new ones" % len(stack))
+                    logger.warning("__do_gossip_push:: overload message %s. skipping new ones" % len(stack))
                     break
                 # Increase message send number but only if we need to consume it (our zone send)
                 if consume:
@@ -1388,10 +1412,12 @@ class Gossip(object):
         return
     
     
-    def stack_event_broadcast(self, payload):
+    def stack_event_broadcast(self, payload, prioritary=False):
         msg = self.create_event_msg(payload)
-        b = {'send': 0, 'msg': msg}
+        b = {'send': 0, 'msg': msg, 'prioritary': prioritary}
         broadcaster.append(b)
+        # save it in our events so we know we already have it
+        self.add_event(msg)
         return
     
     
@@ -1546,9 +1572,21 @@ class Gossip(object):
             evt = None
             with self.events_lock:
                 for (cid, e) in self.events.iteritems():
-                    if e.get('type') == event_type:
+                    e_type = e.get('payload', {}).get('type', None)
+                    if e_type == event_type:
                         evt = e
             return json.dumps(evt)
+        
+        
+        @http_export('/agent/event', method='POST', protected=True)
+        def agent_eval_check():
+            response.content_type = 'application/json'
+            event_type = request.POST.get('event_type')
+            if not event_type:
+                return abort(400, 'Missing event_type parameter')
+            payload = {'type': event_type}
+            self.stack_event_broadcast(payload, prioritary=True)
+            return json.dumps(True)
 
 
 gossiper = Gossip()

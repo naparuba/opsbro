@@ -22,15 +22,15 @@ def is_in_group(group):
 
 
 @export_evaluater_function(function_group=FUNCTION_GROUP)
-def is_in_defined_group(group):
-    """**is_in_defined_group(group)** -> return True if the node have the group but was set in the configuration, not from discovery False otherwise.
+def is_in_static_group(group):
+    """**is_in_static_group(group)** -> return True if the node have the group but was set in the configuration, not from discovery False otherwise.
 
  * group: (string) group to check.
 
 
 <code>
     Example:
-        is_in_defined_group('linux')
+        is_in_static_group('linux')
     Returns:
         True
 </code>
@@ -53,3 +53,38 @@ def gossip_get_zone(node_uuid=''):
 </code>
     """
     return gossiper.get_zone_from_node(node_uuid)
+
+
+@export_evaluater_function(function_group=FUNCTION_GROUP)
+def gossip_count_nodes(group='', state=''):
+    """**gossip_count_nodes(group='', state='')** -> return the number of known nodes that match group and state
+
+ * group: (string) if set, count only the members of this group.
+ * state: (string) if set, count only the members with this state.
+
+
+<code>
+    Example:
+        gossip_count_nodes(group='linux', state='ALIVE')
+    Returns:
+        3
+</code>
+    """
+    return gossiper.count(group=group, state=state)
+
+
+@export_evaluater_function(function_group=FUNCTION_GROUP)
+def gossip_have_event_type(event_type):
+    """**gossip_have_event(event_type)** -> return True if an event of event_type is present in the node
+
+ * event_type: (string) type of event to detect.
+
+
+<code>
+    Example:
+        gossip_have_event_type('shinken-restart')
+    Returns:
+        False
+</code>
+    """
+    return gossiper.have_event_type(event_type)

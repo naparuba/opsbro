@@ -39,6 +39,7 @@ class ShinkenModule(ConnectorModule):
         self.monitoring_tool = 'shinken'
         self.external_command_file = '/var/lib/shinken/shinken.cmd'
         self.enabled = False
+        self.export_states_uuids = set()
     
     
     def prepare(self):
@@ -48,6 +49,8 @@ class ShinkenModule(ConnectorModule):
         self.monitoring_tool = self.get_parameter('monitoring_tool')
         self.external_command_file = self.get_parameter('external_command_file')
         self.enabled = self.get_parameter('enabled')
+        # Simulate that we are a new node, to always export our states at startup
+        self.node_changes.append(('new-node', gossiper.uuid))
         # register to node events
         pubsub.sub('new-node', self.new_node_callback)
         pubsub.sub('delete-node', self.delete_node_callback)
@@ -89,11 +92,20 @@ class ShinkenModule(ConnectorModule):
         return 'Agent-%s' % cname.split('/')[-1]
     
     
-    def export_states_into_shinken(self, nuuid):
+    def export_all_states(self):
         p = self.external_command_file
         if not os.path.exists(p):
-            self.logger.info('Shinken command file %s is missing, skipping node information export' % p)
+            self.logger.warning('Shinken command file %s is missing, skipping node information export' % p)
             return
+        
+        # Now the nagios is ready, we can export our states
+        for nid in self.export_states_uuids:
+            self.__export_states_into_shinken(nid)  # update it's inner checks states
+        self.export_states_uuids.clear()
+    
+    
+    def __export_states_into_shinken(self, nuuid):
+        p = self.external_command_file
         
         v = kvmgr.get_key('__health/%s' % nuuid)
         if v is None or v == '':
@@ -286,13 +298,19 @@ class ShinkenModule(ConnectorModule):
         while not stopper.interrupted:
             self.logger.debug('Shinken loop, regenerate [%s]' % self.regenerate_flag)
             
+            # If we can, export all states into the nagios/shinken daemon as passive checks
+            self.export_all_states()
+            
             time.sleep(1)
+            
             # If not initialize, skip loop
             if self.cfg_path is None or gossiper is None:
                 continue
-            # If nothing to do, skip it too
+            
+            # If nothing to do in configuration, skip it too
             if not self.regenerate_flag:
                 continue
+            
             self.logger.info('Shinken callback raised, managing events: %s' % self.node_changes)
             # Set that we will manage all now
             self.regenerate_flag = False
@@ -305,14 +323,14 @@ class ShinkenModule(ConnectorModule):
                         continue
                     self.logger.info('Manage new node %s' % n)
                     self.generate_node_file(n)
-                    self.export_states_into_shinken(nid)  # update it's inner checks states
+                    self.export_states_uuids.add(nid)
                 elif evt == 'delete-node':
                     self.logger.info('Removing deleted node %s' % nid)
                     self.clean_node_files(nid)
                 elif evt == 'change-node':
                     self.logger.info('A node did change, updating its configuration. Node %s' % nid)
                     self.generate_node_file(n)
-                    self.export_states_into_shinken(nid)  # update it's inner checks states
+                    self.export_states_uuids.add(nid)
             
             # If we need to reload and have a reload commmand, do it
             if self.reload_flag and self.reload_command:
