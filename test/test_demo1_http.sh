@@ -10,6 +10,22 @@ TIMEOUT_WAIT_HTTP_UP=60
 
 
 
+function wait_step_event_node {
+    opsbro gossip events wait "$1-$2" --timeout=60
+    if [ $? != 0 ];then
+       echo "ERROR: the node $2 did not reach STEP $1"
+       exit 2
+    fi
+    echo "NODE $2 did reach step $1"
+}
+
+function wait_step_event {
+    wait_step_event_node $1 "NODE-HTTP-1"
+    wait_step_event_node $1 "NODE-HTTP-2"
+    wait_step_event_node $1 "NODE-HAPROXY"
+    wait_step_event_node $1 "NODE-CLIENT"
+}
+
 echo "$CASE starts to run `date` $TRAVIS"
 
 
@@ -41,6 +57,9 @@ echo "Daemon started `date`"
 # For debug purpose
 ip addr show | grep 'scope global'
 
+
+opsbro gossip events add  "STEP1-$CASE"
+wait_step_event "STEP1"
 
 sleep $TIMEOUT_POST_START
 
