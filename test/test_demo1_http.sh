@@ -3,23 +3,23 @@
 CASE=$1
 
 
-TIMEOUT_POST_START=60
-TIMEOUT_POST_DETECT=30
-TIMEOUT_WAIT_END=60
-TIMEOUT_WAIT_HTTP_UP=60
 
+printf "\n\n"
+echo "============================== [`date`] Configuration setup ================================="
 
 
 function wait_step_event_node {
-    opsbro gossip events wait "$1-$2" --timeout=60
+    # NOTE: we are using a large timeout because the haproxy node can be long to download & install haproxy
+    opsbro gossip events wait "$1-$2" --timeout=180
     if [ $? != 0 ];then
-       echo "ERROR: the node $2 did not reach STEP $1"
+       echo "ERROR: `date` the node $2 did not reach STEP $1"
        exit 2
     fi
-    echo "NODE $2 did reach step $1"
+    echo "NODE $2 did reach step $1 at `date`"
 }
 
 function wait_step_event {
+    echo " * Waiting for other nodes events. Starts at `date`"
     wait_step_event_node $1 "NODE-HTTP-1"
     wait_step_event_node $1 "NODE-HTTP-2"
     wait_step_event_node $1 "NODE-HAPROXY"
@@ -50,6 +50,8 @@ fi
 
 
 # We are ready, launch the whole daemons
+printf "\n\n"
+echo "============================== [`date`] Launching daemon ================================="
 /etc/init.d/opsbro start
 
 echo "Daemon started `date`"
@@ -58,11 +60,6 @@ echo "Daemon started `date`"
 ip addr show | grep 'scope global'
 
 
-opsbro gossip events add  "STEP1-$CASE"
-wait_step_event "STEP1"
-
-sleep $TIMEOUT_POST_START
-
 
 
 # Let the nodes join them selve.
@@ -70,9 +67,24 @@ sleep $TIMEOUT_POST_START
 echo "Launching UDP detection `date`"
 opsbro gossip detect --auto-join
 
-echo "Sleeping while others nodes pop up too"
-sleep $TIMEOUT_POST_DETECT
 
+
+
+printf "\n\n"
+echo "============================== [`date`] STEP1 synchronization ================================="
+echo "Adding my own event: STEP1-$CASE  at `date`"
+
+opsbro gossip events add  "STEP1-$CASE"
+wait_step_event "STEP1"
+
+echo "All nodes are syncronized at `date`"
+
+
+
+
+
+printf "\n\n"
+echo "============================== [`date`] Checking we are 4 members ================================="
 MEMBERS=$(opsbro gossip members)
 NB_MEMBERS=$(echo "$MEMBERS" | grep 'docker-container' | wc -l)
 
@@ -90,6 +102,10 @@ fi
 
 # Check that HTTP nodes are running well
 if [ $CASE == "NODE-HTTP-1" ] || [ $CASE == "NODE-HTTP-2" ]; then
+
+   printf "\n\n"
+   echo "============================== [`date`] $CASE apache checking ================================="
+
    PAYLOAD=$(curl -s http://localhost/)
    echo "PAYLOAD $PAYLOAD"
    if [ "$PAYLOAD" != "$CASE" ]; then
@@ -104,20 +120,34 @@ if [ $CASE == "NODE-HTTP-1" ] || [ $CASE == "NODE-HTTP-2" ]; then
       exit 2
    fi
 
-   echo "$CASE  `date` will wait for queries"
-   sleep $TIMEOUT_WAIT_END
+   # Let the httproxy node know we are ready for checking the haproxy state
+   opsbro gossip events add  "HTTP-READY-$CASE"
 
-   echo "Finish, exiting  `date`"
-   exit 2
+   echo "$CASE  `date` will wait for queries until all others nodes are done"
+
+   opsbro gossip events add  "ENDING-$CASE"
+   wait_step_event "ENDING"
+
+
+   echo "$CASE exiting at `date`"
+   exit 0
 fi
 
 
 # Haproxy compliance must have installed the haproxy package
 if [ $CASE == "NODE-HAPROXY" ]; then
 
-    echo "HAPROXY `date` wait for http nodes to be up"
-    sleep $TIMEOUT_WAIT_HTTP_UP
+    printf "\n\n"
+    echo "============================== [`date`] $CASE waiting for HTTP node to be ready ================================="
 
+
+    # Wait until the http-1 and http-2 are ready to be queried
+    wait_step_event_node "HTTP-READY" "NODE-HTTP-1"
+    wait_step_event_node "HTTP-READY" "NODE-HTTP-2"
+
+
+    printf "\n\n"
+    echo "============================== [`date`] $CASE checking that haproxy is happy ================================="
     echo "HAPROXY: look to see if haproxy is installed  `date`"
     opsbro compliance wait-compliant "TEST HAPROXY" --timeout=60
     if [ $? != 0 ]; then
@@ -198,9 +228,18 @@ if [ $CASE == "NODE-HAPROXY" ]; then
     fi
 
 
-    echo "HAPROXY node will wait for client queries  `date`"
-    sleep $TIMEOUT_WAIT_END
-    echo "HAPROXY node exiting  `date`"
+    printf "\n\n"
+    echo "============================== [`date`] $CASE let the client know we are ready ================================="
+    # Let the httproxy node know we are ready for checking the haproxy state
+    opsbro gossip events add  "LB-READY-$CASE"
+
+    printf "\n\n"
+    echo "============================== [`date`] $CASE waiting for end ================================="
+
+    opsbro gossip events add  "ENDING-$CASE"
+    wait_step_event "ENDING"
+
+    echo "$CASE node exiting  `date`"
     exit 0
 fi
 
@@ -208,10 +247,16 @@ fi
 
 if [ $CASE == "NODE-CLIENT" ]; then
 
-   echo "CLIENT `date` wait for http nodes to be up"
-   sleep $TIMEOUT_WAIT_HTTP_UP
+   printf "\n\n"
+   echo "============================== [`date`] $CASE waiting until the Load balancing is ready ================================="
 
-   echo "CLIENT: Trying to curl all IPS just for debug purpose  `date`"
+   # Wait until the http-1 and http-2 are ready to be queried
+   wait_step_event_node "LB-READY" "NODE-HAPROXY"
+
+
+   printf "\n\n"
+   echo "============================== [`date`] $CASE checking direct URI and the Load balancing  ================================="
+
    for ii in `seq 1 6`; do
       echo " - Trying http://172.17.0.$ii"
       curl -s http://172.17.0.$ii
@@ -227,8 +272,8 @@ if [ $CASE == "NODE-CLIENT" ]; then
        exit 2
    fi
 
-   printf "\n\n\n************************* Checking HTTP proxying **************************\n"
-   TOTAL=50
+
+   TOTAL=20
    for ii in `seq 1 $TOTAL`; do
       printf "\r→ "
       sync
@@ -243,6 +288,14 @@ if [ $CASE == "NODE-CLIENT" ]; then
    done
    printf "\n"
    echo "CLIENT  `date` Test IS full OK, we did reach our servers"
+
+
+   printf "\n\n"
+   echo "============================== [`date`] $CASE waiting for others node to ends ================================="
+
+   opsbro gossip events add  "ENDING-$CASE"
+   wait_step_event "ENDING"
+
    exit 0
 fi
 
