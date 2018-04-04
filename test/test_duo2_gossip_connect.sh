@@ -10,8 +10,7 @@ opsbro agent parameters set display_name "node-$NODE_NB"
 # Wait for other dockers to be spawned
 sleep 10
 
-# Sleep a bit to be sure that node2 is up and ready to answer us
-#sleep 120
+
 ip addr show | grep eth0
 
 
@@ -37,16 +36,28 @@ fi
 sleep 20
 echo "Waiting done, everyone should be there"
 
-opsbro gossip members --detail
 
 
-NB_MEMBERS=$(opsbro gossip members | grep 'docker-container' | wc -l)
-
-if [ $NB_MEMBERS != 3 ]; then
-   echo "BAD number of members: $NB_MEMBERS"
-   cat /var/log/opsbro/gossip.log
+opsbro gossip wait-members --display-name "node-1" --timeout 10
+if [ $? != 0 ]; then
+   echo "ERROR: node-1 is not present after 60s"
+   opsbro gossip members --detail
    exit 2
 fi
+opsbro gossip wait-members --display-name "node-2" --timeout 10
+if [ $? != 0 ]; then
+   echo "ERROR: node-2 is not present after 60s"
+   opsbro gossip members --detail
+   exit 2
+fi
+opsbro gossip wait-members --display-name "node-3" --timeout 10
+if [ $? != 0 ]; then
+   echo "ERROR: node-3 is not present after 60s"
+   opsbro gossip members --detail
+   exit 2
+fi
+
+
 
 # NODE1: fast exit
 # NODE2: ask leave
