@@ -2,5 +2,5 @@ generator:
     if_group: haproxy
     path:     /etc/haproxy/haproxy.cfg
     template: haproxy.cfg
-    command:  "/etc/init.d/haproxy restart"
+    command:  "killall /usr/sbin/haproxy; /etc/init.d/haproxy restart"
 
