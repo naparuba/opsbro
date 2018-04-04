@@ -1,8 +1,10 @@
 FROM debian:7
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-RUN        apt-get update && apt-get install -y python
-RUN        apt-get install -y python-pip
+ADD        test/docker-helper/  /
+
+RUN        /apt_get_install   python
+RUN        /apt_get_install   python-pip
 
 ADD        . /root/opsbro-oss
 

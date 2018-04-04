@@ -1,0 +1,15 @@
+#!/bin/bash
+
+dnf  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto update $1
+if [ $? == 0 ]; then
+   exit 0
+fi
+
+dnf  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto update $1
+if [ $? == 0 ]; then
+   exit 0
+fi
+
+dnf  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto update $1
+
+exit $?

@@ -47,8 +47,9 @@ env:
 
 # command to run tests
 script:
+  - chmod a+x test/*sh
+  - chmod a+x test/docker-helper/*
   - cd test
-  - chmod a+x *sh
   - ./test_suite.sh
 
 

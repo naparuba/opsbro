@@ -1,19 +1,21 @@
 FROM debian:9
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-RUN        apt-get update && apt-get install -y python
-# allow fast install (docker cache)
-RUN        apt-get update && apt-get install -y python-jinja2
-RUN        apt-get update && apt-get install -y python-crypto
-RUN        apt-get update && apt-get install -y python-leveldb
-RUN        apt-get update && apt-get install -y python-setuptools
-RUN        apt-get update && apt-get install -y python-apt
+ADD        test/docker-helper/  /
+
+RUN        /apt_get_install  python
+# All need for debian, so faster test (we are testging feature here, not install)
+RUN        /apt_get_install   python-jinja2
+RUN        /apt_get_install   python-crypto
+RUN        /apt_get_install   python-leveldb
+RUN        /apt_get_install   python-setuptools
+RUN        /apt_get_install   python-apt
 
 
 # HTTP node
-RUN        apt-get update && apt-get install -y procps
-RUN        apt-get update && apt-get install -y curl
-RUN        apt-get update && apt-get install -y apache2
+RUN        /apt_get_install   procps
+RUN        /apt_get_install   curl
+RUN        /apt_get_install   apache2
 RUN        echo "NODE-HTTP-1" > /var/www/html/index.html
 
 

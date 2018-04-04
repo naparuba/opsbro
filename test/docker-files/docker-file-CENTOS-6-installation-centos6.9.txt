@@ -3,7 +3,7 @@ MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 ADD        . /root/opsbro-oss
 
-WORKDIR    /root/opsbro-oss
-ENTRYPOINT        test/test_one_linux_installation.sh && test/assert_group.sh "centos"
+WORKDIR      /root/opsbro-oss
+ENTRYPOINT   test/test_one_linux_installation.sh && test/assert_group.sh "centos"
 
 

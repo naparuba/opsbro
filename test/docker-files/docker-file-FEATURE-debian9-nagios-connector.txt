@@ -1,20 +1,31 @@
 FROM debian:9
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-RUN        apt-get update && apt-get install -y python
+ADD        test/docker-helper/  /
+
+RUN        /apt_get_install  python
 # All need for debian, so faster test (we are testging feature here, not install)
-RUN        apt-get update && apt-get install -y python-jinja2
-RUN        apt-get update && apt-get install -y python-crypto
-RUN        apt-get update && apt-get install -y python-leveldb
-RUN        apt-get update && apt-get install -y python-setuptools
-RUN        apt-get update && apt-get install -y python-apt
+RUN        /apt_get_install   python-jinja2
+RUN        /apt_get_install   python-crypto
+RUN        /apt_get_install   python-leveldb
+RUN        /apt_get_install   python-setuptools
+RUN        /apt_get_install   python-apt
 
 
-RUN        apt-get install -y nagios-plugins-standard
+RUN        /apt_get_install nagios-plugins-standard
 
 
 # Setup nagios
-RUN       apt-get -y install build-essential openssl perl make  libgd2-xpm-dev  libperl-dev libssl-dev daemon wget  unzip
+RUN        /apt_get_install build-essential
+RUN        /apt_get_install openssl
+RUN        /apt_get_install perl
+RUN        /apt_get_install make
+RUN        /apt_get_install libgd2-xpm-dev
+RUN        /apt_get_install libperl-dev
+RUN        /apt_get_install libssl-dev
+RUN        /apt_get_install daemon
+RUN        /apt_get_install wget
+RUN        /apt_get_install unzip
 
 RUN       useradd nagios
 

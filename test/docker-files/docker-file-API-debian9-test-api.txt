@@ -1,9 +1,12 @@
 FROM debian:9
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-RUN        apt-get update && apt-get install -y python
+ADD        test/docker-helper/  /
+
+RUN        /apt_get_install python
+
 # Setup test env, "standard" installation is test with other tests ^^
-RUN        apt-get install -y python-pip
+RUN        /apt_get_install python-pip
 RUN        pip install jinja2
 RUN        pip install leveldb
 RUN        pip install pyOpenSSL
@@ -14,12 +17,13 @@ RUN        pip install pygments
 RUN        pip install coveralls
 RUN        pip install nose-cov
 RUN        pip install unittest2
-RUN        apt-get install -y python-cherrypy3
+RUN        /apt_get_install python-cherrypy3
 RUN        pip install rsa
+
 # The internal yaml seems to not be used, thanks nose
 RUN        pip install ruamel.yaml==0.11.15
-RUN        apt-get install -y jq
-RUN        apt-get install -y curl
+RUN        /apt_get_install jq
+RUN        /apt_get_install curl
 
 
 ADD        . /root/opsbro-oss

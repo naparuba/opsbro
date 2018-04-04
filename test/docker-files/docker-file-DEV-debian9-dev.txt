@@ -1,34 +1,38 @@
 FROM debian:9
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-RUN        apt-get update && apt-get install -y python
+ADD        test/docker-helper/  /
+
+RUN        /apt_get_install python
+
 # Setup test env, "standard" installation is test with other tests ^^
-RUN        apt-get update && apt-get install -y python-pip
+RUN        /apt_get_install python-pip
 RUN        pip install jinja2
 RUN        pip install leveldb
 RUN        pip install pyOpenSSL
 RUN        pip install pycrypto
-#RUN        pip install requests
+RUN        pip install requests
 RUN        pip install Crypto
 RUN        pip install pygments
 RUN        pip install coveralls
 RUN        pip install nose-cov
 RUN        pip install unittest2
-#RUN        apt-get update && apt-get install -y python-cherrypy3
-#RUN        pip install rsa
+RUN        /apt_get_install python-cherrypy3
+RUN        pip install rsa
 # The internal yaml seems to not be used, thanks nose
 RUN        pip install ruamel.yaml==0.11.15
-RUN        apt-get update && apt-get install -y curl
-RUN        apt-get update && apt-get install -y vim
-RUN        apt-get update && apt-get install -y procps
-RUN        apt-get update && apt-get install -y wget
-RUN        apt-get update && apt-get install -y net-tools
-RUN        apt-get update && apt-get install -y dnsutils
-RUN        apt-get update && apt-get install -y python-apt
-RUN        apt-get update && apt-get install -y strace
-RUN        apt-get update && apt-get install -y less
-RUN        apt-get update && apt-get install -y locales
-RUN        apt-get update && apt-get install -y python3-pkg-resources asciinema
+RUN        /apt_get_install curl
+RUN        /apt_get_install vim
+RUN        /apt_get_install procps
+RUN        /apt_get_install wget
+RUN        /apt_get_install net-tools
+RUN        /apt_get_install dnsutils
+RUN        /apt_get_install python-apt
+RUN        /apt_get_install strace
+RUN        /apt_get_install less
+RUN        /apt_get_install locales
+RUN        /apt_get_install python3-pkg-resources
+RUN        /apt_get_install asciinema
 
 # Locales
 RUN        cp /etc/locale.gen /etc/locale.gen.old

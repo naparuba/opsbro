@@ -1,21 +1,23 @@
 FROM debian:9
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-RUN        apt-get update && apt-get install -y python
-# allow fast install (docker cache)
-RUN        apt-get update && apt-get install -y python-jinja2
-RUN        apt-get update && apt-get install -y python-crypto
-RUN        apt-get update && apt-get install -y python-leveldb
-RUN        apt-get update && apt-get install -y python-setuptools
-RUN        apt-get update && apt-get install -y python-apt
+ADD        test/docker-helper/  /
+
+RUN        /apt_get_install  python
+# All need for debian, so faster test (we are testging feature here, not install)
+RUN        /apt_get_install   python-jinja2
+RUN        /apt_get_install   python-crypto
+RUN        /apt_get_install   python-leveldb
+RUN        /apt_get_install   python-setuptools
+RUN        /apt_get_install   python-apt
 
 
 # To check localy the haproxy
-RUN        apt-get update && apt-get install -y procps
-RUN        apt-get update && apt-get install -y curl
+RUN        /apt_get_install   procps
+RUN        /apt_get_install   curl
 
 # Enable rsyslog & udp listening
-RUN        apt-get update && apt-get install -y rsyslog
+RUN        /apt_get_install   rsyslog
 RUN        printf '\n$ModLoad imtcp\n' >> /etc/rsyslog.conf
 RUN        printf '\n$InputTCPServerRun 514\n' >> /etc/rsyslog.conf
 

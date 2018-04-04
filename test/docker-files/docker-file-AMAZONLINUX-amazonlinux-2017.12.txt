@@ -2,8 +2,11 @@ FROM amazonlinux:2017.12
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 # NOTE: there is a bug in this version (like fedora 26) with a pypi connection impossible without the glibc update
-RUN        yum  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto update glibc
-RUN        yum  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install python
+ADD        test/docker-helper/  /
+RUN        /yum_update glibc
+RUN        /yum_install python
+
+
 ADD        . /root/opsbro-oss
 
 WORKDIR       /root/opsbro-oss

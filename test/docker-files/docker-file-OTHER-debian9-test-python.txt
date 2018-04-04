@@ -1,9 +1,12 @@
 FROM debian:9
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-RUN        apt-get update && apt-get install -y python
+ADD        test/docker-helper/  /
+
+RUN        /apt_get_install  python
+
 # Setup test env, "standard" installation is test with other tests ^^
-RUN        apt-get install -y python-pip
+RUN        /apt_get_install   python-pip
 RUN        pip install jinja2
 RUN        pip install leveldb
 RUN        pip install pyOpenSSL

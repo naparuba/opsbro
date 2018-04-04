@@ -1,7 +1,9 @@
 FROM ubuntu:16.04
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-RUN        apt-get update && apt-get install -y python
+ADD        test/docker-helper/  /
+RUN        /apt_get_install python
+
 ADD        . /root/opsbro-oss
 
 ENTRYPOINT    test/test_one_linux_installation.sh  && test/assert_group.sh "ubuntu"

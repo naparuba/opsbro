@@ -1,14 +1,16 @@
 FROM debian:9
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-RUN        apt-get update && apt-get install -y python
-RUN        apt-get update &&apt-get install -y curl
-RUN        apt-get update &&apt-get install -y vim
-RUN        apt-get update &&apt-get install -y locales
-RUN        apt-get update &&apt-get install -y gnupg
+ADD        test/docker-helper/  /
+
+RUN        /apt_get_install  python
+RUN        /apt_get_install  curl
+RUN        /apt_get_install  vim
+RUN        /apt_get_install  locales
+RUN        /apt_get_install  gnupg
 
 RUN        curl -sL https://deb.nodesource.com/setup_8.x | bash -
-RUN        apt-get install -y nodejs
+RUN        /apt_get_install  nodejs
 RUN        npm install picture-tube -g
 
 

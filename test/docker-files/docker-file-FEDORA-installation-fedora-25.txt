@@ -1,7 +1,8 @@
 FROM fedora:25
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-RUN       dnf  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install python
+ADD        test/docker-helper/  /
+RUN        /dnf_install python
 
 ADD        . /root/opsbro-oss
 

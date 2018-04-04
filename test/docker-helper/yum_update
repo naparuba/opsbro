@@ -1,0 +1,15 @@
+#!/bin/bash
+
+yum  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install  $1
+if [ $? == 0 ]; then
+   exit 0
+fi
+
+yum  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install  $1
+if [ $? == 0 ]; then
+   exit 0
+fi
+
+yum  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install  $1
+
+exit $?
