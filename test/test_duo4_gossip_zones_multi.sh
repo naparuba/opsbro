@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 
+. test/common_shell_functions.sh
+
 NODE_NB=$1
 
-ip addr show | grep eth0
+show_my_system_ip
+
 
 # Set a valid display name for debug
 opsbro agent parameters set display_name "node-$NODE_NB"
@@ -51,6 +54,8 @@ opsbro gossip join 172.17.0.2
 opsbro gossip join 172.17.0.3
 opsbro gossip join 172.17.0.4
 opsbro gossip join 172.17.0.5
+
+
 
 
 sleep 2

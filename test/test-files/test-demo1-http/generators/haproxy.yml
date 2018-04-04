@@ -2,5 +2,8 @@ generator:
     if_group: haproxy
     path:     /etc/haproxy/haproxy.cfg
     template: haproxy.cfg
+
+    # NOTE: haproxy can leave zombie process when restart, and they are still listening to queries
+    # so we must kill them all before restart it
     command:  "killall haproxy; /etc/init.d/haproxy restart"
 

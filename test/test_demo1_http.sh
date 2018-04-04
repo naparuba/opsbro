@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+. test/common_shell_functions.sh
+
 CASE=$1
 
 
@@ -8,22 +10,13 @@ printf "\n\n"
 echo "============================== [`date`] Configuration setup ================================="
 
 
-function wait_step_event_node {
-    # NOTE: we are using a large timeout because the haproxy node can be long to download & install haproxy
-    opsbro gossip events wait "$1-$2" --timeout=180
-    if [ $? != 0 ];then
-       echo "ERROR: `date` the node $2 did not reach STEP $1"
-       exit 2
-    fi
-    echo "NODE $2 did reach step $1 at `date`"
-}
 
 function wait_step_event {
     echo " * Waiting for other nodes events. Starts at `date`"
-    wait_step_event_node $1 "NODE-HTTP-1"
-    wait_step_event_node $1 "NODE-HTTP-2"
-    wait_step_event_node $1 "NODE-HAPROXY"
-    wait_step_event_node $1 "NODE-CLIENT"
+    wait_event_with_timeout "$1-NODE-HTTP-1" 180
+    wait_event_with_timeout "$1-NODE-HTTP-2" 180
+    wait_event_with_timeout "$1-NODE-HAPROXY" 180
+    wait_event_with_timeout "$1-NODE-CLIENT" 180
 }
 
 echo "$CASE starts to run `date` $TRAVIS"
@@ -85,19 +78,13 @@ echo "All nodes are syncronized at `date`"
 
 printf "\n\n"
 echo "============================== [`date`] Checking we are 4 members ================================="
-MEMBERS=$(opsbro gossip members)
-NB_MEMBERS=$(echo "$MEMBERS" | grep 'docker-container' | wc -l)
 
-printf "Current members: `date` $MEMBERS\n"
+# We must have all nodes now
+wait_member_display_name_with_timeout "NODE-HTTP-1" 10
+wait_member_display_name_with_timeout "NODE-HTTP-2" 10
+wait_member_display_name_with_timeout "NODE-HAPROXY" 10
+wait_member_display_name_with_timeout "NODE-CLIENT" 10
 
-
-# Must have all 4 nodes available
-if [ $NB_MEMBERS != 4 ]; then
-   echo "`date` BAD number of members: $NB_MEMBERS"
-   echo "$MEMBERS"
-   cat /var/log/opsbro/gossip.log
-   exit 2
-fi
 
 
 # Check that HTTP nodes are running well
@@ -144,8 +131,8 @@ if [ $CASE == "NODE-HAPROXY" ]; then
 
 
     # Wait until the http-1 and http-2 are ready to be queried
-    wait_step_event_node "HTTP-READY" "NODE-HTTP-1"
-    wait_step_event_node "HTTP-READY" "NODE-HTTP-2"
+    wait_event_with_timeout "HTTP-READY-NODE-HTTP-1" 180
+    wait_event_with_timeout "HTTP-READY-NODE-HTTP-2" 180
 
 
     printf "\n\n"
@@ -197,7 +184,6 @@ if [ $CASE == "NODE-HAPROXY" ]; then
     fi
 
     ps axjf
-    netstat -tulpn | grep 80
 
     grep 'NODE-HTTP-2' /etc/haproxy/haproxy.cfg > /dev/null
     if [ $? != 0 ];then
@@ -261,7 +247,7 @@ if [ $CASE == "NODE-CLIENT" ]; then
    echo "============================== [`date`] $CASE waiting until the Load balancing is ready ================================="
 
    # Wait until the http-1 and http-2 are ready to be queried
-   wait_step_event_node "LB-READY" "NODE-HAPROXY"
+   wait_event_with_timeout "LB-READY-NODE-HAPROXY" 180
 
 
    printf "\n\n"

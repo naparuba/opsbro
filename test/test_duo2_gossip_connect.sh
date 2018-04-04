@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+. test/common_shell_functions.sh
+
 NODE_NB=$1
 
 # Set a valid display name for debug
@@ -11,7 +13,7 @@ opsbro agent parameters set display_name "node-$NODE_NB"
 sleep 10
 
 
-ip addr show | grep eth0
+show_my_system_ip
 
 
 # Node 1 ip=2
@@ -37,26 +39,9 @@ sleep 20
 echo "Waiting done, everyone should be there"
 
 
-
-opsbro gossip wait-members --display-name "node-1" --timeout 10
-if [ $? != 0 ]; then
-   echo "ERROR: node-1 is not present after 60s"
-   opsbro gossip members --detail
-   exit 2
-fi
-opsbro gossip wait-members --display-name "node-2" --timeout 10
-if [ $? != 0 ]; then
-   echo "ERROR: node-2 is not present after 60s"
-   opsbro gossip members --detail
-   exit 2
-fi
-opsbro gossip wait-members --display-name "node-3" --timeout 10
-if [ $? != 0 ]; then
-   echo "ERROR: node-3 is not present after 60s"
-   opsbro gossip members --detail
-   exit 2
-fi
-
+wait_member_display_name_with_timeout "node-1" 10
+wait_member_display_name_with_timeout "node-2" 10
+wait_member_display_name_with_timeout "node-3" 10
 
 
 # NODE1: fast exit
@@ -65,39 +50,36 @@ fi
 if [ "$NODE_NB" == "1" ]; then
    # let the others finish
    /etc/init.d/opsbro stop
-   cat /var/log/opsbro/gossip.log
-   #cat /var/log/opsbro/daemon.log
    echo "NODE1 is exiting and nothing more to check for it, it will be dead"
    exit 0
 fi
 
 
 if [ "$NODE_NB" == "2" ]; then
-   sleep 10
+   #sleep 10
+   opsbro gossip events add 'NODE2-LEAVING'
+   wait_event_with_timeout 'NODE3-RECEIVE-LEAVING' 20
+
    opsbro gossip leave
    opsbro gossip members --detail
    # Node: leave will wait 10s before exit daemon, so we should not kill the
    # docker instance directly
+
+   echo "Sleeping until the node3 receive our leave"
    sleep 20
-   cat /var/log/opsbro/gossip.log
-   #cat /var/log/opsbro/daemon.log
-   echo "NODE2 will be detected as leaved from node 3"
+   echo "NODE2 exiting"
    exit 0
 fi
 
 
-function assert_count {
-   NB=$(opsbro gossip members | grep 'docker-container' | grep "$1" | wc -l)
-   if [ "$NB" != "$2" ]; then
-      echo "ERROR: there should be $2 $1 but there are $NB"
-      opsbro gossip members
-      exit 2
-   fi
-   echo "OK: founded $NB $2 nodes"
-}
-
 if [ "$NODE_NB" == "3" ]; then
-   sleep 30
+   # wait until the node2 is ready to leave
+   wait_event_with_timeout 'NODE2-LEAVING' 20
+   # Le tthe node 2 know we receive, so it can leave and wait for us to exit
+   opsbro gossip events add 'NODE3-RECEIVE-LEAVING'
+
+   echo "Wait until we receive gossip messages from node2"
+   sleep 10
    cat /var/log/opsbro/gossip.log
    opsbro gossip members --detail
 
@@ -105,13 +87,11 @@ if [ "$NODE_NB" == "3" ]; then
    # * one alive (node3)
    # * one dead (node1)
    # * one leave (node2)
-   assert_count "alive" "1"
-   assert_count "dead" "1"
-   assert_count "leave" "1"
+   assert_state_count "alive" "1"
+   assert_state_count "dead" "1"
+   assert_state_count "leave" "1"
 
-   echo "All states are good, exiting"
-
-   cat /var/lib/opsbro/nodes_history/*
+   echo "NODE3: All states are good, exiting"
 
    exit 0
 fi

@@ -28,10 +28,9 @@ if [ $CASE == "NODE2" ]; then
     # Be sure we are sending it to the other node
     sleep 2
     opsbro gossip events wait 'NODE1-END' --timeout=10
-    #opsbro evaluator wait-eval-true "gossip_have_event_type('NODE1-END')" --timeout 10
     if [ $? != 0 ]; then
        echo "ERROR: NODE1 did not end after after 60s"
-       cat /var/log/opsbro/gossip.log | grep --color event
+       cat /var/log/opsbro/gossip.log
        exit 2
     fi
 
@@ -60,10 +59,9 @@ opsbro gossip events add 'NODE1-END'
 # Be sure we are sending it to the other node
 sleep 2
 opsbro gossip events wait 'NODE2-END' --timeout=10
-#opsbro evaluator wait-eval-true "gossip_have_event_type('NODE2-END')" --timeout 10
 if [ $? != 0 ]; then
    echo "ERROR: NODE2 did not end after after 60s"
-   cat /var/log/opsbro/gossip.log | grep --color event
+   cat /var/log/opsbro/gossip.log
    exit 2
 fi
 
