@@ -392,14 +392,14 @@ class Gossip(object):
         for group in new_groups:
             if not self.is_in_group(group):
                 did_change = True
-                # We do not want to send a boardcast now, we have still other group to manage
+                # We do not want to send a broadcast now, we have still other group to manage
                 # and send only one change
                 self.add_group(group, broadcast_when_change=False)
                 logger.info("New group detected from detector for this node: %s" % group)
         for group in deleted_groups:
             if self.is_in_group(group):
                 did_change = True
-                # We do not want to send a boardcast now, we have still other group to manage
+                # We do not want to send a broadcast now, we have still other group to manage
                 # and send only one change
                 self.remove_group(group, broadcast_when_change=False)
                 logger.info("Group was lost from the previous detection for this node: %s" % group)
@@ -511,7 +511,8 @@ class Gossip(object):
     
     
     # Warn other about a node that is not new or remove, but just did change it's internals data
-    def node_did_change(self, nid):
+    @staticmethod
+    def node_did_change(nid):
         pubsub.pub('change-node', node_uuid=nid)
     
     
@@ -759,6 +760,23 @@ class Gossip(object):
                 self.set_leave(node)
     
     
+    def merge_events(self, events):
+        with self.events_lock:
+            for (eventid, event) in events.iteritems():
+                logger.debug('Try to merge event', eventid, event)
+                payload = event.get('payload', {})
+                # if bad event or already known one, delete it
+                if not eventid or not payload or eventid in self.events:
+                    continue
+                # ok new one, add a broadcast so we diffuse it, and manage it
+                b = {'send': 0, 'msg': event}
+                broadcaster.append(b)
+                
+                # Remember this event to not spam it
+                logger.info('DID MERGE EVENT from another node: %s' % event)
+                self.add_event(event)
+    
+    
     # We cannot full sync with all nodes:
     # * must be alive
     # * not ourselve ^^
@@ -844,7 +862,7 @@ class Gossip(object):
             top_zones = zonemgr.get_top_zones_from(self.zone)
             for zname in top_zones:
                 # we don't care about leave node, but we need others to be proxy
-                others = [n for n in nodes.values() if n['zone'] == zname and n['state'] != 'leave' and n['is_proxy'] == True]
+                others = [n for n in nodes.values() if n['zone'] == zname and n['state'] != 'leave' and n['is_proxy'] is True]
                 # Maybe there is no valid nodes for this zone, skip it
                 if len(others) == 0:
                     continue
@@ -1133,7 +1151,8 @@ class Gossip(object):
     # Randomly push some gossip broadcast messages and send them to
     # KGOSSIP others nodes
     # consume: if True (default) then a message will be decremented
-    def __do_gossip_push(self, dest, consume=True):
+    @staticmethod
+    def __do_gossip_push(dest, consume=True):
         message = ''
         to_del = []
         stack = []
@@ -1248,8 +1267,12 @@ class Gossip(object):
                 continue
             # ok in the good zone (our or sub)
             nodes_to_send[nuuid] = node
+        
+        with self.events_lock:
+            events = copy.deepcopy(self.events)
+        
         logger.debug('do_push_pull:: giving %s informations about nodes: %s' % (other[0], [n['name'] for n in nodes_to_send.values()]))
-        m = {'type': 'push-pull-msg', 'ask-from-zone': self.zone, 'nodes': nodes_to_send}
+        m = {'type': 'push-pull-msg', 'ask-from-zone': self.zone, 'nodes': nodes_to_send, 'events': events}
         message = json.dumps(m)
         
         (addr, port) = other
@@ -1269,6 +1292,7 @@ class Gossip(object):
                 logger.error('do_push_pull: back message do not have nodes entry: %s' % back)
                 return False
             self.merge_nodes(back['nodes'])
+            self.merge_events(back.get('events', {}))
             return True
         except get_http_exceptions(), exp:
             logger.error('[push-pull] ERROR CONNECTING TO %s:%s' % other, exp)
@@ -1354,7 +1378,8 @@ class Gossip(object):
             self.delete_node(uuid)
     
     
-    def __get_node_basic_msg(self, node):
+    @staticmethod
+    def __get_node_basic_msg(node):
         return {
             'name'       : node['name'], 'display_name': node.get('display_name', ''),
             'addr'       : node['addr'], 'port': node['port'], 'uuid': node['uuid'],
@@ -1457,7 +1482,8 @@ class Gossip(object):
         return b
     
     
-    def forward_to_websocket(self, msg):
+    @staticmethod
+    def forward_to_websocket(msg):
         websocketmgr.forward({'channel': 'gossip', 'payload': msg})
     
     
@@ -1478,7 +1504,6 @@ class Gossip(object):
         
         @http_export('/agent/leave/:nuuid')
         def set_node_leave(nuuid):
-            node = None
             with self.nodes_lock:
                 node = self.nodes.get(nuuid, None)
             if node is None:
@@ -1527,12 +1552,16 @@ class Gossip(object):
             t = msg.get('type', None)
             if t is None or t != 'push-pull-msg':  # bad message, skip it
                 return
+            
             self.merge_nodes(msg['nodes'])
+            self.merge_events(msg.get('events', {}))
             
             # And look where does the message came from: if it's the same
             # zone: we can give all, but it it's a lower zone, only give our proxy nodes informations
             nodes = self.get_nodes_for_push_pull_response(msg['ask-from-zone'])
-            m = {'type': 'push-pull-msg', 'nodes': nodes}
+            with self.events_lock:
+                events = copy.deepcopy(self.events)
+            m = {'type': 'push-pull-msg', 'nodes': nodes, 'events': events}
             
             return json.dumps(m)
         

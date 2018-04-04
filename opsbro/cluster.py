@@ -423,27 +423,33 @@ class Cluster(object):
                 signal.signal(sig, func)
     
     
-    def launch_check_thread(self):
+    @staticmethod
+    def launch_check_thread():
         threader.create_and_launch(monitoringmgr.do_check_thread, name='Checks executions', essential=True, part='monitoring')
     
     
-    def launch_collector_thread(self):
+    @staticmethod
+    def launch_collector_thread():
         threader.create_and_launch(collectormgr.do_collector_thread, name='Collector scheduling', essential=True, part='collector')
     
     
-    def launch_generator_thread(self):
+    @staticmethod
+    def launch_generator_thread():
         threader.create_and_launch(generatormgr.do_generator_thread, name='Generator scheduling', essential=True, part='generator')
     
     
-    def launch_detector_thread(self):
+    @staticmethod
+    def launch_detector_thread():
         threader.create_and_launch(detecter.do_detector_thread, name='Detector scheduling', essential=True, part='detector')
     
     
-    def launch_compliance_thread(self):
+    @staticmethod
+    def launch_compliance_thread():
         threader.create_and_launch(compliancemgr.do_compliance_thread, name='System compliance', essential=True, part='compliance')
     
     
-    def launch_replication_backlog_thread(self):
+    @staticmethod
+    def launch_replication_backlog_thread():
         threader.create_and_launch(kvmgr.do_replication_backlog_thread, name='Replication backlog', essential=True, part='key-value')
     
     
@@ -459,7 +465,8 @@ class Cluster(object):
         threader.create_and_launch(self.launch_tcp_listener, name='Http backend', essential=True, part='agent')
     
     
-    def launch_modules_threads(self):
+    @staticmethod
+    def launch_modules_threads():
         # Launch modules threads
         modulemanager.launch()
     
@@ -684,7 +691,7 @@ class Cluster(object):
         @http_export('/configuration/update', method='PUT')
         def update_configuration():
             value = request.body.getvalue()
-            logger.debug("HTTP: configuration update put %s" % (value))
+            logger.debug("HTTP: configuration update put %s" % value)
             try:
                 update = json.loads(value)
             except ValueError:  # bad json...
@@ -722,7 +729,7 @@ class Cluster(object):
             response.content_type = 'application/json'
             
             nzone = request.body.getvalue()
-            logger.debug("HTTP: /agent/zone put %s" % (nzone))
+            logger.debug("HTTP: /agent/zone put %s" % nzone)
             gossiper.change_zone(nzone)
             with open(self.zone_file, 'w') as f:
                 f.write(nzone)
@@ -738,19 +745,23 @@ class Cluster(object):
         @http_export('/debug/memory', protected=True)
         def do_memory_dump():
             response.content_type = 'application/json'
-            from meliae import scanner
+            try:
+                from meliae import scanner
+            except ImportError:
+                logger.error('Cannot run a memory dump, missing python-meliae')
+                return json.dumps(None)
             p = '/tmp/memory-%s' % self.name
             scanner.dump_all_objects(p)
             return json.dumps(p)
         
         
-        self.external_http_thread = threader.create_and_launch(httpdaemon.run, name='External HTTP', args=(self.listening_addr, self.port, ''), essential=True, part='agent')
+        threader.create_and_launch(httpdaemon.run, name='External HTTP', args=(self.listening_addr, self.port, ''), essential=True, part='agent')
         # Create the internal http thread
         # on unix, use UNIXsocket
         if os.name != 'nt':
-            self.internal_http_thread = threader.create_and_launch(httpdaemon.run, name='Internal HTTP', args=('', 0, self.socket_path,), essential=True, part='agent')
+            threader.create_and_launch(httpdaemon.run, name='Internal HTTP', args=('', 0, self.socket_path,), essential=True, part='agent')
         else:  # ok windows, I look at you, really
-            self.internal_http_thread = threader.create_and_launch(httpdaemon.run, name='Internal HTTP', args=('127.0.0.1', 6770, '',), essential=True, part='agent')
+            threader.create_and_launch(httpdaemon.run, name='Internal HTTP', args=('127.0.0.1', 6770, '',), essential=True, part='agent')
     
     
     # The first sync thread will ask to our replicats for their lately changed value
@@ -1038,7 +1049,7 @@ class Cluster(object):
         elif _type == 'configuration-cleanup':
             threader.create_and_launch(self.do_configuration_cleanup, name='configuration-cleanup')
         else:
-            logger.error('UNKNOWN EVENT %s' % m)
+            logger.info('Generic event received %s' % m)
             return
     
     
@@ -1072,12 +1083,14 @@ class Cluster(object):
     
     
     # We are joining the seed members and lock until we reach at least one
-    def join(self):
+    @staticmethod
+    def join():
         if topiker.is_topic_enabled(TOPIC_SERVICE_DISCOVERY):
             gossiper.join()
     
     
-    def do_memory_trim_thread(self):
+    @staticmethod
+    def do_memory_trim_thread():
         try:
             import ctypes
         except ImportError:  # like in static python

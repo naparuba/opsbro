@@ -363,7 +363,6 @@ def do_wait_members(name='', display_name='', group='', count=1, timeout=30):
                         sys.exit(0)
             elif display_name:
                 for m in members:
-                    print "Member:", m
                     if m['display_name'] == display_name:
                         cprint('\n %s ' % CHARACTERS.arrow_left, color='grey', end='')
                         cprint('%s ' % CHARACTERS.check, color='green', end='')
