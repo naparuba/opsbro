@@ -141,6 +141,7 @@ if [ $CASE == "NODE-HAPROXY" ]; then
     echo "============================== [`date`] $CASE waiting for HTTP node to be ready ================================="
 
     ps axjf
+    netstat -tulpn | grep 80
 
     # Wait until the http-1 and http-2 are ready to be queried
     wait_step_event_node "HTTP-READY" "NODE-HTTP-1"
@@ -185,6 +186,7 @@ if [ $CASE == "NODE-HAPROXY" ]; then
     cat /var/log/messages
 
     ps axjf
+    netstat -tulpn | grep 80
 
     echo "HAPROXY: look if local proxying is valid  `date`"
     OUT=$(curl -s http://localhost)
@@ -196,6 +198,7 @@ if [ $CASE == "NODE-HAPROXY" ]; then
     fi
 
     ps axjf
+    netstat -tulpn | grep 80
 
     grep 'NODE-HTTP-2' /etc/haproxy/haproxy.cfg > /dev/null
     if [ $? != 0 ];then
@@ -206,6 +209,7 @@ if [ $CASE == "NODE-HAPROXY" ]; then
     echo "HAPROXY: `date` NODE-HTTP-2 is present"
 
     ps axjf
+    netstat -tulpn | grep 80
 
     grep 'NODE-HTTP-1' /etc/haproxy/haproxy.cfg > /dev/null
     if [ $? != 0 ];then
@@ -227,6 +231,7 @@ if [ $CASE == "NODE-HAPROXY" ]; then
     fi
 
     ps axjf
+    netstat -tulpn | grep 80
 
     NB_UP=$(echo "$STATS" | grep 'back_http' | grep -v BACKEND | grep UP | wc -l)
     if [ "$NB" != "2" ];then
