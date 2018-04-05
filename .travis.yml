@@ -22,11 +22,11 @@ env:
 # Some tests are with 2 docker that must run together. I hope it will be maintainable
 - TEST_SUITE=COMPOSE-GOSSIP-UDP-DETECT
 # This one is with 4 containers, in 2 zones, one is sub level of another
-- TEST_SUITE=DUO3
+- TEST_SUITE=COMPOSE-GOSSIP-ZONES
 # This one is with 4 containers, in 3 zones, one is sub level of another
-- TEST_SUITE=DUO4
+- TEST_SUITE=COMPOSE-GOSSIP-ZONES-MULTI
 # This one is with 2 containers, a node with events, joining another, and sync its events
-- TEST_SUITE=DUO5
+- TEST_SUITE=COMPOSE-GOSSIP-JOIN-SYNC-EVENTS
 # This is a full DEMO with 4 containers, for a distributed HTTP with
 # 2 real servers
 # 1 haproxy (generators to the 2 http)

@@ -1,0 +1,37 @@
+version: '2'
+services:
+  node1:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO3-debian9-test-gossip-zones-1.txt
+    networks:
+       - gossip-zones
+
+
+  node2:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO3-debian9-test-gossip-zones-2.txt
+    networks:
+       - gossip-zones
+
+
+  node3:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO3-debian9-test-gossip-zones-3.txt
+    networks:
+       - gossip-zones
+
+
+  node4:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO3-debian9-test-gossip-zones-4.txt
+    networks:
+       - gossip-zones
+
+networks:
+  gossip-zones:
+      driver: bridge
+
