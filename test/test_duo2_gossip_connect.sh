@@ -15,24 +15,24 @@ sleep 10
 
 show_my_system_ip
 
-
+# Thanks docker compose for DNS resolution
 # Node 1 ip=2
 if [ "$NODE_NB" == "1" ]; then
-  opsbro gossip join 172.17.0.3
-  opsbro gossip join 172.17.0.4
+  opsbro gossip join node2
+  opsbro gossip join node3
 fi
 
 # Node 2 ip=3
 if [ "$NODE_NB" == "2" ]; then
-  opsbro gossip join 172.17.0.2
-  opsbro gossip join 172.17.0.4
+  opsbro gossip join node1
+  opsbro gossip join node3
 fi
 
 
 # Node 3 ip=4
 if [ "$NODE_NB" == "3" ]; then
-  opsbro gossip join 172.17.0.2
-  opsbro gossip join 172.17.0.3
+  opsbro gossip join node1
+  opsbro gossip join node2
 fi
 
 sleep 20

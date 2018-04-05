@@ -1,0 +1,32 @@
+version: '2'
+services:
+  node1:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO2-debian9-test-gossip-connect-1.txt
+    networks:
+       - gossip-join
+
+
+  node2:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO2-debian9-test-gossip-connect-2.txt
+    networks:
+       - gossip-join
+
+
+  node3:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO2-debian9-test-gossip-connect-3.txt
+    networks:
+       - gossip-join
+
+
+
+
+networks:
+  gossip-join:
+      driver: bridge
+

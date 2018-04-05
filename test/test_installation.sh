@@ -131,7 +131,7 @@ if [[ $TEST_SUITE == COMPOSE* ]];then
    echo "$PS_STATES" >> $LOG
    echo "Container results:"
    echo "$PS_STATES"
-   NB_BADS=$(echo "$STATES" | grep -v 'Exit 0' | grep -v '^$' | wc -l)
+   NB_BADS=$(echo "$PS_STATES" | grep -v 'Exit 0' | grep -v '^$' | wc -l)
    echo "NB BADS containers: $NB_BADS"
    if [ $NB_BADS != 0 ]; then
        print_color "RUN ERROR: $COMPOSE_FILE" "red"
