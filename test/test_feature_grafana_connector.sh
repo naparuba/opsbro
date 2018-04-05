@@ -33,7 +33,7 @@ fi
 
 /etc/init.d/grafana-server start
 
-sleep 1
+sleep 5
 
 echo "Checking for authentification"
 OUT=$(curl -s -H "Authorization: Bearer eyJrIjoibmhIR0FuRnB0MTN6dFBMTlNMZDZKWjJXakFuR0I2Wk4iLCJuIjoiT3BzQnJvIiwiaWQiOjF9" http://localhost:3000/api/dashboards/home)
@@ -55,7 +55,7 @@ if [ $? != 0 ]; then
 fi
 
 # Wait a bit for the module to work
-sleep 5
+sleep 10
 
 echo "Checking if the data source is created, with NAME--opsbro--NODE_UUID as name"
 

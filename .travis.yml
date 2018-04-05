@@ -21,8 +21,6 @@ env:
 ##### Then complexe scenarios
 # Some tests are with 2 docker that must run together. I hope it will be maintainable
 - TEST_SUITE=DUO1
-# This one is with 3 containers, trying to join together
-- TEST_SUITE=DUO2
 # This one is with 4 containers, in 2 zones, one is sub level of another
 - TEST_SUITE=DUO3
 # This one is with 4 containers, in 3 zones, one is sub level of another
@@ -35,6 +33,7 @@ env:
 # 1 customer, with DNS module
 - TEST_SUITE=DEMO-HTTP
 - TEST_SUITE=COMPOSE-DEMO-HTTP
+# This one is with 3 containers, trying to join together
 - TEST_SUITE=COMPOSE-GOSSIP-JOIN
 ##### Then installation on various distros
 - TEST_SUITE=ALPINE
