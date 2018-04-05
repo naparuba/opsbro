@@ -1,15 +1,13 @@
 language: python
+
+# NOTE: 2.6 will be add to the build matrix explictly only for the interesting cases
 python:
-  - "2.6"
   - "2.7"
+
 
 # We need docker for our scripts that test various installations
 services:
   - docker
-
-# command to install dependencies
-#install:
-#  - "pip install -r dependencies"
 
 
 env:
@@ -36,13 +34,19 @@ env:
 - TEST_SUITE=DUO4
 # This one is with 2 containers, a node with events, joining another, and sync its events
 - TEST_SUITE=DUO5
-
 # This is a full DEMO with 4 containers, for a distributed HTTP with
 # 2 real servers
 # 1 haproxy (generators to the 2 http)
 # 1 customer, with DNS module
-# TODO: unlock until we have a real cluster lock managments
 - TEST_SUITE=DEMO1
+
+
+# becool with travis load : we do not want that all test that don't care about python
+# run twice, even for just spawn a VM, si manage the python 2.6 / PYTHON case explicitly
+matrix:
+  include:
+    - python: "2.6"
+      env:     TEST_SUITE=PYTHON
 
 
 # command to run tests
