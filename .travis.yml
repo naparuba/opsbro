@@ -20,7 +20,7 @@ env:
 - TEST_SUITE=PACK
 ##### Then complexe scenarios
 # Some tests are with 2 docker that must run together. I hope it will be maintainable
-- TEST_SUITE=DUO1
+- TEST_SUITE=COMPOSE-GOSSIP-UDP-DETECT
 # This one is with 4 containers, in 2 zones, one is sub level of another
 - TEST_SUITE=DUO3
 # This one is with 4 containers, in 3 zones, one is sub level of another
@@ -31,7 +31,6 @@ env:
 # 2 real servers
 # 1 haproxy (generators to the 2 http)
 # 1 customer, with DNS module
-- TEST_SUITE=DEMO-HTTP
 - TEST_SUITE=COMPOSE-DEMO-HTTP
 # This one is with 3 containers, trying to join together
 - TEST_SUITE=COMPOSE-GOSSIP-JOIN

@@ -1,0 +1,25 @@
+version: '2'
+services:
+  node1:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO1-debian9-test-udp-detect-auto-join-node1.txt
+    networks:
+       - gossip-udp-detect
+
+
+  node2:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO1-debian9-test-udp-detect-auto-join-node2.txt
+    networks:
+       - gossip-udp-detect
+
+
+
+
+
+networks:
+  gossip-udp-detect:
+      driver: bridge
+
