@@ -39,6 +39,7 @@ env:
 # 1 haproxy (generators to the 2 http)
 # 1 customer, with DNS module
 - TEST_SUITE=DEMO1
+- TEST_SUITE=COMPOSE-DEMO1
 
 
 # becool with travis load : we do not want that all test that don't care about python

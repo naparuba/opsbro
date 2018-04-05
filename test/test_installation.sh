@@ -11,8 +11,7 @@ echo "Launching installations tests for SUITE: $TEST_SUITE"
 
 cd ..
 
-# Only do the test suite we must do
-DOCKER_FILES=`ls -1 test/docker-files/docker-file-$TEST_SUITE-*txt`
+
 
 
 
@@ -39,7 +38,7 @@ export FAIL_FILE=/tmp/opsbro.test.installation.fail
 > $FAIL_FILE
 
 
-function try_installation {
+function launch_docker_file {
    FULL_PATH=$1
    DO_WHAT=$2
 
@@ -82,7 +81,7 @@ function try_installation {
 }
 
 
-export -f try_installation
+export -f launch_docker_file
 
 NB_CPUS=`python -c "import multiprocessing;print multiprocessing.cpu_count()"`
 echo "Detected number of CPUs: $NB_CPUS"
@@ -97,16 +96,66 @@ if [ "X$TRAVIS" == "Xtrue" ]; then
    fi
 fi
 
+# For compose, we are asking to docker-compose to build and run
+if [[ $TEST_SUITE == COMPOSE* ]];then
+
+   # In compose, we MUST be sure we are the only launched instance with no state before us
+   docker system prune --force >/dev/null
+
+   COMPOSE_FILE=test/docker-files/docker-$TEST_SUITE
+
+   NOW=$(date +"%H:%M:%S")
+   print_color "BUILD  $COMPOSE_FILE : BUILD starting at $NOW \n" "magenta"
+   LOG=/tmp/build-and-run.docker-$TEST_SUITE.log
+   rm -fr $LOG
+   BUILD=$(docker-compose  -f $COMPOSE_FILE build 2>&1)
+   if [ $? != 0 ]; then
+       echo "$BUILD" > $LOG
+       print_color "BUILD ERROR: $COMPOSE_FILE" "red"
+       printf " `date` Cannot build. Look at $LOG\n"
+       cat $LOG
+       exit 2
+   fi
+
+
+   NOW=$(date +"%H:%M:%S")
+   print_color "RUN  $COMPOSE_FILE : RUN starting at $NOW \n" "magenta"
+   LOG=/tmp/build-and-run.docker-$TEST_SUITE.log
+   rm -fr $LOG
+   RUN=$(docker-compose  -f $COMPOSE_FILE up --build 2>&1)
+   echo "$RUN" > $LOG
+   # NOTE: compose up do not exit with worse state, so must look at the
+   # docker-copose ps to have exit states
+   # +3=> remvoe the first 2 line of the ps (header)
+   PS_STATES=$(docker-compose  -f $COMPOSE_FILE ps | tail -n +3)
+   echo "$PS_STATES" >> $LOG
+   NB_BADS=$(echo "$STATES" | grep -v 'Exit 0' | grep -v '^$' | wc -l)
+   echo "NB BADS containers: $NB_BADS"
+   if [ $NB_BADS != 0 ]; then
+       print_color "RUN ERROR: $COMPOSE_FILE" "red"
+       printf " `date` Cannot run. Look at $LOG\n"
+       cat $LOG
+       exit 2
+   fi
+
+   NOW=$(date +"%H:%M:%S")
+   print_color "BUILD  $COMPOSE_FILE : is finish OK at $NOW \n" "green"
+   exit 0
+fi
+
+
+# Only do the test suite we must do
+DOCKER_FILES=`ls -1 test/docker-files/docker-file-$TEST_SUITE-*txt`
 
 # export TRAVIS var so xargs calls with have it
 export TRAVIS=$TRAVIS
 echo "================================================= Building all images first:"
-echo $DOCKER_FILES | xargs --delimiter=' ' --no-run-if-empty -n 1 -P $NB_CPUS -I {} bash -c 'try_installation "{}" "BUILD_ONLY"'
+echo $DOCKER_FILES | xargs --delimiter=' ' --no-run-if-empty -n 1 -P $NB_CPUS -I {} bash -c 'launch_docker_file "{}" "BUILD_ONLY"'
 
 # Run must be synchronizer if possible, will allow to have less issues in synchronized tests (like DUO or DEMO)
 printf "\n\n\n"
 echo "================================================= Then Running all images:"
-echo $DOCKER_FILES | xargs --delimiter=' ' --no-run-if-empty -n 1 -P $NB_CPUS -I {} bash -c 'try_installation "{}" "RUN"'
+echo $DOCKER_FILES | xargs --delimiter=' ' --no-run-if-empty -n 1 -P $NB_CPUS -I {} bash -c 'launch_docker_file "{}" "RUN"'
 
 
 printf "Some tests are OK:\n"

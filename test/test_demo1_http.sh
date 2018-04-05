@@ -4,7 +4,13 @@
 
 CASE=$1
 
+ping -c 1 http1
+ping -c 1 http2
+ping -c 1 haproxy
+ping -c 1 client
 
+
+exit 0
 
 printf "\n\n"
 echo "============================== [`date`] Configuration setup ================================="
@@ -50,7 +56,7 @@ echo "============================== [`date`] Launching daemon =================
 echo "Daemon started `date`"
 
 # For debug purpose
-ip addr show | grep 'scope global'
+show_my_system_ip
 
 
 
@@ -255,7 +261,7 @@ if [ $CASE == "NODE-CLIENT" ]; then
 
    for ii in `seq 1 6`; do
       echo " - Trying http://172.17.0.$ii"
-      curl -s http://172.17.0.$ii
+      curl -s --connect-timeout 2 http://172.17.0.$ii
       echo ""
    done
 
@@ -273,7 +279,7 @@ if [ $CASE == "NODE-CLIENT" ]; then
    for ii in `seq 1 $TOTAL`; do
       printf "\r→ "
       sync
-      OUT=$(curl -s http://haproxy.group.local.opsbro)
+      OUT=$(curl --connect-timeout 2 -s http://haproxy.group.local.opsbro)
       if [[ "$OUT" != "NODE-HTTP-1" ]] && [[ "$OUT" != "NODE-HTTP-2" ]]; then
          echo "CLIENT (test $ii/$TOTAL) Cannot reach real HTTP servers from the client: $OUT"
          curl -v http://haproxy.group.local.opsbro

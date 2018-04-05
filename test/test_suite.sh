@@ -23,6 +23,7 @@ if [ "$TEST_SUITE" == "PYTHON" ]; then
    exit $?
 fi
 
+
 echo "Test installations for SUITE  $TEST_SUITE"
 # If not python, launch installations, and only a sub part if possible
 ./test_installation.sh
