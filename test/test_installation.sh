@@ -87,13 +87,13 @@ NB_CPUS=`python -c "import multiprocessing;print multiprocessing.cpu_count()"`
 echo "Detected number of CPUs: $NB_CPUS"
 # Travis: be sure to use the 2 CPU available, and in fact to allow // connections so we keep the test time bellow the limit
 if [ "X$TRAVIS" == "Xtrue" ]; then
-   NB_CPUS=3
+   NB_CPUS=10
    echo "Travis detected, using $NB_CPUS CPUs"
    # if stats with DUO, allow far more than this
-   if [[ $TEST_SUITE == DUO* ]] || [[ $TEST_SUITE == DEMO* ]]; then
-      NB_CPUS=6
-      echo "Travis detected, and also DUO test based. Allow more CPUs; $NB_CPUS"
-   fi
+   #if [[ $TEST_SUITE == DUO* ]] || [[ $TEST_SUITE == DEMO* ]]; then
+   #   NB_CPUS=6
+   #   echo "Travis detected, and also DUO test based. Allow more CPUs; $NB_CPUS"
+   #fi
 fi
 
 # For compose, we are asking to docker-compose to build and run
@@ -129,6 +129,8 @@ if [[ $TEST_SUITE == COMPOSE* ]];then
    # +3=> remvoe the first 2 line of the ps (header)
    PS_STATES=$(docker-compose  -f $COMPOSE_FILE ps | tail -n +3)
    echo "$PS_STATES" >> $LOG
+   echo "Container results:"
+   echo "$PS_STATES"
    NB_BADS=$(echo "$STATES" | grep -v 'Exit 0' | grep -v '^$' | wc -l)
    echo "NB BADS containers: $NB_BADS"
    if [ $NB_BADS != 0 ]; then
