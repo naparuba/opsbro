@@ -45,10 +45,10 @@ fi
 opsbro gossip members --detail
 
 # Join all together
-opsbro gossip join 172.17.0.2
-opsbro gossip join 172.17.0.3
-opsbro gossip join 172.17.0.4
-opsbro gossip join 172.17.0.5
+opsbro gossip join node1
+opsbro gossip join node2
+opsbro gossip join node3
+opsbro gossip join node4
 
 
 sleep 2
