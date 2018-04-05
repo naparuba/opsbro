@@ -3,7 +3,7 @@ services:
   http1:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DEMO1-debian9-http-node-http-1.txt
+       dockerfile: test/docker-files/docker-file-DEMO-HTTP-debian9-http-node-http-1.txt
     networks:
        - demo1
 
@@ -11,7 +11,7 @@ services:
   http2:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DEMO1-debian9-http-node-http-2.txt
+       dockerfile: test/docker-files/docker-file-DEMO-HTTP-debian9-http-node-http-2.txt
     networks:
        - demo1
 
@@ -19,7 +19,7 @@ services:
   haproxy:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DEMO1-debian9-http-node-haproxy.txt
+       dockerfile: test/docker-files/docker-file-DEMO-HTTP-debian9-http-node-haproxy.txt
     networks:
        - demo1
 
@@ -27,7 +27,7 @@ services:
   client:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DEMO1-debian9-http-node-client.txt
+       dockerfile: test/docker-files/docker-file-DEMO-HTTP-debian9-http-node-client.txt
     networks:
        - demo1
 

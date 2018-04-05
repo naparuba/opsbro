@@ -10,8 +10,6 @@ ping -c 1 haproxy
 ping -c 1 client
 
 
-exit 0
-
 printf "\n\n"
 echo "============================== [`date`] Configuration setup ================================="
 
