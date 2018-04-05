@@ -93,7 +93,7 @@ class AptBackend(object):
         return
     
     
-    # apt-get -q --yes --no-install-recommends install XXXXX
+    # apt-get -q --yes --no-install-recommends upgrade XXXXX
     def update_package(self, package):
         logger.debug('APT :: updating package: %s' % package)
         p = subprocess.Popen(['apt-get', 'update'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -101,7 +101,7 @@ class AptBackend(object):
         logger.debug('APT (apt-get update):: stdout/stderr: %s/%s' % (stdout, stderr))
         if p.returncode != 0:
             raise Exception('APT: apt-get update did not succeed (%s), exiting from package installation (%s)' % (stdout + stderr, package))
-        p = subprocess.Popen(['apt-get', '-q', '--yes', '--no-install-recommends', 'update', r'%s' % package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        p = subprocess.Popen(['apt-get', '-q', '--yes', '--no-install-recommends', 'upgrade', r'%s' % package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
         logger.debug('APT (apt-get update) (%s):: stdout/stderr: %s/%s' % (package, stdout, stderr))
         if p.returncode != 0:

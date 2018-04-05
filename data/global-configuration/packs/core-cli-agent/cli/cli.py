@@ -652,7 +652,7 @@ exports = {
         'args'       : [
             {'name': '--timeout', 'type': 'int', 'default': 30, 'description': 'Timeout to let the initialization'},
         ],
-        'description': 'Wait until the agent is fully initialized (collector, detection, system confliance are done, etc)'
+        'description': 'Wait until the agent is fully initialized (collector, detection, system conpliance are done, etc)'
     },
     
 }
