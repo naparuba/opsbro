@@ -13,7 +13,7 @@ from .threadmgr import threader
 from .stop import stopper
 from .httpdaemon import http_export, response
 from .collector import Collector
-from jsonmgr import jsoner
+from .jsonmgr import jsoner
 from .now import NOW
 from .ts import tsmgr
 from .gossip import gossiper
@@ -24,6 +24,7 @@ logger = LoggerFactory.create_logger('collector')
 
 # Common rule for printing the COLLECTORS for the outside world
 COLLECTORS_STATE_COLORS = {'OK': 'green', 'ERROR': 'red', 'NOT-ELIGIBLE': 'grey', 'RUNNING': 'grey'}
+COLLECTORS_STATES = ['OK', 'NOT-ELIGIBLE', 'RUNNING', 'ERROR']
 
 
 def get_collectors(self):

@@ -14,10 +14,10 @@ from opsbro.log import cprint, logger
 from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_local, AnyAgent
 from opsbro.cli_display import print_h1, print_h2
+from opsbro.monitoring import STATE_ID_COLORS
 
 NO_ZONE_DEFAULT = '(no zone)'
 
-STATE_ID_COLORS = {0: 'green', 2: 'red', 1: 'yellow', 3: 'cyan'}
 STATE_ID_STRINGS = {0: '%s OK' % CHARACTERS.check, 2: '%s CRITICAL' % CHARACTERS.cross, 1: '%s WARNING' % CHARACTERS.double_exclamation, 3: '%s UNKNOWN' % CHARACTERS.double_exclamation}
 
 

@@ -28,6 +28,10 @@ from .topic import topiker, TOPIC_MONITORING
 # Global logger for this part
 logger = LoggerFactory.create_logger('monitoring')
 
+CHECK_STATES = ['ok', 'warning', 'critical', 'unknown', 'pending']
+STATE_ID_COLORS = {0: 'green', 2: 'red', 1: 'yellow', 3: 'cyan'}
+STATE_COLORS = {'ok': 'green', 'warning': 'yellow', 'critical': 'red', 'unknown': 'grey', 'pending': 'grey'}
+
 
 class MonitoringManager(object):
     def __init__(self):
@@ -661,6 +665,16 @@ class MonitoringManager(object):
                 # do NOT use the node['port'], it's the internal communication, not the graphite one!
                 sock.sendto(packet, (node['addr'], 2003))
             sock.close()
+    
+    
+    def get_infos(self):
+        counts = {}
+        for state in CHECK_STATES:
+            counts[state] = 0
+        checks = self.checks.values()
+        for check in checks:
+            counts[check['state']] += 1
+        return counts
     
     
     def export_http(self):

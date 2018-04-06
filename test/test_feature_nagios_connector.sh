@@ -6,7 +6,6 @@ echo "Starting to test Nagios export (dummy check)"
 /etc/init.d/opsbro start
 
 
-#opsbro evaluator wait-eval-true "gossip_have_event_type('shinken-restart') == True"
 opsbro gossip events wait 'shinken-restart' --timeout 60
 if [ $? != 0 ]; then
     echo "ERROR: the nagios module did not restart nagios"

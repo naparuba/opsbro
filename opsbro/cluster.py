@@ -567,6 +567,7 @@ class Cluster(object):
                  'kv'            : kvmgr.get_info(),
                  'hosting_driver': get_hostingdrivermgr().get_driver_name(), 'hosting_drivers_state': get_hostingdrivermgr().get_drivers_state(),
                  'topics'        : topiker.get_topic_states(),
+                 'monitoring'    : monitoringmgr.get_infos(),
                  }
             
             # Update the infos with modules ones

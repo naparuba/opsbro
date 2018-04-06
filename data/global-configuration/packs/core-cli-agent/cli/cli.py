@@ -18,15 +18,19 @@ if os.name == 'nt':
 
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger, sprintf
+from opsbro.misc.lolcat import lolcat
 from opsbro.launcher import Launcher
 from opsbro.unixclient import get_request_errors
-from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, print_2tab, CONFIG, wait_for_agent_started
+from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, print_2tab, CONFIG, wait_for_agent_started, DEFAULT_INFO_COL_SIZE
 from opsbro.cli_display import print_h1, yml_parameter_set, yml_parameter_get, yml_parameter_add, yml_parameter_remove
 from opsbro.defaultpaths import DEFAULT_LOCK_PATH, DEFAULT_CFG_FILE
 from opsbro.configurationmanager import configmgr
 from opsbro.cluster import AGENT_STATE_INITIALIZING, AGENT_STATE_OK, AGENT_STATE_STOPPED
-from opsbro.collectormanager import COLLECTORS_STATE_COLORS
-from opsbro.module import TYPES_DESCRIPTIONS, MODULE_STATE_COLORS
+from opsbro.collectormanager import COLLECTORS_STATE_COLORS, COLLECTORS_STATES
+from opsbro.module import TYPES_DESCRIPTIONS, MODULE_STATE_COLORS, MODULE_STATES
+from opsbro.topic import TOPICS, TOPICS_LABELS, TOPICS_LABEL_BANNER, MAX_TOPICS_LABEL_SIZE, TOPICS_COLORS, topiker, TOPIC_SERVICE_DISCOVERY, TOPIC_AUTOMATIC_DECTECTION, TOPIC_GENERIC, TOPIC_METROLOGY, TOPIC_MONITORING, TOPIC_SYSTEM_COMPLIANCE, \
+    TOPIC_CONFIGURATION_AUTOMATION
+from opsbro.monitoring import CHECK_STATES, STATE_ID_COLORS, STATE_COLORS
 
 NO_ZONE_DEFAULT = '(no zone)'
 
@@ -55,6 +59,28 @@ def do_service_remove():
     __call_service_handler()
 
 
+def __print_topic_header(TOPIC_ID):
+    topic_color = TOPICS_COLORS[TOPIC_ID]
+    picto = u'%s%s %s' % (CHARACTERS.corner_top_left, CHARACTERS.hbar * 19, TOPICS_LABELS[TOPIC_ID])
+    cprint(lolcat.get_line(picto, topic_color, spread=None))
+
+
+def __print_topic_picto(topic):
+    # topic_color = TOPICS_COLORS[topic]
+    # picto = u'%s ' % CHARACTERS.vbar
+    # cprint(lolcat.get_line(picto, topic_color, spread=None), end='')
+    cprint(' ', end='')
+
+
+def __print_key_val(key, value, color='green', topic=None):
+    if topic is None:
+        cprint((' - %s: ' % key).ljust(DEFAULT_INFO_COL_SIZE), end='', color='blue')
+    else:
+        __print_topic_picto(topic)
+        cprint(('%s: ' % key).ljust(DEFAULT_INFO_COL_SIZE - 2), end='', color='blue')
+    cprint(value, color=color)
+
+
 def do_info(show_logs):
     try:
         d = get_opsbro_json('/agent/info')
@@ -78,7 +104,7 @@ def do_info(show_logs):
     if not zone:
         zone = NO_ZONE_DEFAULT
         zone_color = 'red'
-    zone_value = {'value': zone, 'color': zone_color}
+    
     nb_threads = d.get('threads')['nb_threads']
     hosting_drivers_state = d.get('hosting_drivers_state', [])
     httpservers = d.get('httpservers', {'internal': None, 'external': None})
@@ -92,42 +118,71 @@ def do_info(show_logs):
     groups.sort()
     groups = ','.join(groups)
     collectors = d.get('collectors')
+    monitoring = d.get('monitoring')
     
-    e = [('name', name), ('display name', display_name), ('uuid', _uuid), ('groups', groups), ('version', version), ('UDP port', port), ('Local addr', local_addr),
-         ('Public addr', public_addr), ('zone', zone_value), ('threads', nb_threads), ]
+    ################### Generic
+    __print_topic_header(TOPIC_GENERIC)
+    # print_info_title('OpsBro Daemon')
+    
+    __print_key_val('Name', name, topic=TOPIC_GENERIC)
+    display_name_color = 'green' if (name != display_name) else 'grey'
+    __print_key_val('Display name', display_name, color=display_name_color, topic=TOPIC_GENERIC)
+    
+    # We will print modules by modules types
+    # cprint(' - Modules: '.ljust(DEFAULT_INFO_COL_SIZE), end='', color='blue')
+    modules_by_states = {}
+    for module_state in MODULE_STATES:
+        modules_by_states[module_state] = []
+    for (module_name, module) in modules.iteritems():
+        modules_by_states[module['state']].append(module)
+    
+    strs = []
+    for module_state in MODULE_STATES:
+        nb = len(modules_by_states[module_state])
+        state_color = MODULE_STATE_COLORS.get(module_state, 'grey')
+        color = 'grey' if nb == 0 else state_color
+        _s = sprintf('%d %s ' % (nb, module_state), color=color, end='')
+        strs.append(_s)
+    module_string = sprintf(' / ', color='grey', end='').join(strs)
+    
+    __print_key_val('Modules', module_string, topic=TOPIC_GENERIC)
+    
+    __print_topic_picto(TOPIC_GENERIC)
+    cprint('  | Note: you can look at modules state with the command  opsbro agent modules state', color='grey')
+    
+    ################### Service Discovery
+    cprint('')
+    __print_topic_header(TOPIC_SERVICE_DISCOVERY)
+    
+    __print_key_val('UUID', _uuid, topic=TOPIC_SERVICE_DISCOVERY)
+    __print_key_val('Local addr', local_addr, topic=TOPIC_SERVICE_DISCOVERY)
+    __print_key_val('Public addr', public_addr, topic=TOPIC_SERVICE_DISCOVERY)
+    
+    __print_key_val('UDP port', port, topic=TOPIC_SERVICE_DISCOVERY)
     
     # Normal agent information
-    print_info_title('OpsBro Daemon')
-    print_2tab(e)
-    
-    print_info_title('Topics')
-    from opsbro.topic import TOPICS_LABELS
-    # Json ids are always string, must have int
-    topic_ids = [int(topic_id) for topic_id in topics.keys()]
-    topic_ids.sort()
-    for topic_id in topic_ids:
-        topic_label = TOPICS_LABELS.get(topic_id)
-        is_enabled = topics[str(topic_id)]
-        topic_color = {True: 'green', False: 'grey'}.get(is_enabled)
-        topic_state = {True: 'ENABLED', False: 'DISABLED'}.get(is_enabled)
-        cprint(' - %-25s: ' % topic_label, color='blue', end='')
-        cprint(topic_state, color=topic_color)
-    
-    # Normal agent information
-    print_info_title('HTTP (LAN & private unix socket)')
     ext_server = httpservers.get('external')
     int_server = httpservers.get('internal')
     ext_threads = '%d/%d' % (ext_server['nb_threads'] - ext_server['idle_threads'], ext_server['nb_threads'])
     int_threads = '%d/%d' % (int_server['nb_threads'] - int_server['idle_threads'], int_server['nb_threads'])
     
-    print_2tab([('LAN', ext_threads)])
-    cprint('   | Listen on the TCP port %s' % port, color='grey')
-    print_2tab([('private socket', int_threads)])
-    cprint('   | Listen on the unix socket %s' % socket_path, color='grey')
+    __print_key_val('HTTP threads', 'LAN:%s                        Private socket:%s' % (ext_threads, int_threads), topic=TOPIC_SERVICE_DISCOVERY)
+    __print_topic_picto(TOPIC_SERVICE_DISCOVERY)
+    cprint('  |               Listen on the TCP port %s     Listen on the unix socket %s' % (port, socket_path), color='grey')
+    
+    __print_key_val('Zone', zone, color=zone_color, topic=TOPIC_SERVICE_DISCOVERY)
+    __print_topic_picto(TOPIC_SERVICE_DISCOVERY)
+    cprint(' | Note: you have details about your zone members with the command: opsbro gossip members', color='grey')
+    
+    ################################## Automatic Detection
+    cprint('')
+    __print_topic_header(TOPIC_AUTOMATIC_DECTECTION)
+    __print_key_val('Groups', groups, topic=TOPIC_AUTOMATIC_DECTECTION)
+    
+    __print_topic_picto(TOPIC_AUTOMATIC_DECTECTION)
+    cprint(' | Note: you have details about the automatic detection with the command: opsbro detectors state', color='grey')
     
     # Show hosting drivers, and why we did chose this one
-    print_info_title('Hosting Drivers')
-    
     main_driver_founded = False
     strs = []
     for driver_entry in hosting_drivers_state:
@@ -142,11 +197,105 @@ def do_info(show_logs):
         else:
             strs.append(sprintf(_name, color='grey'))
     
-    _hosting_drivers_state_string = sprintf(' %s ' % CHARACTERS.arrow_left, color='grey').join(strs)
-    cprint(' ' + _hosting_drivers_state_string)
-    cprint('   | Note: first founded valid driver is used as main hosting driver', color='grey')
+    _hosting_drivers_state_string = ' ' + sprintf(' %s ' % CHARACTERS.arrow_left, color='grey').join(strs)
+    __print_key_val('Hosting drivers', _hosting_drivers_state_string, topic=TOPIC_AUTOMATIC_DECTECTION)
+    __print_topic_picto(TOPIC_AUTOMATIC_DECTECTION)
+    cprint('  | Note: first founded valid driver is used as main hosting driver (give uuid, public/private ip, ...)', color='grey')
     
-    # We will print modules by modules types
+    ################################## Monitoring
+    cprint('')
+    __print_topic_header(TOPIC_MONITORING)
+    
+    monitoring_strings = []
+    for check_state in CHECK_STATES:
+        count = monitoring[check_state]
+        color = STATE_COLORS.get(check_state) if count != 0 else 'grey'
+        s = sprintf('%d %s' % (count, check_state.upper()), color=color, end='')
+        monitoring_strings.append(s)
+    monitoring_string = '   '.join(monitoring_strings)
+    __print_key_val('Check states', monitoring_string, topic=TOPIC_MONITORING)
+    __print_topic_picto(TOPIC_MONITORING)
+    cprint('  | Note: you can have more details about monitoring with the command: opsbro monitoring state', color='grey')
+    
+    ################################## Metrology
+    # Now collectors part
+    cprint('')
+    __print_topic_header(TOPIC_METROLOGY)
+    cnames = collectors.keys()
+    cnames.sort()
+    collectors_states = {}
+    for collector_state in COLLECTORS_STATES:
+        collectors_states[collector_state] = []
+    for cname in cnames:
+        v = collectors[cname]
+        collector_state = v['state']
+        collectors_states[collector_state].append(cname)
+    
+    strs = []
+    for collector_state in COLLECTORS_STATES:
+        nb = len(collectors_states[collector_state])
+        state_color = COLLECTORS_STATE_COLORS.get(collector_state, 'grey')
+        color = 'grey' if nb == 0 else state_color
+        _s = sprintf(' %d %s ' % (nb, collector_state), color=color, end='')
+        strs.append(_s)
+    collector_string = sprintf(' / ', color='grey', end='').join(strs)
+    __print_key_val('Collectors', collector_string, topic=TOPIC_METROLOGY)
+    __print_topic_picto(TOPIC_METROLOGY)
+    cprint(' | Note: you can have details about the collectors with the command: opsbro collectors state', color='grey')
+    
+    ################################## configuration automation
+    cprint('')
+    __print_topic_header(TOPIC_CONFIGURATION_AUTOMATION)
+    
+    ################################## system compliance
+    cprint('')
+    __print_topic_header(TOPIC_SYSTEM_COMPLIANCE)
+    
+    ############### Logs:  Show errors logs if any
+    cprint('')
+    print_info_title('Technical info')
+    
+    cprint(' - Threads: '.ljust(DEFAULT_INFO_COL_SIZE), end='', color='blue')
+    cprint(nb_threads, color='green')
+    
+    cprint(' - Version: '.ljust(DEFAULT_INFO_COL_SIZE), end='', color='blue')
+    cprint(version, color='green')
+    
+    errors = logs.get('ERROR')
+    warnings = logs.get('WARNING')
+    
+    cprint(' - Logs: '.ljust(DEFAULT_INFO_COL_SIZE), end='', color='blue')
+    # Put warning and errors in red/yellow if need only
+    error_color = 'red' if len(errors) > 0 else 'grey'
+    warning_color = 'yellow' if len(warnings) > 0 else 'grey'
+    cprint('%d errors    ' % len(errors), color=error_color, end='')
+    cprint('%d warnings   ' % len(warnings), color=warning_color)
+    
+    # If there are errors or warnings, help the user to know it can print them
+    if not show_logs and (len(errors) > 0 or len(warnings) > 0):
+        cprint('   | Note: you can show error & warning logs with the --show-logs options', color='grey')
+    
+    if show_logs:
+        if len(errors) > 0:
+            print_info_title('Error logs')
+            for s in errors:
+                cprint(s, color='red')
+        
+        if len(warnings) > 0:
+            print_info_title('Warning logs')
+            for s in warnings:
+                cprint(s, color='yellow')
+    
+    logger.debug('Raw information: %s' % d)
+
+
+def do_modules_state():
+    try:
+        d = get_opsbro_json('/agent/info')
+    except get_request_errors(), exp:
+        logger.error('Cannot join opsbro agent: %s' % exp)
+        sys.exit(1)
+    modules = d.get('modules', {})
     print_info_title('Modules')
     modules_types = {}
     for (module_name, module) in modules.iteritems():
@@ -178,69 +327,6 @@ def do_info(show_logs):
             if state != 'DISABLED' and log:
                 cprint('       | Log: %s' % log, color='grey')
     cprint(' | Note: you can look at modules configuration with the command  opsbro packs show', color='grey')
-    
-    # Now collectors part
-    print_info_title('Collectors')
-    cnames = collectors.keys()
-    cnames.sort()
-    collectors_states = {}
-    for cname in cnames:
-        v = collectors[cname]
-        collector_state = v['state']
-        if collector_state not in collectors_states:
-            collectors_states[collector_state] = []
-        collectors_states[collector_state].append(cname)
-        
-        # e.append((cname, {'value': v['state'], 'color': color}))
-    # print_2tab(e, capitalize=False)
-    possible_states = COLLECTORS_STATE_COLORS.keys()
-    possible_states.sort()
-    for possible_state in possible_states:
-        collectors_in_state = collectors_states.get(possible_state, [])
-        if not collectors_in_state:
-            continue
-        collectors_in_state.sort()
-        color = COLLECTORS_STATE_COLORS.get(possible_state, 'grey')
-        cprint(' - ', end='')
-        cprint('%-15s' % possible_state, color=color, end='')
-        cprint(': ', end='')
-        cprint(sprintf(',', color='grey', end='').join([sprintf(cname, color=color, end='') for cname in collectors_in_state]))
-    cprint(' | Note: you can have details about the collectors with the command: opsbro collectors state', color='grey')
-    
-    # Show errors logs if any
-    print_info_title('Logs')
-    errors = logs.get('ERROR')
-    warnings = logs.get('WARNING')
-    
-    # Put warning and errors in red/yellow if need only
-    e = []
-    if len(errors) > 0:
-        e.append(('error', {'value': len(errors), 'color': 'red'}))
-    else:
-        e.append(('error', len(errors)))
-    if len(warnings) > 0:
-        e.append(('warning', {'value': len(warnings), 'color': 'yellow'}))
-    else:
-        e.append(('warning', len(warnings)))
-    
-    print_2tab(e)
-    
-    # If there are errors or warnings, help the user to know it can print them
-    if not show_logs and (len(errors) > 0 or len(warnings) > 0):
-        cprint('   | Note: you can show logs with the --show-logs options', color='grey')
-    
-    if show_logs:
-        if len(errors) > 0:
-            print_info_title('Error logs')
-            for s in errors:
-                cprint(s, color='red')
-        
-        if len(warnings) > 0:
-            print_info_title('Warning logs')
-            for s in warnings:
-                cprint(s, color='yellow')
-    
-    logger.debug('Raw information: %s' % d)
 
 
 # Main daemon function. Currently in blocking mode only
@@ -577,6 +663,13 @@ exports = {
             {'name': '--show-logs', 'default': False, 'description': 'Dump last warning & error logs', 'type': 'bool'},
         ],
         'description': 'Show info af a daemon'
+    },
+    
+    do_modules_state              : {
+        'keywords'   : ['agent', 'modules', 'state'],
+        'args'       : [
+        ],
+        'description': 'Show the current state of daemon modules.'
     },
     
     do_keygen                     : {

@@ -11,7 +11,7 @@ severities:
 
 # Who to notify
 contacts:
-    - admin@mydomain.com
+    - naparuba@gmail.com
 
 # The addr to send email from
 addr_from: opsbro@mydomain.com

@@ -2,8 +2,6 @@
 # Copyright (C) 2014:
 #    Gabes Jean, naparuba@gmail.com
 
-import copy
-import time
 from opsbro_test import *
 
 from opsbro.threadmgr import ThreadMgr

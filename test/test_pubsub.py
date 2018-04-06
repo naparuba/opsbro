@@ -2,9 +2,7 @@
 # Copyright (C) 2014:
 #    Gabes Jean, naparuba@gmail.com
 
-import copy
-import time
-import threading
+
 from opsbro_test import *
 
 from opsbro.pubsub import pubsub

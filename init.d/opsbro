@@ -287,6 +287,7 @@ do_start_() {
     # We are fully started, let's enjoy
     print_starting_bro
     echo_started
+    python -c "from opsbro.log import cprint;cprint('  | Note: you can have information about OpsBro with the command: opsbro agent info', color='grey')" 2>/dev/null
 
     return 0
 }

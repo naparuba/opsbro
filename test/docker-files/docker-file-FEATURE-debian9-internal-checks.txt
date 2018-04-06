@@ -11,8 +11,6 @@ RUN        /apt_get_install   python-leveldb
 RUN        /apt_get_install   python-setuptools
 RUN        /apt_get_install   python-apt
 
-# For nagios checks, we need nagios plugins
-RUN        /apt_get_install  nagios-plugins-standard
 
 ADD        . /root/opsbro-oss
 

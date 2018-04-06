@@ -8,6 +8,8 @@ TYPES_DESCRIPTIONS = {'generic'  : 'Generic module', 'functions_export': 'Such m
                       'handler'  : 'Such module will add new handlers'}
 
 MODULE_STATE_COLORS = {'STARTED': 'green', 'DISABLED': 'grey'}
+MODULE_STATES = ['STARTED', 'DISABLED']
+
 
 class Module(ParameterBasedType):
     implement = ''
