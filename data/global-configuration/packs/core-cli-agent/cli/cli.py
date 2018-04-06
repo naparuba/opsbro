@@ -31,6 +31,7 @@ from opsbro.module import TYPES_DESCRIPTIONS, MODULE_STATE_COLORS, MODULE_STATES
 from opsbro.topic import TOPICS, TOPICS_LABELS, TOPICS_LABEL_BANNER, MAX_TOPICS_LABEL_SIZE, TOPICS_COLORS, topiker, TOPIC_SERVICE_DISCOVERY, TOPIC_AUTOMATIC_DECTECTION, TOPIC_GENERIC, TOPIC_METROLOGY, TOPIC_MONITORING, TOPIC_SYSTEM_COMPLIANCE, \
     TOPIC_CONFIGURATION_AUTOMATION
 from opsbro.monitoring import CHECK_STATES, STATE_ID_COLORS, STATE_COLORS
+from opsbro.compliancemgr import COMPLIANCE_STATES, COMPLIANCE_STATE_COLORS
 
 NO_ZONE_DEFAULT = '(no zone)'
 
@@ -89,6 +90,8 @@ def do_info(show_logs):
         sys.exit(1)
     logs = d.get('logs')
     version = d.get('version')
+    cpu_consumption = d.get('cpu_consumption')
+    memory_consumption = d.get('memory_consumption')
     name = d.get('name')
     display_name = d.get('display_name', '')
     # A failback to display name is the name (hostname)
@@ -119,6 +122,8 @@ def do_info(show_logs):
     groups = ','.join(groups)
     collectors = d.get('collectors')
     monitoring = d.get('monitoring')
+    compliance = d.get('compliance')
+    generators = d.get('generators')
     
     ################### Generic
     __print_topic_header(TOPIC_GENERIC)
@@ -197,10 +202,10 @@ def do_info(show_logs):
         else:
             strs.append(sprintf(_name, color='grey'))
     
-    _hosting_drivers_state_string = ' ' + sprintf(' %s ' % CHARACTERS.arrow_left, color='grey').join(strs)
+    _hosting_drivers_state_string = sprintf(' %s ' % CHARACTERS.arrow_left, color='grey').join(strs)
     __print_key_val('Hosting drivers', _hosting_drivers_state_string, topic=TOPIC_AUTOMATIC_DECTECTION)
     __print_topic_picto(TOPIC_AUTOMATIC_DECTECTION)
-    cprint('  | Note: first founded valid driver is used as main hosting driver (give uuid, public/private ip, ...)', color='grey')
+    cprint('  | Note: first founded valid driver is used as main hosting driver (give uuid, public/private ip, %s)' % CHARACTERS.three_dots, color='grey')
     
     ################################## Monitoring
     cprint('')
@@ -210,9 +215,10 @@ def do_info(show_logs):
     for check_state in CHECK_STATES:
         count = monitoring[check_state]
         color = STATE_COLORS.get(check_state) if count != 0 else 'grey'
-        s = sprintf('%d %s' % (count, check_state.upper()), color=color, end='')
+        s = ('%d %s' % (count, check_state.upper())).ljust(15)
+        s = sprintf(s, color=color, end='')
         monitoring_strings.append(s)
-    monitoring_string = '   '.join(monitoring_strings)
+    monitoring_string = sprintf(' / ', color='grey', end='').join(monitoring_strings)
     __print_key_val('Check states', monitoring_string, topic=TOPIC_MONITORING)
     __print_topic_picto(TOPIC_MONITORING)
     cprint('  | Note: you can have more details about monitoring with the command: opsbro monitoring state', color='grey')
@@ -236,7 +242,8 @@ def do_info(show_logs):
         nb = len(collectors_states[collector_state])
         state_color = COLLECTORS_STATE_COLORS.get(collector_state, 'grey')
         color = 'grey' if nb == 0 else state_color
-        _s = sprintf(' %d %s ' % (nb, collector_state), color=color, end='')
+        _s = ('%d %s' % (nb, collector_state)).ljust(15)
+        _s = sprintf(_s, color=color, end='')
         strs.append(_s)
     collector_string = sprintf(' / ', color='grey', end='').join(strs)
     __print_key_val('Collectors', collector_string, topic=TOPIC_METROLOGY)
@@ -247,16 +254,42 @@ def do_info(show_logs):
     cprint('')
     __print_topic_header(TOPIC_CONFIGURATION_AUTOMATION)
     
+    s = '%d defined' % generators
+    __print_key_val('Generators', s, topic=TOPIC_CONFIGURATION_AUTOMATION)
+    
     ################################## system compliance
     cprint('')
     __print_topic_header(TOPIC_SYSTEM_COMPLIANCE)
+    
+    strs = []
+    for state in COMPLIANCE_STATES:
+        nb = compliance[state]
+        state_color = COMPLIANCE_STATE_COLORS.get(state, 'grey')
+        color = 'grey' if nb == 0 else state_color
+        _s = ('%d %s' % (nb, state)).ljust(15)
+        _s = sprintf(_s, color=color, end='')
+        strs.append(_s)
+    collector_string = sprintf(' / ', color='grey', end='').join(strs)
+    __print_key_val('Compliance rules', collector_string, topic=TOPIC_SYSTEM_COMPLIANCE)
+    __print_topic_picto(TOPIC_SYSTEM_COMPLIANCE)
+    cprint(' | Note: you can have details about the system compliance with the command: opsbro compliance state', color='grey')
     
     ############### Logs:  Show errors logs if any
     cprint('')
     print_info_title('Technical info')
     
-    cprint(' - Threads: '.ljust(DEFAULT_INFO_COL_SIZE), end='', color='blue')
+    cprint(' - Job threads: '.ljust(DEFAULT_INFO_COL_SIZE), end='', color='blue')
     cprint(nb_threads, color='green')
+    
+    if memory_consumption != 0:
+        mo_memory_consumption = int(memory_consumption / 1024.0 / 1024.0)
+        s = '%dMB' % mo_memory_consumption
+        __print_key_val('Memory usage', s)
+    
+    if cpu_consumption != 0:
+        s = '%.1f%%' % cpu_consumption
+        __print_key_val('CPU Usage', s)
+        cprint('  %s Note: you can have details about the CPU consmumption with the command: opsbro agent internal show-threads' % CHARACTERS.corner_bottom_left, color='grey')
     
     cprint(' - Version: '.ljust(DEFAULT_INFO_COL_SIZE), end='', color='blue')
     cprint(version, color='green')

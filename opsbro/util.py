@@ -3,6 +3,7 @@ import shutil
 import glob
 import socket
 import hashlib
+import time
 import uuid as libuuid
 
 from .log import logger
@@ -74,7 +75,7 @@ def get_server_const_uuid():
     unique_uuid = hosttingdrvmgr.get_unique_uuid()
     if unique_uuid:
         return hashlib.sha1(unique_uuid.lower()).hexdigest()
-
+    
     return ''
 
 
@@ -106,3 +107,43 @@ def byteify(input):
         return input.decode('utf8', 'ignore')
     else:
         return input
+
+
+PAGESIZE = 0
+
+
+def get_memory_consumption():
+    global PAGESIZE
+    # TODO: manage windows
+    if os.name == 'nt':
+        return 0
+    # not linux?
+    if not os.path.exists('/proc/self/statm'):
+        return 0
+    if PAGESIZE == 0:
+        PAGESIZE = os.sysconf('SC_PAGESIZE')
+    return int(open('/proc/self/statm').read().split()[1]) * PAGESIZE
+
+
+daemon_start = time.time()
+
+
+def get_cpu_consumption():
+    global daemon_start
+    if os.name == 'nt':
+        return 0
+    # Some special unix maybe?
+    try:
+        from resource import getrusage, RUSAGE_SELF
+    except ImportError:
+        return 0
+    now = time.time()
+    # Maybe we did get back in time?
+    if now < daemon_start:
+        daemon_start = now
+    diff = now - daemon_start
+    if diff == 0:
+        return 0
+    rusage = getrusage(RUSAGE_SELF)
+    current_cpu_time = rusage.ru_utime + rusage.ru_stime
+    return 100 * current_cpu_time / diff

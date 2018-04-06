@@ -78,6 +78,10 @@ class GeneratorMgr(object):
             # Ok we did run at least once :)
             self.did_run = True
             time.sleep(1)
+    
+    
+    def get_infos(self):
+        return len(self.generators)
 
 
 generatormgr = GeneratorMgr()

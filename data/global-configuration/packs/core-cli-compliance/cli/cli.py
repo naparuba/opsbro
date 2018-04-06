@@ -14,9 +14,7 @@ from opsbro.log import cprint, logger
 from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_local, AnyAgent
 from opsbro.cli_display import print_h1, print_h2
-
-STATE_COLORS = {'COMPLIANT': 'green', 'FIXED': 'cyan', 'ERROR': 'red', 'UNKNOWN': 'grey', 'NOT-ELIGIBLE': 'grey'}
-LOG_COLORS = {'SUCCESS': 'green', 'ERROR': 'red', 'FIX': 'cyan', 'COMPLIANT': 'green'}
+from opsbro.compliancemgr import COMPLIANCE_LOG_COLORS, COMPLIANCE_STATE_COLORS
 
 
 def __print_rule_entry(rule):
@@ -29,8 +27,8 @@ def __print_rule_entry(rule):
     # State:
     state = rule['state']
     old_state = rule['old_state']
-    state_color = STATE_COLORS.get(state, 'cyan')
-    old_state_color = STATE_COLORS.get(old_state, 'cyan')
+    state_color = COMPLIANCE_STATE_COLORS.get(state, 'cyan')
+    old_state_color = COMPLIANCE_STATE_COLORS.get(old_state, 'cyan')
     cprint('%-12s' % old_state, color=old_state_color, end='')
     cprint(' %s ' % CHARACTERS.arrow_left, color='grey', end='')
     cprint('%-12s' % state, color=state_color)
@@ -44,7 +42,7 @@ def __print_rule_entry(rule):
     for info in infos:
         info_state = info['state']
         info_txt = info['text']
-        info_color = LOG_COLORS.get(info_state, 'cyan')
+        info_color = COMPLIANCE_LOG_COLORS.get(info_state, 'cyan')
         cprint('      | %-10s : %s' % (info_state, info_txt), color=info_color)
 
 
@@ -141,7 +139,7 @@ def do_compliance_wait_compliant(compliance_name, timeout=30):
             cprint('\r %s ' % spinners.next(), color='blue', end='')
             cprint('%s' % compliance_name, color='magenta', end='')
             cprint(' is ', end='')
-            cprint('%15s ' % current_state, color=STATE_COLORS.get(current_state, 'cyan'), end='')
+            cprint('%15s ' % current_state, color=COMPLIANCE_STATE_COLORS.get(current_state, 'cyan'), end='')
             cprint(' (%d/%d)' % (i, timeout), end='')
             # As we did not \n, we must flush stdout to print it
             sys.stdout.flush()

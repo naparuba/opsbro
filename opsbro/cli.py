@@ -30,7 +30,8 @@ from .now import NOW
 CONFIG = None
 
 CURRENT_BINARY = ''
-DEFAULT_INFO_COL_SIZE=20
+DEFAULT_INFO_COL_SIZE = 22
+
 
 # We should save the current opsbro binary used, for debug purpose for example
 def save_current_binary(pth):
@@ -203,7 +204,6 @@ def wait_for_agent_started(timeout=30, visual_wait=False, exit_if_stopped=False,
 
 def print_info_title(title):
     print_h1(title)
-
 
 
 def print_2tab(e, capitalize=True, col_size=DEFAULT_INFO_COL_SIZE):

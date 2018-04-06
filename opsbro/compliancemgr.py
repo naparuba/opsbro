@@ -14,6 +14,10 @@ from .topic import topiker, TOPIC_SYSTEM_COMPLIANCE
 # Global logger for this part
 logger = LoggerFactory.create_logger('compliance')
 
+COMPLIANCE_STATE_COLORS = {'COMPLIANT': 'green', 'FIXED': 'cyan', 'ERROR': 'red', 'UNKNOWN': 'grey', 'NOT-ELIGIBLE': 'grey'}
+COMPLIANCE_LOG_COLORS = {'SUCCESS': 'green', 'ERROR': 'red', 'FIX': 'cyan', 'COMPLIANT': 'green'}
+COMPLIANCE_STATES = ['COMPLIANT', 'FIXED', 'ERROR', 'UNKNOWN', 'NOT-ELIGIBLE']
+
 
 # Base class for hosting driver. MUST be used
 class InterfaceComplianceDriver(object):
@@ -133,6 +137,10 @@ class Rule(object):
     
     def set_not_eligible(self):
         self.__set_state('NOT-ELIGIBLE')
+    
+    
+    def get_state(self):
+        return self.__state
     
     
     def get_json_dump(self):
@@ -305,6 +313,16 @@ class ComplianceManager(object):
             # For each changes, we write a history entry
             self.__write_history_entry()
             time.sleep(1)
+    
+    
+    def get_infos(self):
+        counts = {}
+        for state in COMPLIANCE_STATES:
+            counts[state] = 0
+        compliances = self.compliances.values()
+        for c in compliances:
+            counts[c.get_state()] += 1
+        return counts
     
     
     def export_http(self):
