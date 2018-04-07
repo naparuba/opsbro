@@ -32,6 +32,7 @@ from opsbro.topic import TOPICS, TOPICS_LABELS, TOPICS_LABEL_BANNER, MAX_TOPICS_
     TOPIC_CONFIGURATION_AUTOMATION
 from opsbro.monitoring import CHECK_STATES, STATE_ID_COLORS, STATE_COLORS
 from opsbro.compliancemgr import COMPLIANCE_STATES, COMPLIANCE_STATE_COLORS
+from opsbro.generator import GENERATOR_STATES, GENERATOR_STATE_COLORS
 
 NO_ZONE_DEFAULT = '(no zone)'
 
@@ -254,8 +255,18 @@ def do_info(show_logs):
     cprint('')
     __print_topic_header(TOPIC_CONFIGURATION_AUTOMATION)
     
-    s = '%d defined' % generators
-    __print_key_val('Generators', s, topic=TOPIC_CONFIGURATION_AUTOMATION)
+    strs = []
+    for state in GENERATOR_STATES:
+        nb = generators[state]
+        state_color = GENERATOR_STATE_COLORS.get(state, 'grey')
+        color = 'grey' if nb == 0 else state_color
+        _s = ('%d %s' % (nb, state)).ljust(15)
+        _s = sprintf(_s, color=color, end='')
+        strs.append(_s)
+    generator_string = sprintf(' / ', color='grey', end='').join(strs)
+    __print_key_val('Generators', generator_string, topic=TOPIC_CONFIGURATION_AUTOMATION)
+    __print_topic_picto(TOPIC_CONFIGURATION_AUTOMATION)
+    cprint(' | Note: you can have details about the system compliance with the command: opsbro generators state', color='grey')
     
     ################################## system compliance
     cprint('')

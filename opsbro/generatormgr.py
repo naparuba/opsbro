@@ -3,8 +3,7 @@ import os
 
 from .log import LoggerFactory
 from .stop import stopper
-from .gossip import gossiper
-from .generator import Generator
+from .generator import Generator, GENERATOR_STATES
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('generator')
@@ -53,7 +52,7 @@ class GeneratorMgr(object):
             return
         
         # Add it into the generators list
-        self.generators[generator['id']] = generator
+        self.generators[generator['id']] = Generator(generator)
     
     
     # Main thread for launching generators
@@ -61,14 +60,11 @@ class GeneratorMgr(object):
         logger.log('GENERATOR thread launched')
         while not stopper.interrupted:
             logger.debug('Looking for %d generators' % len(self.generators))
-            for (gname, gen) in self.generators.iteritems():
-                logger.debug('LOOK AT GENERATOR', gen, 'to be apply on', gen['if_group'], 'with our groups', gossiper.groups)
-                if_group = gen['if_group']
+            for (gname, g) in self.generators.iteritems():
+                logger.debug('LOOK AT GENERATOR', g, 'to be apply on', g.if_group)
                 # Maybe this generator is not for us...
-                if not gossiper.is_in_group(if_group):
+                if not g.must_be_launched():
                     continue
-                logger.debug('Generator %s will runs' % gname)
-                g = Generator(gen)
                 logger.debug('Generator %s will generate' % str(g.__dict__))
                 g.generate()
                 logger.debug('Generator %s is generated' % str(g.__dict__))
@@ -81,7 +77,12 @@ class GeneratorMgr(object):
     
     
     def get_infos(self):
-        return len(self.generators)
+        r = {}
+        for state in GENERATOR_STATES:
+            r[state] = 0
+        for g in self.generators.values():
+            r[g.state] += 1
+        return r
 
 
 generatormgr = GeneratorMgr()

@@ -14,6 +14,9 @@ from .library import libstore
 # Global logger for this part
 logger = LoggerFactory.create_logger('generator')
 
+GENERATOR_STATES = ['COMPLIANT', 'ERROR', 'UNKNOWN', 'NOT-ELIGIBLE']
+GENERATOR_STATE_COLORS = {'COMPLIANT': 'green', 'ERROR': 'red', 'UNKNOWN': 'grey', 'NOT-ELIGIBLE': 'grey'}
+
 
 # Get all nodes that are defining a service sname and where the service is OK
 # TODO: give a direct link to object, must copy it?
@@ -44,23 +47,55 @@ class Generator(object):
         self.buf = None
         self.template = None
         self.output = None
-        self.jinja2 = libstore.get_jinja2()
+        self.jinja2 = None
+        self.if_group = g['if_group']
+        self.cur_value = ''
+        
+        self.state = 'UNKNOWN'
+        self.log = ''
+    
+    
+    def set_state(self, state):
+        self.state = state
+    
+    
+    def set_error(self, log):
+        self.set_state('ERROR')
+        self.log = log
+    
+    
+    def set_compliant(self, log):
+        self.log = log
+        logger.info(log)
+        self.set_state('COMPLIANT')
+    
+    
+    def must_be_launched(self):
+        self.log = ''
+        in_group = gossiper.is_in_group(self.if_group)
+        if not in_group:
+            self.set_state('NOT-ELIGIBLE')
+        return in_group
     
     
     # Open the template file and generate the output
     def generate(self):
+        if self.jinja2 is None:
+            self.jinja2 = libstore.get_jinja2()
+        
         # If not jinja2, bailing out
         if self.jinja2 is None:
-            logger.debug('Generator: Error, no jinja2 librairy defined, please install it')
+            self.set_error('Generator: Error, no jinja2 librairy defined, please install it')
             return
         try:
             f = open(self.g['template'], 'r')
             self.buf = f.read().decode('utf8', 'ignore')
             f.close()
         except IOError, exp:
-            logger.error('Cannot open template file %s : %s' % (self.g['template'], exp))
+            self.set_error('Cannot open template file %s : %s' % (self.g['template'], exp))
             self.buf = None
             self.template = None
+            return
         
         # copy objects because they can move
         node = copy.copy(gossiper.nodes[gossiper.uuid])
@@ -85,11 +120,11 @@ class Generator(object):
         try:
             self.output = self.template.render(nodes=nodes, node=node, ok_nodes=ok_nodes)
         except Exception:
-            logger.error('Template rendering %s did raise an error with jinja2 : %s' % (
-                self.g['template'], traceback.format_exc()))
+            self.set_error('Template rendering %s did raise an error with jinja2 : %s' % (self.g['template'], traceback.format_exc()))
             self.output = None
             self.template = None
             self.buf = None
+            return
         
         # if we have a partial generator prepare the output we must check for
         if self.output is not None and self.g['partial_start'] and self.g['partial_end']:
@@ -112,7 +147,7 @@ class Generator(object):
                 self.cur_value = f.read()
                 f.close()
             except IOError, exp:
-                logger.error('Cannot open path file %s : %s' % (self.g['path'], exp))
+                self.set_error('Cannot open path file %s : %s' % (self.g['path'], exp))
                 self.output = None
                 self.template = ''
                 self.buf = ''
@@ -138,11 +173,11 @@ class Generator(object):
                 f = codecs.open(self.g['path'], "w", "utf-8")
                 f.write(self.output)
                 f.close()
-                logger.info('Generator %s did generate a new file at %s' % (self.g['name'], self.g['path']))
                 logger.info('Regenerate result: %s' % self.output)
+                self.set_compliant('Generator %s did generate a new file at %s' % (self.g['name'], self.g['path']))
                 return True
             except IOError, exp:
-                logger.error('Cannot write path file %s : %s' % (self.g['path'], exp))
+                self.set_error('Cannot write path file %s : %s' % (self.g['path'], exp))
                 self.output = None
                 self.template = ''
                 self.buf = ''
@@ -180,12 +215,12 @@ class Generator(object):
                         if not orig_content_finish_with_new_line:
                             part_before.append('\n')
                     else:
-                        logger.error('The generator %s do not have a valid if_partial_missing property' % (self.g['name']))
+                        self.set_error('The generator %s do not have a valid if_partial_missing property' % (self.g['name']))
                         return False
                 else:  # partial found, look at part before/after
                     # Maybe there is a bad order in the index?
                     if idx_start > idx_end:
-                        logger.error('The partial_start "%s" and partial_end "%s" in the file "%s" for the generator %s are not in the good order' % (self.g['partial_start'], self.g['partial_end'], self.g['path'], self.g['name']))
+                        self.set_error('The partial_start "%s" and partial_end "%s" in the file "%s" for the generator %s are not in the good order' % (self.g['partial_start'], self.g['partial_end'], self.g['path'], self.g['name']))
                         self.output = None
                         self.template = ''
                         self.buf = ''
@@ -211,11 +246,11 @@ class Generator(object):
                 prev_permissions = prev_stats[stat.ST_MODE]
                 logger.debug('PREV UID GID PERMISSIONS: %s %s %s' % (prev_uid, prev_gid, prev_permissions))
                 os.chmod(tmp_path, prev_permissions)
-                logger.info('Generator %s did generate a new file at %s' % (self.g['name'], self.g['path']))
                 shutil.move(tmp_path, self.g['path'])
+                self.set_compliant('Generator %s did generate a new file at %s' % (self.g['name'], self.g['path']))
                 return True
             except IOError, exp:
-                logger.error('Cannot write path file %s : %s' % (self.g['path'], exp))
+                self.set_error('Cannot write path file %s : %s' % (self.g['path'], exp))
                 self.output = None
                 self.template = ''
                 self.buf = ''
@@ -232,11 +267,11 @@ class Generator(object):
         try:
             p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, preexec_fn=os.setsid)
         except Exception, exp:
-            logger.error('Generator %s command launch (%s) fail : %s' % (self.g['name'], cmd, exp))
+            self.set_error('Generator %s command launch (%s) fail : %s' % (self.g['name'], cmd, exp))
             return
         output, err = p.communicate()
         rc = p.returncode
         if rc != 0:
-            logger.error('Generator %s command launch (%s) error (rc=%s): %s' % (self.g['name'], cmd, rc, '\n'.join([output, err])))
+            self.set_error('Generator %s command launch (%s) error (rc=%s): %s' % (self.g['name'], cmd, rc, '\n'.join([output, err])))
             return
         logger.info('Generator %s command launch (%s) SUCCESS (rc=%s): %s' % (self.g['name'], cmd, rc, '\n'.join([output, err])))
