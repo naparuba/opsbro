@@ -17,6 +17,9 @@ env:
 - TEST_SUITE=OTHER
 ##### Then features
 - TEST_SUITE=FEATURE
+- TEST_SUITE=MONITORING
+- TEST_SUITE=COMPLIANCE
+- TEST_SUITE=MODULE
 - TEST_SUITE=PACK
 ##### Then complexe scenarios
 # Some tests are with 2 docker that must run together. I hope it will be maintainable
