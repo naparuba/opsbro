@@ -178,6 +178,14 @@ if [ $CASE == "NODE-HAPROXY" ]; then
 
     ps axjf
 
+    opsbro generators history
+    opsbro generators state
+    opsbro generators wait-compliant haproxy
+    if [ $? != 0 ];then
+       echo "ERROR: cannot have the haproxy generator as compliant"
+       exit 2
+    fi
+
     echo "HAPROXY: look if local proxying is valid  `date`"
     OUT=$(curl -s http://localhost)
     if [[ "$OUT" != "NODE-HTTP-1" ]] && [[ "$OUT" != "NODE-HTTP-2" ]]; then

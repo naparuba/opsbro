@@ -255,6 +255,7 @@ class ConfigurationManager(object):
             compliancemgr.import_compliance(compliance, fp, hname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
     
     
+    
     # Compliance object
     def load_tutorial_object(self, o, fp, pack_name, pack_level):
         if 'tutorial' in o:
@@ -272,7 +273,7 @@ class ConfigurationManager(object):
             
             mod_time = int(os.path.getmtime(fp))
             fname = fp
-            gname = os.path.splitext(fname)[0]
+            gname = os.path.splitext(os.path.basename(fname))[0]
             generatormgr = self.get_generatormgr()
             generatormgr.import_generator(generator, fname, gname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
     

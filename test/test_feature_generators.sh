@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 
 
+opsbro generators wait-compliant sshkeys
+if [ $? != 0 ];then
+   echo "ERROR: cannot have the sshkey generator as compliant"
+   exit 2
+fi
+
+
 echo "Starting to test Generator"
 
 echo "**********************************************"

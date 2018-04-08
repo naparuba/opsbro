@@ -364,6 +364,9 @@ class Cluster(object):
         # Export checks/services http interface
         monitoringmgr.export_http()
         
+        # Export generators http interface
+        generatormgr.export_http()
+        
         # And the configuration
         configmgr.export_http()
         

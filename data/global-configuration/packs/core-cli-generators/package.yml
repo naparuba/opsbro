@@ -1,0 +1,19 @@
+name: core-cli-generators
+topics:
+    - configuration automation
+types:
+    - cli
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description:  CLI for view the node configuration automation
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - cli
+    - configuration automation
+
+dependencies:
+    core: ">=1.0"
+license: ""

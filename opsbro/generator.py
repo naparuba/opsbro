@@ -44,6 +44,10 @@ def ok_nodes(group=''):
 class Generator(object):
     def __init__(self, g):
         self.g = g
+        self.name = g['name']
+        self.pack_name = g['pack_name']
+        self.pack_level = g['pack_level']
+        
         self.buf = None
         self.template = None
         self.output = None
@@ -51,30 +55,57 @@ class Generator(object):
         self.if_group = g['if_group']
         self.cur_value = ''
         
-        self.state = 'UNKNOWN'
         self.log = ''
+        self.__state = 'UNKNOWN'
+        self.__old_state = 'UNKNOWN'
+        self.__did_change = False
     
     
-    def set_state(self, state):
-        self.state = state
+    def __set_state(self, state):
+        if self.__state == state:
+            return
+        
+        self.__did_change = True
+        self.__old_state = self.__state
+        self.__state = state
+        logger.debug('Compliance rule %s switch from %s to %s' % (self.name, self.__old_state, self.__state))
+    
+    
+    def get_state(self):
+        return self.__state
     
     
     def set_error(self, log):
-        self.set_state('ERROR')
+        self.__set_state('ERROR')
         self.log = log
     
     
     def set_compliant(self, log):
         self.log = log
         logger.info(log)
-        self.set_state('COMPLIANT')
+        self.__set_state('COMPLIANT')
+    
+    
+    def set_not_eligible(self):
+        self.log = ''
+        self.__set_state('NOT-ELIGIBLE')
+        
+    
+    def get_json_dump(self):
+        return {'name': self.name, 'state': self.__state, 'old_state': self.__old_state, 'log': self.log, 'pack_level': self.pack_level, 'pack_name': self.pack_name}
+    
+    
+    def get_history_entry(self):
+        if not self.__did_change:
+            return None
+        return self.get_json_dump()
     
     
     def must_be_launched(self):
-        self.log = ''
+        self.__did_change = False
         in_group = gossiper.is_in_group(self.if_group)
         if not in_group:
-            self.set_state('NOT-ELIGIBLE')
+            self.set_not_eligible()
         return in_group
     
     
