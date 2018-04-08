@@ -430,7 +430,6 @@ system_distro, system_distroversion, _ = systepacketmgr.get_distro()
 # great....
 additionnal_pypi_repos = []
 if allow_black_magic:
-    # if system_distro in ['debian', 'centos'] and system_distroversion.startswith('6.'):
     additionnal_pypi_repos.append('https://pypi.python.org/pypi/leveldb/')
 
 if allow_black_magic:
@@ -500,6 +499,12 @@ install_from_pip = set(install_from_pip)
 # if we are uploading to pypi, we don't want to have dependencies, I don't want pip to do black magic. I already do black magic.
 if not allow_black_magic:
     install_from_pip = set()
+
+
+# HACK: debian 6 do not allow any more pypi install, sorry :'(
+if system_distro == 'debian'and system_distroversion.startswith('6.'):
+    install_from_pip = set()
+    
 
 # Try to import setup tools, and if not, switch to
 try:
