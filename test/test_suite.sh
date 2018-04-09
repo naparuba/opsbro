@@ -1,5 +1,14 @@
 #!/usr/bin/env bash
 
+echo "##################### Launching TEST $TEST_SUITE"
+
+top -b -n1
+uptime
+cat /proc/cpuinfo
+hostname
+df -h
+
+
 
 # Travis: only need to run the installation once, it it not link to a specific python version. They don't need to use CPU for nothing ;)
 if [ "$TEST_SUITE" == "PYTHON" ]; then

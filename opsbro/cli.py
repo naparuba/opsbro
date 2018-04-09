@@ -495,7 +495,7 @@ class CLICommander(object):
         try:
             f(*cmd_args, **cmd_opts.__dict__)
         except TypeError, exp:
-            logger.error('Bad call: missing or too much arguments: %s' % exp)
+            logger.error('Bad call: missing or too much arguments: %s (%s)' % (exp, str(traceback.print_exc())))
             sys.exit(2)
         except Exception, exp:
             logger.error('The call did fail: %s' % (str(traceback.print_exc())))

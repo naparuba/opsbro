@@ -144,8 +144,8 @@ def do_packs_show():
     from opsbro.generatormgr import generatormgr
     generators = generatormgr.generators
     for gname, generator in generators.iteritems():
-        pack_name = generator['pack_name']
-        pack_level = generator['pack_level']
+        pack_name = generator.pack_name
+        pack_level = generator.pack_level
         packs[pack_level][pack_name]['generators'][gname] = generator
     
     for level in ('global', 'zone', 'local'):
@@ -237,7 +237,7 @@ def do_packs_show():
                     __print_line_header(main_topic_color)
                     cprint('  - ', end='')
                     cprint('generators > %-15s' % gname.split(os.sep)[-1], color='cyan', end='')
-                    cprint(' if_group=%s' % (generator['if_group']))
+                    cprint(' generate_if=%s' % generator.generate_if)
             
             # Display what the pack do not manage (for info)
             if no_such_objects:

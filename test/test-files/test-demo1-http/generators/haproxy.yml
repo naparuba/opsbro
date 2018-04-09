@@ -1,5 +1,5 @@
 generator:
-    if_group: haproxy
+    generate_if:   'is_in_static_group("haproxy")'
     path:     /etc/haproxy/haproxy.cfg
     template: haproxy.cfg
 

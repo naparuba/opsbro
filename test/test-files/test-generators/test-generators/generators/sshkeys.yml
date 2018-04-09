@@ -1,5 +1,5 @@
 generator:
-    if_group:      ssh-key-sample
+    generate_if:   'is_in_group("ssh-key-sample")'
     path:          /tmp/authorized_keys.txt
     template:      ssh_keys.txt
     partial_start: '###### SSH Key deploy start'

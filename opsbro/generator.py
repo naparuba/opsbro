@@ -10,6 +10,7 @@ from collections import deque
 from .log import LoggerFactory
 from .gossip import gossiper
 from .library import libstore
+from .evaluater import evaluater
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('generator')
@@ -52,7 +53,7 @@ class Generator(object):
         self.template = None
         self.output = None
         self.jinja2 = None
-        self.if_group = g['if_group']
+        self.generate_if = g['generate_if']
         self.cur_value = ''
         
         self.log = ''
@@ -103,10 +104,16 @@ class Generator(object):
     
     def must_be_launched(self):
         self.__did_change = False
-        in_group = gossiper.is_in_group(self.if_group)
-        if not in_group:
+        try:
+            b = evaluater.eval_expr(self.generate_if)
+        except Exception, exp:
+            err = ' (%s) if rule (%s) evaluation did fail: %s' % (self.name, self.generate_if, exp)
+            self.set_error(err)
+            logger.error(err)
+            return False
+        if not b:
             self.set_not_eligible()
-        return in_group
+        return b
     
     
     # Open the template file and generate the output

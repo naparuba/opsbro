@@ -24,6 +24,7 @@ compliance:
               if: "{{variables.is_debian}} and {{collector.system.os.linux.major_version}} == 9"
               packages:
                  - haproxy
+
             # same package but it's for the test
             - name: debian9
               if: "{{variables.is_debian}}"
