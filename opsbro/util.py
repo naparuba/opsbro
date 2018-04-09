@@ -147,3 +147,63 @@ def get_cpu_consumption():
     rusage = getrusage(RUSAGE_SELF)
     current_cpu_time = rusage.ru_utime + rusage.ru_stime
     return 100 * current_cpu_time / diff
+
+
+############# String diffs
+def unified_diff(from_lines, to_lines, pth=''):
+    # Lazyload this, they are huge libs
+    import re
+    import difflib
+    from .characters import CHARACTERS
+    
+    if isinstance(from_lines, basestring):
+        from_lines = from_lines.splitlines()
+    
+    if isinstance(to_lines, basestring):
+        to_lines = to_lines.splitlines()
+    
+    pat_diff = re.compile(r'@@ (.[0-9]+\,[0-9]+) (.[0-9]+,[0-9]+) @@')
+    
+    diff_lines = []
+    
+    lines = list(difflib.unified_diff(from_lines, to_lines, n=1))
+    
+    from_lnum = 0
+    to_lnum = 0
+    
+    first_diff = True
+    
+    for line in lines:
+        if line.startswith(u'--') or line.startswith(u'++'):
+            continue
+        
+        m = pat_diff.match(line)
+        if m:
+            left = m.group(1)
+            right = m.group(2)
+            lstart = left.split(',')[0][1:]
+            rstart = right.split(',')[0][1:]
+            # We do not want to add a \n on the very first block
+            prefix = '' if first_diff else '\n'
+            first_diff = False
+            diff_lines.append(u"%s%s%s Change %s (line, change size): %s %s %s" % (prefix, CHARACTERS.corner_top_left, CHARACTERS.hbar * 10, pth, left, CHARACTERS.arrow_left, right))
+            to_lnum = int(lstart)
+            from_lnum = int(rstart)
+            continue
+        
+        code = line[0]
+        
+        lnum = from_lnum
+        if code == '-':
+            lnum = to_lnum
+        diff_lines.append(u"%s%.4d: %s" % (code, lnum, line[1:]))
+        
+        if code == '-':
+            to_lnum += 1
+        elif code == '+':
+            from_lnum += 1
+        else:
+            to_lnum += 1
+            from_lnum += 1
+    
+    return diff_lines

@@ -11,6 +11,7 @@ from .log import LoggerFactory
 from .gossip import gossiper
 from .library import libstore
 from .evaluater import evaluater
+from .util import unified_diff
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('generator')
@@ -55,6 +56,7 @@ class Generator(object):
         self.jinja2 = None
         self.generate_if = g['generate_if']
         self.cur_value = ''
+        self.current_diff = []
         
         self.log = ''
         self.__state = 'UNKNOWN'
@@ -90,10 +92,10 @@ class Generator(object):
     def set_not_eligible(self):
         self.log = ''
         self.__set_state('NOT-ELIGIBLE')
-        
+    
     
     def get_json_dump(self):
-        return {'name': self.name, 'state': self.__state, 'old_state': self.__old_state, 'log': self.log, 'pack_level': self.pack_level, 'pack_name': self.pack_name}
+        return {'name': self.name, 'state': self.__state, 'old_state': self.__old_state, 'log': self.log, 'pack_level': self.pack_level, 'pack_name': self.pack_name, 'diff': self.current_diff, 'path': self.g['path']}
     
     
     def get_history_entry(self):
@@ -178,6 +180,7 @@ class Generator(object):
             return False
         
         self.cur_value = ''
+        
         # first try to load the current file if exist and compare to the generated file
         if os.path.exists(self.g['path']):
             try:
@@ -189,6 +192,7 @@ class Generator(object):
                 self.output = None
                 self.template = ''
                 self.buf = ''
+                self.current_diff = []
                 return False
         
         need_regenerate_full = False
@@ -208,6 +212,8 @@ class Generator(object):
         if need_regenerate_full:
             logger.debug('Generator %s generate a new value, writing it to %s' % (self.g['name'], self.g['path']))
             try:
+                self.current_diff = unified_diff(self.cur_value, self.output, self.g['path'])
+                logger.info(u'FULL diff: %s' % u'\n'.join(self.current_diff))
                 f = codecs.open(self.g['path'], "w", "utf-8")
                 f.write(self.output)
                 f.close()
@@ -219,6 +225,7 @@ class Generator(object):
                 self.output = None
                 self.template = ''
                 self.buf = ''
+                self.current_diff = []
                 return False
         
         # If not exists or the value did change, regenerate it :)
@@ -262,13 +269,19 @@ class Generator(object):
                         self.output = None
                         self.template = ''
                         self.buf = ''
+                        self.current_diff = []
                         return False
                     part_before = lines[:idx_start]
                     part_after = lines[idx_end + 1:]
                 last_char = '' if not orig_content_finish_with_new_line else '\n'
                 new_content = '%s\n%s%s%s' % ('\n'.join(part_before), self.output, '\n'.join(part_after), last_char)
+                
+                self.current_diff = unified_diff(self.cur_value, new_content, self.g['path'])
+                
                 logger.debug('Temporary file for partial replacement: %s and %s %s=>%s' % (part_before, part_after, idx_start, idx_end))
                 logger.debug('New content: %s' % new_content)
+                logger.info(u'DIFF content: %s' % u'\n'.join(self.current_diff))
+                
                 tmp_path = '%s.temporary-generator' % self.g['path']
                 f2 = codecs.open(tmp_path, 'w', 'utf-8')
                 f2.write(new_content)
@@ -292,6 +305,7 @@ class Generator(object):
                 self.output = None
                 self.template = ''
                 self.buf = ''
+                self.current_diff = []
                 return False
     
     

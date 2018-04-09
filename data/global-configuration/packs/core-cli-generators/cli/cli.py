@@ -17,10 +17,11 @@ from opsbro.cli_display import print_h1, print_h2
 from opsbro.generator import GENERATOR_STATE_COLORS, GENERATOR_STATES
 
 
-def __print_generator_entry(generator):
+def __print_generator_entry(generator, show_diff):
     display_name = generator['name']
     cprint(' > generator > ', color='grey', end='')
-    cprint('[%s] ' % (display_name.ljust(30)), color='magenta', end='')
+    cprint('[%s] ' % (display_name.ljust(20)), color='magenta', end='')
+    cprint('[%s] ' % (generator['path'].ljust(15)), color='magenta', end='')
     
     # State:
     state = generator['state']
@@ -34,9 +35,13 @@ def __print_generator_entry(generator):
     log = generator['log']
     if log:
         cprint('      | %s' % log, color=state_color)
+    
+    diff = generator['diff']
+    if show_diff:
+        cprint('\n'.join(diff), color='grey')
 
 
-def do_generators_state():
+def do_generators_state(show_diff=False):
     # We need an agent for this
     with AnyAgent():
         uri = '/generators/state'
@@ -68,7 +73,11 @@ def do_generators_state():
             for cname in cnames:
                 cprint('  - %s' % pname, color='blue', end='')
                 generator = pack_entries[cname]
-                __print_generator_entry(generator)
+                __print_generator_entry(generator, show_diff=show_diff)
+        
+        if not show_diff:
+            cprint('')
+            cprint('  | Note: you can see the modification diff with the --show-diff parameter', color='grey')
 
 
 def do_generators_history():
@@ -94,7 +103,7 @@ def do_generators_history():
             print_h2('  Date: %s ' % time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime(epoch)))
             for entry in entries:
                 cprint('  - %s' % entry['pack_name'], color='blue', end='')
-                __print_generator_entry(entry)
+                __print_generator_entry(entry, show_diff=True)
             print "\n"
 
 
@@ -147,7 +156,9 @@ exports = {
     do_generators_state         : {
         'keywords'   : ['generators', 'state'],
         'description': 'Print the current state of the node generators',
-        'args'       : [],
+        'args'       : [
+            {'name': '--show-diff', 'type': 'bool', 'default': False, 'description': 'If enabled, files modifications iwll be displayed'},
+        ],
     },
     
     do_generators_history       : {

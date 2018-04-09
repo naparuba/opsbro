@@ -4,6 +4,7 @@ import time
 import datetime
 import logging
 import json
+import codecs
 
 from .misc.colorama import init as init_colorama
 
@@ -70,7 +71,7 @@ else:
 def get_unicode_string(s):
     if isinstance(s, str):
         return unicode(s, 'utf8', errors='ignore')
-    return str(s)
+    return unicode(s)
 
 
 loggers = {}
@@ -118,7 +119,7 @@ class Logger(object):
         # We can start with a void data dir
         if not os.path.exists(self.data_dir):
             os.mkdir(self.data_dir)
-        self.log_file = open(os.path.join(self.data_dir, 'daemon.log'), 'a')
+        self.log_file = codecs.open(os.path.join(self.data_dir, 'daemon.log'), 'a', encoding="utf-8")
     
     
     # If a level is set to force, a not foce setting is not taken
@@ -160,7 +161,7 @@ class Logger(object):
         s_part = '' if not part else '[%s]' % part.upper()
         
         d_display = self.__get_time_display()
-        s = '[%s][%s][%s] %s: %s' % (d_display, kwargs.get('level', 'UNSET  '), self.name, s_part, ' '.join([get_unicode_string(s) for s in args]))
+        s = '[%s][%s][%s] %s: %s' % (d_display, kwargs.get('level', 'UNSET  '), self.name, s_part, u' '.join([get_unicode_string(s) for s in args]))
         
         # Sometime we want a log output, but not in the stdout
         if kwargs.get('do_print', True):
@@ -187,7 +188,7 @@ class Logger(object):
         else:
             f = self.logs.get(part, None)
             if f is None:
-                f = open(os.path.join(self.data_dir, '%s.log' % part), 'a')
+                f = codecs.open(os.path.join(self.data_dir, '%s.log' % part), 'a', encoding="utf-8")
                 self.logs[part] = f
             f.write(s)
             f.flush()
