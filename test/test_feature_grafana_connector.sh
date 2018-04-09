@@ -18,7 +18,7 @@ opsbro  packs parameters set local.grafana.api_key               'eyJrIjoibmhIR0
 
 # Create sqlite as the file is not created at setup
 /etc/init.d/grafana-server start
-sleep 1
+sleep 5
 /etc/init.d/grafana-server stop
 
 # We need an API key, insert it
