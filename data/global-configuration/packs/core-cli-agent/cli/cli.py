@@ -83,6 +83,14 @@ def __print_key_val(key, value, color='green', topic=None):
     cprint(value, color=color)
 
 
+def __print_note(s):
+    cprint('  %s Note: %s' % (CHARACTERS.corner_bottom_left, s), color='grey')
+
+
+def __print_more(s):
+    cprint('  %s More %s          %s' % (CHARACTERS.corner_bottom_left, CHARACTERS.arrow_left, s), color='grey')
+
+
 def do_info(show_logs):
     try:
         d = get_opsbro_json('/agent/info')
@@ -154,7 +162,7 @@ def do_info(show_logs):
     __print_key_val('Modules', module_string, topic=TOPIC_GENERIC)
     
     __print_topic_picto(TOPIC_GENERIC)
-    cprint('  | Note: you can look at modules state with the command  opsbro agent modules state', color='grey')
+    __print_more('opsbro agent modules state')
     
     ################### Service Discovery
     cprint('')
@@ -174,11 +182,11 @@ def do_info(show_logs):
     
     __print_key_val('HTTP threads', 'LAN:%s                        Private socket:%s' % (ext_threads, int_threads), topic=TOPIC_SERVICE_DISCOVERY)
     __print_topic_picto(TOPIC_SERVICE_DISCOVERY)
-    cprint('  |               Listen on the TCP port %s     Listen on the unix socket %s' % (port, socket_path), color='grey')
+    __print_note('          Listen on the TCP port %s     Listen on the unix socket %s' % (port, socket_path))
     
     __print_key_val('Zone', zone, color=zone_color, topic=TOPIC_SERVICE_DISCOVERY)
     __print_topic_picto(TOPIC_SERVICE_DISCOVERY)
-    cprint(' | Note: you have details about your zone members with the command: opsbro gossip members', color='grey')
+    __print_more('opsbro gossip members')
     
     ################################## Automatic Detection
     cprint('')
@@ -186,7 +194,7 @@ def do_info(show_logs):
     __print_key_val('Groups', groups, topic=TOPIC_AUTOMATIC_DECTECTION)
     
     __print_topic_picto(TOPIC_AUTOMATIC_DECTECTION)
-    cprint(' | Note: you have details about the automatic detection with the command: opsbro detectors state', color='grey')
+    __print_more('opsbro detectors state')
     
     # Show hosting drivers, and why we did chose this one
     main_driver_founded = False
@@ -206,7 +214,7 @@ def do_info(show_logs):
     _hosting_drivers_state_string = sprintf(' %s ' % CHARACTERS.arrow_left, color='grey').join(strs)
     __print_key_val('Hosting drivers', _hosting_drivers_state_string, topic=TOPIC_AUTOMATIC_DECTECTION)
     __print_topic_picto(TOPIC_AUTOMATIC_DECTECTION)
-    cprint('  | Note: first founded valid driver is used as main hosting driver (give uuid, public/private ip, %s)' % CHARACTERS.three_dots, color='grey')
+    __print_note('first founded valid driver is used as main hosting driver (give uuid, public/private ip, %s)' % CHARACTERS.three_dots)
     
     ################################## Monitoring
     cprint('')
@@ -222,7 +230,7 @@ def do_info(show_logs):
     monitoring_string = sprintf(' / ', color='grey', end='').join(monitoring_strings)
     __print_key_val('Check states', monitoring_string, topic=TOPIC_MONITORING)
     __print_topic_picto(TOPIC_MONITORING)
-    cprint('  | Note: you can have more details about monitoring with the command: opsbro monitoring state', color='grey')
+    __print_more('opsbro detectors state')
     
     ################################## Metrology
     # Now collectors part
@@ -249,7 +257,7 @@ def do_info(show_logs):
     collector_string = sprintf(' / ', color='grey', end='').join(strs)
     __print_key_val('Collectors', collector_string, topic=TOPIC_METROLOGY)
     __print_topic_picto(TOPIC_METROLOGY)
-    cprint(' | Note: you can have details about the collectors with the command: opsbro collectors state', color='grey')
+    __print_more('opsbro collectors state')
     
     ################################## configuration automation
     cprint('')
@@ -266,7 +274,7 @@ def do_info(show_logs):
     generator_string = sprintf(' / ', color='grey', end='').join(strs)
     __print_key_val('Generators', generator_string, topic=TOPIC_CONFIGURATION_AUTOMATION)
     __print_topic_picto(TOPIC_CONFIGURATION_AUTOMATION)
-    cprint(' | Note: you can have details about the system compliance with the command: opsbro generators state', color='grey')
+    __print_more('opsbro generators state')
     
     ################################## system compliance
     cprint('')
@@ -283,7 +291,7 @@ def do_info(show_logs):
     collector_string = sprintf(' / ', color='grey', end='').join(strs)
     __print_key_val('Compliance rules', collector_string, topic=TOPIC_SYSTEM_COMPLIANCE)
     __print_topic_picto(TOPIC_SYSTEM_COMPLIANCE)
-    cprint(' | Note: you can have details about the system compliance with the command: opsbro compliance state', color='grey')
+    __print_more('opsbro compliance state')
     
     ############### Logs:  Show errors logs if any
     cprint('')
@@ -300,7 +308,7 @@ def do_info(show_logs):
     if cpu_consumption != 0:
         s = '%.1f%%' % cpu_consumption
         __print_key_val('CPU Usage', s)
-        cprint('  %s Note: you can have details about the CPU consmumption with the command: opsbro agent internal show-threads' % CHARACTERS.corner_bottom_left, color='grey')
+        __print_more('opsbro agent internal show-threads')
     
     cprint(' - Version: '.ljust(DEFAULT_INFO_COL_SIZE), end='', color='blue')
     cprint(version, color='green')
@@ -317,7 +325,7 @@ def do_info(show_logs):
     
     # If there are errors or warnings, help the user to know it can print them
     if not show_logs and (len(errors) > 0 or len(warnings) > 0):
-        cprint('   | Note: you can show error & warning logs with the --show-logs options', color='grey')
+        __print_note('you can show error & warning logs with the --show-logs options')
     
     if show_logs:
         if len(errors) > 0:

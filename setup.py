@@ -500,11 +500,9 @@ install_from_pip = set(install_from_pip)
 if not allow_black_magic:
     install_from_pip = set()
 
-
 # HACK: debian 6 do not allow any more pypi install, sorry :'(
-if system_distro == 'debian'and system_distroversion.startswith('6.'):
+if system_distro == 'debian' and system_distroversion.startswith('6.'):
     install_from_pip = set()
-    
 
 # Try to import setup tools, and if not, switch to
 try:
@@ -673,3 +671,7 @@ if allow_black_magic:
     cprint(what, color='magenta', end='')
     cprint(' : ', end='')
     cprint(' %s' % CHARACTERS.check, color='green')
+    
+    cprint('  %s Notes: ' % CHARACTERS.corner_bottom_left, color='grey')
+    cprint('     - you can now start your daemon with:  service opsbro start', color='grey')
+    cprint('     - you can look at all available with:  opsbro -h', color='grey')
