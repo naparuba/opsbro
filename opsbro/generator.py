@@ -20,9 +20,13 @@ GENERATOR_STATES = ['COMPLIANT', 'ERROR', 'UNKNOWN', 'NOT-ELIGIBLE']
 GENERATOR_STATE_COLORS = {'COMPLIANT': 'green', 'ERROR': 'red', 'UNKNOWN': 'grey', 'NOT-ELIGIBLE': 'grey'}
 
 
+class NoElementsExceptions(Exception):
+    pass
+
+
 # Get all nodes that are defining a service sname and where the service is OK
 # TODO: give a direct link to object, must copy it?
-def ok_nodes(group=''):
+def ok_nodes(group='', if_none=''):
     res = deque()
     if group == '':
         with gossiper.nodes_lock:
@@ -38,6 +42,8 @@ def ok_nodes(group=''):
             n = gossiper.get(node_uuid)
             if n is not None:
                 res.append(n)
+    if if_none == 'raise' and len(res) == 0:
+        raise NoElementsExceptions()
     # Be sure to always give nodes in the same order, if not, files will be generated too ofthen
     res = sorted(res, key=lambda node: node['uuid'])
     return res
@@ -152,13 +158,21 @@ class Generator(object):
         try:
             self.template = env.from_string(self.buf)
         except Exception, exp:
-            logger.error('Template file %s did raise an error with jinja2 : %s' % (self.g['template'], exp))
-            self.buf = None
+            self.set_error('Template file %s did raise an error with jinja2 : %s' % (self.g['template'], exp))
+            self.output = None
             self.template = None
+            self.buf = None
+            return
         
         # Now try to render all of this with real objects
         try:
             self.output = self.template.render(nodes=nodes, node=node, ok_nodes=ok_nodes)
+        except NoElementsExceptions:
+            self.set_error('No nodes did match filters for template : %s %s' % (self.g['template'], self.name))
+            self.output = None
+            self.template = None
+            self.buf = None
+            return
         except Exception:
             self.set_error('Template rendering %s did raise an error with jinja2 : %s' % (self.g['template'], traceback.format_exc()))
             self.output = None
