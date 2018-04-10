@@ -20,4 +20,4 @@ RUN       python setup.py install
 RUN       opsbro agent parameters set encryption_key NGNjZWI2ZmEyMzEyMTFlOA==
 
 # The node1 will try to connect to node2 and auto join it
-ENTRYPOINT    test/test_duo5_join_sync_events.sh "NODE2"
+ENTRYPOINT    test/set_network_simulated_type WAN && test/test_duo5_join_sync_events.sh "NODE2"

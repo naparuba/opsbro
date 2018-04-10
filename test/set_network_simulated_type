@@ -1,0 +1,131 @@
+#!/bin/bash
+
+
+# We want to simulate some bad network conditions, like:
+# * HUGE latency
+# * very small brandwith
+# * packet drop (yes, like when you are trying to talk to china without route by hond kong ^^)
+# * packet reordering
+# * packets  corruption (oh yeah!)
+# * packets duplication
+
+
+# Delay
+# tc qdisc change dev eth0 root netem delay 100ms 20ms distribution normal
+# => This causes the added delay to be 100ms ± 10ms with the next random element on a distribution.
+
+
+# Packet drops:
+# tc qdisc change dev eth0 root netem loss 1% 25%
+# => 1% of drop, and change based on the last value
+
+
+# Packet reordering
+#tc qdisc change dev eth0 root netem delay 10ms reorder 25% 50%
+# In this example, 25% of packets (with a correlation of 50%) will get sent immediately, others will be delayed by 10ms.
+
+
+# Packet corruption
+# tc qdisc change dev eth0 root netem corrupt 1%
+
+
+# Packet duplication
+# tc qdisc change dev eth0 root netem duplicate 1%
+
+# STATUS
+# tc qdisc
+
+# CLEAN
+# tc qdisc del dev eth0 root
+
+
+# low * 2
+# 56K => bandwidth=56kbps latency=300ms
+
+
+# good brand, bad latency
+# WAN => bandwidth=500kbps latency=300ms
+
+# Quite good
+# ADSL => bandwidth=2mbps latency=40ms
+
+# Fast
+# LAN => bandwidth=1gbps latency=0ms
+
+
+
+#tc qdisc add dev eth0 root handle 1: htb default 12
+
+
+export NETWORK_TYPE="$1"
+
+#if [ "$NETWORK_TYPE" == "56K" ];then
+#   bandwidth="56kbps"
+#   latency="300ms"
+#fi
+
+#tc qdisc add dev eth0 root netem delay $latency 10ms 25% distribution normal
+
+#tc class add dev eth0 parent 1:1 classid 1:12 htb rate $bandwidth ceil $bandwidth
+#tc qdisc add dev eth0 parent 1:12 netem delay $latency
+#tc qdisc add dev eth0 root netem loss 1% 25%
+
+
+#tc qdisc
+
+
+
+#docker network rm wan
+#docker network rm lan
+#docker network rm 56k
+
+#docker network create --driver bridge --subnet=192.168.33.0/24 --gateway=192.168.33.10 --opt "com.docker.network.bridge.name"="docker1" wan
+
+#IFACE=docker1
+
+#ip addr show docker1 2>/dev/null >/dev/null
+#if [ $? != 0 ];then
+#   docker network create --driver bridge --subnet=192.168.33.0/24 --gateway=192.168.33.10 --opt "com.docker.network.bridge.name"="$IFACE" docker-network-test
+#fi
+
+IFACE=eth0
+
+# Always clean previous rules
+tc qdisc del dev $IFACE root 2>/dev/null
+
+# 56K
+if [ "$NETWORK_TYPE" == "56K" ];then
+   echo "************* Setting UP a 56K network types *************"
+   tc qdisc add dev $IFACE root handle 1: htb default 12
+   tc class add dev $IFACE parent 1:1 classid 1:12 htb rate 5kbit ceil 5kbit
+   tc qdisc add dev $IFACE parent 1:12 netem delay 300ms
+
+   # We want only the changed states of tc
+   tc qdisc | grep $IFACE | grep -v 'noqueue 0'
+fi
+
+
+# WAN
+if [ "$NETWORK_TYPE" == "WAN" ];then
+   echo "************* Setting UP a WAN network types *************"
+   tc qdisc add dev $IFACE root handle 1: htb default 12
+   tc class add dev $IFACE parent 1:1 classid 1:12 htb rate 500kbit ceil 500kbit
+   tc qdisc add dev $IFACE parent 1:12 netem delay 150ms
+
+   # We want only the changed states of tc
+   tc qdisc | grep $IFACE | grep -v 'noqueue 0'
+fi
+
+
+# LAN
+if [ "$NETWORK_TYPE" == "LAN" ];then
+   echo "************* Setting UP a LAN network types *************"
+   tc qdisc add dev $IFACE root handle 1: htb default 12
+   tc class add dev $IFACE parent 1:1 classid 1:12 htb rate 5gbit ceil 5gbit
+   tc qdisc add dev $IFACE parent 1:12 netem delay 0ms
+
+   # We want only the changed states of tc
+   tc qdisc | grep $IFACE | grep -v 'noqueue 0'
+fi
+
+

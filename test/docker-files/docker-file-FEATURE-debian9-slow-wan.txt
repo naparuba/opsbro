@@ -12,12 +12,12 @@ RUN        /apt_get_install   python-setuptools
 RUN        /apt_get_install   python-apt
 
 ADD        . /root/opsbro-oss
-WORKDIR       /root/opsbro-oss
 
-RUN       python setup.py install
 
-# Ask for an encrypted test
-RUN       opsbro agent parameters set encryption_key NGNjZWI2ZmEyMzEyMTFlOA==
+WORKDIR    /root/opsbro-oss
 
-# The node1 will try to connect to node2 and auto join it
-ENTRYPOINT    test/set_network_simulated_type WAN && test/test_duo5_join_sync_events.sh "NODE1"
+RUN        python setup.py install
+
+
+
+ENTRYPOINT     test/set_network_simulated_type WAN && test/test_one_linux_installation.sh

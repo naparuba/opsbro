@@ -58,7 +58,7 @@ matrix:
 
 # command to run tests
 script:
-  - chmod a+x test/*sh
+  - chmod a+x test/*
   - chmod a+x test/docker-helper/*
   - cd test
   - ./test_suite.sh

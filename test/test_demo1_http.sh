@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# We are now a WAN based node
+test/set_network_simulated_type WAN
+
 . test/common_shell_functions.sh
 
 CASE=$1

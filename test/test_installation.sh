@@ -100,7 +100,9 @@ fi
 if [[ $TEST_SUITE == COMPOSE* ]];then
 
    # In compose, we MUST be sure we are the only launched instance with no state before us
-   docker system prune --force >/dev/null
+   if [ "X$TRAVIS" == "Xtrue" ]; then
+      docker system prune --force >/dev/null
+   fi
 
    COMPOSE_FILE=test/docker-files/docker-$TEST_SUITE
 
