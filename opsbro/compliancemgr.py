@@ -120,7 +120,7 @@ class Rule(object):
         self.__did_change = True
         self.__old_state = self.__state
         self.__state = state
-        logger.debug('Compliance rule %s switch from %s to %s' % (self.name, self.__old_state, self.__state))
+        logger.info('Compliance rule %s switch from %s to %s' % (self.name, self.__old_state, self.__state))
     
     
     def set_error(self):
