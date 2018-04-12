@@ -16,7 +16,14 @@ class GetURLDriver(InterfaceComplianceDriver):
     
     def __init__(self):
         super(GetURLDriver, self).__init__()
-        self.ssl_context = ssl._create_unverified_context()
+        
+        # NOTE: ssl.SSLContext is only availabe on last python 2.7 versions
+        if hasattr(ssl, 'SSLContext'):
+            self.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+            self.ssl_context.check_hostname = False
+            self.ssl_context.verify_mode = ssl.CERT_NONE
+        else:
+            self.ssl_context = None
     
     
     # environments:   <- take first to win
@@ -133,7 +140,10 @@ class GetURLDriver(InterfaceComplianceDriver):
         
         self.logger.debug('START DOWNLOAd', url)
         try:
-            filedata = urllib2.urlopen(url, context=self.ssl_context)
+            args = {}
+            if self.ssl_context:
+                args['context'] = self.ssl_context
+            filedata = urllib2.urlopen(url, **args)
             data = filedata.read()
         except Exception, exp:
             err = 'ERROR: downloading the uri: %s did fail withthe error: %s' % (url, exp)
