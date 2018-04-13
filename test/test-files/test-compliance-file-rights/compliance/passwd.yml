@@ -7,7 +7,10 @@ compliance:
    rule:
       type: file-rights
       parameters:
-           file: /etc/passwd
-           owner: root
-           group: root
-           permissions: 644
+         environments:
+            - name: linux
+              if:   "is_in_group('linux')"
+              file: /etc/passwd
+              owner: root
+              group: root
+              permissions: 644

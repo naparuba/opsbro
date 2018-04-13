@@ -22,14 +22,21 @@ class FileRightsDriver(InterfaceComplianceDriver):
     # group: root
     # permissions: 644
     def launch(self, rule):
-        parameters = rule.get_parameters()
-        mode = rule.get_mode()
-        file_path = parameters.get('file', '')
-        owner = parameters.get('owner', '')
-        group = parameters.get('group' '')
-        permissions = parameters.get('permissions', '')
+        mode = self.get_and_assert_mode(rule)
+        if mode is None:
+            return
+        
+        matching_env = self.get_first_matching_environnement(rule)
+        if matching_env is None:
+            return
+        
+        env_name = matching_env.get('name', 'no name')
+        file_path = matching_env.get('file', '')
+        owner = matching_env.get('owner', '')
+        group = matching_env.get('group' '')
+        permissions = matching_env.get('permissions', '')
         if not file_path:
-            self.logger.error('The rule %s do not have a file_path' % parameters)
+            self.logger.error('The environnement %s do not have a file_path' % env_name)
             return
         if not os.path.exists(file_path):
             self.logger.error('The file %s do not exists' % file_path)

@@ -295,7 +295,7 @@ class ComplianceManager(object):
         if mode not in ('audit', 'enforcing'):
             logger.error('The compliance definition got a wrong mode :%s' % mode)
             return
-        verify_if = compliance.get('verify_if', 'False')
+        verify_if = compliance.get('verify_if', 'True')
         
         rule_def = compliance.get('rule', None)
         if rule_def is None:
