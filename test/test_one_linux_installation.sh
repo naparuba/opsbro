@@ -93,27 +93,30 @@ echo "Pack: cpustats counters are OK"
 
 echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  Runtime package detection      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
 
-PACKAGE_NAME=fping
-echo "We should not have the $PACKAGE_NAME package installed"
-opsbro evaluator wait-eval-true "has_package('$PACKAGE_NAME')" --timeout=2
+# We are trying the fping package unless the distro test did ask us another
+if [ "X$TEST_PACKAGE_NAME" == "X" ];then
+   TEST_PACKAGE_NAME=fping
+fi
+echo "We should not have the $TEST_PACKAGE_NAME package installed"
+opsbro evaluator wait-eval-true "has_package('$TEST_PACKAGE_NAME')" --timeout=2
 if [ $? == 0 ];then
-   echo "ERROR: should not be the $PACKAGE_NAME package installed"
+   echo "ERROR: should not be the $TEST_PACKAGE_NAME package installed"
    exit 2
 fi
 
 MASSIVE_INSTALL_LOG=/tmp/massive_install_test
 > $MASSIVE_INSTALL_LOG
-/dnf_install     $PACKAGE_NAME >>$MASSIVE_INSTALL_LOG  2>>$MASSIVE_INSTALL_LOG
-/yum_install     $PACKAGE_NAME >>$MASSIVE_INSTALL_LOG  2>>$MASSIVE_INSTALL_LOG
-/apt_get_install $PACKAGE_NAME >>$MASSIVE_INSTALL_LOG  2>>$MASSIVE_INSTALL_LOG
-/apk_add         $PACKAGE_NAME >>$MASSIVE_INSTALL_LOG  2>>$MASSIVE_INSTALL_LOG
-/zypper_install  $PACKAGE_NAME >>$MASSIVE_INSTALL_LOG  2>>$MASSIVE_INSTALL_LOG
+/dnf_install     $TEST_PACKAGE_NAME >>$MASSIVE_INSTALL_LOG  2>>$MASSIVE_INSTALL_LOG
+/yum_install     $TEST_PACKAGE_NAME >>$MASSIVE_INSTALL_LOG  2>>$MASSIVE_INSTALL_LOG
+/apt_get_install $TEST_PACKAGE_NAME >>$MASSIVE_INSTALL_LOG  2>>$MASSIVE_INSTALL_LOG
+/apk_add         $TEST_PACKAGE_NAME >>$MASSIVE_INSTALL_LOG  2>>$MASSIVE_INSTALL_LOG
+/zypper_install  $TEST_PACKAGE_NAME >>$MASSIVE_INSTALL_LOG  2>>$MASSIVE_INSTALL_LOG
 
 
 # We let debian take some few seconds before detect it (5s cache for more perfs on docker only)
-opsbro evaluator wait-eval-true "has_package('$PACKAGE_NAME')" --timeout=10
+opsbro evaluator wait-eval-true "has_package('$TEST_PACKAGE_NAME')" --timeout=10
 if [ $? != 0 ];then
-   echo "ERROR: the $PACKAGE_NAME package should have been detected"
+   echo "ERROR: the $TEST_PACKAGE_NAME package should have been detected"
    cat $MASSIVE_INSTALL_LOG
    exit 2
 fi
