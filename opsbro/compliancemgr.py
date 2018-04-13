@@ -112,6 +112,12 @@ class InterfaceComplianceDriver(object):
     def launch_post_commands(self, rule, matching_env):
         import subprocess
         post_commands = matching_env.get('post_commands', [])
+        _from = 'Environnement %s' % matching_env.get('name', 'no name')
+        
+        if not post_commands:
+            post_commands = rule.get_post_commands()
+            _from = 'Rule'
+        logger.info('%s have %d post commands' % (_from, len(post_commands)))
         for command in post_commands:
             self.logger.info('Launching post command: %s' % command)
             p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)  # , preexec_fn=os.setsid)
@@ -125,6 +131,7 @@ class InterfaceComplianceDriver(object):
             self.logger.info('Launching post command: %s SUCCESS' % command)
         return True
     
+    
     def launch(self, rule):
         rule.add_error('The driver %s is missing launch action.' % self.__class__)
 
@@ -133,6 +140,9 @@ class Rule(object):
     def __init__(self, pack_name, pack_level, name, mode, verify_if, rule_def):
         self.rule_def = rule_def
         self.type = self.rule_def.get('type')
+        self.parameters = self.rule_def.get('parameters', {})
+        self.post_commands = self.parameters.get('post_commands', [])
+        
         self.pack_name = pack_name
         self.pack_level = pack_level
         self.name = name
@@ -156,11 +166,15 @@ class Rule(object):
     
     
     def get_parameters(self):
-        return self.rule_def.get('parameters', {})
+        return self.parameters
     
     
     def get_type(self):
         return self.type
+    
+    
+    def get_post_commands(self):
+        return self.post_commands
     
     
     def get_verify_if(self):

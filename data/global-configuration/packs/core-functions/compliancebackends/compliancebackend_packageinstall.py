@@ -19,54 +19,19 @@ class PackageInstallDriver(InterfaceComplianceDriver):
     #             - bash
     #         - OTHERS
     def launch(self, rule):
-        parameters = rule.get_parameters()
-        mode = rule.get_mode()
+        
+        mode = self.get_and_assert_mode(rule)
+        if mode is None:
+            return
+        
+        matching_env = self.get_first_matching_environnement(rule)
+        if matching_env is None:
+            return
         
         did_error = False
         
-        variables_params = parameters.get('variables', {})
-        
-        # We need to evaluate our variables if there are some
-        variables = {}
-        for (k, expr) in variables_params.iteritems():
-            try:
-                variables[k] = evaluater.eval_expr(expr)
-            except Exception, exp:
-                err = 'Variable %s (%s) evaluation did fail: %s' % (k, expr, exp)
-                rule.add_error(err)
-                rule.set_error()
-                return
-        
-        # Find the environnement we match
-        envs = parameters.get('environments', [])
-        did_find_env = False
-        env_name = ''
-        env_packages = None
-        for e in envs:
-            if_ = e.get('if', None)
-            env_name = e.get('name')
-            env_packages = e.get('packages')
-            
-            try:
-                do_match = evaluater.eval_expr(if_, variables=variables)
-            except Exception, exp:
-                err = 'Environnement %s: "if" rule %s did fail to evaluate: %s' % (env_name, if_, exp)
-                rule.add_error(err)
-                do_match = False
-                did_error = True
-            
-            if do_match:
-                self.logger.debug('Rule: %s We find a matching envrionnement: %s' % (self.name, env_name))
-                did_find_env = True
-                break
-        
-        if not did_find_env:
-            # If we did match no environement
-            err = 'No environnements did match, cannot solve packages installation'
-            rule.add_error(err)
-            rule.set_error()
-            return
-        
+        env_name = matching_env.get('name', 'no name')
+        env_packages = matching_env.get('packages', [])
         # Now look if we are compliant, or not
         packages_to_install = []
         systepacketmgr = get_systepacketmgr()
@@ -103,6 +68,11 @@ class PackageInstallDriver(InterfaceComplianceDriver):
             else:
                 err = 'Environnement %s: the package %s is not installed' % (env_name, pkg)
                 rule.add_error(err)
+        
+        # spawn post commands if there are some
+        is_ok = self.launch_post_commands(rule, matching_env)
+        if not is_ok:
+            return
         
         # If we fail at least one package, exit it
         if did_error:

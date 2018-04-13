@@ -23,7 +23,7 @@ compliance:
               packages:
                  - nginx
             # same package but it's for the test
-            - name: debian9
+            - name: debian
               if: "{{variables.is_debian}}"
               packages:
                  - nginx
@@ -32,3 +32,6 @@ compliance:
               if: "{{collector.system.os.linux.distribution}} == 'alpine'"
               packages:
                  - nginx
+         # Same post commands for every env
+         post_commands:
+            - service nginx start

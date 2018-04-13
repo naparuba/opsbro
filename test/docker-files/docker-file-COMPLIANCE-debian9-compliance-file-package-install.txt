@@ -11,6 +11,10 @@ RUN        /apt_get_install   python-leveldb
 RUN        /apt_get_install   python-setuptools
 RUN        /apt_get_install   python-apt
 
+# Need for debug and test
+RUN        /apt_get_install   procps
+RUN        /apt_get_install   curl
+
 ADD        . /root/opsbro-oss
 
 

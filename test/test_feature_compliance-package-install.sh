@@ -32,6 +32,14 @@ if [ $? != 0 ]; then
     exit 2
 fi
 
+
+curl -s http://localhost | grep 'nginx'
+if [ $? != 0 ];then
+   echo "ERROR: nginx is not working"
+   opsbro compliance state
+   ps axjf
+fi
+
 opsbro compliance state
 
 echo "nginx install compliance rule is OK"
