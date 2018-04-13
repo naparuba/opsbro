@@ -1,6 +1,7 @@
 FROM centos:6
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
+ADD        test/docker-helper/  /
 ADD        . /root/opsbro-oss
 
 WORKDIR      /root/opsbro-oss

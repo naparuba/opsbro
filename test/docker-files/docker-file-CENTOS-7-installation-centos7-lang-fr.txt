@@ -1,6 +1,7 @@
 FROM centos:7
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
+ADD        test/docker-helper/  /
 
 # We want to have fr_FR.UTF8 as locales, but for this we must hack a bit the docker image
 RUN        sed 's/^override_install_langs/#override_install_langs/' -i /etc/yum.conf
