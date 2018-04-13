@@ -9,7 +9,6 @@ logger = LoggerFactory.create_logger('system-packages')
 
 class YumBackend(object):
     def __init__(self):
-        self.yumbase = None
         self.yumbase_lock = threading.RLock()
         
         try:
@@ -21,11 +20,9 @@ class YumBackend(object):
     
     def has_package(self, package):
         # Yum conf seem to be global and so cannot set it in 2 threads at the same time
+        # NOTE: the yum base is not able to detect that the cache is wrong :'(
         with self.yumbase_lock:
-            if not self.yumbase:
-                self.yumbase = self.yum.YumBase()
-                self.yumbase.conf.cache = 1
-        return package in (pkg.name for pkg in self.yumbase.rpmdb.returnPackages())
+            return package in (pkg.name for pkg in self.yum.YumBase().rpmdb.returnPackages())
     
     
     # yum  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto  install  XXXXX

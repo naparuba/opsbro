@@ -6,17 +6,18 @@ compliance:
    note: This installer will install the cockroach db
    rule:
       type: get-url
-      parameters:
-         environments:
-            # same package but it's for the test
-            - name: debian
-              if: "{{collector.system.os.linux.distribution}} == 'debian'"
+      environments:
+         # same package but it's for the test
+         - name: debian
+           if: "{{collector.system.os.linux.distribution}} == 'debian'"
+           parameters:
               url: https://binaries.cockroachdb.com/cockroach-v2.0.0.linux-amd64.tgz
               dest_directory: /tmp
               sha1: 0024549637a40ebfb15ceecd39e52c2f0cd8e61a
-              post_commands:
-                 - tar xfz /tmp/cockroach-v2.0.0.linux-amd64.tgz
-                 - cp -p /tmp/cockroach-v2.0.0.linux-amd64/cockroach /usr/local/bin
-                 # NOTE: the nohop > & is important, if not, it won't return
-                 - nohup /usr/local/bin/cockroach start  --insecure --host 127.0.0.1 --join 127.0.0.1 >/dev/null 2>/dev/null &
+           # NOTE: here we are testing the post commands at the environnement level
+           post_commands:
+              - tar xfz /tmp/cockroach-v2.0.0.linux-amd64.tgz
+              - cp -p /tmp/cockroach-v2.0.0.linux-amd64/cockroach /usr/local/bin
+              # NOTE: the nohop > & is important, if not, it won't return
+              - nohup /usr/local/bin/cockroach start  --insecure --host 127.0.0.1 --join 127.0.0.1 >/dev/null 2>/dev/null &
 

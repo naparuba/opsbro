@@ -3,6 +3,8 @@ import os
 import json
 import glob
 import imp
+from collections import deque
+import traceback
 
 from .log import LoggerFactory
 from .stop import stopper
@@ -17,6 +19,30 @@ logger = LoggerFactory.create_logger('compliance')
 COMPLIANCE_STATE_COLORS = {'COMPLIANT': 'green', 'FIXED': 'cyan', 'ERROR': 'red', 'UNKNOWN': 'grey', 'NOT-ELIGIBLE': 'grey'}
 COMPLIANCE_LOG_COLORS = {'SUCCESS': 'green', 'ERROR': 'red', 'FIX': 'cyan', 'COMPLIANT': 'green'}
 COMPLIANCE_STATES = ['COMPLIANT', 'FIXED', 'ERROR', 'UNKNOWN', 'NOT-ELIGIBLE']
+
+
+class ComplianceRuleEnvironment(object):
+    def __init__(self, env_def):
+        self.name = env_def.get('name', 'no name')
+        self.parameters = env_def.get('parameters', {})
+        self.if_ = env_def.get('if', 'True')
+        self.post_commands = env_def.get('post_commands', [])
+    
+    
+    def get_name(self):
+        return self.name
+    
+    
+    def get_parameters(self):
+        return self.parameters
+    
+    
+    def get_if(self):
+        return self.if_
+    
+    
+    def get_post_commands(self):
+        return self.post_commands
 
 
 # Base class for hosting driver. MUST be used
@@ -51,87 +77,6 @@ class InterfaceComplianceDriver(object):
         self.logger = logger
     
     
-    def get_and_assert_mode(self, rule):
-        mode = rule.get_mode()
-        
-        if mode not in ['audit', 'enforcing']:
-            err = 'RULE: %s mode %s is unknown. Should be audit or enforcing' % (rule.get_name(), mode)
-            rule.add_error(err)
-            rule.set_error()
-            return None
-        return mode
-    
-    
-    def __get_variables(self, rule, parameters):
-        variables_params = parameters.get('variables', {})
-        
-        # We need to evaluate our variables if there are some
-        variables = {}
-        for (k, expr) in variables_params.iteritems():
-            try:
-                variables[k] = evaluater.eval_expr(expr)
-            except Exception, exp:
-                err = 'RULE: %s Variable %s (%s) evaluation did fail: %s' % (rule.get_name(), k, expr, exp)
-                rule.add_error(err)
-                rule.set_error()
-                return None
-        return variables
-    
-    
-    def get_first_matching_environnement(self, rule):
-        parameters = rule.get_parameters()
-        
-        # We need to evaluate our variables if there are some
-        variables = self.__get_variables(rule, parameters)
-        if variables is None:
-            return
-        
-        # Find the environnement we match
-        envs = parameters.get('environments', [])
-        
-        for e in envs:
-            if_ = e.get('if', None)
-            env_name = e.get('name', 'no name')
-            try:
-                do_match = evaluater.eval_expr(if_, variables=variables)
-                self.logger.debug('Rule: %s We find a matching envrionnement: %s' % (self.name, env_name))
-                return e
-            except Exception, exp:
-                err = 'Environnement %s: "if" rule %s did fail to evaluate: %s' % (env_name, if_, exp)
-                rule.add_error(err)
-                rule.set_error()
-                return None
-        
-        # If we did match no environement
-        err = 'No environnements did match.'
-        rule.add_error(err)
-        rule.set_error()
-        return None
-    
-    
-    def launch_post_commands(self, rule, matching_env):
-        import subprocess
-        post_commands = matching_env.get('post_commands', [])
-        _from = 'Environnement %s' % matching_env.get('name', 'no name')
-        
-        if not post_commands:
-            post_commands = rule.get_post_commands()
-            _from = 'Rule'
-        logger.info('%s have %d post commands' % (_from, len(post_commands)))
-        for command in post_commands:
-            self.logger.info('Launching post command: %s' % command)
-            p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)  # , preexec_fn=os.setsid)
-            stdout, stderr = p.communicate()
-            stdout += stderr
-            if p.returncode != 0:
-                err = 'Post command %s did generate an error: %s' % (command, stdout)
-                rule.add_error(err)
-                rule.set_error()
-                return False
-            self.logger.info('Launching post command: %s SUCCESS' % command)
-        return True
-    
-    
     def launch(self, rule):
         rule.add_error('The driver %s is missing launch action.' % self.__class__)
 
@@ -140,9 +85,13 @@ class Rule(object):
     def __init__(self, pack_name, pack_level, name, mode, verify_if, rule_def):
         self.rule_def = rule_def
         self.type = self.rule_def.get('type')
-        self.parameters = self.rule_def.get('parameters', {})
-        self.post_commands = self.parameters.get('post_commands', [])
-        
+        self.environments = deque()
+        env_defs = self.rule_def.get('environments', [])
+        for env_def in env_defs:
+            env = ComplianceRuleEnvironment(env_def)
+            self.environments.append(env)
+        self.post_commands = self.rule_def.get('post_commands', [])
+        self.variable_defs = self.rule_def.get('variables', {})
         self.pack_name = pack_name
         self.pack_level = pack_level
         self.name = name
@@ -162,11 +111,13 @@ class Rule(object):
     
     
     def get_mode(self):
-        return self.mode
-    
-    
-    def get_parameters(self):
-        return self.parameters
+        mode = self.mode
+        if mode not in ['audit', 'enforcing']:
+            err = 'RULE: %s mode %s is unknown. Should be audit or enforcing' % (self.get_name(), mode)
+            self.add_error(err)
+            self.set_error()
+            return None
+        return mode
     
     
     def get_type(self):
@@ -183,6 +134,66 @@ class Rule(object):
     
     def get_name(self):
         return self.name
+    
+    
+    def __get_variables(self):
+        variables_params = self.variable_defs
+        
+        # We need to evaluate our variables if there are some
+        variables = {}
+        for (k, expr) in variables_params.iteritems():
+            try:
+                variables[k] = evaluater.eval_expr(expr)
+            except Exception, exp:
+                err = 'RULE: %s Variable %s (%s) evaluation did fail: %s' % (self.get_name(), k, expr, exp)
+                self.add_error(err)
+                self.set_error()
+                return None
+        return variables
+    
+    
+    def get_first_matching_environnement(self):
+        variables = self.__get_variables()
+        if variables is None:
+            return None
+        
+        for env in self.environments:
+            if_ = env.get_if()
+            env_name = env.get_name()
+            try:
+                do_match = evaluater.eval_expr(if_, variables=variables)
+                if do_match:
+                    logger.debug('Rule: %s We find a matching envrionnement: %s' % (self.name, env_name))
+                    return env
+            except Exception, exp:
+                err = 'Environnement %s: "if" rule %s did fail to evaluate: %s' % (env_name, if_, exp)
+                self.add_error(err)
+                self.set_error()
+                return None
+        return None
+    
+    
+    def launch_post_commands(self, matching_env):
+        import subprocess
+        post_commands = matching_env.get_post_commands()
+        _from = 'Environnement %s' % matching_env.get_name()
+        
+        if not post_commands:
+            post_commands = self.post_commands
+            _from = 'Rule'
+        logger.info('%s have %d post commands' % (_from, len(post_commands)))
+        for command in post_commands:
+            logger.info('Launching post command: %s' % command)
+            p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, preexec_fn=os.setsid)
+            stdout, stderr = p.communicate()
+            stdout += stderr
+            if p.returncode != 0:
+                err = 'Post command %s did generate an error: %s' % (command, stdout)
+                self.add_error(err)
+                self.set_error()
+                return False
+            logger.info('Launching post command: %s SUCCESS' % command)
+        return True
     
     
     def add_success(self, txt):
@@ -354,7 +365,15 @@ class ComplianceManager(object):
             if drv is None:
                 logger.error('Cannot execute rule (%s) as the type is unknown: %s' % (name, _type))
                 continue
-            drv.launch(rule)
+            try:
+                drv.launch(rule)
+            except Exception:
+                err = 'The compliance driver %s did crash with the rule %s: %s' % (drv.name, name, str(traceback.format_exc()))
+                logger.error(err)
+                rule.add_error(err)
+                rule.set_error()
+                continue
+                
             history_entry = rule.get_history_entry()
             if history_entry:
                 self.add_history_entry(history_entry)

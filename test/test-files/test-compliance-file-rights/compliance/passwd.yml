@@ -6,11 +6,19 @@ compliance:
    interval: 60s
    rule:
       type: file-rights
-      parameters:
-         environments:
-            - name: linux
-              if:   "is_in_group('linux')"
-              file: /etc/passwd
-              owner: root
-              group: root
-              permissions: 644
+      # You can set variables in order to not repeat yourself in the if rules
+      # Here a fake one just for test
+      variables:
+         true: "True"
+      environments:
+        - name: linux
+           # no need for a if here, will be True
+          parameters:
+             file: /etc/passwd
+             owner: root
+             group: root
+             permissions: 644
+
+      # Same post commands for every env
+      post_commands:
+        - echo "success" > /tmp/success

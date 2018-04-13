@@ -5,8 +5,11 @@ compliance:
    interval: 60s
    rule:
       type: file-rights
-      parameters:
-           file: /etc/passwd
-           owner: root
-           group: root
-           permissions: 644
+      environments:
+        - name: linux
+           # no need for a if here, will be True
+          parameters:
+             file: /etc/passwd
+             owner: root
+             group: root
+             permissions: 644

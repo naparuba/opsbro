@@ -22,19 +22,21 @@ class FileRightsDriver(InterfaceComplianceDriver):
     # group: root
     # permissions: 644
     def launch(self, rule):
-        mode = self.get_and_assert_mode(rule)
+        mode = rule.get_mode()
         if mode is None:
             return
         
-        matching_env = self.get_first_matching_environnement(rule)
+        matching_env = rule.get_first_matching_environnement()
         if matching_env is None:
             return
         
-        env_name = matching_env.get('name', 'no name')
-        file_path = matching_env.get('file', '')
-        owner = matching_env.get('owner', '')
-        group = matching_env.get('group' '')
-        permissions = matching_env.get('permissions', '')
+        env_name = matching_env.get_name()
+        parameters = matching_env.get_parameters()
+        
+        file_path = parameters.get('file', '')
+        owner = parameters.get('owner', '')
+        group = parameters.get('group' '')
+        permissions = parameters.get('permissions', '')
         if not file_path:
             self.logger.error('The environnement %s do not have a file_path' % env_name)
             return
@@ -101,11 +103,16 @@ class FileRightsDriver(InterfaceComplianceDriver):
         if not did_error:
             rule.set_compliant()
             return
+        
+        # spawn post commands if there are some
+        is_ok = rule.launch_post_commands(matching_env)
+        if not is_ok:
+            return
+        
+        # ok we did check and there are still error? (not fixed)
+        if not did_fixed:
+            rule.set_error()
+            return
         else:
-            # ok we did check and there are still error? (not fixed)
-            if not did_fixed:
-                rule.set_error()
-                return
-            else:
-                rule.set_fixed()
-                return
+            rule.set_fixed()
+            return

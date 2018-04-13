@@ -6,32 +6,45 @@ compliance:
    note: This installer will install the nginx server if you set the server into the nginx user defined group. Support debian (8 and lower) and centos/redhat platforms.
    rule:
       type: package-install
-      parameters:
-         # You can set variables in order to not repeat yourself in the if rules
-         variables:
-            is_debian: "{{collector.system.os.linux.distribution}} == 'debian'"
-            is_centos: "{{collector.system.os.linux.distribution}} == 'centos'"
-            is_redhat: "{{collector.system.os.linux.distribution}} == 'redhat'"
-         environments:
-            - name: ubuntu
-              if:   "{{collector.system.os.linux.distribution}} == 'ubuntu'"
+      # You can set variables in order to not repeat yourself in the if rules
+      variables:
+         is_debian: "{{collector.system.os.linux.distribution}} == 'debian'"
+         is_centos: "{{collector.system.os.linux.distribution}} == 'centos'"
+         is_fedora: "{{collector.system.os.linux.distribution}} == 'fedora'"
+      environments:
+         - name: centos
+           if:   "{{variables.is_centos}}"
+           parameters:
               packages:
                  - nginx
+           post_commands:
+              # on centos6, there is no "service" command available for nginx
+              - nginx
 
-            - name: debian9
-              if: "{{variables.is_debian}} and {{collector.system.os.linux.major_version}} == 9"
-              packages:
-                 - nginx
-            # same package but it's for the test
-            - name: debian
-              if: "{{variables.is_debian}}"
-              packages:
-                 - nginx
+         - name: debian9
+           if: "{{variables.is_debian}} and {{collector.system.os.linux.major_version}} == 9"
+           parameters:
+             packages:
+                - nginx
 
-            - name: alpine
-              if: "{{collector.system.os.linux.distribution}} == 'alpine'"
+         - name: fedora
+           if: "{{variables.is_fedora}}"
+           parameters:
+             packages:
+                - nginx
+           post_commands:
+              - nginx
+
+         - name: alpine
+           if: "{{collector.system.os.linux.distribution}} == 'alpine'"
+           parameters:
               packages:
                  - nginx
-         # Same post commands for every env
-         post_commands:
-            - service nginx start
+           post_commands:
+              # on alpine, you must create the run dir first
+              - mkdir /run/nginx/
+              - nginx
+
+      # Same post commands for every env
+      post_commands:
+        - service nginx start

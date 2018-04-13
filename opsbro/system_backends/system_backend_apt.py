@@ -12,7 +12,7 @@ class AptBackend(object):
     def __init__(self):
         self.deb_cache = None
         self.deb_cache_update_time = 0
-        self.DEB_CACHE_MAX_AGE = 60  # if we cannot look at dpkg data age, allow a max cache of 60s to get a new apt update from disk
+        self.DEB_CACHE_MAX_AGE = 5  # if we cannot look at dpkg data age, allow a max cache of 60s to get a new apt update from disk
         self.DPKG_CACHE_PATH = '/var/cache/apt/pkgcache.bin'
         self.dpkg_cache_last_modification_epoch = 0.0
         

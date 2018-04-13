@@ -1,9 +1,9 @@
 FROM alpine:3.4
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-RUN        apk update
-RUN        apk add bash
-RUN        apk add python
+ADD        test/docker-helper/  /
+RUN        /apk_add bash
+RUN        /apk_add python
 
 
 ADD        . /root/opsbro-oss

@@ -55,6 +55,14 @@ check_history_entry "The file /etc/passwd group (root) is OK"
 check_history_entry "The file /etc/passwd permissions (644) are OK"
 
 
+# Also check that the post commands did success
+grep success /tmp/success
+if [ $? != 0 ];then
+   echo "ERROR: cannot find the success string on the /tmp/success file"
+   echo "the post commands call did fail"
+fi
+
+
 echo "HISTORY"
 echo "$HISTORY"
 

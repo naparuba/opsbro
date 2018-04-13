@@ -37,19 +37,20 @@ class GetURLDriver(InterfaceComplianceDriver):
     #         - OTHERS
     def launch(self, rule):
         
-        mode = self.get_and_assert_mode(rule)
+        mode = rule.get_mode()
         if mode is None:
             return
         
-        matching_env = self.get_first_matching_environnement(rule)
+        matching_env = rule.get_first_matching_environnement()
         if matching_env is None:
             return
         
         # Now we can get our parameters
-        dest_directory = matching_env.get('dest_directory')
-        url = matching_env.get('url')
-        sha1 = matching_env.get('sha1', '')
-        md5 = matching_env.get('md5', '')
+        parameters = matching_env.get_parameters()
+        dest_directory = parameters.get('dest_directory')
+        url = parameters.get('url')
+        sha1 = parameters.get('sha1', '')
+        md5 = parameters.get('md5', '')
         
         if not url:
             err = 'No url defined, cannot solve uri download'
@@ -145,7 +146,7 @@ class GetURLDriver(InterfaceComplianceDriver):
         self.logger.debug("SAVED TO", dest_file)
         
         # spawn post commands if there are some
-        is_ok = self.launch_post_commands(rule, matching_env)
+        is_ok = rule.launch_post_commands(matching_env)
         if not is_ok:
             return
         

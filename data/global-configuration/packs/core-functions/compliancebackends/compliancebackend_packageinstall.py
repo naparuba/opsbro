@@ -1,4 +1,3 @@
-from opsbro.evaluater import evaluater
 from opsbro.systempacketmanager import get_systepacketmgr
 from opsbro.compliancemgr import InterfaceComplianceDriver
 
@@ -20,18 +19,20 @@ class PackageInstallDriver(InterfaceComplianceDriver):
     #         - OTHERS
     def launch(self, rule):
         
-        mode = self.get_and_assert_mode(rule)
+        mode = rule.get_mode()
         if mode is None:
             return
         
-        matching_env = self.get_first_matching_environnement(rule)
+        matching_env = rule.get_first_matching_environnement()
         if matching_env is None:
             return
         
         did_error = False
         
-        env_name = matching_env.get('name', 'no name')
-        env_packages = matching_env.get('packages', [])
+        env_name = matching_env.get_name()
+        parameters = matching_env.get_parameters()
+        
+        env_packages = parameters.get('packages', [])
         # Now look if we are compliant, or not
         packages_to_install = []
         systepacketmgr = get_systepacketmgr()
@@ -70,7 +71,7 @@ class PackageInstallDriver(InterfaceComplianceDriver):
                 rule.add_error(err)
         
         # spawn post commands if there are some
-        is_ok = self.launch_post_commands(rule, matching_env)
+        is_ok = rule.launch_post_commands(matching_env)
         if not is_ok:
             return
         

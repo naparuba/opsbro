@@ -1,8 +1,8 @@
 FROM opensuse:42.3
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-
-RUN        zypper --non-interactive install python
+ADD        test/docker-helper/  /
+RUN        /zypper_install python
 
 
 ADD        . /root/opsbro-oss

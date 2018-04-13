@@ -91,6 +91,36 @@ fi
 echo "Pack: cpustats counters are OK"
 
 
+echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  Runtime package detection      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
+
+
+opsbro evaluator wait-eval-true "has_package('sysstat')" --timeout=2
+if [ $? == 0 ];then
+   echo "ERROR: should not be the sysstat package installed"
+   exit 2
+fi
+
+MASSIVE_INSTALL_LOG= /tmp/massive_install_test
+> $MASSIVE_INSTALL_LOG
+/dnf_install     sysstat >> $MASSIVE_INSTALL_LOG
+/yum_install     sysstat >> $MASSIVE_INSTALL_LOG
+/apt_get_install sysstat >> $MASSIVE_INSTALL_LOG
+/apk_add         sysstat >> $MASSIVE_INSTALL_LOG
+/zypper_install  sysstat >> $MASSIVE_INSTALL_LOG
+
+
+# We let debian take some few seconds before detect it (5s cache for more perfs on docker only)
+opsbro evaluator wait-eval-true "has_package('sysstat')" --timeout=10
+if [ $? != 0 ];then
+   echo "ERROR: the sysstat package should have been detected"
+   cat $MASSIVE_INSTALL_LOG
+   exit 2
+fi
+
+
+echo "PACKAGE: the runtime package detection is working well"
+
+
 #TODO: fis the networktraffic so it pop out directly at first loop
 #echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  STANDARD LINUX PACK:  networktraffic counters      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
 #NETWORKSTATS=$(opsbro collectors show networktraffic)

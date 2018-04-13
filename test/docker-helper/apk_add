@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# Retry the install 3 times before exit in error
+apk update && apk add $1
+if [ $? == 0 ]; then
+   exit 0
+fi
+
+apk update && apk add $1
+if [ $? == 0 ]; then
+   exit 0
+fi
+
+apk update && apk add $1
+
+# This time we exit with the install state
+exit $?
