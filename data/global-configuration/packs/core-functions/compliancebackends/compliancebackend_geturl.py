@@ -36,69 +36,20 @@ class GetURLDriver(InterfaceComplianceDriver):
     #             - bash
     #         - OTHERS
     def launch(self, rule):
-        import subprocess
         
-        parameters = rule.get_parameters()
-        mode = rule.get_mode()
-        
-        if mode not in ['audit', 'enforcing']:
-            err = 'Mode %s is unknown' % mode
-            rule.add_error(err)
-            rule.set_error()
+        mode = self.get_and_assert_mode(rule)
+        if mode is None:
             return
         
-        did_error = False
-        
-        variables_params = parameters.get('variables', {})
-        
-        # We need to evaluate our variables if there are some
-        variables = {}
-        for (k, expr) in variables_params.iteritems():
-            try:
-                variables[k] = evaluater.eval_expr(expr)
-            except Exception, exp:
-                err = 'Variable %s (%s) evaluation did fail: %s' % (k, expr, exp)
-                rule.add_error(err)
-                rule.set_error()
-                return
-        
-        # Find the environnement we match
-        envs = parameters.get('environments', [])
-        did_find_env = False
-        env_name = ''
-        url = ''
-        dest_directory = ''
-        sha1 = ''
-        md5 = ''
-        post_commands = []
-        for e in envs:
-            if_ = e.get('if', None)
-            env_name = e.get('name')
-            dest_directory = e.get('dest_directory')
-            url = e.get('url')
-            sha1 = e.get('sha1', '')
-            md5 = e.get('md5', '')
-            post_commands = e.get('post_commands', [])
-            
-            try:
-                do_match = evaluater.eval_expr(if_, variables=variables)
-            except Exception, exp:
-                err = 'Environnement %s: "if" rule %s did fail to evaluate: %s' % (env_name, if_, exp)
-                rule.add_error(err)
-                do_match = False
-                did_error = True
-            
-            if do_match:
-                self.logger.debug('Rule: %s We find a matching envrionnement: %s' % (self.name, env_name))
-                did_find_env = True
-                break
-        
-        if not did_find_env:
-            # If we did match no environement
-            err = 'No environnements did match, cannot solve uri download'
-            rule.add_error(err)
-            rule.set_error()
+        matching_env = self.get_first_matching_environnement(rule)
+        if matching_env is None:
             return
+        
+        # Now we can get our parameters
+        dest_directory = matching_env.get('dest_directory')
+        url = matching_env.get('url')
+        sha1 = matching_env.get('sha1', '')
+        md5 = matching_env.get('md5', '')
         
         if not url:
             err = 'No url defined, cannot solve uri download'
@@ -151,7 +102,7 @@ class GetURLDriver(InterfaceComplianceDriver):
             rule.add_error(err)
             rule.set_error()
             return
-            self.logger.debug("DOWNLOADED", len(data))
+        self.logger.debug("DOWNLOADED", len(data))
         
         if sha1:
             sha1_hash = hashlib.sha1(data).hexdigest()
@@ -193,20 +144,9 @@ class GetURLDriver(InterfaceComplianceDriver):
             return
         self.logger.debug("SAVED TO", dest_file)
         
-        for command in post_commands:
-            self.logger.info('Launching post command: %s' % command)
-            p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)  # , preexec_fn=os.setsid)
-            stdout, stderr = p.communicate()
-            stdout += stderr
-            if p.returncode != 0:
-                err = 'Post command %s did generate an error: %s' % (command, stdout)
-                rule.add_error(err)
-                rule.set_error()
-                return
-            self.logger.info('Launching post command: %s SUCCESS' % command)
-        
-        if did_error:
-            rule.set_error()
+        # spawn post commands if there are some
+        is_ok = self.launch_post_commands(rule, matching_env)
+        if not is_ok:
             return
         
         # We did do the job

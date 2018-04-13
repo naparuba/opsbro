@@ -51,6 +51,80 @@ class InterfaceComplianceDriver(object):
         self.logger = logger
     
     
+    def get_and_assert_mode(self, rule):
+        mode = rule.get_mode()
+        
+        if mode not in ['audit', 'enforcing']:
+            err = 'RULE: %s mode %s is unknown. Should be audit or enforcing' % (rule.get_name(), mode)
+            rule.add_error(err)
+            rule.set_error()
+            return None
+        return mode
+    
+    
+    def __get_variables(self, rule, parameters):
+        variables_params = parameters.get('variables', {})
+        
+        # We need to evaluate our variables if there are some
+        variables = {}
+        for (k, expr) in variables_params.iteritems():
+            try:
+                variables[k] = evaluater.eval_expr(expr)
+            except Exception, exp:
+                err = 'RULE: %s Variable %s (%s) evaluation did fail: %s' % (rule.get_name(), k, expr, exp)
+                rule.add_error(err)
+                rule.set_error()
+                return None
+        return variables
+    
+    
+    def get_first_matching_environnement(self, rule):
+        parameters = rule.get_parameters()
+        
+        # We need to evaluate our variables if there are some
+        variables = self.__get_variables(rule, parameters)
+        if variables is None:
+            return
+        
+        # Find the environnement we match
+        envs = parameters.get('environments', [])
+        
+        for e in envs:
+            if_ = e.get('if', None)
+            env_name = e.get('name', 'no name')
+            try:
+                do_match = evaluater.eval_expr(if_, variables=variables)
+                self.logger.debug('Rule: %s We find a matching envrionnement: %s' % (self.name, env_name))
+                return e
+            except Exception, exp:
+                err = 'Environnement %s: "if" rule %s did fail to evaluate: %s' % (env_name, if_, exp)
+                rule.add_error(err)
+                rule.set_error()
+                return None
+        
+        # If we did match no environement
+        err = 'No environnements did match.'
+        rule.add_error(err)
+        rule.set_error()
+        return None
+    
+    
+    def launch_post_commands(self, rule, matching_env):
+        import subprocess
+        post_commands = matching_env.get('post_commands', [])
+        for command in post_commands:
+            self.logger.info('Launching post command: %s' % command)
+            p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)  # , preexec_fn=os.setsid)
+            stdout, stderr = p.communicate()
+            stdout += stderr
+            if p.returncode != 0:
+                err = 'Post command %s did generate an error: %s' % (command, stdout)
+                rule.add_error(err)
+                rule.set_error()
+                return False
+            self.logger.info('Launching post command: %s SUCCESS' % command)
+        return True
+    
     def launch(self, rule):
         rule.add_error('The driver %s is missing launch action.' % self.__class__)
 
