@@ -10,4 +10,7 @@ RUN        /yum_install python
 ADD        . /root/opsbro-oss
 
 WORKDIR       /root/opsbro-oss
+
+# TCL: very little
+ENV        TEST_PACKAGE_NAME=tcl
 ENTRYPOINT    test/test_one_linux_installation.sh && test/assert_group.sh "amazon-linux2"
