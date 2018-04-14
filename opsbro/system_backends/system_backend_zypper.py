@@ -16,12 +16,16 @@ class ZypperBackend(object):
     def has_package(self, package):
         with self.lock:
             logger.debug('ZYPPER :: has package: %s' % package)
-            p = subprocess.Popen(['rpm', '-q', '-a', '--queryformat', r'"%{NAME}\n"'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            p = subprocess.Popen(['rpm', '-q', '-a', '--queryformat', r'%{NAME}\n'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = p.communicate()
             # Return code is enouth to know that
             if p.returncode != 0:
-                raise Exception('ZYPPER: Cannot list pacakge' % (stdout + stderr))
-            return package in stdout.splitlines()
+                raise Exception('ZYPPER: Cannot list package %s' % (stdout + stderr))
+            packages = stdout.splitlines()
+            logger.debug('Zypper packages:', packages)
+            r = package in packages
+            logger.debug('Zypper have package %s => %s' % (package, r))
+            return r
     
     
     # zypper --non-interactive install  XXXXX
