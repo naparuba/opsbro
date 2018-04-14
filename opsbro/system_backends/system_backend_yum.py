@@ -1,5 +1,6 @@
 import subprocess
 import threading
+import logging
 
 from opsbro.log import LoggerFactory
 
@@ -13,6 +14,9 @@ class YumBackend(object):
         
         try:
             import yum
+            # we want to silent verbose plugins
+            yum_logger = logging.getLogger("yum.verbose.YumPlugins")
+            yum_logger.setLevel(logging.CRITICAL)
         except ImportError:
             yum = None
         self.yum = yum
