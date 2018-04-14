@@ -86,15 +86,15 @@ export -f launch_docker_file
 NB_CPUS=`python -c "import multiprocessing;print multiprocessing.cpu_count()"`
 echo "Detected number of CPUs: $NB_CPUS"
 # Travis: be sure to use the 2 CPU available, and in fact to allow // connections so we keep the test time bellow the limit
-if [ "X$TRAVIS" == "Xtrue" ]; then
-   NB_CPUS=10
-   echo "Travis detected, using $NB_CPUS CPUs"
+#if [ "X$TRAVIS" == "Xtrue" ]; then
+#   NB_CPUS=10
+#   echo "Travis detected, using $NB_CPUS CPUs"
    # if stats with DUO, allow far more than this
    #if [[ $TEST_SUITE == DUO* ]] || [[ $TEST_SUITE == DEMO* ]]; then
    #   NB_CPUS=6
    #   echo "Travis detected, and also DUO test based. Allow more CPUs; $NB_CPUS"
    #fi
-fi
+#fi
 
 # For compose, we are asking to docker-compose to build and run
 if [[ $TEST_SUITE == COMPOSE* ]];then
@@ -154,7 +154,8 @@ DOCKER_FILES=`ls -1 test/docker-files/docker-file-$TEST_SUITE-*txt`
 # export TRAVIS var so xargs calls with have it
 export TRAVIS=$TRAVIS
 echo "================================================= Building all images first:"
-echo $DOCKER_FILES | xargs --delimiter=' ' --no-run-if-empty -n 1 -P $NB_CPUS -I {} bash -c 'launch_docker_file "{}" "BUILD_ONLY"'
+# NOTE: builds are unlimited because it's mainly network
+echo $DOCKER_FILES | xargs --delimiter=' ' --no-run-if-empty -n 1 -P 99 -I {} bash -c 'launch_docker_file "{}" "BUILD_ONLY"'
 
 # Run must be synchronizer if possible, will allow to have less issues in synchronized tests (like DUO or DEMO)
 printf "\n\n\n"

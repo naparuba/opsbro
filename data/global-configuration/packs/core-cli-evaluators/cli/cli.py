@@ -75,7 +75,7 @@ def do_evaluator_eval(expr):
     with AnyAgent():
         expr_64 = base64.b64encode(expr)
         try:
-            r = post_opsbro_json('/agent/evaluator/eval', {'expr': expr_64})
+            r = post_opsbro_json('/agent/evaluator/eval', {'expr': expr_64}, timeout=30)
         except get_request_errors(), exp:
             logger.error(exp)
             return
@@ -93,7 +93,7 @@ def do_evaluator_wait_eval_true(expr, timeout=30):
         for i in xrange(timeout):
             expr_64 = base64.b64encode(expr)
             try:
-                r = post_opsbro_json('/agent/evaluator/eval', {'expr': expr_64})
+                r = post_opsbro_json('/agent/evaluator/eval', {'expr': expr_64}, timeout=20)
             except get_request_errors(), exp:
                 logger.error(exp)
                 return

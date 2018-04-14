@@ -66,8 +66,8 @@ class UnixSocketHandler(urllib2.AbstractHTTPHandler):
 
 
 # Get on the local socket. Beware to monkeypatch the get
-def get_local(u, local_socket, params={}, method='GET'):
-    UnixHTTPConnection.socket_timeout = 10
+def get_local(u, local_socket, params={}, method='GET', timeout=10):
+    UnixHTTPConnection.socket_timeout = timeout
     data = None
     special_headers = []
     
@@ -101,14 +101,14 @@ def get_local(u, local_socket, params={}, method='GET'):
 
 
 def get_request_errors():
-    request_errors = (urllib2.URLError,)
+    request_errors = (urllib2.URLError, socket.timeout)
     return request_errors
 
 
 # get a json on the local server, and parse the result    
-def get_json(uri, local_socket='', params={}, multi=False, method='GET'):
+def get_json(uri, local_socket='', params={}, multi=False, method='GET', timeout=10):
     try:
-        (code, r) = get_local(uri, local_socket=local_socket, params=params, method=method)
+        (code, r) = get_local(uri, local_socket=local_socket, params=params, method=method, timeout=timeout)
     except get_request_errors(), exp:
         logger.debug("ERROR local unix get json raw return did raise an exception %s" % exp)
         raise

@@ -59,9 +59,9 @@ if os.name != 'nt':
         return get_local(uri, local_socket)
     
     
-    def post_opsbro_json(uri, data):
+    def post_opsbro_json(uri, data, timeout=10):
         local_socket = get_local_socket()
-        return get_json(uri, local_socket, params=data, method='POST')
+        return get_json(uri, local_socket, params=data, method='POST', timeout=timeout)
     
     
     def put_opsbro_json(uri, data):
@@ -82,7 +82,7 @@ else:
         return (status, text)
     
     
-    def post_opsbro_json(uri, data):
+    def post_opsbro_json(uri, data, timeout=10):
         return get_json(uri, params=data, method='POST')
     
     
