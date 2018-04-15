@@ -1,0 +1,58 @@
+compliance:
+   name: MONGODB-REPOSITORY
+   verify_if:   "True"
+   mode: enforcing
+   interval: 1s
+   note: This installer will install mongodb with repository & packages
+   rule:
+      type: repository
+      # You can set variables in order to not repeat yourself in the if rules
+      variables:
+         is_debian: "{{collector.system.os.linux.distribution}} == 'debian'"
+         is_centos: "{{collector.system.os.linux.distribution}} == 'centos'"
+         is_ubuntu: "{{collector.system.os.linux.distribution}} == 'ubuntu'"
+      environments:
+         - name: debian8
+           if: "{{variables.is_debian}} and {{collector.system.os.linux.major_version}} == 8"
+           parameters:
+             name:       mongodb-org-3.6
+             url:        http://repo.mongodb.org/apt/debian jessie/mongodb-org/3.6 main
+             key:        2930ADAE8CAF5059EE73BB4B58712A2291FA4AD5
+             key-server: hkp://keyserver.ubuntu.com:80
+
+
+         - name: ubuntu
+           if: "{{variables.is_ubuntu}}"
+           parameters:
+             name:       mongodb-org-3.6
+             url:        "[ arch=amd64,arm64 ] http://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.6 multiverse"
+             key:        2930ADAE8CAF5059EE73BB4B58712A2291FA4AD5
+             key-server: hkp://keyserver.ubuntu.com:80
+
+         - name: centos
+           if:   "{{variables.is_centos}}"
+           parameters:
+              packages:
+                 - nginx
+           post_commands:
+              # on centos6, there is no "service" command available for nginx
+              - nginx
+
+
+         - name: fedora
+           if: "{{variables.is_fedora}}"
+           parameters:
+             packages:
+                - nginx
+           post_commands:
+              - nginx
+
+         - name: alpine
+           if: "{{collector.system.os.linux.distribution}} == 'alpine'"
+           parameters:
+              packages:
+                 - nginx
+           post_commands:
+              # on alpine, you must create the run dir first
+              - mkdir /run/nginx/
+              - nginx

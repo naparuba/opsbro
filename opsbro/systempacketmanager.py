@@ -22,6 +22,14 @@ class DummyBackend(object):
     
     def update_package(self, package):
         raise NotImplemented()
+    
+    
+    def assert_repository_key(self, key, key_server, check_only):
+        raise NotImplemented()
+    
+    
+    def assert_repository(self, name, url, check_only):
+        raise NotImplemented()
 
 
 # TODO: get a way to know if a service is enabled, or not
@@ -159,6 +167,14 @@ class SystemPacketMgr(object):
             self.backend.update_package(package)
         else:
             self.backend.install_package(package)
+    
+    
+    def assert_repository_key(self, key, key_server, check_only):
+        return self.backend.assert_repository_key(key, key_server, check_only=check_only)
+    
+    
+    def assert_repository(self, name, url, check_only):
+        return self.backend.assert_repository(name, url, check_only=check_only)
 
 
 systepacketmgr_ = None

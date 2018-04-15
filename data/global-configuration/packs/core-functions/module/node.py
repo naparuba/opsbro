@@ -88,3 +88,21 @@ def gossip_have_event_type(event_type):
 </code>
     """
     return gossiper.have_event_type(event_type)
+
+
+@export_evaluater_function(function_group=FUNCTION_GROUP)
+def compliance_get_state_of_rule(rule_name):
+    """**compliance_get_state_of_rule(rule_name)** -> return the state of the rule with the name rule_name
+
+ * rule_name: (string) name of the rule to get. If wrong, state will be UNKNOWN.
+
+
+<code>
+    Example:
+        compliance_get_state_of_rule('Install mongodb')
+    Returns:
+        'COMPLIANT'
+</code>
+    """
+    from opsbro.compliancemgr import compliancemgr
+    return compliancemgr.get_rule_state(rule_name)

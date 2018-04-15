@@ -1,6 +1,7 @@
 import time
 import os
 import subprocess
+import threading
 
 from opsbro.log import LoggerFactory
 
@@ -15,6 +16,11 @@ class AptBackend(object):
         self.DEB_CACHE_MAX_AGE = 5  # if we cannot look at dpkg data age, allow a max cache of 60s to get a new apt update from disk
         self.DPKG_CACHE_PATH = '/var/cache/apt/pkgcache.bin'
         self.dpkg_cache_last_modification_epoch = 0.0
+        
+        self.gpg_cache_lock = threading.RLock()
+        self.gpg_cache_path = '/etc/apt/trusted.gpg'
+        self.gpg_cache_last_modification_date = 0
+        self.gpg_cache = {}
         
         self.need_reload = True
         
@@ -109,3 +115,93 @@ class AptBackend(object):
         # we did install a package, so our internal cache is wrong
         self.need_reload = True
         return
+    
+    
+    # Check if a key is there
+    #   apt-key export KEY | grep 'BEGIN PGP PUBLIC KEY BLOCK'
+    # Add a key
+    #   apt-key adv --keyserver hkp://KEY_SERVER --recv KEY
+    def assert_repository_key(self, key, key_server, check_only=True):
+        # Maybe the key is already there in cache
+        # and the cache is still valid
+        
+        with self.gpg_cache_lock:
+            if os.path.exists(self.gpg_cache_path):
+                # If the gpg key did change, reset the cache
+                last_change = os.stat(self.gpg_cache_path).st_mtime
+                if last_change != self.gpg_cache_last_modification_date:
+                    self.gpg_cache.clear()
+                    self.gpg_cache_last_modification_date = last_change
+            else:
+                # clean the cache, always so we for a full recheck
+                self.gpg_cache.clear()
+            presence = self.gpg_cache.get(key, None)
+            if presence is True:
+                logger.debug('APT: apt-key list already have key %s' % key)
+                return True
+        
+        p = subprocess.Popen(['apt-key', 'export', key], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = p.communicate()
+        logger.info('APT (apt-key listing):: stdout/stderr: %s/%s' % (stdout, stderr))
+        lines = stdout.splitlines()
+        for line in lines:
+            if "BEGIN PGP PUBLIC KEY BLOCK" in line:
+                logger.debug('APT: apt-key list already have key %s' % key)
+                # Update the cache
+                with self.gpg_cache_lock:
+                    self.gpg_cache[key] = True
+                return True
+        
+        # If we just want to check only, do not import the key
+        if check_only:
+            return False
+        
+        # Ok do not have the key, add it
+        logger.info('APT :: updating repository key %s from key server: %s' % (key, key_server))
+        if not key_server.startswith('hkp://'):
+            key_server = 'hkp://%s' % key_server
+        p = subprocess.Popen(['apt-key', 'adv', '--keyserver', key_server, '--recv', key], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = p.communicate()
+        logger.info('APT (apt-key adv):: stdout/stderr: %s/%s' % (stdout, stderr))
+        if p.returncode != 0:
+            raise Exception('APT: apt-key adv update did not succeed (%s), exiting from serveur key update' % (stdout + stderr))
+        with self.gpg_cache_lock:
+            self.gpg_cache[key] = True
+        return True
+    
+    
+    # Assert that the repository file is present
+    # /etc/apt/sources.list.d/NAME.list
+    # and with the good value
+    # deb URL
+    def assert_repository(self, name, url, check_only=True):
+        pth = '/etc/apt/sources.list.d/%s.list' % name
+        
+        content = 'deb %s\n' % url
+        
+        if os.path.exists(pth):
+            try:
+                with open(pth, 'r') as f:
+                    buf = f.read()
+                if content == buf:
+                    logger.debug('APT the repository %s have the good value:%s' % (name, url))
+                    return True
+            except IOError, exp:
+                err = 'APT: cannot read the repository file: %s : %s' % (pth, exp)
+                logger.error(err)
+                raise Exception(err)
+        
+        # If we are just in audit, do NOT write it
+        if check_only:
+            return False
+        
+        # We rewrite it now
+        try:
+            with open(pth, 'w') as f:
+                f.write(content)
+            logger.info('APT the repository %s been updated to:%s' % (name, url))
+        except IOError, exp:
+            err = 'APT: cannot write repository content: %s: %s' % (pth, exp)
+            logger.error(err)
+            raise Exception(err)
+        return True

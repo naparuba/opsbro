@@ -1,5 +1,5 @@
 compliance:
-   name: Install numpy if slack module enabled
+   name: Install requests if slack module enabled
    verify_if:   "is_in_group('slack')"
    mode: enforcing
    interval: 1s

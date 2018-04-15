@@ -1,0 +1,27 @@
+compliance:
+   name: INSTALL-MONGODB-PACKAGE
+   verify_if:   "compliance_get_state_of_rule('MONGODB-REPOSITORY') == 'COMPLIANT'"
+   mode: enforcing
+   interval: 1s
+   note: This installer will install mongodb packages
+   rule:
+      type: package-install
+      # You can set variables in order to not repeat yourself in the if rules
+      variables:
+         is_debian: "{{collector.system.os.linux.distribution}} == 'debian'"
+         is_centos: "{{collector.system.os.linux.distribution}} == 'centos'"
+         is_ubuntu: "{{collector.system.os.linux.distribution}} == 'ubuntu'"
+      environments:
+         - name: debian8
+           if: "{{variables.is_debian}} and {{collector.system.os.linux.major_version}} == 8"
+           parameters:
+              packages:
+                 - mongodb-org-server
+
+         - name: ubuntu
+           if:   "{{variables.is_ubuntu}}"
+           parameters:
+              packages:
+                 - mongodb-org-server
+
+

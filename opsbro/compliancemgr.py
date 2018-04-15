@@ -181,7 +181,7 @@ class Rule(object):
         if not post_commands:
             post_commands = self.post_commands
             _from = 'Rule'
-        logger.info('%s have %d post commands' % (_from, len(post_commands)))
+        logger.debug('%s have %d post commands' % (_from, len(post_commands)))
         for command in post_commands:
             logger.info('Launching post command: %s' % command)
             p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, preexec_fn=os.setsid)
@@ -373,7 +373,7 @@ class ComplianceManager(object):
                 rule.add_error(err)
                 rule.set_error()
                 continue
-                
+            
             history_entry = rule.get_history_entry()
             if history_entry:
                 self.add_history_entry(history_entry)
@@ -430,6 +430,13 @@ class ComplianceManager(object):
         for c in compliances:
             counts[c.get_state()] += 1
         return counts
+    
+    
+    def get_rule_state(self, rule_name):
+        for compliance in self.compliances.values():
+            if compliance.get_name() == rule_name:
+                return compliance.get_state()
+        return 'UNKNOWN'
     
     
     def export_http(self):
