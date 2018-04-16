@@ -28,7 +28,7 @@ class DummyBackend(object):
         raise NotImplemented()
     
     
-    def assert_repository(self, name, url, check_only):
+    def assert_repository(self, name, url, key_server, check_only):
         raise NotImplemented()
 
 
@@ -173,8 +173,8 @@ class SystemPacketMgr(object):
         return self.backend.assert_repository_key(key, key_server, check_only=check_only)
     
     
-    def assert_repository(self, name, url, check_only):
-        return self.backend.assert_repository(name, url, check_only=check_only)
+    def assert_repository(self, name, url, key_server, check_only):
+        return self.backend.assert_repository(name, url, key_server, check_only=check_only)
 
 
 systepacketmgr_ = None

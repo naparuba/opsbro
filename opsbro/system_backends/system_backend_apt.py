@@ -174,7 +174,7 @@ class AptBackend(object):
     # /etc/apt/sources.list.d/NAME.list
     # and with the good value
     # deb URL
-    def assert_repository(self, name, url, check_only=True):
+    def assert_repository(self, name, url, key_server, check_only=True):
         pth = '/etc/apt/sources.list.d/%s.list' % name
         
         content = 'deb %s\n' % url

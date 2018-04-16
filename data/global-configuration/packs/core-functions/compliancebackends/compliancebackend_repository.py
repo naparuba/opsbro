@@ -79,7 +79,7 @@ class RepositoryDriver(InterfaceComplianceDriver):
         # Now we can get our parameters
         parameters = matching_env.get_parameters()
         url = parameters.get('url')
-        key = parameters.get('key')
+        key = parameters.get('key', '')
         name = parameters.get('name')
         key_server = parameters.get('key-server', '')
         
@@ -90,7 +90,7 @@ class RepositoryDriver(InterfaceComplianceDriver):
             return
         
         # STEP1: First key
-        if key and key_server:
+        if key or key_server:
             try:
                 is_set = systepacketmgr.assert_repository_key(key, key_server, check_only=check_only)
                 if not is_set:
@@ -109,7 +109,7 @@ class RepositoryDriver(InterfaceComplianceDriver):
         
         # STEP2: repository
         try:
-            is_repository_set = systepacketmgr.assert_repository(name, url, check_only=check_only)
+            is_repository_set = systepacketmgr.assert_repository(name, url, key_server, check_only=check_only)
             if not is_repository_set:
                 err = 'The repository named %s is not set' % name
                 rule.add_error(err)

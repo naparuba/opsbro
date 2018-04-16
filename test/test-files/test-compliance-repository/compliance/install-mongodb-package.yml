@@ -24,4 +24,8 @@ compliance:
               packages:
                  - mongodb-org-server
 
-
+         - name: centos
+           if:   "{{variables.is_centos}}"
+           parameters:
+              packages:
+                 - mongodb-org-server
