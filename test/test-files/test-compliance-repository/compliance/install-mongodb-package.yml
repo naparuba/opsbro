@@ -11,6 +11,7 @@ compliance:
          is_debian: "{{collector.system.os.linux.distribution}} == 'debian'"
          is_centos: "{{collector.system.os.linux.distribution}} == 'centos'"
          is_ubuntu: "{{collector.system.os.linux.distribution}} == 'ubuntu'"
+         is_amazon: "{{collector.system.os.linux.distribution}} == 'amazon-linux2'"
       environments:
          - name: debian8
            if: "{{variables.is_debian}} and {{collector.system.os.linux.major_version}} == 8"
@@ -26,6 +27,13 @@ compliance:
 
          - name: centos
            if:   "{{variables.is_centos}}"
+           parameters:
+              packages:
+                 - mongodb-org-server
+
+
+         - name: amazon
+           if:   "{{variables.is_amazon}}"
            parameters:
               packages:
                  - mongodb-org-server
