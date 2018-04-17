@@ -36,18 +36,13 @@ class RepositoryDriver(InterfaceComplianceDriver):
     # 16.04:
     # deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.6 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.6.list
     
+    # Centos/redhat
     # [mongodb-org-3.4]
     # name=MongoDB Repository
     # baseurl=https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/3.4/x86_64/
     # gpgcheck=1
     # enabled=1
     # gpgkey=https://www.mongodb.org/static/pgp/server-3.4.asc
-    # [mongodb-org-3.2]
-    # name=MongoDB Repository
-    # baseurl=https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/3.2/x86_64/
-    # gpgcheck=1
-    # enabled=1
-    # gpgkey=https://www.mongodb.org/static/pgp/server-3.2.asc
     # > /etc/yum.repos.d/mongodb-org.repo
     
     # environments:   <- take first to win

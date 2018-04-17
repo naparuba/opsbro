@@ -11,6 +11,8 @@ compliance:
          is_debian: "{{collector.system.os.linux.distribution}} == 'debian'"
          is_centos: "{{collector.system.os.linux.distribution}} == 'centos'"
          is_ubuntu: "{{collector.system.os.linux.distribution}} == 'ubuntu'"
+         is_amazon: "{{collector.system.os.linux.distribution}} == 'amazon-linux2'"
+
       environments:
          - name: debian8
            if: "{{variables.is_debian}} and {{collector.system.os.linux.major_version}} == 8"
@@ -33,6 +35,14 @@ compliance:
          - name: centos
            if:   "{{variables.is_centos}}"
            parameters:
-             name:       mongodb-org-3.6
+             name:       mongodb-org-3.4
              url:        "https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/3.4/x86_64/"
              key:        https://www.mongodb.org/static/pgp/server-3.4.asc
+
+
+         - name: amazon
+           if:   "{{variables.is_amazon}}"
+           parameters:
+             name:       mongodb-org-3.6
+             url:        "https://repo.mongodb.org/yum/amazon/2013.03/mongodb-org/3.6/x86_64/"
+             key:        https://www.mongodb.org/static/pgp/server-3.6.asc
