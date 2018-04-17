@@ -36,4 +36,7 @@ compliance:
            if:   "{{variables.is_amazon}}"
            parameters:
               packages:
+                 # NOTE: mongodb need to add user, but by default  amazon
+                 # do not have this command
+                 - shadow-utils
                  - mongodb-org-server
