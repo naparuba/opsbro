@@ -10,6 +10,7 @@ import bisect
 import threading
 import os
 import glob
+from collections import deque
 
 # some singleton :)
 from .log import LoggerFactory
@@ -1153,9 +1154,10 @@ class Gossip(object):
     # consume: if True (default) then a message will be decremented
     @staticmethod
     def __do_gossip_push(dest, consume=True):
+        messages = deque()
         message = ''
         to_del = []
-        stack = []
+        stack = deque()
         groups = dest.get('groups', [])
         # Be sure we will have first:
         # * prioritary messages
@@ -1169,9 +1171,13 @@ class Gossip(object):
                 old_message = message
                 # only delete message if we consume it (our zone)
                 if consume:
+                    # Increase message send number but only if we need to consume it (our zone send)
+                    b['send'] += 1
                     send = b['send']
                     if send >= KGOSSIP:
                         to_del.append(b)
+                # NOTE: maybe this message will make the current stack too big
+                # if so we will get back to the old version and create a new stack
                 bmsg = b['msg']
                 stack.append(bmsg)
                 message = json.dumps(stack)
@@ -1179,33 +1185,33 @@ class Gossip(object):
                 # fucking big message, so we fail back to the old_message that was
                 # in the good size and send it now
                 if len(message) > 1400 and len(stack) != 1:
-                    message = old_message
-                    stack = stack[:-1]
-                    logger.warning("__do_gossip_push:: overload message %s. skipping new ones" % len(stack))
-                    break
-                # Increase message send number but only if we need to consume it (our zone send)
-                if consume:
-                    # stack a sent to this broadcast message
-                    b['send'] += 1
+                    # Stop this message, stock the previous version, and start a new stack
+                    messages.append(old_message)
+                    # reset with just the new packet
+                    stack = deque()
+                    stack.append(bmsg)
+                    message = json.dumps(stack)
+        # always stack the last one if we did create more than 1
+        # or just the first if it was small
+        messages.append(message)
         
         with broadcaster.broadcasts_lock:
             # Clean too much broadcasted messages
             for b in to_del:
                 broadcaster.broadcasts.remove(b)
-        
-        # Void message? bail out
-        if len(message) == 0:
-            return
-        
+                
         addr = dest['addr']
         port = dest['port']
+        total_size = 0
         # and go for it!
         try:
             encrypter = libstore.get_encrypter()
-            enc_message = encrypter.encrypt(message)
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
-            sock.sendto(enc_message, (addr, port))
-            logger.info('BROADCAST: sent %d message (len=%d) to %s:%s (uuid=%s)' % (len(stack), len(enc_message), addr, port, dest['uuid']))
+            for message in message:
+                enc_message = encrypter.encrypt(message)
+                total_size += len(enc_message)
+                sock.sendto(enc_message, (addr, port))
+            logger.info('BROADCAST: sent %d messages (total size=%d) to %s:%s (uuid=%s)' % (len(messages), total_size, addr, port, dest['uuid']))
         except (socket.timeout, socket.gaierror), exp:
             logger.debug("ERROR: cannot sent the message %s" % exp)
         try:
