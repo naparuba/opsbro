@@ -1192,7 +1192,12 @@ class Gossip(object):
                     message = json.dumps(stack)
         # always stack the last one if we did create more than 1
         # or just the first if it was small
-        messages.append(message)
+        if message != '':
+            messages.append(message)
+        
+        # Maybe there is no messages to send
+        if len(messages) == 0:
+            return
         
         with broadcaster.broadcasts_lock:
             # Clean too much broadcasted messages
@@ -1206,13 +1211,14 @@ class Gossip(object):
         try:
             encrypter = libstore.get_encrypter()
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
-            for message in message:
+            for message in messages:
+                logger.info('BROADCAST: sending message: (len=%d) %s' % (len(message), message))
                 enc_message = encrypter.encrypt(message)
                 total_size += len(enc_message)
                 sock.sendto(enc_message, (addr, port))
-            logger.info('BROADCAST: sent %d messages (total size=%d) to %s:%s (uuid=%s)' % (len(messages), total_size, addr, port, dest['uuid']))
+            logger.info('BROADCAST: sent %d messages (total size=%d) to %s:%s (uuid=%s  display_name=%s)' % (len(messages), total_size, addr, port, dest['uuid'], dest['display_name']))
         except (socket.timeout, socket.gaierror), exp:
-            logger.info("ERROR: cannot sent the message %s" % exp)
+            logger.error("ERROR: cannot sent the UDP message of len %d to %s: %s" % (len(message), dest['uuid'], exp))
         try:
             sock.close()
         except Exception:

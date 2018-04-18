@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # We are now a WAN based node
-test/set_network_simulated_type WAN
+#test/set_network_simulated_type WAN
 
 . test/common_shell_functions.sh
 
@@ -120,6 +120,11 @@ if [ $CASE == "NODE-HTTP-1" ] || [ $CASE == "NODE-HTTP-2" ]; then
    echo "$CASE  `date` will wait for queries until all others nodes are done"
 
    opsbro gossip events add  "ENDING-$CASE"
+   if [ $? != 0 ];then
+      echo "ERROR: cannot send a event ENDING-$CASE"
+      cat /var/log/opsbro/daemon.log
+      cat /var/log/opsbro/gossip.log
+   fi
    wait_step_event "ENDING"
 
 
@@ -270,7 +275,7 @@ if [ $CASE == "NODE-CLIENT" ]; then
 
    for ii in `seq 1 6`; do
       echo " - Trying http://172.17.0.$ii"
-      curl -s --connect-timeout 2 http://172.17.0.$ii
+      curl -s --connect-timeout 4 http://172.17.0.$ii
       echo ""
    done
 
@@ -288,9 +293,10 @@ if [ $CASE == "NODE-CLIENT" ]; then
    for ii in `seq 1 $TOTAL`; do
       printf "\r→ "
       sync
-      OUT=$(curl --connect-timeout 2 -s http://haproxy.group.local.opsbro)
+      OUT=$(curl --connect-timeout 4 -s http://haproxy.group.local.opsbro)
       if [[ "$OUT" != "NODE-HTTP-1" ]] && [[ "$OUT" != "NODE-HTTP-2" ]]; then
-         echo "CLIENT (test $ii/$TOTAL) Cannot reach real HTTP servers from the client: $OUT"
+         echo "CLIENT (test $ii/$TOTAL) Cannot reach real HTTP servers from the client: Result:====> $OUT <======"
+         echo "  Launching in verbose mode:"
          curl -v http://haproxy.group.local.opsbro
          exit 2
       fi

@@ -32,6 +32,8 @@ function wait_member_display_name_with_timeout {
 function wait_event_with_timeout {
     opsbro gossip events wait $1 --timeout=$2
     if [ $? != 0 ]; then
+         cat /var/log/opsbro/daemon.log
+         cat /var/log/opsbro/gossip.log
          echo "ERROR: I do not have the event $1 after $2 seconds"
          exit 2
     fi

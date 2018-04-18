@@ -289,121 +289,124 @@ def do_detect_nodes(auto_join, timeout=5):
 
 
 def do_wait_event(event_type, timeout=30):
+    # The information is available only if the agent is started
+    wait_for_agent_started(visual_wait=True)
+    
     import itertools
     spinners = itertools.cycle(CHARACTERS.spinners)
     
-    # We need an agent for this
-    with AnyAgent():
-        for i in xrange(timeout):
-            uri = '/agent/event/%s' % event_type
-            try:
-                evt = get_opsbro_json(uri)
-            except get_request_errors(), exp:
-                logger.error(exp)
-                return
-            
-            if evt != None:
-                cprint('\n %s ' % CHARACTERS.arrow_left, color='grey', end='')
-                cprint('%s ' % CHARACTERS.check, color='green', end='')
-                cprint('The event ', end='')
-                cprint('%s' % event_type, color='magenta', end='')
-                cprint(' is ', end='')
-                cprint('detected', color='green')
-                sys.exit(0)
-            # Not detected? increase loop
-            cprint('\r %s ' % spinners.next(), color='blue', end='')
+    for i in xrange(timeout):
+        uri = '/agent/event/%s' % event_type
+        try:
+            evt = get_opsbro_json(uri)
+        except get_request_errors(), exp:
+            logger.error(exp)
+            sys.exit(2)
+        
+        if evt is not None:
+            cprint('\n %s ' % CHARACTERS.arrow_left, color='grey', end='')
+            cprint('%s ' % CHARACTERS.check, color='green', end='')
+            cprint('The event ', end='')
             cprint('%s' % event_type, color='magenta', end='')
             cprint(' is ', end='')
-            cprint('NOT DETECTED', color='magenta', end='')
-            cprint(' (%d/%d)' % (i, timeout), end='')
-            # As we did not \n, we must flush stdout to print it
-            sys.stdout.flush()
-            time.sleep(1)
-        cprint("\nThe event %s was not detected after %s seconds" % (event_type, timeout))
-        sys.exit(2)
+            cprint('detected', color='green')
+            sys.exit(0)
+        # Not detected? increase loop
+        cprint('\r %s ' % spinners.next(), color='blue', end='')
+        cprint('%s' % event_type, color='magenta', end='')
+        cprint(' is ', end='')
+        cprint('NOT DETECTED', color='magenta', end='')
+        cprint(' (%d/%d)' % (i, timeout), end='')
+        # As we did not \n, we must flush stdout to print it
+        sys.stdout.flush()
+        time.sleep(1)
+    cprint("\nThe event %s was not detected after %s seconds" % (event_type, timeout))
+    sys.exit(2)
 
 
 def do_gossip_add_event(event_type):
-    # We need an agent for this
-    with AnyAgent():
-        try:
-            r = post_opsbro_json('/agent/event', {'event_type': event_type})
-        except get_request_errors(), exp:
-            logger.error(exp)
-            return
-        cprint('\n %s ' % CHARACTERS.arrow_left, color='grey', end='')
-        cprint('%s ' % CHARACTERS.check, color='green', end='')
-        cprint('The event ', end='')
-        cprint('%s' % event_type, color='magenta', end='')
-        cprint(' is ', end='')
-        cprint('added', color='green')
+    # The information is available only if the agent is started
+    wait_for_agent_started(visual_wait=True)
+    
+    try:
+        r = post_opsbro_json('/agent/event', {'event_type': event_type})
+    except get_request_errors(), exp:
+        logger.error(exp)
+        sys.exit(2)
+    cprint('\n %s ' % CHARACTERS.arrow_left, color='grey', end='')
+    cprint('%s ' % CHARACTERS.check, color='green', end='')
+    cprint('The event ', end='')
+    cprint('%s' % event_type, color='magenta', end='')
+    cprint(' is ', end='')
+    cprint('added', color='green')
 
 
 def do_wait_members(name='', display_name='', group='', count=1, timeout=30):
+    # The information is available only if the agent is started
+    wait_for_agent_started(visual_wait=True)
+    
     import itertools
     spinners = itertools.cycle(CHARACTERS.spinners)
     
-    # We need an agent for this
-    with AnyAgent():
-        for i in xrange(timeout):
-            try:
-                members = get_opsbro_json('/agent/members').values()
-            except get_request_errors(), exp:
-                logger.error(exp)
-                return
-            if name:
-                for m in members:
-                    if m['name'] == name:
-                        cprint('\n %s ' % CHARACTERS.arrow_left, color='grey', end='')
-                        cprint('%s ' % CHARACTERS.check, color='green', end='')
-                        cprint('The member ', end='')
-                        cprint('%s' % name, color='magenta', end='')
-                        cprint(' is ', end='')
-                        cprint('detected', color='green')
-                        sys.exit(0)
-            elif display_name:
-                for m in members:
-                    if m['display_name'] == display_name:
-                        cprint('\n %s ' % CHARACTERS.arrow_left, color='grey', end='')
-                        cprint('%s ' % CHARACTERS.check, color='green', end='')
-                        cprint('The member ', end='')
-                        cprint('%s' % display_name, color='magenta', end='')
-                        cprint(' is ', end='')
-                        cprint('detected', color='green')
-                        sys.exit(0)
-            
-            elif group:
-                founded = []
-                for m in members:
-                    if group in m['groups']:
-                        founded.append(m)
-                
-                if len(founded) > count:
+    for i in xrange(timeout):
+        try:
+            members = get_opsbro_json('/agent/members').values()
+        except get_request_errors(), exp:
+            logger.error(exp)
+            sys.exit(2)
+        if name:
+            for m in members:
+                if m['name'] == name:
                     cprint('\n %s ' % CHARACTERS.arrow_left, color='grey', end='')
                     cprint('%s ' % CHARACTERS.check, color='green', end='')
-                    cprint('The group ', end='')
-                    cprint('%s' % group, color='magenta', end='')
+                    cprint('The member ', end='')
+                    cprint('%s' % name, color='magenta', end='')
                     cprint(' is ', end='')
                     cprint('detected', color='green')
-                    cprint(' with %d members' % len(founded), end='')
                     sys.exit(0)
+        elif display_name:
+            for m in members:
+                if m['display_name'] == display_name:
+                    cprint('\n %s ' % CHARACTERS.arrow_left, color='grey', end='')
+                    cprint('%s ' % CHARACTERS.check, color='green', end='')
+                    cprint('The member ', end='')
+                    cprint('%s' % display_name, color='magenta', end='')
+                    cprint(' is ', end='')
+                    cprint('detected', color='green')
+                    sys.exit(0)
+        
+        elif group:
+            founded = []
+            for m in members:
+                if group in m['groups']:
+                    founded.append(m)
             
-            # Not detected? increase loop
-            cprint('\r %s ' % spinners.next(), color='blue', end='')
-            if name:
-                cprint('%s' % name, color='magenta', end='')
-            elif display_name:
-                cprint('%s' % display_name, color='magenta', end='')
-            else:
+            if len(founded) > count:
+                cprint('\n %s ' % CHARACTERS.arrow_left, color='grey', end='')
+                cprint('%s ' % CHARACTERS.check, color='green', end='')
+                cprint('The group ', end='')
                 cprint('%s' % group, color='magenta', end='')
-            cprint(' is ', end='')
-            cprint('NOT DETECTED', color='magenta', end='')
-            cprint(' (%d/%d)' % (i, timeout), end='')
-            # As we did not \n, we must flush stdout to print it
-            sys.stdout.flush()
-            time.sleep(1)
-        cprint("\nThe name/display_name/group was not detected after %s seconds" % (timeout))
-        sys.exit(2)
+                cprint(' is ', end='')
+                cprint('detected', color='green')
+                cprint(' with %d members' % len(founded), end='')
+                sys.exit(0)
+        
+        # Not detected? increase loop
+        cprint('\r %s ' % spinners.next(), color='blue', end='')
+        if name:
+            cprint('%s' % name, color='magenta', end='')
+        elif display_name:
+            cprint('%s' % display_name, color='magenta', end='')
+        else:
+            cprint('%s' % group, color='magenta', end='')
+        cprint(' is ', end='')
+        cprint('NOT DETECTED', color='magenta', end='')
+        cprint(' (%d/%d)' % (i, timeout), end='')
+        # As we did not \n, we must flush stdout to print it
+        sys.stdout.flush()
+        time.sleep(1)
+    cprint("\nThe name/display_name/group was not detected after %s seconds" % (timeout))
+    sys.exit(2)
 
 
 exports = {

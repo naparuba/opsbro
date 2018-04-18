@@ -8,6 +8,6 @@ ADD        . /root/opsbro-oss
 ENV        TEST_PACKAGE_NAME=tcl
 WORKDIR       /root/opsbro-oss
 #ENTRYPOINT    test/test_one_linux_installation.sh  && test/assert_group.sh "oracle-linux"
-# TODO: get back oracle linux (pypi is not available
+# TODO: get back oracle linux (pypi is not available)
 ENTRYPOINT    /bin/true
 
