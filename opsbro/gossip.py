@@ -1157,7 +1157,7 @@ class Gossip(object):
         messages = deque()
         message = ''
         to_del = []
-        stack = deque()
+        stack = []  # not deque because we cannot json it
         groups = dest.get('groups', [])
         # Be sure we will have first:
         # * prioritary messages
@@ -1188,8 +1188,7 @@ class Gossip(object):
                     # Stop this message, stock the previous version, and start a new stack
                     messages.append(old_message)
                     # reset with just the new packet
-                    stack = deque()
-                    stack.append(bmsg)
+                    stack = [bmsg]
                     message = json.dumps(stack)
         # always stack the last one if we did create more than 1
         # or just the first if it was small
@@ -1199,7 +1198,7 @@ class Gossip(object):
             # Clean too much broadcasted messages
             for b in to_del:
                 broadcaster.broadcasts.remove(b)
-                
+        
         addr = dest['addr']
         port = dest['port']
         total_size = 0
@@ -1213,7 +1212,7 @@ class Gossip(object):
                 sock.sendto(enc_message, (addr, port))
             logger.info('BROADCAST: sent %d messages (total size=%d) to %s:%s (uuid=%s)' % (len(messages), total_size, addr, port, dest['uuid']))
         except (socket.timeout, socket.gaierror), exp:
-            logger.debug("ERROR: cannot sent the message %s" % exp)
+            logger.info("ERROR: cannot sent the message %s" % exp)
         try:
             sock.close()
         except Exception:
