@@ -44,6 +44,12 @@ wait_member_display_name_with_timeout "node-2" 10
 wait_member_display_name_with_timeout "node-3" 10
 
 
+opsbro gossip events add "NODE$NODE_NB-SYNC"
+wait_event_with_timeout 'NODE1-SYNC' 20
+wait_event_with_timeout 'NODE2-SYNC' 20
+wait_event_with_timeout 'NODE3-SYNC' 20
+
+
 # NODE1: fast exit
 # NODE2: ask leave
 # NODE3: look for dead & leaved node
@@ -79,9 +85,9 @@ if [ "$NODE_NB" == "3" ]; then
    opsbro gossip events add 'NODE3-RECEIVE-LEAVING'
 
    echo "Wait until we receive gossip messages from node2"
-   sleep 10
+
    cat /var/log/opsbro/gossip.log
-   opsbro gossip members --detail
+   opsbro gossip members
 
    # THERE should be
    # * one alive (node3)

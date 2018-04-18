@@ -9,13 +9,25 @@ function show_my_system_ip {
 
 # Count the number of members in a STATE and check if they are NB==$2
 function assert_state_count {
-   NB=$(opsbro gossip members | grep 'docker-container' | grep "$1" | wc -l)
-   if [ "$NB" != "$2" ]; then
-      echo "ERROR: there should be $2 $1 but there are $NB"
-      opsbro gossip members
-      exit 2
-   fi
-   echo "OK: founded $NB $1 states nodes"
+   STATS="$3"
+   i=0
+   until [ $i -ge 20 ]
+   do
+      STATS=$(opsbro gossip members)
+      NB=$(echo "$STATS" | grep 'docker-container' | grep "$1" | wc -l)
+      if [ "$NB" == "$2" ]; then
+          echo "OK: founded $NB $1 states nodes"
+          return 0
+      fi
+      echo "OUPS: there should be $2 $1 but there are $NB after $i/20 try"
+      i=$[$i+1]
+      sleep 1
+   done
+
+   # Out and still not OK? we did fail
+   echo "ERROR: there should be $2 $1 but there are $NB after 20 try"
+   echo "$STATS"
+   exit 2
 }
 
 
