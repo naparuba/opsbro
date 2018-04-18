@@ -2,13 +2,14 @@ import os
 import subprocess
 import threading
 
+from .linux_system_backend import LinuxBackend
 from opsbro.log import LoggerFactory
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('system-packages')
 
 
-class ApkBackend(object):
+class ApkBackend(LinuxBackend):
     def __init__(self):
         self.apk_installed_packages = set()
         self.apk_cache_time = 0.0
@@ -80,3 +81,48 @@ class ApkBackend(object):
         if p.returncode != 0:
             raise Exception('APK: apk add id not succeed (%s), exiting from package updating (%s)' % (stdout + stderr, package))
         return
+    
+    
+    # Useradd and such can take args
+    def __get_user_commands_params(self, uid, gid, display_name, home_dir, shell):
+        args = []
+        if uid is not None:
+            args.append('-u')
+            args.append('%s' % uid)
+        if gid is not None and gid is not '':
+            args.append('-G')
+            args.append('%s' % gid)
+        if display_name:
+            args.append('-g')
+            args.append(display_name)
+        if home_dir:
+            # NOTE: --home-dir in add, but --home in usermod...
+            args.append('-h')
+            args.append(home_dir)
+        if shell:
+            args.append('-s')
+            args.append(shell)
+        return args
+    
+    
+    # NOTE: alpine is special because it use busybox and so a limited useradd
+    def create_system_user(self, name, uid=None, gid=None, display_name=None, home_dir=None, shell=None):
+        logger.info('Creating the user %s' % name)
+        args = self.__get_user_commands_params(uid, gid, display_name, home_dir, shell)
+        args.insert(0, 'adduser')
+        args.append('-D')  # do not ask for password
+        args.append(name)
+        logger.info('Launching command: %s' % ' '.join(args))
+        proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
+        stdout, stderr = proc.communicate()
+        if proc.returncode != 0:
+            err = 'Cannot create the user %s: %s' % (name, stdout + stderr)
+            logger.error(err)
+            raise Exception(err)
+        return
+    
+    
+    def modify_system_user(self, name, uid=None, gid=None, display_name=None, home_dir=None, shell=None):
+        err = 'Alpine: the usermod command is not available on busybox'
+        logger.error(err)
+        raise Exception(err)

@@ -1,0 +1,22 @@
+compliance:
+   name: USER SHINKEN
+   verify_if:   "True"
+   # We force to get back the file rights
+   mode: enforcing
+   interval: 1s
+   rule:
+      type: system-user
+      environments:
+        - name: linux
+           # no need for a if here, will be True
+          parameters:
+             name: shinken
+             uid:  500
+             gid:  shinken
+             display_name: Shinken User
+             home_dir: /var/lib/shinken
+             shell: /bin/shinken
+
+      # Same post commands for every env
+      post_commands:
+        - echo "success" > /tmp/success

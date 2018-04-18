@@ -1,0 +1,18 @@
+FROM centos:6
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+ADD        . /root/opsbro-oss
+
+
+WORKDIR    /root/opsbro-oss
+
+
+RUN        python setup.py install
+
+# Copy the mail pack into a local one to enable modification
+RUN        opsbro  packs overload global.linux
+# Copy the new compliance value
+ADD        test/test-files/test-compliance-system-user/compliance/*.yml   /var/lib/opsbro/local-configuration/packs/linux/compliance/
+
+ENTRYPOINT     test/test_feature_compliance-system-user.sh

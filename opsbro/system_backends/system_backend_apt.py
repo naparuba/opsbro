@@ -4,12 +4,13 @@ import subprocess
 import threading
 
 from opsbro.log import LoggerFactory
+from .linux_system_backend import LinuxBackend
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('system-packages')
 
 
-class AptBackend(object):
+class AptBackend(LinuxBackend):
     def __init__(self):
         self.deb_cache = None
         self.deb_cache_update_time = 0

@@ -6,32 +6,6 @@ from .log import LoggerFactory
 # Global logger for this part
 logger = LoggerFactory.create_logger('system-packages')
 
-
-class DummyBackend(object):
-    def __init__(self):
-        pass
-    
-    
-    def has_package(self, package):
-        return False
-    
-    
-    def install_package(self, package):
-        raise NotImplemented()
-    
-    
-    def update_package(self, package):
-        raise NotImplemented()
-    
-    
-    def assert_repository_key(self, key, key_server, check_only):
-        raise NotImplemented()
-    
-    
-    def assert_repository(self, name, url, key_server, check_only):
-        raise NotImplemented()
-
-
 # TODO: get a way to know if a service is enabled, or not
 # RUN level: [root@centos-7 ~]# systemctl get-default
 # multi-user.target   ==> 3
@@ -45,7 +19,7 @@ class DummyBackend(object):
 # root@docker-host:~/opsbro-oss# systemctl get-default
 # graphical.target
 
-
+from .system_backends.linux_system_backend import LinuxBackend  # for unmanaged system
 from .system_backends.system_backend_apt import AptBackend
 from .system_backends.system_backend_apk import ApkBackend
 from .system_backends.system_backend_dnf import DnfBackend
@@ -139,7 +113,7 @@ class SystemPacketMgr(object):
         elif self.distro == 'opensuse':
             self.backend = ZypperBackend()
         else:  # oups
-            self.backend = DummyBackend()
+            self.backend = LinuxBackend()
     
     
     def is_managed_system(self):
@@ -175,6 +149,14 @@ class SystemPacketMgr(object):
     
     def assert_repository(self, name, url, key_server, check_only):
         return self.backend.assert_repository(name, url, key_server, check_only=check_only)
+    
+    
+    def create_system_user(self, name, uid=None, gid=None, display_name=None, home_dir=None, shell=None):
+        return self.backend.create_system_user(name, uid=uid, gid=gid, display_name=display_name, home_dir=home_dir, shell=shell)
+    
+    
+    def modify_system_user(self, name, uid=None, gid=None, display_name=None, home_dir=None, shell=None):
+        return self.backend.modify_system_user(name, uid=uid, gid=gid, display_name=display_name, home_dir=home_dir, shell=shell)
 
 
 systepacketmgr_ = None

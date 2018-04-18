@@ -1,13 +1,14 @@
 import subprocess
 import threading
 
+from .linux_system_backend import LinuxBackend
 from opsbro.log import LoggerFactory
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('system-packages')
 
 
-class DnfBackend(object):
+class DnfBackend(LinuxBackend):
     def __init__(self):
         self.lock = threading.RLock()
     

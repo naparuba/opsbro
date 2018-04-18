@@ -1,0 +1,29 @@
+FROM debian:6
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+
+# Debian 6 is is orphaned, so need to put back real repository
+RUN        printf "deb http://archive.debian.org/debian-archive/debian/ squeeze main contrib non-free\n" > /etc/apt/sources.list
+RUN        printf "deb http://archive.debian.org/debian-archive/debian/ squeeze-lts main contrib non-free" >> /etc/apt/sources.list
+
+# Force allow old repository
+RUN        echo 'Acquire::Check-Valid-Until "false";' >/etc/apt/apt.conf.d/90ignore-release-date
+# Even for expired GPG keys (since march 2018)
+RUN        echo 'APT::Get::Assume-Yes "true";' >>/etc/apt/apt.conf.d/90ignore-release-date
+RUN        echo 'APT::Get::force-yes "true";' >>/etc/apt/apt.conf.d/90ignore-release-date
+
+RUN        /apt_get_install  python
+ADD         . /root/opsbro-oss
+
+
+WORKDIR    /root/opsbro-oss
+
+RUN        python setup.py install
+
+# Copy the mail pack into a local one to enable modification
+RUN        opsbro  packs overload global.linux
+# Copy the new compliance value
+ADD        test/test-files/test-compliance-system-user/compliance/*.yml   /var/lib/opsbro/local-configuration/packs/linux/compliance/
+
+ENTRYPOINT     test/test_feature_compliance-system-user.sh

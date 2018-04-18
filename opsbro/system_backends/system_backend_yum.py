@@ -5,11 +5,13 @@ import os
 
 from opsbro.log import LoggerFactory
 
+from .linux_system_backend import LinuxBackend
+
 # Global logger for this part
 logger = LoggerFactory.create_logger('system-packages')
 
 
-class YumBackend(object):
+class YumBackend(LinuxBackend):
     def __init__(self):
         self.yumbase_lock = threading.RLock()
         
