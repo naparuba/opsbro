@@ -1,6 +1,8 @@
 import json
 import urllib2
 import urllib
+import httplib
+from socket import error as SocketError
 
 _HTTP_EXCEPTIONS = None
 
@@ -9,7 +11,7 @@ def get_http_exceptions():
     global _HTTP_EXCEPTIONS
     if _HTTP_EXCEPTIONS is not None:
         return _HTTP_EXCEPTIONS
-    HTTP_EXCEPTIONS = (urllib2.HTTPError, urllib2.URLError,)
+    HTTP_EXCEPTIONS = (urllib2.HTTPError, urllib2.URLError, SocketError, httplib.HTTPException)
     _HTTP_EXCEPTIONS = HTTP_EXCEPTIONS
     return _HTTP_EXCEPTIONS
 
@@ -32,15 +34,19 @@ class Httper(object):
         req.get_method = lambda: 'GET'
         for (k, v) in headers.iteritems():
             req.add_header(k, v)
+        
         request = url_opener.open(req)
+        
         response = request.read()
+        status_code = request.code
+        request.close()
+        
         #
         # if code != 200:
         #    raise urllib2.HTTPError('')
         if not with_status_code:
             return response
         else:
-            status_code = request.code
             return (status_code, response)
     
     

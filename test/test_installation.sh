@@ -99,48 +99,50 @@ echo "Detected number of CPUs: $NB_CPUS"
 # For compose, we are asking to docker-compose to build and run
 if [[ $TEST_SUITE == COMPOSE* ]];then
 
-   # In compose, we MUST be sure we are the only launched instance with no state before us
-   if [ "X$TRAVIS" == "Xtrue" ]; then
-      docker system prune --force >/dev/null
-   fi
+   # Compose should be run numerous time to be sure they are stable
+   for ii in `seq 1 5`; do
+       # In compose, we MUST be sure we are the only launched instance with no state before us
+       if [ "X$TRAVIS" == "Xtrue" ]; then
+          docker system prune --force >/dev/null
+       fi
 
-   COMPOSE_FILE=test/docker-files/docker-$TEST_SUITE
+       COMPOSE_FILE=test/docker-files/docker-$TEST_SUITE
 
-   NOW=$(date +"%H:%M:%S")
-   print_color "BUILD  $COMPOSE_FILE : BUILD starting at $NOW \n" "magenta"
-   LOG=/tmp/build-and-run.docker-$TEST_SUITE.log
-   rm -fr $LOG
-   BUILD=$(docker-compose  -f $COMPOSE_FILE build 2>&1)
-   if [ $? != 0 ]; then
-       echo "$BUILD" > $LOG
-       print_color "BUILD ERROR: $COMPOSE_FILE" "red"
-       printf " `date` Cannot build. Look at $LOG\n"
-       cat $LOG
-       exit 2
-   fi
+       NOW=$(date +"%H:%M:%S")
+       print_color "[$ii] BUILD  $COMPOSE_FILE : BUILD starting at $NOW \n" "magenta"
+       LOG=/tmp/build-and-run.docker-$TEST_SUITE.log
+       > $LOG
+       docker-compose  -f $COMPOSE_FILE build 2>>$LOG  >>$LOG
+       if [ $? != 0 ]; then
+           print_color "$ii BUILD ERROR: $COMPOSE_FILE" "red"
+           printf " `date` Cannot build. Look at $LOG\n"
+           cat $LOG
+           exit 2
+       fi
 
 
-   NOW=$(date +"%H:%M:%S")
-   print_color "RUN  $COMPOSE_FILE : RUN starting at $NOW \n" "magenta"
-   LOG=/tmp/build-and-run.docker-$TEST_SUITE.log
-   rm -fr $LOG
-   RUN=$(docker-compose  -f $COMPOSE_FILE up --build 2>&1)
-   echo "$RUN" > $LOG
-   # NOTE: compose up do not exit with worse state, so must look at the
-   # docker-copose ps to have exit states
-   # +3=> remvoe the first 2 line of the ps (header)
-   PS_STATES=$(docker-compose  -f $COMPOSE_FILE ps | tail -n +3)
-   echo "$PS_STATES" >> $LOG
-   echo "Container results:"
-   echo "$PS_STATES"
-   NB_BADS=$(echo "$PS_STATES" | grep -v 'Exit 0' | grep -v '^$' | wc -l)
-   echo "NB BADS containers: $NB_BADS"
-   if [ $NB_BADS != 0 ]; then
-       print_color "RUN ERROR: $COMPOSE_FILE" "red"
-       printf " `date` Cannot run. Look at $LOG\n"
-       cat $LOG
-       exit 2
-   fi
+       NOW=$(date +"%H:%M:%S")
+       print_color "[$ii] RUN  $COMPOSE_FILE : RUN starting at $NOW \n" "magenta"
+       # Build was ok, we can clean the log
+       > $LOG
+       docker-compose  -f $COMPOSE_FILE up --build 2>>$LOG  >>$LOG
+       # NOTE: compose up do not exit with worse state, so must look at the
+       # docker-copose ps to have exit states
+       # +3=> remvoe the first 2 line of the ps (header)
+       PS_STATES=$(docker-compose  -f $COMPOSE_FILE ps | tail -n +3)
+       echo "$PS_STATES" >> $LOG
+       echo "[$ii] Container results:"
+       echo "$PS_STATES"
+       NB_BADS=$(echo "$PS_STATES" | grep -v 'Exit 0' | grep -v '^$' | wc -l)
+       echo "[$ii] NB BADS containers: $NB_BADS"
+       if [ $NB_BADS != 0 ]; then
+           print_color "[$ii] RUN ERROR: $COMPOSE_FILE" "red"
+           printf " `date` Cannot run. Look at $LOG\n"
+           cat $LOG
+           exit 2
+       fi
+       echo "OK Finish occurence $ii"
+   done
 
    NOW=$(date +"%H:%M:%S")
    print_color "BUILD  $COMPOSE_FILE : is finish OK at $NOW \n" "green"

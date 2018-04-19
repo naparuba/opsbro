@@ -65,8 +65,13 @@ show_my_system_ip
 # Let the nodes join them selve.
 # NOTE: the haproxy node will be slower to get here, because he need to install haproxy during the start
 echo "Launching UDP detection `date`"
-opsbro gossip detect --auto-join
-
+opsbro gossip detect --auto-join --timeout=15
+if [ $? != 0 ];then
+   echo "ERROR: `date` the automatic detect call did fail after 15s"
+   cat /var/log/opsbro/gossip.log
+   cat /var/log/opsbro/daemon.log
+   exit 2
+fi
 
 
 
@@ -172,10 +177,17 @@ if [ $CASE == "NODE-HAPROXY" ]; then
     echo "Testing local proxying"
     /etc/init.d/haproxy status | grep 'haproxy is running'
     if [ $? != 0 ];then
-       echo "ERROR: the haproxy daemon is not running"
-       cat /var/log/opsbro/generator.log
-       cat /etc/haproxy/haproxy.cfg
-       exit 2
+       # Maybe it's being restarted
+       sleep 2
+       /etc/init.d/haproxy status | grep 'haproxy is running'
+       if [ $? != 0 ];then  # OK really dead now
+          echo "ERROR: `date` the haproxy daemon is not running"
+          /etc/init.d/haproxy status
+          ps axjf
+          cat /var/log/opsbro/generator.log
+          cat /etc/haproxy/haproxy.cfg
+          exit 2
+       fi
     fi
 
     ls -thor /var/log
@@ -295,10 +307,15 @@ if [ $CASE == "NODE-CLIENT" ]; then
       sync
       OUT=$(curl --connect-timeout 4 -s http://haproxy.group.local.opsbro)
       if [[ "$OUT" != "NODE-HTTP-1" ]] && [[ "$OUT" != "NODE-HTTP-2" ]]; then
-         echo "CLIENT (test $ii/$TOTAL) Cannot reach real HTTP servers from the client: Result:====> $OUT <======"
-         echo "  Launching in verbose mode:"
-         curl -v http://haproxy.group.local.opsbro
-         exit 2
+         # Maybe the haproxy is restarting, try one more time
+         sleep 1
+         OUT=$(curl --connect-timeout 4 -s http://haproxy.group.local.opsbro)
+         if [[ "$OUT" != "NODE-HTTP-1" ]] && [[ "$OUT" != "NODE-HTTP-2" ]]; then
+            echo "CLIENT (test $ii/$TOTAL) Cannot reach real HTTP servers from the client: Result:====> $OUT <======"
+            echo "  Launching in verbose mode:"
+            curl -v http://haproxy.group.local.opsbro
+            exit 2
+         fi
       fi
       printf "$OUT %d/%d" $ii $TOTAL
       sleep 0.2

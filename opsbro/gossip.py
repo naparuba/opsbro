@@ -167,7 +167,8 @@ class Gossip(object):
     
     
     def __iter__(self):
-        return self.nodes.__iter__()
+        with self.nodes_lock:
+            return self.nodes.__iter__()
     
     
     def __contains__(self, uuid):
@@ -175,14 +176,16 @@ class Gossip(object):
     
     
     def __setitem__(self, k, value):
-        self.nodes[k] = value
+        with self.nodes_lock:
+            self.nodes[k] = value
     
     
     def __delitem__(self, k):
-        try:
-            del self.nodes[k]
-        except IndexError:
-            pass
+        with self.nodes_lock:
+            try:
+                del self.nodes[k]
+            except IndexError:
+                pass
     
     
     def register_myself(self):
@@ -475,7 +478,8 @@ class Gossip(object):
     # Definitivly remove a node from our list, and warn others about it
     def delete_node(self, nid):
         try:
-            del self.nodes[nid]
+            with self.nodes_lock:
+                del self.nodes[nid]
             pubsub.pub('delete-node', node_uuid=nid)
         except IndexError:  # not here? it was was we want
             pass
@@ -871,7 +875,7 @@ class Gossip(object):
                 nb_dest = min(len(others), KGOSSIP)
                 dests = random.sample(others, nb_dest)
                 for dest in dests:
-                    logger.info("launch_gossip:: topzone::%s  node::" % zname, dest['name'])
+                    logger.info("launch_gossip:: topzone::%s  to node::%s" % (zname, dest['name']))
                     self.__do_gossip_push(dest, consume=False)
         
         # always send to our zone, but not for leave nodes
@@ -884,7 +888,7 @@ class Gossip(object):
         nb_dest = min(len(others), KGOSSIP)
         dests = random.sample(others, nb_dest)
         for dest in dests:
-            logger.info("launch_gossip::  our own zone::%s" % self.zone, dest['name'])
+            logger.info("launch_gossip::  into own zone::%s  to %s(%s)" % (self.zone, dest['name'], dest['display_name']))
             self.__do_gossip_push(dest, consume=True)
     
     
@@ -1113,39 +1117,59 @@ class Gossip(object):
     
     
     # launch a broadcast (UDP) and wait 5s for returns, and give all answers from others daemons
-    def launch_gossip_detect_ping(self):
+    def launch_gossip_detect_ping(self, timeout):
+        logger.info('Launching UDP detection with a %d second timeout' % timeout)
         r = []
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        s.settimeout(5)
+        
         p = '{"type":"detect-ping"}'
         encrypter = libstore.get_encrypter()
         enc_p = encrypter.encrypt(p)
         s.sendto(enc_p, ('<broadcast>', 6768))
-        try:
-            while True:
+        # Note: a socket timeout start from the recvfrom call
+        # so we must compute the time where we should finish
+        start = time.time()
+        end = start + timeout
+
+        while True:
+            now = time.time()
+            remaining_time = end - now
+            # Maybe we did get bac in time a LOT
+            if remaining_time > timeout:
+                break
+            # No more time: break
+            if remaining_time < 0:
+                break
+            logger.info('UDP detection Remaining time: %.2f' % remaining_time)
+            s.settimeout(remaining_time)
+            try:
                 data, addr = s.recvfrom(65507)
-                try:
-                    d_str = encrypter.decrypt(data)
-                    d = json.loads(d_str)
-                # If bad json, skip it
-                except ValueError:
-                    continue
-                # if not a detect-pong package, I don't want it
-                _type = d.get('type', '')
-                if _type != 'detect-pong':
-                    continue
-                # Skip if not node in it
-                if 'node' not in d:
-                    continue
-                # Maybe it's me, if so skip it
-                n = d['node']
-                nuuid = n.get('uuid', self.uuid)
-                if nuuid == self.uuid:
-                    continue
-                r.append(n)
-        except socket.timeout:
-            pass
+            except socket.timeout:
+                logger.info('UDP detection: no response after: %.2f' % (time.time() - start))
+                continue
+            try:
+                d_str = encrypter.decrypt(data)
+                d = json.loads(d_str)
+            # If bad json, skip it
+            except ValueError:
+                continue
+            logger.info('UDP detected node: %s' % d)
+            # if not a detect-pong package, I don't want it
+            _type = d.get('type', '')
+            if _type != 'detect-pong':
+                continue
+            # Skip if not node in it
+            if 'node' not in d:
+                continue
+            # Maybe it's me, if so skip it
+            n = d['node']
+            nuuid = n.get('uuid', self.uuid)
+            if nuuid == self.uuid:
+                continue
+            r.append(n)
+        
+        logger.info('UDP detection done after %dseconds. %d nodes are detected on the network.' % (timeout, len(r)))
         return r
     
     
@@ -1580,7 +1604,8 @@ class Gossip(object):
         @http_export('/agent/detect')
         def agent_members():
             response.content_type = 'application/json'
-            nodes = self.launch_gossip_detect_ping()
+            timeout = int(request.GET.get('timeout', '5'))
+            nodes = self.launch_gossip_detect_ping(timeout)
             return json.dumps(nodes)
         
         

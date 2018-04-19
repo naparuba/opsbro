@@ -95,7 +95,7 @@ def do_info(show_logs):
     try:
         d = get_opsbro_json('/agent/info')
     except get_request_errors(), exp:
-        logger.error('Cannot join opsbro agent: %s' % exp)
+        logger.error('Cannot join opsbro agent for info: %s' % exp)
         sys.exit(1)
     logs = d.get('logs')
     version = d.get('version')
@@ -345,7 +345,7 @@ def do_modules_state():
     try:
         d = get_opsbro_json('/agent/info')
     except get_request_errors(), exp:
-        logger.error('Cannot join opsbro agent: %s' % exp)
+        logger.error('Cannot join opsbro agent for module state: %s' % exp)
         sys.exit(1)
     modules = d.get('modules', {})
     print_info_title('Modules')
@@ -452,7 +452,7 @@ def do_show_threads():
     try:
         data = get_opsbro_json('/threads/')
     except get_request_errors(), exp:
-        logger.error('Cannot join opsbro agent: %s' % exp)
+        logger.error('Cannot join opsbro agent to show threads: %s' % exp)
         sys.exit(1)
     all_threads = data['threads']
     process = data['process']
@@ -524,7 +524,7 @@ def do_list_follow_log():
     try:
         parts = get_opsbro_json('/log/parts/')
     except get_request_errors(), exp:
-        logger.error('Cannot join opsbro agent: %s' % exp)
+        logger.error('Cannot join opsbro agent to list logs: %s' % exp)
         sys.exit(1)
     parts.sort()
     print "Available parts to follow logs:"

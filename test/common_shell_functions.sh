@@ -25,7 +25,7 @@ function assert_state_count {
    done
 
    # Out and still not OK? we did fail
-   echo "ERROR: there should be $2 $1 but there are $NB after 20 try"
+   echo "ERROR: `date` there should be $2 $1 but there are $NB after 20 try"
    echo "$STATS"
    exit 2
 }
@@ -34,8 +34,9 @@ function assert_state_count {
 function wait_member_display_name_with_timeout {
     opsbro gossip wait-members --display-name "$1" --timeout $2
     if [ $? != 0 ]; then
-       echo "ERROR: the node with the display name $1 is not present after $2s"
+       echo "ERROR: `date` the node with the display name $1 is not present after $2s"
        opsbro gossip members --detail
+       cat /var/log/opsbro/daemon.log
        exit 2
     fi
 }
@@ -44,9 +45,11 @@ function wait_member_display_name_with_timeout {
 function wait_event_with_timeout {
     opsbro gossip events wait $1 --timeout=$2
     if [ $? != 0 ]; then
+         echo ""
+         echo "FAIL `date` on event $1. Logs:"
          cat /var/log/opsbro/daemon.log
          cat /var/log/opsbro/gossip.log
-         echo "ERROR: I do not have the event $1 after $2 seconds"
+         echo "ERROR: `date` I do not have the event $1 after $2 seconds"
          exit 2
     fi
 }

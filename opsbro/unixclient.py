@@ -100,6 +100,10 @@ def get_local(u, local_socket, params={}, method='GET', timeout=10):
     return (code, response)
 
 
+def get_not_critical_request_errors():
+    return (socket.timeout, )
+
+
 def get_request_errors():
     request_errors = (urllib2.URLError, socket.timeout)
     return request_errors

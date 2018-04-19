@@ -13,7 +13,7 @@ import itertools
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger, sprintf
 from opsbro.library import libstore
-from opsbro.unixclient import get_request_errors
+from opsbro.unixclient import get_request_errors, get_not_critical_request_errors
 from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, put_opsbro_json, wait_for_agent_started, AnyAgent, post_opsbro_json
 from opsbro.cli_display import print_h1, print_h2
 from opsbro.threadmgr import threader
@@ -43,7 +43,7 @@ def do_members(detail=False):
     try:
         members = get_opsbro_json('/agent/members').values()
     except get_request_errors(), exp:
-        logger.error('Cannot join opsbro agent: %s' % exp)
+        logger.error('Cannot join opsbro agent to list members: %s' % exp)
         sys.exit(1)
     members = sorted(members, cmp=__sorted_members)
     pprint = libstore.get_pprint()
@@ -107,7 +107,7 @@ def do_members_history():
     try:
         history_entries = get_opsbro_json('/agent/members/history')
     except get_request_errors(), exp:
-        logger.error('Cannot join opsbro agent: %s' % exp)
+        logger.error('Cannot join opsbro agent to show member history: %s' % exp)
         sys.exit(1)
     
     print_h1('History')
@@ -247,8 +247,11 @@ def __print_detection_spinner(timeout):
 
 
 def do_detect_nodes(auto_join, timeout=5):
+    # The information is available only if the agent is started
+    wait_for_agent_started(visual_wait=True)
+    
     print_h1('UDP broadcast LAN detection')
-    print "Trying to detect other nodes on the network thanks to a UDP broadcast. Will last 5s."
+    print "Trying to detect other nodes on the network thanks to a UDP broadcast. Will last %ds." % timeout
     cprint(' * The detection scan will be ', end='')
     cprint('%ds' % timeout, color='magenta', end='')
     cprint(' long.')
@@ -256,9 +259,9 @@ def do_detect_nodes(auto_join, timeout=5):
     
     # Send UDP broadcast packets from the daemon
     try:
-        network_nodes = get_opsbro_json('/agent/detect')
+        network_nodes = get_opsbro_json('/agent/detect?timeout=%d' % timeout, timeout=timeout+10)
     except get_request_errors(), exp:
-        logger.error('Cannot join opsbro agent: %s' % exp)
+        logger.error('Cannot join opsbro agent to detect network nodes: %s' % exp)
         sys.exit(1)
     cprint(" * Detection is DONE")
     print_h1('Detection result')
@@ -297,10 +300,15 @@ def do_wait_event(event_type, timeout=30):
     
     for i in xrange(timeout):
         uri = '/agent/event/%s' % event_type
+        logger.info('ASK FOR EVENT %s' % event_type)
         try:
-            evt = get_opsbro_json(uri)
+            evt = get_opsbro_json(uri, timeout=1)  # slow timeout to allow fast looping
+        # Timemouts: just loop
+        except get_not_critical_request_errors(), exp:
+            logger.debug('Asking for event: get timeout (%s), skiping this turn' % exp)
+            evt = None
         except get_request_errors(), exp:
-            logger.error(exp)
+            logger.error('Cannot ask for event %s because there is a critical error: %s' % (event_type, exp))
             sys.exit(2)
         
         if evt is not None:

@@ -49,9 +49,9 @@ def get_local_socket():
 
 
 if os.name != 'nt':
-    def get_opsbro_json(uri):
+    def get_opsbro_json(uri, timeout=10):
         local_socket = get_local_socket()
-        return get_json(uri, local_socket)
+        return get_json(uri, local_socket, timeout=timeout)
     
     
     def get_opsbro_local(uri):
@@ -68,7 +68,7 @@ if os.name != 'nt':
         local_socket = get_local_socket()
         return get_json(uri, local_socket, params=data, method='PUT')
 else:
-    def get_opsbro_json(uri):
+    def get_opsbro_json(uri, timeout=10):
         r = httper.get('http://127.0.0.1:6770%s' % uri)
         obj = json.loads(r)
         return obj
