@@ -96,11 +96,17 @@ echo "Detected number of CPUs: $NB_CPUS"
    #fi
 #fi
 
+NB_DISTRIBUTED_LAUNCHS=1
+# On TRAVIS: 5 launchs
+if [ "X$TRAVIS" == "Xtrue" ]; then
+   NB_DISTRIBUTED_LAUNCHS=5
+fi
+
 # For compose, we are asking to docker-compose to build and run
 if [[ $TEST_SUITE == COMPOSE* ]];then
 
    # Compose should be run numerous time to be sure they are stable
-   for ii in `seq 1 5`; do
+   for ii in `seq 1 $NB_DISTRIBUTED_LAUNCHS`; do
        # In compose, we MUST be sure we are the only launched instance with no state before us
        if [ "X$TRAVIS" == "Xtrue" ]; then
           docker system prune --force >/dev/null

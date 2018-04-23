@@ -73,7 +73,9 @@ if [ "$NODE_NB" == "2" ]; then
 
    echo "Sleeping until the node3 receive our leave"
    sleep 20
+   cat /var/log/opsbro/gossip.log
    echo "NODE2 exiting"
+   opsbro gossip history
    exit 0
 fi
 
@@ -90,15 +92,17 @@ if [ "$NODE_NB" == "3" ]; then
    opsbro gossip members
 
    # THERE should be
-   # * one alive (node3)
-   # * one dead (node1)
    # * one leave (node2)
-   assert_state_count "alive" "1"
-   assert_state_count "dead" "1"
+   # * one dead (node1)
+   # * one alive (node3)
+   # NOTE: tryto detect from the most ephemerus  state to the most stable one
    assert_state_count "leave" "1"
+   assert_state_count "dead" "1"
+   assert_state_count "alive" "1"
+
 
    echo "NODE3: All states are good, exiting"
-
+   cat /var/log/opsbro/gossip.log
    exit 0
 fi
 

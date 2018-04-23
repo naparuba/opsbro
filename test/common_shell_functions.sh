@@ -14,6 +14,12 @@ function assert_state_count {
    until [ $i -ge 20 ]
    do
       STATS=$(opsbro gossip members)
+      if [ $? != 0 ];then
+         echo "ERROR: the daemon cannot answer to gossip member listing"
+         cat /var/log/opsbro/gossip.log
+         cat /var/log/opsbro/daemon.log
+         exit 2
+      fi
       NB=$(echo "$STATS" | grep 'docker-container' | grep "$1" | wc -l)
       if [ "$NB" == "$2" ]; then
           echo "OK: founded $NB $1 states nodes"
@@ -27,6 +33,9 @@ function assert_state_count {
    # Out and still not OK? we did fail
    echo "ERROR: `date` there should be $2 $1 but there are $NB after 20 try"
    echo "$STATS"
+   cat /var/log/opsbro/gossip.log
+   cat /var/log/opsbro/daemon.log
+   opsbro gossip history
    exit 2
 }
 

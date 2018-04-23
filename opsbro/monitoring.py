@@ -221,7 +221,7 @@ class MonitoringManager(object):
         self.link_services()
         
         # We maybe got a new service, so export this data to every one in the gossip way :)
-        gossiper.increase_incarnation_and_broadcast('alive')
+        gossiper.increase_incarnation_and_broadcast()
         
         # Now we can save the received entry, but first clean unless props
         to_remove = ['from', 'last_check', 'modification_time', 'state', 'output', 'state_id', 'id']
@@ -255,7 +255,7 @@ class MonitoringManager(object):
             del self.services[sname]
         self.link_services()
         # We maybe got a less service, so export this data to every one in the gossip way :)
-        gossiper.increase_incarnation_and_broadcast('alive')
+        gossiper.increase_incarnation_and_broadcast()
     
     
     # Look at our services dict and link the one we are if_group
@@ -263,11 +263,12 @@ class MonitoringManager(object):
     def link_services(self):
         logger.debug('LINK my services and my node entry')
         node = gossiper.get(gossiper.uuid)
-        groups = node['groups']
-        for (sname, service) in self.services.iteritems():
-            if_group = service.get('if_group', '')
-            if if_group and if_group in groups:
-                node['services'][sname] = service
+        with gossiper.nodes_lock:
+            groups = node['groups']
+            for (sname, service) in self.services.iteritems():
+                if_group = service.get('if_group', '')
+                if if_group and if_group in groups:
+                    node['services'][sname] = service
     
     
     # For checks we will only populate our active_checks list
@@ -275,22 +276,23 @@ class MonitoringManager(object):
     def link_checks(self):
         logger.debug('LOOKING FOR our checks that match our groups')
         node = gossiper.get(gossiper.uuid)
-        groups = node['groups']
-        active_checks = []
-        for (cname, check) in self.checks.iteritems():
-            if_group = check.get('if_group', '*')
-            if if_group == '*' or if_group in groups:
-                active_checks.append(cname)
-        self.active_checks = active_checks
-        # Also update our checks list in KV space
-        self.update_checks_kv()
-        # and in our own node object
-        checks_entry = {}
-        for (cname, check) in self.checks.iteritems():
-            if cname not in active_checks:
-                continue
-            checks_entry[cname] = {'state_id': check['state_id']}  # by default state are unknown
-        node['checks'] = checks_entry
+        with gossiper.nodes_lock:
+            groups = node['groups']
+            active_checks = []
+            for (cname, check) in self.checks.iteritems():
+                if_group = check.get('if_group', '*')
+                if if_group == '*' or if_group in groups:
+                    active_checks.append(cname)
+            self.active_checks = active_checks
+            # Also update our checks list in KV space
+            self.update_checks_kv()
+            # and in our own node object
+            checks_entry = {}
+            for (cname, check) in self.checks.iteritems():
+                if cname not in active_checks:
+                    continue
+                checks_entry[cname] = {'state_id': check['state_id']}  # by default state are unknown
+            node['checks'] = checks_entry
     
     
     def __prepare_history_directory(self):
@@ -514,7 +516,7 @@ class MonitoringManager(object):
         
         # If our check or service did change, warn thers nodes about it
         if warn_about_our_change:
-            gossiper.increase_incarnation_and_broadcast('alive')
+            gossiper.increase_incarnation_and_broadcast()
         
         # We finally put the result in the KV database
         self.put_check(check)
@@ -691,14 +693,19 @@ class MonitoringManager(object):
                     if cid not in self.active_checks:
                         continue
                     r['checks'][cid] = check
-                r['services'] = gossiper.get(gossiper.uuid)['services']
+                # NOTE: we do not want services object from gossiper to be access in //
+                # after we return it
+                with gossiper.nodes_lock:
+                    r['services'] = copy.deepcopy(gossiper.get(gossiper.uuid)['services'])
                 return r
             else:  # find the elements
                 node = gossiper.get(nuuid)
                 if node is None:
                     return abort(404, 'This node is not found')
-                # Services are easy, we already got them
-                r['services'] = node['services']
+                # NOTE: we do not want services object from gossiper to be access in //
+                # after we return it
+                with gossiper.nodes_lock:
+                    r['services'] = copy.deepcopy(node['services'])
                 # checks are harder, we must find them in the kv nodes
                 v = kvmgr.get_key('__health/%s' % node['uuid'])
                 if v is None or v == '':

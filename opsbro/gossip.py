@@ -51,7 +51,6 @@ class Gossip(object):
         self.incarnation = incarnation
         self.uuid = uuid
         self.groups = groups  # finally computed groups
-        self.groups_lock = threading.RLock()
         self.detected_groups = set()  # groups from detectors, used to detect which to add/remove
         self.seeds = seeds
         self.bootstrap = bootstrap
@@ -80,7 +79,7 @@ class Gossip(object):
         self.__current_history_entry_lock = threading.RLock()
         
         # create my own object, but do not export it to other nodes
-        self.register_myself()
+        self.__register_myself()
     
     
     def __getitem__(self, uuid):
@@ -188,13 +187,13 @@ class Gossip(object):
                 pass
     
     
-    def register_myself(self):
-        myself = self.get_boostrap_node()
+    def __register_myself(self):
+        myself = self.__get_boostrap_node()
         self.set_alive(myself, bootstrap=True)
     
     
     def is_in_group(self, group):
-        with self.groups_lock:
+        with self.nodes_lock:
             return group in self.groups
     
     
@@ -292,7 +291,7 @@ class Gossip(object):
     
     def add_group(self, group, broadcast_when_change=True):
         did_change = False
-        with self.groups_lock:
+        with self.nodes_lock:
             if group not in self.groups:
                 self.groups.append(group)
                 # let the caller known that we did work
@@ -308,14 +307,14 @@ class Gossip(object):
                 # but not always network, must be done once a loop
                 if broadcast_when_change:
                     self.node_did_change(self.uuid)  # a node did change: ourselve
-                    self.increase_incarnation_and_broadcast(broadcast_type='alive')
+                    self.increase_incarnation_and_broadcast()
         
         return did_change
     
     
     def remove_group(self, group, broadcast_when_change=True):
         did_change = False
-        with self.groups_lock:
+        with self.nodes_lock:
             if group in self.groups:
                 self.groups.remove(group)
                 # let the caller known that we did work
@@ -332,7 +331,7 @@ class Gossip(object):
                 # but not always network, must be done once a loop
                 if broadcast_when_change:
                     self.node_did_change(self.uuid)  # a node did change: ourselve
-                    self.increase_incarnation_and_broadcast(broadcast_type='alive')
+                    self.increase_incarnation_and_broadcast()
         return did_change
     
     
@@ -410,7 +409,7 @@ class Gossip(object):
         # warn other parts only if need, and do it only once even for lot of groups
         if did_change:
             self.node_did_change(self.uuid)  # a node did change: ourselve
-            self.increase_incarnation_and_broadcast(broadcast_type='alive')
+            self.increase_incarnation_and_broadcast()
         
         return did_change
     
@@ -418,23 +417,25 @@ class Gossip(object):
     # A check did change it's state, update it in our structure
     def update_check_state_id(self, cname, state_id):
         node = self.nodes[self.uuid]
-        if cname not in node['checks']:
-            node['checks'][cname] = {'state_id': 3}
-        node['checks'][cname]['state_id'] = state_id
+        with self.nodes_lock:
+            if cname not in node['checks']:
+                node['checks'][cname] = {'state_id': 3}
+            node['checks'][cname]['state_id'] = state_id
     
     
     # We did have a massive change or a bad information from network, we must
     # fix this and warn others about good information
-    def increase_incarnation_and_broadcast(self, broadcast_type=None):
+    def increase_incarnation_and_broadcast(self):
         self.incarnation += 1
         node = self.nodes[self.uuid]
         node['incarnation'] = self.incarnation
-        if broadcast_type == 'alive':
+        my_state = node['state']
+        if my_state == 'alive':
             self.stack_alive_broadcast(node)
-        elif broadcast_type == 'leave':
+        elif my_state == 'leave':
             self.stack_leave_broadcast(node)
         else:
-            logger.error('Asking for an unknown broadcast type for node: %s => %s' % (node, broadcast_type))
+            logger.error('Asking for an unknown broadcast type for node: %s => %s' % (node, my_state))
             sys.exit(2)
         logger.info('Did have to send a new incarnation node for myself. New incarnation=%d new-node=%s' % (self.incarnation, node))
     
@@ -446,7 +447,7 @@ class Gossip(object):
         self.zone = zname
         self.nodes[self.uuid]['zone'] = zname
         # let the others nodes know it
-        self.increase_incarnation_and_broadcast('alive')
+        self.increase_incarnation_and_broadcast()
         # As we did change, we need to update our own node list to keep only what we should
         self.clean_nodes_from_zone()
     
@@ -468,7 +469,7 @@ class Gossip(object):
     
     
     # get my own node entry
-    def get_boostrap_node(self):
+    def __get_boostrap_node(self):
         node = {'addr'       : self.addr, 'port': self.port, 'name': self.name, 'display_name': self.display_name,
                 'incarnation': self.incarnation, 'uuid': self.uuid, 'state': 'alive', 'groups': self.groups,
                 'services'   : {}, 'checks': {}, 'zone': self.zone, 'is_proxy': self.is_proxy}
@@ -542,7 +543,7 @@ class Gossip(object):
                     # set as must as them
                     self.incarnation = incarnation
                     # and increase it to be the new master
-                    self.increase_incarnation_and_broadcast(broadcast_type='alive')
+                    self.increase_incarnation_and_broadcast()
                 return
         
         # Maybe it's a new node that just enter the cluster?
@@ -605,10 +606,14 @@ class Gossip(object):
         if prev_state != 'alive':
             return
         
-        # Maybe it's us?? We need to say FUCKING NO, I'm alive!!
+        # Maybe it's us?? We need to say FUCKING NO, I'm alive!! (or maybe leave, but not a suspect)
         if uuid == self.uuid:
-            logger.warning('SUSPECT: SOMEONE THINK I AM SUSPECT, BUT I AM ALIVE')
-            self.increase_incarnation_and_broadcast(broadcast_type='alive')
+            myself = node
+            my_state = myself['state']
+            logger.warning('SUSPECT: SOMEONE THINK I AM SUSPECT, BUT I AM %s' % my_state)
+            # Is we are leaving, let the other know we are not a suspect, but a leaving node
+            self.increase_incarnation_and_broadcast()
+
             return
         
         logger.info('SUSPECTING: I suspect node %s' % node['name'])
@@ -666,7 +671,7 @@ class Gossip(object):
             logger.info('LEAVE: someone is asking me for leaving.')
             # Mark myself as leave so
             node['state'] = state
-            self.increase_incarnation_and_broadcast(broadcast_type='leave')
+            self.increase_incarnation_and_broadcast()
             
             
             # Define a function that will wait 10s to let the others nodes know that we did leave
@@ -727,7 +732,7 @@ class Gossip(object):
         # Maybe it's us?? We need to say FUCKING NO, I'm alive!!
         if uuid == self.uuid:
             logger.warning('DEAD: SOMEONE THINK I AM DEAD, BUT I AM ALIVE')
-            self.increase_incarnation_and_broadcast(broadcast_type='alive')
+            self.increase_incarnation_and_broadcast()
             return
         
         logger.info('DEAD: I put in dead node %s' % node['name'])
@@ -986,9 +991,22 @@ class Gossip(object):
             # Allow 3s to get an answer
             sock.settimeout(3)
             ret = sock.recv(65535)
-            logger.debug('PING got a return from %s' % other['name'], len(ret))
-            # An aswer? great it is alive!
-            self.set_alive(other, strong=True)
+            uncrypted_ret = encrypter.decrypt(ret)
+            logger.info('RECEIVING PING RESPONSE: %s' % uncrypted_ret)
+            try:
+                msg = json.loads(uncrypted_ret)
+                new_other = msg['node']
+                logger.info('PING got a return from %s (%s) (node state)=%s: %s' % (new_other['name'], new_other['display_name'], new_other['state'], msg))
+                if new_other['state'] == 'alive':
+                    # An aswer? great it is alive!
+                    self.set_alive(other, strong=True)
+                elif new_other['state'] == 'leave':
+                    self.set_leave(new_other)
+                else:
+                    logger.error('PING the other node %s did give us a unamanged state: %s' % (new_other['name'], new_other['state']))
+                    self.set_suspect(new_other)
+            except ValueError:  # bad json
+                self.set_suspect(other)
         except (socket.timeout, socket.gaierror), exp:
             logger.debug("PING: error joining the other node %s:%s : %s" % (addr, port, exp))
             logger.debug("PING: go indirect mode")
@@ -1021,12 +1039,21 @@ class Gossip(object):
                 self.set_suspect(other)
                 sock.close()
                 return
-            msg = json.loads(ret)
             sock.close()
-            logger.debug('PING: got an answer from a relay', msg)
+            uncrypted_ret = encrypter.decrypt(ret)
+            msg = json.loads(uncrypted_ret)
+            new_other = msg['node']
+            logger.info('PING got a return from %s (%s) via a relay: %s' % (new_other['name'], new_other['display_name'], msg))
             logger.debug('RELAY set alive', other['name'])
             # Ok it's no more suspected, great :)
-            self.set_alive(other, strong=True)
+            if new_other['state'] == 'alive':
+                # An aswer? great it is alive!
+                self.set_alive(other, strong=True)
+            elif new_other['state'] == 'leave':
+                self.set_leave(new_other)
+            else:
+                logger.error('PING the other node %s did give us a unamanged state: %s' % (new_other['name'], new_other['state']))
+                self.set_suspect(new_other)
         except socket.error, exp:
             logger.log("PING: cannot join the other node %s:%s : %s" % (addr, port, exp))
     
@@ -1037,7 +1064,9 @@ class Gossip(object):
         did_want_to_ping = m.get('node', None)
         if did_want_to_ping != self.uuid:  # not me? skip this
             return
-        ack = {'type': 'ack', 'seqno': m['seqno']}
+        my_self = self.nodes.get(self.uuid)
+        my_node_data = self.create_alive_msg(my_self)
+        ack = {'type': 'ack', 'seqno': m['seqno'], 'node': my_node_data}
         ret_msg = json.dumps(ack)
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
         encrypter = libstore.get_encrypter()
@@ -1077,9 +1106,11 @@ class Gossip(object):
             # Allow 3s to get an answer
             sock.settimeout(3)
             ret = sock.recv(65535)
-            logger.debug('PING (relay) got a return from %s' % ntgt['name'], ret)
+            uncrypted_ret = encrypter.decrypt(ret)
+            j_ret = json.loads(uncrypted_ret)
+            logger.info('PING (relay) got a return from %s' % ntgt['name'], j_ret)
             # An aswer? great it is alive! Let it know our _from node
-            ack = {'type': 'ack', 'seqno': 0}
+            ack = {'type': 'ack', 'seqno': 0, 'node':j_ret['node']}
             ret_msg = json.dumps(ack)
             enc_ret_msg = encrypter.encrypt(ret_msg)
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
