@@ -429,7 +429,7 @@ if allow_black_magic:
         cprint("   - and so it will use the python pip dependency system instead (internet connection is need).")
 
 for (m, d) in mod_need.iteritems():
-    cprint(' * checking dependency for ', end='')
+    cprint(' * Checking dependency for ', end='')
     cprint('%-20s' % m, color='blue', end='')
     cprint(' : ', end='')
     sys.stdout.flush()
