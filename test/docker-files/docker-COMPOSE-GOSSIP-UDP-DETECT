@@ -6,7 +6,8 @@ services:
        dockerfile: test/docker-files/docker-file-DUO1-debian9-test-udp-detect-auto-join-node1.txt
     networks:
        - gossip-udp-detect
-
+    cap_add:
+       - ALL
 
   node2:
     build:
@@ -14,7 +15,8 @@ services:
        dockerfile: test/docker-files/docker-file-DUO1-debian9-test-udp-detect-auto-join-node2.txt
     networks:
        - gossip-udp-detect
-
+    cap_add:
+       - ALL
 
 
 

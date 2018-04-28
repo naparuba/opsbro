@@ -1008,18 +1008,18 @@ class Gossip(object):
             except ValueError:  # bad json
                 self.set_suspect(other)
         except (socket.timeout, socket.gaierror), exp:
-            logger.debug("PING: error joining the other node %s:%s : %s" % (addr, port, exp))
-            logger.debug("PING: go indirect mode")
+            logger.info("PING: error joining the other node %s:%s : %s" % (addr, port, exp))
+            logger.info("PING: go indirect mode")
             with self.nodes_lock:
                 possible_relays = [n for n in self.nodes.values() if
                                    n['uuid'] != self.uuid and n != other and n['state'] == 'alive']
             
             if len(possible_relays) == 0:
-                logger.log("PING: no possible relays for ping")
+                logger.info("PING: no possible relays for ping")
                 self.set_suspect(other)
             # Take at least 3 relays to ask ping
             relays = random.sample(possible_relays, min(len(possible_relays), 3))
-            logger.debug('POSSIBLE RELAYS', relays)
+            logger.info('POSSIBLE RELAYS', relays)
             ping_relay_payload = {'type': 'ping-relay', 'seqno': 0, 'tgt': other['uuid'], 'from': self.uuid}
             message = json.dumps(ping_relay_payload)
             enc_message = encrypter.encrypt(message)
@@ -1027,7 +1027,7 @@ class Gossip(object):
             for r in relays:
                 try:
                     sock.sendto(enc_message, (r['addr'], r['port']))
-                    logger.debug('PING waiting ack message')
+                    logger.info('PING waiting ack message from relay %s about node %s' % (r['display_name'], other['display_name']))
                 except socket.error, exp:
                     logger.error('Cannot send a ping relay to %s:%s' % (r['addr'], r['port']))
             # Allow 3s to get an answer from whatever relays got it
@@ -1035,6 +1035,7 @@ class Gossip(object):
             try:
                 ret = sock.recv(65535)
             except socket.timeout:
+                logger.info('PING RELAY: no response from relays about node %s' % other['display_name'])
                 # still noone succed to ping it? I suspect it
                 self.set_suspect(other)
                 sock.close()
@@ -1055,14 +1056,15 @@ class Gossip(object):
                 logger.error('PING the other node %s did give us a unamanged state: %s' % (new_other['name'], new_other['state']))
                 self.set_suspect(new_other)
         except socket.error, exp:
-            logger.log("PING: cannot join the other node %s:%s : %s" % (addr, port, exp))
+            logger.info("PING: cannot join the other node %s:%s : %s" % (addr, port, exp))
     
     
     def manage_ping_message(self, m, addr):
         # if it me that the other is pinging? because it can think to
         # thing another but in my addr, like it I did change my name
-        did_want_to_ping = m.get('node', None)
-        if did_want_to_ping != self.uuid:  # not me? skip this
+        did_want_to_ping_uuid = m.get('node', None)
+        if did_want_to_ping_uuid != self.uuid:  # not me? skip this
+            logger.info('A node ask us a ping but it is not for our uuid, skiping it')
             return
         my_self = self.nodes.get(self.uuid)
         my_node_data = self.create_alive_msg(my_self)
@@ -1086,23 +1088,24 @@ class Gossip(object):
     # We are ask to do a indirect ping to tgt and return the ack to
     # _from, do this in a thread so we don't lock here
     def do_indirect_ping(self, tgt, _from, addr):
-        logger.debug('do_indirect_ping', tgt, _from)
+        logger.info('do_indirect_ping', tgt, _from)
         ntgt = self.get(tgt, None)
         nfrom = self.get(_from, None)
         # If the dest or the from node are now unknown, exit this thread
         if not ntgt or not nfrom:
+            logger.info('PING: asking for a ping relay for a node I dont know about: about %s from %s' % (ntgt, nfrom))
             return
         # Now do the real ping
-        ping_payload = {'type': 'ping', 'seqno': 0, 'node': ntgt['name'], 'from': self.uuid}
+        ping_payload = {'type': 'ping', 'seqno': 0, 'node': ntgt['uuid'], 'from': self.uuid}
         message = json.dumps(ping_payload)
+        encrypter = libstore.get_encrypter()
+        enc_message = encrypter.encrypt(message)
         tgtaddr = ntgt['addr']
         tgtport = ntgt['port']
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
-            encrypter = libstore.get_encrypter()
-            enc_message = encrypter.encrypt(message)
             sock.sendto(enc_message, (tgtaddr, tgtport))
-            logger.debug('PING waiting %s ack message from a ping-relay' % ntgt['name'])
+            logger.debug('PING waiting %s ack message from a ping-relay' % ntgt['display_name'])
             # Allow 3s to get an answer
             sock.settimeout(3)
             ret = sock.recv(65535)
@@ -1113,12 +1116,14 @@ class Gossip(object):
             ack = {'type': 'ack', 'seqno': 0, 'node':j_ret['node']}
             ret_msg = json.dumps(ack)
             enc_ret_msg = encrypter.encrypt(ret_msg)
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
+            #sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
             sock.sendto(enc_ret_msg, addr)
             sock.close()
-        except (socket.timeout, socket.gaierror):
+        except (socket.timeout, socket.gaierror), exp:
             # cannot reach even us? so it's really dead, let the timeout do its job on _from
-            pass
+            logger.info('PING (relay): cannot ping the node %s(%s:%s) for %s: %s' % (ntgt['display_name'], tgtaddr, tgtport, nfrom['display_name'], exp))
+        except Exception, exp:
+            logger.error('PING (relay) error, cannot ping-relay for a node: %s' % exp)
     
     
     def manage_ping_relay_message(self, m, addr):

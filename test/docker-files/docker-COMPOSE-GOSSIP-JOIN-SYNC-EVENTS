@@ -6,7 +6,8 @@ services:
        dockerfile: test/docker-files/docker-file-DUO5-debian9-test-join-sync-events-node1.txt
     networks:
        - gossip-join-sync
-
+    cap_add:
+       - ALL
 
   node2:
     build:
@@ -14,7 +15,8 @@ services:
        dockerfile: test/docker-files/docker-file-DUO5-debian9-test-join-sync-events-node2.txt
     networks:
        - gossip-join-sync
-
+    cap_add:
+       - ALL
 
 
 

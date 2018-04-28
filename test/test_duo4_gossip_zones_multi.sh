@@ -2,6 +2,8 @@
 
 . test/common_shell_functions.sh
 
+test/set_network_simulated_type "WAN"
+
 NODE_NB=$1
 
 show_my_system_ip

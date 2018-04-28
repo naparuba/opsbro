@@ -2,6 +2,8 @@
 
 CASE=$1
 
+test/set_network_simulated_type "WAN"
+
 # If node2: wait and quite
 
 # Set a valid display name for debug

@@ -2,6 +2,8 @@
 
 . test/common_shell_functions.sh
 
+test/set_network_simulated_type "WAN"
+
 CASE=$1
 
 # NODE1 => starts and insert a event, check for the event

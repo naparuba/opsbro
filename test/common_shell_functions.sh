@@ -62,3 +62,25 @@ function wait_event_with_timeout {
          exit 2
     fi
 }
+
+
+function assert_can_ping {
+    echo "Looking if we can ping $1"
+    ping -c 1 "$1"
+    if [ $? != 0 ];then
+       echo "ERROR: cannot ping $1"
+       exit 2
+    fi
+    echo "OK we can ping $1"
+}
+
+
+function assert_cannot_ping {
+    echo "Looking if we cannot ping $1"
+    ping -c 1 "$1"
+    if [ $? == 0 ];then
+       echo "ERROR: we still can ping $1"
+       exit 2
+    fi
+    echo "OK we cannot ping $1"
+}

@@ -6,6 +6,8 @@ ADD        test/docker-helper/  /
 RUN        /apt_get_install python
 
 # Setup test env, "standard" installation is test with other tests ^^
+RUN        /apt_get_install gcc
+RUN        /apt_get_install python-dev
 RUN        /apt_get_install python-pip
 RUN        pip install jinja2
 RUN        pip install leveldb
@@ -33,6 +35,7 @@ RUN        /apt_get_install less
 RUN        /apt_get_install locales
 RUN        /apt_get_install python3-pkg-resources
 RUN        /apt_get_install asciinema
+RUN        /apt_get_install iptables
 
 # Locales
 RUN        cp /etc/locale.gen /etc/locale.gen.old

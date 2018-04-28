@@ -99,6 +99,10 @@ if [ "$NETWORK_TYPE" == "56K" ];then
    tc qdisc add dev $IFACE root handle 1: htb default 12
    tc class add dev $IFACE parent 1:1 classid 1:12 htb rate 5kbit ceil 5kbit
    tc qdisc add dev $IFACE parent 1:12 netem delay 300ms
+   if [ $? != 0 ];then
+      echo "ERROR: cannot set slow network"
+      exit 2
+   fi
 
    # We want only the changed states of tc
    tc qdisc | grep $IFACE | grep -v 'noqueue 0'
@@ -111,6 +115,10 @@ if [ "$NETWORK_TYPE" == "WAN" ];then
    tc qdisc add dev $IFACE root handle 1: htb default 12
    tc class add dev $IFACE parent 1:1 classid 1:12 htb rate 500kbit ceil 500kbit
    tc qdisc add dev $IFACE parent 1:12 netem delay 150ms
+   if [ $? != 0 ];then
+      echo "ERROR: cannot set slow network"
+      exit 2
+   fi
 
    # We want only the changed states of tc
    tc qdisc | grep $IFACE | grep -v 'noqueue 0'
@@ -123,6 +131,10 @@ if [ "$NETWORK_TYPE" == "LAN" ];then
    tc qdisc add dev $IFACE root handle 1: htb default 12
    tc class add dev $IFACE parent 1:1 classid 1:12 htb rate 5gbit ceil 5gbit
    tc qdisc add dev $IFACE parent 1:12 netem delay 0ms
+   if [ $? != 0 ];then
+      echo "ERROR: cannot set slow network"
+      exit 2
+   fi
 
    # We want only the changed states of tc
    tc qdisc | grep $IFACE | grep -v 'noqueue 0'

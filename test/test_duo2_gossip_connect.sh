@@ -2,6 +2,8 @@
 
 . test/common_shell_functions.sh
 
+test/set_network_simulated_type "WAN"
+
 NODE_NB=$1
 
 # Set a valid display name for debug
