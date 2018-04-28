@@ -50,11 +50,28 @@ function launch_docker_file {
    BUILD=$(docker build --quiet -f $FULL_PATH .  2>&1)
    if [ $? != 0 ]; then
        echo "$BUILD" > $LOG
-       print_color "$DO_WHAT  ERROR: $DOCKER_FILE" "red"
-       printf " `date` Cannot build. Look at $LOG\n"
-       printf "$DOCKER_FILE\n" >> $FAIL_FILE
-       cat $LOG
-       return
+       FAIL="TRUE"
+
+       # Maybe it just fail due to "Cannot overwrite digest" (concurrent build), if so, restart build
+       grep "Cannot overwrite digest" $LOG > /dev/null
+       if [ $? == 0 ];then
+          echo "RESTART BUILD"
+          > $LOG
+          BUILD=$(docker build --quiet -f $FULL_PATH .  2>&1)
+          if [ $? == 0 ]; then
+             # OK back to OK
+             FAIL="FALSE"
+          fi
+          echo "$BUILD" > $LOG
+       fi
+
+       if [ $FAIL == "TRUE" ];then
+          print_color "$DO_WHAT  ERROR: $DOCKER_FILE" "red"
+          printf " `date` Cannot build. Look at $LOG\n"
+          printf "$DOCKER_FILE\n" >> $FAIL_FILE
+          cat $LOG
+          return
+       fi
    fi
 
    NOW=$(date +"%H:%M:%S")
