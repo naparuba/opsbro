@@ -65,9 +65,19 @@ assert_state_count "alive" "3"
 cat /var/log/opsbro/gossip.log
 
 # Wait for all nodes to be here because if node2 or node 1 stop before node3, it will not detect 3 alives
-opsbro gossip events add "END-$CASE"
+
+# As node2 is the relay, we should finish this last one in last
+if [ $CASE == "NODE1" ] || [ $CASE == "NODE3" ]; then
+  opsbro gossip events add "END-$CASE"
+fi
 wait_event_with_timeout "END-NODE1" 60
-wait_event_with_timeout "END-NODE2" 60
 wait_event_with_timeout "END-NODE3" 60
+
+if [ $CASE == "NODE2" ];then
+   opsbro gossip events add "END-$CASE"
+fi
+wait_event_with_timeout "END-NODE2" 60
+
+sleep 10
 
 echo "INDIRECT PING is done"
