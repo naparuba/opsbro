@@ -1,0 +1,34 @@
+compliance:
+   name: passwd is root/644 and /etc/shadow- is root/600
+   verify_if:   "is_in_group('linux')"
+   # We force to get back the file rights
+   mode: enforcing
+   interval: 60s
+   rules:
+      - name: Check that /etc/passwd is root/644
+        type: file-rights
+        environments:
+          - name: All linux
+            # no need for a if here, will be True
+            parameters:
+               file: /etc/passwd
+               owner: root
+               group: root
+               permissions: 644
+        # Same post commands for every env
+        post_commands:
+          - echo "success-passwd" > /tmp/success
+
+      - name: Check that /etc/shadow- is root/600
+        type: file-rights
+        environments:
+          - name: All linux
+            # no need for a if here, will be True
+            parameters:
+               file: /etc/shadow-
+               owner: root
+               group: root
+               permissions: 600
+        # Same post commands for every env
+        post_commands:
+          - echo "success-shadow" >> /tmp/success

@@ -81,9 +81,123 @@ class InterfaceComplianceDriver(object):
         rule.add_error('The driver %s is missing launch action.' % self.__class__)
 
 
+class Compliance(object):
+    def __init__(self, pack_name, pack_level, name, mode, verify_if, rule_defs):
+        self.pack_name = pack_name
+        self.pack_level = pack_level
+        self.name = name
+        self.mode = mode
+        self.verify_if = verify_if
+        
+        self.__state = 'UNKNOWN'
+        self.__old_state = 'UNKNOWN'
+        
+        self.rules = []
+        nb_rules = len(rule_defs)
+        idx = 0
+        for rule_def in rule_defs:
+            idx += 1
+            rule = Rule(pack_name, pack_level, mode, self.name, rule_def, idx, nb_rules)
+            self.rules.append(rule)
+    
+    
+    def get_name(self):
+        return self.name
+    
+    
+    def get_state(self):
+        return self.__state
+    
+    
+    def get_verify_if(self):
+        return self.verify_if
+    
+    
+    def set_not_eligible(self):
+        for rule in self.rules:
+            rule.set_not_eligible()
+    
+    
+    def __set_state(self, state):
+        if self.__state == state:
+            return
+        
+        self.__old_state = self.__state
+        self.__state = state
+        logger.info('Compliance rule %s switch from %s to %s' % (self.name, self.__old_state, self.__state))
+    
+    
+    def get_history_entries(self):
+        history_entries = []
+        for rule in self.rules:
+            history_entry = rule.get_history_entry()
+            if history_entry:
+                history_entries.append(history_entry)
+        return history_entries
+    
+    
+    # Get the most important rule
+    #       0          1       2       3           4
+    # NOT-ELIGIBLE > ERROR > FIXED > COMPLIANT > UNKNOWN
+    def compute_state(self):
+        computed_state_ids = {'NOT-ELIGIBLE': 0, 'ERROR': 1, 'FIXED': 2, 'COMPLIANT': 3, 'UNKNOWN': 4}
+        computed_state_reverse = {0: 'NOT-ELIGIBLE', 1: 'ERROR', 2: 'FIXED', 3: 'COMPLIANT', 4: 'UNKNOWN'}
+        computed_state_id = 4
+        for rule in self.rules:
+            state = rule.get_state()
+            if state == 'NOT-ELIGIBLE':
+                self.__set_state(state)
+                return
+            state_id = computed_state_ids.get(state)
+            if state_id < computed_state_id:
+                computed_state_id = state_id
+        # Get back the state
+        computed_state = computed_state_reverse.get(computed_state_id)
+        self.__set_state(computed_state)
+        return
+    
+    
+    def get_rules(self):
+        return self.rules
+    
+    
+    def reset(self):
+        for rule in self.rules:
+            rule.reset()
+    
+    
+    # Dump our state, and our rules ones
+    def get_json_dump(self):
+        r = {'name': self.name, 'state': self.__state, 'old_state': self.__old_state, 'mode': self.mode, 'pack_level': self.pack_level, 'pack_name': self.pack_name, 'rules': []}
+        
+        for rule in self.rules:
+            j = rule.get_json_dump()
+            r['rules'].append(j)
+        return r
+    
+    
+    def add_error(self, error):
+        for rule in self.rules:
+            rule.add_error(error)
+    
+    
+    def set_error(self):
+        for rule in self.rules:
+            rule.set_error()
+
+
 class Rule(object):
-    def __init__(self, pack_name, pack_level, name, mode, verify_if, rule_def):
+    def __init__(self, pack_name, pack_level, mode, compliance_name, rule_def, idx, nb_rules):
         self.rule_def = rule_def
+        self.compliance_name = compliance_name
+        # If no name, we can take compliance name if it's the only rule
+        # or the index if ther are more
+        self.name = self.rule_def.get('name', None)
+        if self.name is None:
+            if nb_rules == 1:
+                self.name = compliance_name
+            else:
+                self.name = 'step %d' % idx
         self.type = self.rule_def.get('type')
         self.environments = deque()
         env_defs = self.rule_def.get('environments', [])
@@ -94,9 +208,7 @@ class Rule(object):
         self.variable_defs = self.rule_def.get('variables', {})
         self.pack_name = pack_name
         self.pack_level = pack_level
-        self.name = name
         self.mode = mode
-        self.verify_if = verify_if
         
         self.__state = 'UNKNOWN'
         self.__old_state = 'UNKNOWN'
@@ -126,10 +238,6 @@ class Rule(object):
     
     def get_post_commands(self):
         return self.post_commands
-    
-    
-    def get_verify_if(self):
-        return self.verify_if
     
     
     def get_name(self):
@@ -243,7 +351,7 @@ class Rule(object):
     
     
     def get_json_dump(self):
-        return {'name': self.name, 'state': self.__state, 'old_state': self.__old_state, 'infos': self.__infos, 'mode': self.mode, 'pack_level': self.pack_level, 'pack_name': self.pack_name, 'type': self.type}
+        return {'name': self.name, 'state': self.__state, 'old_state': self.__old_state, 'infos': self.__infos, 'mode': self.mode, 'pack_level': self.pack_level, 'pack_name': self.pack_name, 'type': self.type, 'compliance_name': self.compliance_name}
     
     
     def get_history_entry(self):
@@ -300,26 +408,32 @@ class ComplianceManager(object):
                 logger.error('Cannot load compliance driver %s: %s' % (fname, exp))
     
     
-    def import_compliance(self, compliance, full_path, file_name, mod_time=0, pack_name='', pack_level=''):
-        name = compliance.get('name', file_name)
-        mode = compliance.get('mode', 'audit')
+    def import_compliance(self, compliance_def, full_path, file_name, mod_time=0, pack_name='', pack_level=''):
+        name = compliance_def.get('name', file_name)
+        mode = compliance_def.get('mode', 'audit')
         if mode not in ('audit', 'enforcing'):
             logger.error('The compliance definition got a wrong mode :%s' % mode)
             return
-        verify_if = compliance.get('verify_if', 'True')
+        verify_if = compliance_def.get('verify_if', 'True')
         
-        rule_def = compliance.get('rule', None)
-        if rule_def is None:
-            logger.error('The compliance definition is missing a rule entry :%s' % full_path)
-            return
-        rule_type = rule_def.get('type')
-        if not rule_type:
-            logger.error('The compliance definition is missing a rule type entry :%s' % full_path)
-            return
+        rule_def = compliance_def.get('rule', None)
+        if rule_def is not None:
+            rule_defs = [rule_def]
+        else:
+            # Looks if there are rules
+            rule_defs = compliance_def.get('rules', None)
+            if not rule_defs:
+                logger.error('The compliance definition is missing a rule (and rules) entry :%s' % full_path)
+                return
+        for rule_def in rule_defs:
+            rule_type = rule_def.get('type')
+            if not rule_type:
+                logger.error('The compliance definition is missing a rule type entry :%s' % full_path)
+                return
+        compliance = Compliance(pack_name, pack_level, name, mode, verify_if, rule_defs)
         
-        rule = Rule(pack_name, pack_level, name, mode, verify_if, rule_def)
         # Add it into the list
-        self.compliances[full_path] = rule
+        self.compliances[full_path] = compliance
     
     
     def add_history_entry(self, history_entry):
@@ -341,41 +455,44 @@ class ComplianceManager(object):
     
     
     def launch_compliances(self):
-        for (compliance_id, rule) in self.compliances.iteritems():
-            verify_if = rule.get_verify_if()
-            name = rule.get_name()
+        for (compliance_id, compliance) in self.compliances.iteritems():
+            verify_if = compliance.get_verify_if()
+            name = compliance.get_name()
             try:
                 r = evaluater.eval_expr(verify_if)
                 if not r:
-                    rule.set_not_eligible()
+                    compliance.set_not_eligible()
                     continue
             except Exception, exp:
                 err = ' (%s) if rule (%s) evaluation did fail: %s' % (name, verify_if, exp)
                 logger.error(err)
-                rule.add_error(err)
-                rule.set_error()
+                compliance.add_error(err)
+                compliance.set_error()
                 continue
             
             # Reset previous errors
-            rule.reset()
-            logger.debug('Execute compliance rule: %s' % rule)
-            _type = rule.get_type()
-            
-            drv = self.drivers.get(_type)
-            if drv is None:
-                logger.error('Cannot execute rule (%s) as the type is unknown: %s' % (name, _type))
-                continue
-            try:
-                drv.launch(rule)
-            except Exception:
-                err = 'The compliance driver %s did crash with the rule %s: %s' % (drv.name, name, str(traceback.format_exc()))
-                logger.error(err)
-                rule.add_error(err)
-                rule.set_error()
-                continue
-            
-            history_entry = rule.get_history_entry()
-            if history_entry:
+            compliance.reset()
+            # Now launch rules
+            for rule in compliance.get_rules():
+                logger.debug('Execute compliance rule: %s' % rule)
+                _type = rule.get_type()
+                
+                drv = self.drivers.get(_type)
+                if drv is None:
+                    logger.error('Cannot execute rule (%s) as the type is unknown: %s' % (name, _type))
+                    continue
+                try:
+                    drv.launch(rule)
+                except Exception:
+                    err = 'The compliance driver %s did crash with the rule %s: %s' % (drv.name, name, str(traceback.format_exc()))
+                    logger.error(err)
+                    rule.add_error(err)
+                    rule.set_error()
+                    compliance.compute_state()
+                    break
+            compliance.compute_state()
+            history_entries = compliance.get_history_entries()
+            for history_entry in history_entries:
                 self.add_history_entry(history_entry)
     
     
@@ -444,8 +561,8 @@ class ComplianceManager(object):
         def get_compliance_state():
             response.content_type = 'application/json'
             nc = {}
-            for (c_id, c) in self.compliances.iteritems():
-                nc[c_id] = c.get_json_dump()
+            for (c_id, compliance) in self.compliances.iteritems():
+                nc[c_id] = compliance.get_json_dump()
             return json.dumps(nc)
         
         

@@ -1,5 +1,5 @@
 compliance:
-   display_name: passwd is root/644
+   name: passwd is root/644
    verify_if:   "is_in_group('linux')"
    # We force to get back the file rights
    mode: enforcing

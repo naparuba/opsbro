@@ -18,11 +18,9 @@ from opsbro.compliancemgr import COMPLIANCE_LOG_COLORS, COMPLIANCE_STATE_COLORS
 
 
 def __print_rule_entry(rule):
-    display_name = rule['name']
-    mode = rule['mode']
-    cprint(' > compliance > ', color='grey', end='')
-    cprint('[%s] ' % (display_name.ljust(30)), color='magenta', end='')
-    cprint('[mode:%10s] ' % mode, color='magenta', end='')
+    cprint('    - ', end='', color='grey')
+    rule_name = rule['name']
+    cprint('[%s] ' % (rule_name.ljust(30)), color='magenta', end='')
     
     # State:
     state = rule['state']
@@ -44,6 +42,27 @@ def __print_rule_entry(rule):
         info_txt = info['text']
         info_color = COMPLIANCE_LOG_COLORS.get(info_state, 'cyan')
         cprint('      | %-10s : %s' % (info_state, info_txt), color=info_color)
+
+
+def __print_compliance_entry(compliance):
+    display_name = compliance['name']
+    mode = compliance['mode']
+    cprint(' > compliance > ', color='grey', end='')
+    cprint('[%s] ' % (display_name.ljust(30)), color='magenta', end='')
+    cprint('[mode:%10s] ' % mode, color='magenta', end='')
+    
+    # State:
+    state = compliance['state']
+    old_state = compliance['old_state']
+    state_color = COMPLIANCE_STATE_COLORS.get(state, 'cyan')
+    old_state_color = COMPLIANCE_STATE_COLORS.get(old_state, 'cyan')
+    cprint('%-12s' % old_state, color=old_state_color, end='')
+    cprint(' %s ' % CHARACTERS.arrow_left, color='grey', end='')
+    cprint('%-12s' % state, color=state_color)
+    
+    rules = compliance['rules']
+    for rule in rules:
+        __print_rule_entry(rule)
 
 
 def do_compliance_state():
@@ -77,8 +96,8 @@ def do_compliance_state():
             cnames.sort()
             for cname in cnames:
                 cprint('  - %s' % pname, color='blue', end='')
-                rule = pack_entries[cname]
-                __print_rule_entry(rule)
+                compliance = pack_entries[cname]
+                __print_compliance_entry(compliance)
 
 
 def do_compliance_history():
@@ -102,9 +121,26 @@ def do_compliance_history():
             epoch = history['date']
             entries = history['entries']
             print_h2('  Date: %s ' % time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime(epoch)))
+            entries_by_compliances = {}
             for entry in entries:
-                cprint('  - %s' % entry['pack_name'], color='blue', end='')
-                __print_rule_entry(entry)
+                compliance_name = entry['compliance_name']
+                pack_name = entry['pack_name']
+                mode = entry['mode']
+                if compliance_name not in entries_by_compliances:
+                    entries_by_compliances[compliance_name] = {'pack_name': pack_name, 'mode': mode, 'entries': []}
+                entries_by_compliances[compliance_name]['entries'].append(entry)
+            for (compliance_name, d) in entries_by_compliances.iteritems():
+                pack_name = d['pack_name']
+                mode = d['mode']
+                entries = d['entries']
+                cprint('  - %s' % pack_name, color='blue', end='')
+                cprint(' > compliance > ', color='grey', end='')
+                cprint('[%s] ' % (compliance_name.ljust(30)), color='magenta', end='')
+                cprint('[mode:%10s] ' % mode, color='magenta')
+                for entry in entries:
+                    # rule_name = entry['name']
+                    # cprint('[%s] ' % (rule_name.ljust(30)), color='magenta', end='')
+                    __print_rule_entry(entry)
             print "\n"
 
 
