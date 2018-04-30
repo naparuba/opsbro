@@ -7,7 +7,7 @@ echo "Starting to test Compliance for mongodb install with repository"
 /etc/init.d/opsbro start
 
 
-opsbro compliance wait-compliant "MONGODB-REPOSITORY" --timeout=120
+opsbro compliance wait-compliant "MONGODB-INSTALL" --timeout=120
 if [ $? != 0 ];then
    echo "ERROR: cannot have the repository compliance rule compliant."
    opsbro compliance state
@@ -15,13 +15,6 @@ if [ $? != 0 ];then
    exit 2
 fi
 
-opsbro compliance wait-compliant "INSTALL-MONGODB-PACKAGE" --timeout=120
-if [ $? != 0 ];then
-   echo "ERROR: cannot have the package compliance rule compliant."
-   opsbro compliance state
-   opsbro compliance history
-   exit 2
-fi
 
 
 # We now should have the mongodb-org package installed

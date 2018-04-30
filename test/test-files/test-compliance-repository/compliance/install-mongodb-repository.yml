@@ -1,48 +1,87 @@
 compliance:
-   name: MONGODB-REPOSITORY
+   name: MONGODB-INSTALL
    verify_if:   "True"
    mode: enforcing
    interval: 1s
    note: This installer will install mongodb with repository & packages
-   rule:
-      type: repository
-      # You can set variables in order to not repeat yourself in the if rules
-      variables:
-         is_debian: "{{collector.system.os.linux.distribution}} == 'debian'"
-         is_centos: "{{collector.system.os.linux.distribution}} == 'centos'"
-         is_ubuntu: "{{collector.system.os.linux.distribution}} == 'ubuntu'"
-         is_amazon: "{{collector.system.os.linux.distribution}} == 'amazon-linux2'"
+   rules:
+     -  name: "Import the mongodb repository"
+        type: repository
+        # You can set variables in order to not repeat yourself in the if rules
+        variables:
+           is_debian: "{{collector.system.os.linux.distribution}} == 'debian'"
+           is_centos: "{{collector.system.os.linux.distribution}} == 'centos'"
+           is_ubuntu: "{{collector.system.os.linux.distribution}} == 'ubuntu'"
+           is_amazon: "{{collector.system.os.linux.distribution}} == 'amazon-linux2'"
 
-      environments:
-         - name: debian8
-           if: "{{variables.is_debian}} and {{collector.system.os.linux.major_version}} == 8"
-           parameters:
-             name:       mongodb-org-3.6
-             url:        http://repo.mongodb.org/apt/debian jessie/mongodb-org/3.6 main
-             key:        2930ADAE8CAF5059EE73BB4B58712A2291FA4AD5
-             key-server: hkp://keyserver.ubuntu.com:80
-
-
-         - name: ubuntu
-           if: "{{variables.is_ubuntu}}"
-           parameters:
-             name:       mongodb-org-3.6
-             url:        "[ arch=amd64,arm64 ] http://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.6 multiverse"
-             key:        2930ADAE8CAF5059EE73BB4B58712A2291FA4AD5
-             key-server: hkp://keyserver.ubuntu.com:80
+        environments:
+           - name: debian8
+             if: "{{variables.is_debian}} and {{collector.system.os.linux.major_version}} == 8"
+             parameters:
+               name:       mongodb-org-3.6
+               url:        http://repo.mongodb.org/apt/debian jessie/mongodb-org/3.6 main
+               key:        2930ADAE8CAF5059EE73BB4B58712A2291FA4AD5
+               key-server: hkp://keyserver.ubuntu.com:80
 
 
-         - name: centos
-           if:   "{{variables.is_centos}}"
-           parameters:
-             name:       mongodb-org-3.4
-             url:        "https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/3.4/x86_64/"
-             key:        https://www.mongodb.org/static/pgp/server-3.4.asc
+           - name: ubuntu
+             if: "{{variables.is_ubuntu}}"
+             parameters:
+               name:       mongodb-org-3.6
+               url:        "[ arch=amd64,arm64 ] http://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.6 multiverse"
+               key:        2930ADAE8CAF5059EE73BB4B58712A2291FA4AD5
+               key-server: hkp://keyserver.ubuntu.com:80
 
 
-         - name: amazon
-           if:   "{{variables.is_amazon}}"
-           parameters:
-             name:       mongodb-org-3.6
-             url:        "https://repo.mongodb.org/yum/amazon/2013.03/mongodb-org/3.6/x86_64/"
-             key:        https://www.mongodb.org/static/pgp/server-3.6.asc
+           - name: centos
+             if:   "{{variables.is_centos}}"
+             parameters:
+               name:       mongodb-org-3.4
+               url:        "https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/3.4/x86_64/"
+               key:        https://www.mongodb.org/static/pgp/server-3.4.asc
+
+
+           - name: amazon
+             if:   "{{variables.is_amazon}}"
+             parameters:
+               name:       mongodb-org-3.6
+               url:        "https://repo.mongodb.org/yum/amazon/2013.03/mongodb-org/3.6/x86_64/"
+               key:        https://www.mongodb.org/static/pgp/server-3.6.asc
+
+
+     -  name: "Install the mongodb package"
+        type: package-install
+        # You can set variables in order to not repeat yourself in the if rules
+        variables:
+           is_debian: "{{collector.system.os.linux.distribution}} == 'debian'"
+           is_centos: "{{collector.system.os.linux.distribution}} == 'centos'"
+           is_ubuntu: "{{collector.system.os.linux.distribution}} == 'ubuntu'"
+           is_amazon: "{{collector.system.os.linux.distribution}} == 'amazon-linux2'"
+        environments:
+           - name: debian8
+             if: "{{variables.is_debian}} and {{collector.system.os.linux.major_version}} == 8"
+             parameters:
+                packages:
+                   - mongodb-org-server
+
+           - name: ubuntu
+             if:   "{{variables.is_ubuntu}}"
+             parameters:
+                packages:
+                   - mongodb-org-server
+
+           - name: centos
+             if:   "{{variables.is_centos}}"
+             parameters:
+                packages:
+                   - mongodb-org-server
+
+
+           - name: amazon
+             if:   "{{variables.is_amazon}}"
+             parameters:
+                packages:
+                   # NOTE: mongodb need to add user, but by default  amazon
+                   # do not have this command
+                   - shadow-utils
+                   - mongodb-org-server
