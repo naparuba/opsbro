@@ -94,7 +94,7 @@ def __print_more(s):
 def do_info(show_logs):
     try:
         d = get_opsbro_json('/agent/info')
-    except get_request_errors(), exp:
+    except get_request_errors() as exp:
         logger.error('Cannot join opsbro agent for info: %s' % exp)
         sys.exit(1)
     logs = d.get('logs')
@@ -344,7 +344,7 @@ def do_info(show_logs):
 def do_modules_state():
     try:
         d = get_opsbro_json('/agent/info')
-    except get_request_errors(), exp:
+    except get_request_errors() as exp:
         logger.error('Cannot join opsbro agent for module state: %s' % exp)
         sys.exit(1)
     modules = d.get('modules', {})
@@ -397,7 +397,7 @@ def do_start(daemon, cfg_dir, one_shot):
 def do_stop():
     try:
         (code, r) = get_opsbro_local('/stop')
-    except get_request_errors(), exp:
+    except get_request_errors() as exp:
         logger.error(exp)
         return
     cprint(r, color='green')
@@ -451,7 +451,7 @@ def __get_cpu_time_percent_display(t, age):
 def do_show_threads():
     try:
         data = get_opsbro_json('/threads/')
-    except get_request_errors(), exp:
+    except get_request_errors() as exp:
         logger.error('Cannot join opsbro agent to show threads: %s' % exp)
         sys.exit(1)
     all_threads = data['threads']
@@ -523,7 +523,7 @@ def do_show_threads():
 def do_list_follow_log():
     try:
         parts = get_opsbro_json('/log/parts/')
-    except get_request_errors(), exp:
+    except get_request_errors() as exp:
         logger.error('Cannot join opsbro agent to list logs: %s' % exp)
         sys.exit(1)
     parts.sort()

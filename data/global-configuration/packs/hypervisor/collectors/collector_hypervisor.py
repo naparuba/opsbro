@@ -146,7 +146,7 @@ class Hypervisor(Collector):
         res = {'hypervisor': ''}
         try:
             cpu = CPUID()
-        except Exception, exp:
+        except Exception as exp:
             self.set_error('Cannot get cpuid/hypervisor information: %s' % exp)
             return res
         

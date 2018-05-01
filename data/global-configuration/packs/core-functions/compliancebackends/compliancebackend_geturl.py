@@ -97,7 +97,7 @@ class GetURLDriver(InterfaceComplianceDriver):
                 args['context'] = self.ssl_context
             filedata = urllib2.urlopen(url, **args)
             data = filedata.read()
-        except Exception, exp:
+        except Exception as exp:
             err = 'ERROR: downloading the uri: %s did fail withthe error: %s' % (url, exp)
             print err
             rule.add_error(err)
@@ -127,7 +127,7 @@ class GetURLDriver(InterfaceComplianceDriver):
         try:
             with open(tmp_file, 'wb') as f:
                 f.write(data)
-        except Exception, exp:
+        except Exception as exp:
             err = 'ERROR: cannot save the file %s: %s' % (tmp_file, exp)
             print err
             rule.add_error(err)
@@ -137,7 +137,7 @@ class GetURLDriver(InterfaceComplianceDriver):
         self.logger.debug("MOVING FILE")
         try:
             shutil.move(tmp_file, dest_file)
-        except Exception, exp:
+        except Exception as exp:
             err = 'ERROR: cannot save the file %s: %s' % (dest_file, exp)
             print err
             rule.add_error(err)

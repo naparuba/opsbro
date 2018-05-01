@@ -1007,7 +1007,7 @@ class Gossip(object):
                     self.set_suspect(new_other)
             except ValueError:  # bad json
                 self.set_suspect(other)
-        except (socket.timeout, socket.gaierror), exp:
+        except (socket.timeout, socket.gaierror) as exp:
             logger.info("PING: error joining the other node %s:%s : %s" % (addr, port, exp))
             logger.info("PING: go indirect mode")
             with self.nodes_lock:
@@ -1028,7 +1028,7 @@ class Gossip(object):
                 try:
                     sock.sendto(enc_message, (r['addr'], r['port']))
                     logger.info('PING waiting ack message from relay %s about node %s' % (r['display_name'], other['display_name']))
-                except socket.error, exp:
+                except socket.error as exp:
                     logger.error('Cannot send a ping relay to %s:%s' % (r['addr'], r['port']))
             # Allow 3s to get an answer from whatever relays got it
             sock.settimeout(3 * 2)
@@ -1055,7 +1055,7 @@ class Gossip(object):
             else:
                 logger.error('PING the other node %s did give us a unamanged state: %s' % (new_other['name'], new_other['state']))
                 self.set_suspect(new_other)
-        except socket.error, exp:
+        except socket.error as exp:
             logger.info("PING: cannot join the other node %s:%s : %s" % (addr, port, exp))
     
     
@@ -1119,10 +1119,10 @@ class Gossip(object):
             #sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
             sock.sendto(enc_ret_msg, addr)
             sock.close()
-        except (socket.timeout, socket.gaierror), exp:
+        except (socket.timeout, socket.gaierror) as exp:
             # cannot reach even us? so it's really dead, let the timeout do its job on _from
             logger.info('PING (relay): cannot ping the node %s(%s:%s) for %s: %s' % (ntgt['display_name'], tgtaddr, tgtport, nfrom['display_name'], exp))
-        except Exception, exp:
+        except Exception as exp:
             logger.error('PING (relay) error, cannot ping-relay for a node: %s' % exp)
     
     
@@ -1277,7 +1277,7 @@ class Gossip(object):
                 total_size += len(enc_message)
                 sock.sendto(enc_message, (addr, port))
             logger.info('BROADCAST: sent %d messages (total size=%d) to %s:%s (uuid=%s  display_name=%s)' % (len(messages), total_size, addr, port, dest['uuid'], dest['display_name']))
-        except (socket.timeout, socket.gaierror), exp:
+        except (socket.timeout, socket.gaierror) as exp:
             logger.error("ERROR: cannot sent the UDP message of len %d to %s: %s" % (len(message), dest['uuid'], exp))
         try:
             sock.close()
@@ -1355,7 +1355,7 @@ class Gossip(object):
             logger.debug("push-pull response", r)
             try:
                 back = json.loads(r)
-            except ValueError, exp:
+            except ValueError as exp:
                 logger.error('ERROR CONNECTING TO %s:%s' % other, exp)
                 return False
             logger.debug('do_push_pull: get return from %s:%s' % (other[0], back))
@@ -1365,7 +1365,7 @@ class Gossip(object):
             self.merge_nodes(back['nodes'])
             self.merge_events(back.get('events', {}))
             return True
-        except get_http_exceptions(), exp:
+        except get_http_exceptions() as exp:
             logger.error('[push-pull] ERROR CONNECTING TO %s:%s' % other, exp)
             return False
     

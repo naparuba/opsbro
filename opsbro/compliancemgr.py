@@ -252,7 +252,7 @@ class Rule(object):
         for (k, expr) in variables_params.iteritems():
             try:
                 variables[k] = evaluater.eval_expr(expr)
-            except Exception, exp:
+            except Exception as exp:
                 err = 'RULE: %s Variable %s (%s) evaluation did fail: %s' % (self.get_name(), k, expr, exp)
                 self.add_error(err)
                 self.set_error()
@@ -273,7 +273,7 @@ class Rule(object):
                 if do_match:
                     logger.debug('Rule: %s We find a matching envrionnement: %s' % (self.name, env_name))
                     return env
-            except Exception, exp:
+            except Exception as exp:
                 err = 'Environnement %s: "if" rule %s did fail to evaluate: %s' % (env_name, if_, exp)
                 self.add_error(err)
                 self.set_error()
@@ -404,7 +404,7 @@ class ComplianceManager(object):
                 # another way to give the information to the inner class inside, I take it ^^
                 m = imp.load_source('compliancebackend___%s___%s___%s' % (pack_level, pack_name, fname), f)
                 logger.debug('Compliance driver module loaded: %s' % m)
-            except Exception, exp:
+            except Exception as exp:
                 logger.error('Cannot load compliance driver %s: %s' % (fname, exp))
     
     
@@ -463,7 +463,7 @@ class ComplianceManager(object):
                 if not r:
                     compliance.set_not_eligible()
                     continue
-            except Exception, exp:
+            except Exception as exp:
                 err = ' (%s) if rule (%s) evaluation did fail: %s' % (name, verify_if, exp)
                 logger.error(err)
                 compliance.add_error(err)

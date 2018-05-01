@@ -104,7 +104,7 @@ if __name__ == '__main__':
                 buf = f.read()
                 CONFIG = yamler.loads(buf)
             logger.debug("Loaded configuration file %s : %s" % (opts.ymlconfig, CONFIG))
-        except Exception, exp:
+        except Exception as exp:
             logger.error('Cannot load configuration file %s: %s' % (opts.ymlconfig, exp))
             sys.exit(2)
     

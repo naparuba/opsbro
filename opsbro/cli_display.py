@@ -110,7 +110,7 @@ def yml_parameter_get(parameters_file_path, parameter_name, file_display=None):
 def __get_and_assert_valid_to_yaml_value(str_value):
     try:
         python_value = yamler.loads('%s' % str_value)
-    except Exception, exp:
+    except Exception as exp:
         err = 'Cannot load the value %s as a valid parameter: %s' % (str_value, exp)
         logger.error(err)
         raise Exception(err)
@@ -207,7 +207,7 @@ def yml_parameter_remove(parameters_file_path, parameter_name, str_value, file_d
 def get_terminal_size():
     try:
         height, width = struct.unpack('hhhh', ioctl(sys.stdout, TIOCGWINSZ, '\000' * 8))[0:2]
-    except IOError, exp:
+    except IOError as exp:
         raise Exception('Cannot get the terminal size (%s error)' % exp)
     return height, width
 

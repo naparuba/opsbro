@@ -62,13 +62,13 @@ class Mysql(Collector):
         if not mysql_socket:
             try:
                 db = self.MySQLdb.connect(host=host, user=user, passwd=password, port=port)
-            except self.MySQLdb.OperationalError, exp:  # ooooups
+            except self.MySQLdb.OperationalError as exp:  # ooooups
                 self.set_error('MySQL connection error (server): %s' % exp)
                 return False
         elif hasattr(socket, 'AF_UNIX'):
             try:
                 db = self.MySQLdb.connect(host='localhost', user=user, passwd=password, port=port, unix_socket=mysql_socket)
-            except self.MySQLdb.OperationalError, exp:
+            except self.MySQLdb.OperationalError as exp:
                 self.set_error('MySQL connection error (socket): %s' % exp)
                 return False
         else:
@@ -243,7 +243,7 @@ class Mysql(Collector):
                 try:
                     secondsBehindMaster = result['Seconds_Behind_Master']
                     logger.debug('getMySQLStatus: secondsBehindMaster = %s' % secondsBehindMaster)
-                except IndexError, exp:
+                except IndexError as exp:
                     secondsBehindMaster = None
                     logger.debug('getMySQLStatus: secondsBehindMaster empty. %s' % exp)
             else:

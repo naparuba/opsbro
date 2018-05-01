@@ -21,13 +21,13 @@ def do_detect_list():
     with AnyAgent():
         try:
             (code, r) = get_opsbro_local('/agent/detectors')
-        except get_request_errors(), exp:
+        except get_request_errors() as exp:
             logger.error(exp)
             return
         
         try:
             d = json.loads(r)
-        except ValueError, exp:  # bad json
+        except ValueError as exp:  # bad json
             logger.error('Bad return from the server %s' % exp)
             return
         print_info_title('Detectors')
@@ -57,13 +57,13 @@ def do_detect_run():
         
         try:
             (code, r) = get_opsbro_local('/agent/detectors/run')
-        except get_request_errors(), exp:
+        except get_request_errors() as exp:
             logger.error(exp)
             return
         
         try:
             d = json.loads(r)
-        except ValueError, exp:  # bad json
+        except ValueError as exp:  # bad json
             logger.error('Bad return from the server %s' % exp)
             return
         
@@ -83,13 +83,13 @@ def do_detect_state():
     with AnyAgent():
         try:
             (code, r) = get_opsbro_local('/agent/detectors/state')
-        except get_request_errors(), exp:
+        except get_request_errors() as exp:
             logger.error(exp)
             return
         
         try:
             groups = json.loads(r)
-        except ValueError, exp:  # bad json
+        except ValueError as exp:  # bad json
             logger.error('Bad return from the server %s' % exp)
             return
         
@@ -106,13 +106,13 @@ def do_detect_history():
         uri = '/agent/detectors/history'
         try:
             (code, r) = get_opsbro_local(uri)
-        except get_request_errors(), exp:
+        except get_request_errors() as exp:
             logger.error(exp)
             return
         
         try:
             histories = json.loads(r)
-        except ValueError, exp:  # bad json
+        except ValueError as exp:  # bad json
             logger.error('Bad return from the server %s' % exp)
             return
         print_h1('Detected groups history for this node')
@@ -141,13 +141,13 @@ def do_detect_wait_group(group_name, timeout=30):
             uri = '/agent/detectors/state'
             try:
                 (code, r) = get_opsbro_local(uri)
-            except get_request_errors(), exp:
+            except get_request_errors() as exp:
                 logger.error(exp)
                 return
             
             try:
                 detected_groups = json.loads(r)
-            except ValueError, exp:  # bad json
+            except ValueError as exp:  # bad json
                 logger.error('Bad return from the server %s' % exp)
                 return
             

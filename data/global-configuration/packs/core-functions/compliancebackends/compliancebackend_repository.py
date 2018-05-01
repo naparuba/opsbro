@@ -96,7 +96,7 @@ class RepositoryDriver(InterfaceComplianceDriver):
                 else:
                     compl = 'The key %s from the server key %s is imported' % (key, key_server)
                     rule.add_compliance(compl)
-            except Exception, exp:
+            except Exception as exp:
                 err = 'Cannot import the key %s from the server %s : %s' % (key, key_server, exp)
                 rule.add_error(err)
                 rule.set_error()
@@ -111,7 +111,7 @@ class RepositoryDriver(InterfaceComplianceDriver):
                 rule.set_error()
                 # Nothing more to do, we can exit
                 return
-        except Exception, exp:
+        except Exception as exp:
             err = 'Cannot set the repository %s (url=%s) : %s' % (name, url, exp)
             rule.add_error(err)
             rule.set_error()

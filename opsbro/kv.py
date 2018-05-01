@@ -354,7 +354,7 @@ class KVBackend:
                 httper.delete(uri)
                 logger.debug('KV: DELETE return')
                 return None
-            except get_http_exceptions(), exp:
+            except get_http_exceptions() as exp:
                 logger.debug('KV: DELETE error asking to %s: %s' % (n['name'], str(exp)))
                 return None
     
@@ -386,7 +386,7 @@ class KVBackend:
                     return None
                 logger.info('KV: get founded (%d)' % len(r))
                 return r
-            except get_http_exceptions(), exp:
+            except get_http_exceptions() as exp:
                 logger.error('KV: error asking to %s: %s' % (n['name'], str(exp)))
                 return None
     
@@ -441,7 +441,7 @@ class KVBackend:
                     sock.sendto(enc_packet, (n['addr'], n['port']))
                     sock.close()
                     return None
-                except Exception, exp:
+                except Exception as exp:
                     logger.debug('KV: PUT (udp) error asking to %s: %s' % (n['name'], str(exp)))
                     return None
             # ok no allow udp here, so we switch to a classic HTTP mode :)
@@ -452,7 +452,7 @@ class KVBackend:
                 httper.put(uri, data=value, params=params)
                 logger.debug('KV: PUT return')
                 return None
-            except get_http_exceptions(), exp:
+            except get_http_exceptions() as exp:
                 logger.debug('KV: PUT error asking to %s: %s' % (n['name'], str(exp)))
                 return None
     
@@ -518,7 +518,7 @@ class KVBackend:
                         params = {'force': True, 'meta': json.dumps(bl['meta'])}
                         r = httper.put(uri, data=value, params=params)
                         logger.debug('KV: PUT(force) return %s' % r)
-                    except get_http_exceptions(), exp:
+                    except get_http_exceptions() as exp:
                         logger.debug('KV: PUT(force) error asking to %s: %s' % (n['name'], str(exp)))
             time.sleep(1)
     

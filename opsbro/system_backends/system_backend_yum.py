@@ -92,7 +92,7 @@ gpgkey=https://www.mongodb.org/static/pgp/server-3.4.asc
                 if content == buf:
                     logger.debug('YUM the repository %s have the good value:%s' % (name, url))
                     return True
-            except IOError, exp:
+            except IOError as exp:
                 err = 'YUM: cannot read the repository file: %s : %s' % (pth, exp)
                 logger.error(err)
                 raise Exception(err)
@@ -106,7 +106,7 @@ gpgkey=https://www.mongodb.org/static/pgp/server-3.4.asc
             with open(pth, 'w') as f:
                 f.write(content)
             logger.info('YUM the repository %s been updated to:%s' % (name, url))
-        except IOError, exp:
+        except IOError as exp:
             err = 'YUM: cannot write repository content: %s: %s' % (pth, exp)
             logger.error(err)
             raise Exception(err)

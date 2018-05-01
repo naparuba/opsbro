@@ -44,7 +44,7 @@ try:
     )
     for key in names:
         print 'Registry', key
-except Exception, exp:
+except Exception as exp:
     #print "FUCK", exp
     pass
 
@@ -472,7 +472,7 @@ try:
     )
     for key in names:
         print 'Registry', key
-except Exception, exp:
+except Exception as exp:
     print "FUCK", exp
 
 

@@ -71,7 +71,7 @@ class DigitalOceanHostingDriver(InterfaceHostingDriver):
         uri = 'http://169.254.169.254/metadata/v1.json'
         try:
             s = httper.get(uri)
-        except get_http_exceptions(), exp:
+        except get_http_exceptions() as exp:
             self.logger.error('Cannot get meta data for your digital ocean instance from %s. Error: %s.Exiting' % (uri, exp))
             raise
         self.__meta_data = json.loads(s)
@@ -81,7 +81,7 @@ class DigitalOceanHostingDriver(InterfaceHostingDriver):
     def get_public_address(self):
         try:
             meta_data = self.get_meta_data()
-        except Exception, exp:
+        except Exception as exp:
             self.logger.error('Cannot get pubic IP for your Digital Ocean instance. Error: %s' % exp)
             raise
         addr = meta_data['interfaces']['public'][0]['ipv4']['ip_address']
@@ -92,7 +92,7 @@ class DigitalOceanHostingDriver(InterfaceHostingDriver):
     def get_unique_uuid(self):
         try:
             meta_data = self.get_meta_data()
-        except Exception, exp:
+        except Exception as exp:
             self.logger.error('Cannot get unique uuid for your Digital Ocean instance. Error: %s' % exp)
             raise
         addr = str(meta_data['droplet_id'])

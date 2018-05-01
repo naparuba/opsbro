@@ -111,7 +111,7 @@ class AnyAgent(object):
     def _do_agent_stop(self):
         try:
             get_opsbro_local('/stop')
-        except get_request_errors(), exp:
+        except get_request_errors() as exp:
             logger.error(exp)
             return
     
@@ -494,10 +494,10 @@ class CLICommander(object):
         logger.debug("CALLING " + str(f) + " WITH " + str(cmd_args) + " and " + str(cmd_opts))
         try:
             f(*cmd_args, **cmd_opts.__dict__)
-        except TypeError, exp:
+        except TypeError as exp:
             logger.error('Bad call: missing or too much arguments: %s (%s)' % (exp, str(traceback.print_exc())))
             sys.exit(2)
-        except Exception, exp:
+        except Exception as exp:
             logger.error('The call did fail: %s' % (str(traceback.print_exc())))
     
     

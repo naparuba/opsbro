@@ -16,7 +16,7 @@ try:
     from vmguestlib import VMGuestLib
     
     lib_ptr = VMGuestLib()
-except Exception, exp:
+except Exception as exp:
     pass
 finally:
     try:

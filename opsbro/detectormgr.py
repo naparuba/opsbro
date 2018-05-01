@@ -70,7 +70,7 @@ class DetectorMgr(object):
                     gen['last_launch'] = int(time.time())
                     try:
                         do_apply = evaluater.eval_expr(gen['apply_if'])
-                    except Exception, exp:
+                    except Exception as exp:
                         logger.error('Cannot execute detector %s: %s' % (gname, exp))
                         do_apply = False
                     gen['do_apply'] = do_apply
@@ -88,7 +88,7 @@ class DetectorMgr(object):
                                 else:
                                     new_groups.append(compile_group)
                             groups = new_groups
-                        except Exception, exp:
+                        except Exception as exp:
                             logger.error('Cannot execute detector group %s: %s' % (gname, exp))
                             groups = []
                         logger.debug('groups %s are applying for the detector %s' % (groups, gname))
@@ -148,7 +148,7 @@ class DetectorMgr(object):
                 logger.info("LAUNCHING DETECTOR: %s" % gen)
                 try:
                     res[gname]['matched'] = evaluater.eval_expr(gen['apply_if'])
-                except Exception, exp:
+                except Exception as exp:
                     logger.error('Cannot execute detector %s: %s' % (gname, exp))
                     res[gname]['matched'] = False
                 if res[gname]['matched']:

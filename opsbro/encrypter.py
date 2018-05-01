@@ -66,7 +66,7 @@ class Encrypter(object):
             cyph = AES.new(self.encryption_key, AES.MODE_ECB)
             ndata = cyph.decrypt(data).strip()
             return ndata
-        except Exception, exp:
+        except Exception as exp:
             logger.error('Decryption fail:', exp)
             return ''
     
@@ -83,7 +83,7 @@ class Encrypter(object):
             cyph = AES.new(self.encryption_key, AES.MODE_ECB)
             ndata = cyph.encrypt(data)
             return ndata
-        except Exception, exp:
+        except Exception as exp:
             logger.error('Encryption fail:', exp)
             return ''
 

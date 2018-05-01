@@ -24,7 +24,7 @@ class Geoloc(Collector):
             conn.request("GET", "/json")
             r1 = conn.getresponse()
             data = r1.read()
-        except socket.gaierror, exp:
+        except socket.gaierror as exp:
             self.set_not_eligible("Cannot contact ipinfo.io: %s. This server seems to have access to internet." % exp)
             return False
         

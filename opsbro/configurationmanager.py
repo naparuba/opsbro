@@ -163,7 +163,7 @@ class ConfigurationManager(object):
                     o = yamler.loads(buf, force_document_comment_to_first_entry=force_document_comment_to_first_entry)
                 else:
                     raise Exception('Unknown file extension: %s' % fp)
-            except Exception, exp:
+            except Exception as exp:
                 logger.error('ERROR: the configuration file %s malformed: %s' % (fp, exp))
                 sys.exit(2)
         logger.debug("Configuration, opening file data", o, fp)

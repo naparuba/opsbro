@@ -166,7 +166,7 @@ class Executer(object):
             sock.settimeout(3)
             try:
                 raw = sock.recv(1024)
-            except socket.timeout, exp:
+            except socket.timeout as exp:
                 logger.error('EXEC challenge ask timeout from node %s : %s' % (node['name'], exp))
                 sock.close()
                 d['state'] = 'error'
@@ -179,7 +179,7 @@ class Executer(object):
                 continue
             try:
                 ret = json.loads(msg)
-            except ValueError, exp:
+            except ValueError as exp:
                 logger.error('EXEC bad return from node %s : %s' % (node['name'], exp))
                 sock.close()
                 d['state'] = 'error'
@@ -204,7 +204,7 @@ class Executer(object):
                 ##TOCLEAN:: response = self.mfkey_priv.decrypt(challenge)
                 RSA = encrypter.get_RSA()
                 response = RSA.decrypt(challenge, self.mfkey_priv)
-            except Exception, exp:
+            except Exception as exp:
                 logger.error('EXEC bad challenge encoding from %s:%s' % (node['name'], exp))
                 sock.close()
                 d['state'] = 'error'
@@ -222,7 +222,7 @@ class Executer(object):
             sock.settimeout(3)
             try:
                 raw = sock.recv(1024)
-            except socket.timeout, exp:
+            except socket.timeout as exp:
                 logger.error('EXEC done return timeout from node %s : %s' % (node['name'], exp))
                 sock.close()
                 d['state'] = 'error'
@@ -235,7 +235,7 @@ class Executer(object):
                 continue
             try:
                 ret = json.loads(msg)
-            except ValueError, exp:
+            except ValueError as exp:
                 logger.error('EXEC bad return from node %s : %s' % (node['name'], exp))
                 sock.close()
                 d['state'] = 'error'
@@ -253,7 +253,7 @@ class Executer(object):
             
             try:
                 t = json.loads(v)
-            except ValueError, exp:
+            except ValueError as exp:
                 logger.error('EXEC bad json entry return from %s and cid %s: %s' % (node['name'], cid, exp))
                 d['state'] = 'error'
                 continue

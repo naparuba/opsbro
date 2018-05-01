@@ -36,7 +36,7 @@ def get_collectors(self):
         fname = os.path.splitext(os.path.basename(f))[0]
         try:
             imp.load_source('collector%s' % fname, f)
-        except Exception, exp:
+        except Exception as exp:
             logger.error('Cannot load collector %s: %s' % (fname, exp))
             continue
     
@@ -70,7 +70,7 @@ class CollectorManager:
                 # another way to give the information to the inner class inside, I take it ^^
                 m = imp.load_source('collector___%s___%s___%s' % (pack_level, pack_name, fname), f)
                 logger.debug('Collector module loaded: %s' % m)
-            except Exception, exp:
+            except Exception as exp:
                 logger.error('Cannot load collector %s: %s' % (fname, exp))
     
     
@@ -99,7 +99,7 @@ class CollectorManager:
         try:
             # also give it our put result callback
             inst = cls()
-        except Exception, exp:
+        except Exception as exp:
             logger.error('Cannot load the %s collector: %s' % (cls, traceback.format_exc()))
             return
         

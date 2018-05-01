@@ -20,7 +20,7 @@ class OpenPorts(Collector):
             _cmd = 'netstat -tuln'
             try:
                 netstat = self.execute_shell(_cmd)
-            except Exception, exp:
+            except Exception as exp:
                 self.set_error('get_open_ports: exception in launching command: %s' % exp)
                 return False
             if netstat is False:

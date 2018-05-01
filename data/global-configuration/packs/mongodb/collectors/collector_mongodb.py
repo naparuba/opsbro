@@ -47,7 +47,7 @@ class Mongodb(Collector):
                 try:
                     import pymongo
                     self.pymongo = pymongo
-                except ImportError, exp:
+                except ImportError as exp:
                     self.set_error('Unable to import pymongo library, even the embedded one (%s)' % exp)
                     return False
                 finally:
@@ -74,7 +74,7 @@ class Mongodb(Collector):
             logger.debug('-- mongoURI: %s', mongoURI)
             conn = self.pymongo.Connection(mongoURI, slave_okay=True)
             logger.debug('Connected to MongoDB')
-        except self.pymongo.errors.ConnectionFailure, exp:
+        except self.pymongo.errors.ConnectionFailure as exp:
             self.set_error('Unable to connect to MongoDB server %s - Exception = %s' % (mongoURI, exp))
             return False
         

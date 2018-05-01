@@ -31,7 +31,7 @@ if is_tty():
         # init the colorama hook, for windows print
         # will do nothing for other than windows
         init_colorama()
-    except (SyntaxError, ImportError), exp:
+    except (SyntaxError, ImportError) as exp:
         # Outch can't import a cprint, do a simple print
         def cprint(s, color='', on_color='', end='\n'):
             if end == '':
@@ -199,7 +199,7 @@ class Logger(object):
                 fd = os.open(listener, os.O_WRONLY | os.O_NONBLOCK)
                 os.write(fd, s)
                 os.close(fd)
-            except Exception, exp:  # maybe the path did just disapear
+            except Exception as exp:  # maybe the path did just disapear
                 s = "ERROR LISTERNER %s" % exp
                 f.write(s)
     

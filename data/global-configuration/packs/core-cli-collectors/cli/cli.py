@@ -74,7 +74,7 @@ def do_collectors_show(name='', all=False):
     with AnyAgent():
         try:
             collectors = get_opsbro_json('/collectors')
-        except get_request_errors(), exp:
+        except get_request_errors() as exp:
             logger.error(exp)
             return
         
@@ -98,7 +98,7 @@ def do_collectors_state():
         print_h1('Collectors')
         try:
             collectors = get_opsbro_json('/collectors')
-        except get_request_errors(), exp:
+        except get_request_errors() as exp:
             logger.error(exp)
             return
         cnames = collectors.keys()
@@ -131,7 +131,7 @@ def do_collectors_wait_ok(collector_name, timeout=30):
         for i in xrange(timeout):
             try:
                 collectors = get_opsbro_json('/collectors')
-            except get_request_errors(), exp:
+            except get_request_errors() as exp:
                 logger.error(exp)
                 return
             collector = None
@@ -164,7 +164,7 @@ def do_collectors_history():
     with AnyAgent():
         try:
             history_entries = get_opsbro_json('/agent/collectors/history')
-        except get_request_errors(), exp:
+        except get_request_errors() as exp:
             logger.error(exp)
             return
         

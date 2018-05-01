@@ -47,13 +47,13 @@ def do_generators_state(show_diff=False):
         uri = '/generators/state'
         try:
             (code, r) = get_opsbro_local(uri)
-        except get_request_errors(), exp:
+        except get_request_errors() as exp:
             logger.error(exp)
             return
         
         try:
             generators = json.loads(r)
-        except ValueError, exp:  # bad json
+        except ValueError as exp:  # bad json
             logger.error('Bad return from the server %s' % exp)
             return
         print_h1('Generators')
@@ -86,13 +86,13 @@ def do_generators_history():
         uri = '/generators/history'
         try:
             (code, r) = get_opsbro_local(uri)
-        except get_request_errors(), exp:
+        except get_request_errors() as exp:
             logger.error(exp)
             return
         
         try:
             histories = json.loads(r)
-        except ValueError, exp:  # bad json
+        except ValueError as exp:  # bad json
             logger.error('Bad return from the server %s' % exp)
             return
         print_h1('Generators history')
@@ -118,13 +118,13 @@ def do_generators_wait_compliant(generator_name, timeout=30):
             uri = '/generators/state'
             try:
                 (code, r) = get_opsbro_local(uri)
-            except get_request_errors(), exp:
+            except get_request_errors() as exp:
                 logger.error(exp)
                 return
             
             try:
                 generators = json.loads(r)
-            except ValueError, exp:  # bad json
+            except ValueError as exp:  # bad json
                 logger.error('Bad return from the server %s' % exp)
                 return
             generator = None

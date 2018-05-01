@@ -42,7 +42,7 @@ class AptBackend(LinuxBackend):
                 self.install_package('python-apt')
                 import apt
                 self.apt = apt
-            except Exception, exp:
+            except Exception as exp:
                 logger.error('Cannot install APT python lib: %s' % exp)
                 return
     
@@ -187,7 +187,7 @@ class AptBackend(LinuxBackend):
                 if content == buf:
                     logger.debug('APT the repository %s have the good value:%s' % (name, url))
                     return True
-            except IOError, exp:
+            except IOError as exp:
                 err = 'APT: cannot read the repository file: %s : %s' % (pth, exp)
                 logger.error(err)
                 raise Exception(err)
@@ -201,7 +201,7 @@ class AptBackend(LinuxBackend):
             with open(pth, 'w') as f:
                 f.write(content)
             logger.info('APT the repository %s been updated to:%s' % (name, url))
-        except IOError, exp:
+        except IOError as exp:
             err = 'APT: cannot write repository content: %s: %s' % (pth, exp)
             logger.error(err)
             raise Exception(err)

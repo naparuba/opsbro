@@ -158,7 +158,7 @@ class InterfaceHostingDriver(object):
             addr = socket.gethostbyname(socket.gethostname())
             if self._is_valid_local_addr(addr):
                 return addr
-        except Exception, exp:
+        except Exception as exp:
             pass
         
         if sys.platform == 'linux2':
@@ -203,7 +203,7 @@ class InterfaceHostingDriver(object):
                     buf = board.SerialNumber.strip().lower()
                     self.logger.info('[SERVER-UUID] using the DMI (bios) uuid as server unique UUID: %s' % buf)
                     return buf
-                except AttributeError, exp:
+                except AttributeError as exp:
                     self.logger.error('[SERVER-UUID] Cannot get the unique bios/board serial number: %s' % exp)
     
         # Cannot find: we will have to guess it
@@ -274,7 +274,7 @@ class HostingDriverMgr(object):
                 # another way to give the information to the inner class inside, I take it ^^
                 m = imp.load_source('hostingdriver___%s___%s___%s' % (pack_level, pack_name, fname), f)
                 logger.debug('Hosting driver module loaded: %s' % m)
-            except Exception, exp:
+            except Exception as exp:
                 logger.error('Cannot load hosting driver %s: %s' % (fname, exp))
     
     

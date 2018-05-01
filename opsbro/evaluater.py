@@ -160,7 +160,7 @@ class Evaluater(object):
         tree = ast.parse(expr, mode='eval').body
         try:
             r = self.eval_(tree)
-        except Exception, exp:
+        except Exception as exp:
             logger.debug('EVAL: fail to eval expr: %s : %s' % (expr, exp))
             raise
         try:

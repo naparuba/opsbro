@@ -56,7 +56,7 @@ class RabbitMQ(Collector):
         
         try:
             status = json.loads(response)
-        except Exception, exp:
+        except Exception as exp:
             self.set_error("Rabbitmq: parsing json: %s" % exp)
             return False
         

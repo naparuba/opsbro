@@ -28,7 +28,7 @@ try:
     import pwd, grp
     from pwd import getpwnam
     from grp import getgrnam
-except ImportError, exp:
+except ImportError as exp:
     getpwnam = getgrnam = None
 
 

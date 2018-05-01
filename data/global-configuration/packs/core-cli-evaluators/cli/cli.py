@@ -20,13 +20,13 @@ def do_evaluator_list(details=False):
     with AnyAgent():
         try:
             (code, r) = get_opsbro_local('/agent/evaluator/list')
-        except get_request_errors(), exp:
+        except get_request_errors() as exp:
             logger.error(exp)
             return
         
         try:
             d = json.loads(r)
-        except ValueError, exp:  # bad json
+        except ValueError as exp:  # bad json
             logger.error('Bad return from the server %s' % exp)
             return
         
@@ -76,7 +76,7 @@ def do_evaluator_eval(expr):
         expr_64 = base64.b64encode(expr)
         try:
             r = post_opsbro_json('/agent/evaluator/eval', {'expr': expr_64}, timeout=30)
-        except get_request_errors(), exp:
+        except get_request_errors() as exp:
             logger.error(exp)
             return
         
@@ -94,7 +94,7 @@ def do_evaluator_wait_eval_true(expr, timeout=30):
             expr_64 = base64.b64encode(expr)
             try:
                 r = post_opsbro_json('/agent/evaluator/eval', {'expr': expr_64}, timeout=20)
-            except get_request_errors(), exp:
+            except get_request_errors() as exp:
                 logger.error(exp)
                 return
             

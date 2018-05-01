@@ -114,7 +114,7 @@ class Generator(object):
         self.__did_change = False
         try:
             b = evaluater.eval_expr(self.generate_if)
-        except Exception, exp:
+        except Exception as exp:
             err = ' (%s) if rule (%s) evaluation did fail: %s' % (self.name, self.generate_if, exp)
             self.set_error(err)
             logger.error(err)
@@ -137,7 +137,7 @@ class Generator(object):
             f = open(self.g['template'], 'r')
             self.buf = f.read().decode('utf8', 'ignore')
             f.close()
-        except IOError, exp:
+        except IOError as exp:
             self.set_error('Cannot open template file %s : %s' % (self.g['template'], exp))
             self.buf = None
             self.template = None
@@ -157,7 +157,7 @@ class Generator(object):
         
         try:
             self.template = env.from_string(self.buf)
-        except Exception, exp:
+        except Exception as exp:
             self.set_error('Template file %s did raise an error with jinja2 : %s' % (self.g['template'], exp))
             self.output = None
             self.template = None
@@ -201,7 +201,7 @@ class Generator(object):
                 f = codecs.open(self.g['path'], "r", "utf-8")
                 self.cur_value = f.read()
                 f.close()
-            except IOError, exp:
+            except IOError as exp:
                 self.set_error('Cannot open path file %s : %s' % (self.g['path'], exp))
                 self.output = None
                 self.template = ''
@@ -234,7 +234,7 @@ class Generator(object):
                 logger.info('Regenerate result: %s' % self.output)
                 self.set_compliant('Generator %s did generate a new file at %s' % (self.g['name'], self.g['path']))
                 return True
-            except IOError, exp:
+            except IOError as exp:
                 self.set_error('Cannot write path file %s : %s' % (self.g['path'], exp))
                 self.output = None
                 self.template = ''
@@ -314,7 +314,7 @@ class Generator(object):
                 shutil.move(tmp_path, self.g['path'])
                 self.set_compliant('Generator %s did generate a new file at %s' % (self.g['name'], self.g['path']))
                 return True
-            except IOError, exp:
+            except IOError as exp:
                 self.set_error('Cannot write path file %s : %s' % (self.g['path'], exp))
                 self.output = None
                 self.template = ''
@@ -332,7 +332,7 @@ class Generator(object):
         
         try:
             p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, preexec_fn=os.setsid)
-        except Exception, exp:
+        except Exception as exp:
             self.set_error('Generator %s command launch (%s) fail : %s' % (self.g['name'], cmd, exp))
             return
         output, err = p.communicate()

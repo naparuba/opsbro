@@ -122,7 +122,7 @@ class GraphiteModule(ListenerModule):
             while True:
                 try:
                     ldata = conn.recv(1024)
-                except Exception, exp:
+                except Exception as exp:
                     break
                 if not ldata:
                     break
@@ -411,7 +411,7 @@ class GraphiteModule(ListenerModule):
                         self.logger.debug("TS /render relay GOT RETURN", v, "AND RES", res)
                         res.extend(v)
                         self.logger.debug("TS /render res is now", res)
-                    except get_http_exceptions(), exp:
+                    except get_http_exceptions() as exp:
                         self.logger.debug('TS: /render relay error asking to %s: %s' % (n['name'], str(exp)))
                         continue
             

@@ -77,7 +77,7 @@ class Redis(Collector):
             s.send('INFO\n')
             buf = s.recv(8096)
             s.close()
-        except Exception, exp:
+        except Exception as exp:
             logger.debug('Cannot connect to redis at %s:%d : %s' % (addr, port, exp))
             return {'available': False}
         info = parse_info(buf)

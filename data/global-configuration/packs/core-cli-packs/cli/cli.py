@@ -306,7 +306,7 @@ def do_overload(pack_full_id, to_level='local'):
     # Ok now really copy it
     try:
         shutil.copytree(dir_name, dest_dir)
-    except Exception, exp:
+    except Exception as exp:
         logger.error('The pack overload did fail (from %s to %s) : %s' % (dir_name, dest_dir, exp))
         sys.exit(2)
     cprint(u'SUCCESS: ', color='green', end='')

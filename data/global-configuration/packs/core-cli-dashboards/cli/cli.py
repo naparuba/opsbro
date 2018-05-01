@@ -50,7 +50,7 @@ def _get_expr_evaluator(expr):
         expr_64 = base64.b64encode(this_expr)
         try:
             r = post_opsbro_json('/agent/evaluator/eval', {'expr': expr_64})
-        except Exception, exp:
+        except Exception as exp:
             logger.debug('\n\n\n\n\n\n\n\n\n\nExcep Result %s => %s\n\n' % (this_expr, exp))
             r = None
         logger.debug('\n\n\n\n\n\n\n\nResult %s => %s\n\n' % (this_expr, r))

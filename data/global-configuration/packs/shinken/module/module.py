@@ -126,7 +126,7 @@ class ShinkenModule(ConnectorModule):
                 f.write(cmd)
                 f.flush()
                 f.close()
-            except Exception, exp:
+            except Exception as exp:
                 self.logger.error('Shinken command file write fail: %s' % exp)
                 return
     
@@ -142,7 +142,7 @@ class ShinkenModule(ConnectorModule):
         if not os.path.exists(self.cfg_path):
             try:
                 os.mkdir(self.cfg_path)
-            except Exception, exp:
+            except Exception as exp:
                 self.logger.error('Cannot create shinken directory at %s : %s', self.cfg_path, str(exp))
                 return
         self.logger.debug('Generating cfg/sha file for node %s' % n)
@@ -158,7 +158,7 @@ class ShinkenModule(ConnectorModule):
                 f = open(shap, 'r')
                 old_sha_value = f.read().strip()
                 f.close()
-            except Exception, exp:
+            except Exception as exp:
                 self.logger.error('Cannot read old sha file value at %s: %s' % (shap, exp))
         
         tpls = n.get('groups', [])[:]  # make a copy, because we will modify it
@@ -221,7 +221,7 @@ class ShinkenModule(ConnectorModule):
             fsha.write(buf_sha)
             fsha.close()
             shutil.move(shaptmp, shap)
-        except IOError, exp:
+        except IOError as exp:
             try:
                 fcfg.close()
             except:
@@ -245,12 +245,12 @@ class ShinkenModule(ConnectorModule):
                 os.unlink(cfgp)
                 # We did remove a file, reload shinken so
                 self.reload_flag = True
-            except IOError, exp:
+            except IOError as exp:
                 self.logger.error('Cannot remove deprecated file %s' % cfgp)
         if os.path.exists(shap):
             try:
                 os.unlink(shap)
-            except IOError, exp:
+            except IOError as exp:
                 self.logger.error('Cannot remove deprecated file %s' % shap)
     
     

@@ -26,7 +26,7 @@ def to_best_int_float(val):
 def guess_int_or_float(val):
     try:
         return to_best_int_float(val)
-    except Exception, exp:
+    except Exception as exp:
         return None
 
 

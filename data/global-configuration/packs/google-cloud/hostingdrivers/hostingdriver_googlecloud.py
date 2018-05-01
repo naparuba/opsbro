@@ -78,7 +78,7 @@ class GoogleCloudHostingDriver(InterfaceHostingDriver):
         uri = 'http://metadata.google.internal/computeMetadata/v1/?recursive=true'
         try:
             s = httper.get(uri, headers={'Metadata-Flavor': 'Google'})
-        except get_http_exceptions(), exp:
+        except get_http_exceptions() as exp:
             self.logger.error('Cannot get pubic IP for your Azure instance from %s. Error: %s.Exiting' % (uri, exp))
             raise
         raw_data = json.loads(s)
@@ -101,7 +101,7 @@ class GoogleCloudHostingDriver(InterfaceHostingDriver):
     def get_public_address(self):
         try:
             meta_data = self.get_meta_data()
-        except Exception, exp:
+        except Exception as exp:
             self.logger.error('Cannot get pubic IP for your Google cloud instance. Error: %s' % exp)
             raise
         addr = meta_data['networkInterfaces'][0]['accessConfigs'][0]['externalIp']
@@ -112,7 +112,7 @@ class GoogleCloudHostingDriver(InterfaceHostingDriver):
     def get_unique_uuid(self):
         try:
             meta_data = self.get_meta_data()
-        except Exception, exp:
+        except Exception as exp:
             self.logger.error('Cannot get a unique uuid for your Google cloud instance. Error: %s' % exp)
             raise
         self.logger.info('Using Google cloud instance id as unique uuid for this node.')

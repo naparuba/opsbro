@@ -62,7 +62,7 @@ class PackageInstallDriver(InterfaceComplianceDriver):
                     systepacketmgr.install_package(pkg)
                     txt = 'Environnement %s: package %s is now installed' % (env_name, pkg)
                     rule.add_fix(txt)
-                except Exception, exp:
+                except Exception as exp:
                     err = 'Environnement %s: package (%s) installation fail: %s' % (env_name, pkg, exp)
                     rule.add_error(err)
                     did_error = True

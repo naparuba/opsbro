@@ -29,13 +29,13 @@ def do_state(name=''):
             uri = '/monitoring/state'
         try:
             (code, r) = get_opsbro_local(uri)
-        except get_request_errors(), exp:
+        except get_request_errors() as exp:
             logger.error(exp)
             return
         
         try:
             d = json.loads(r)
-        except ValueError, exp:  # bad json
+        except ValueError as exp:  # bad json
             logger.error('Bad return from the server %s' % exp)
             return
         
@@ -97,13 +97,13 @@ def do_history():
         uri = '/monitoring/history/checks'
         try:
             (code, r) = get_opsbro_local(uri)
-        except get_request_errors(), exp:
+        except get_request_errors() as exp:
             logger.error(exp)
             return
         
         try:
             history_entries = json.loads(r)
-        except ValueError, exp:  # bad json
+        except ValueError as exp:  # bad json
             logger.error('Bad return from the server %s' % exp)
             return
         
@@ -153,13 +153,13 @@ def do_wait_ok(check_name, timeout=30):
             uri = '/monitoring/state'
             try:
                 (code, r) = get_opsbro_local(uri)
-            except get_request_errors(), exp:
+            except get_request_errors() as exp:
                 logger.error(exp)
                 return
             
             try:
                 states = json.loads(r)
-            except ValueError, exp:  # bad json
+            except ValueError as exp:  # bad json
                 logger.error('Bad return from the server %s' % exp)
                 return
             checks = states['checks']

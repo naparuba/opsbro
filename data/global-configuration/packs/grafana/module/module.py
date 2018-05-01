@@ -50,7 +50,7 @@ class GrafanaModule(ConnectorModule):
         try:
             r = httper.post(uri, params=entry, headers=self.__get_headers())
             self.logger.debug("Result insert", r)
-        except get_http_exceptions(), exp:
+        except get_http_exceptions() as exp:
             self.logger.error('Cannot connect to grafana datasources: %s' % exp)
             return
     
@@ -61,7 +61,7 @@ class GrafanaModule(ConnectorModule):
         try:
             r = httper.delete(uri, headers=self.__get_headers())
             self.logger.debug("Result delete", r)
-        except get_http_exceptions(), exp:
+        except get_http_exceptions() as exp:
             self.logger.error('Cannot connect to grafana datasources: %s' % exp)
             return
     
@@ -73,10 +73,10 @@ class GrafanaModule(ConnectorModule):
             api_return = httper.get(uri, headers=self.__get_headers())
             try:
                 all_data_sources = json.loads(api_return)
-            except (ValueError, TypeError), exp:
+            except (ValueError, TypeError) as exp:
                 self.logger.error('Cannot load json from grafana datasources: %s' % exp)
                 return None
-        except get_http_exceptions(), exp:
+        except get_http_exceptions() as exp:
             self.logger.error('Cannot connect to grafana datasources: %s' % exp)
             return None
         self.logger.debug("All data sources")

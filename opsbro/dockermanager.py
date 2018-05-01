@@ -90,7 +90,7 @@ class DockerManager(object):
     def load_container(self, _id):
         try:
             inspect = get_json('/containers/%s/json' % _id, local_socket='/var/run/docker.sock')
-        except get_request_errors(), exp:
+        except get_request_errors() as exp:
             self.connect()
             return
         c = lower_dict(inspect)
@@ -255,7 +255,7 @@ class DockerManager(object):
             try:
                 evts = get_json("/events", local_socket='/var/run/docker.sock', params={'until': now, 'since': now - 1},
                                 multi=True)
-            except Exception, exp:
+            except Exception as exp:
                 logger.debug('cannot get docker events: %s' % exp)
                 time.sleep(1)
                 continue

@@ -106,7 +106,7 @@ evil = "__import__('os').remove('important file')"
 
 try:
     eval_expr(evil)
-except Exception, exp:
+except Exception as exp:
     print "ERROR", exp
 
 test('2^6')

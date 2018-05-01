@@ -98,20 +98,20 @@ class SlackHandlerModule(HandlerModule):
     def __do_send_message(self, slack, attachments, channel):
         try:
             self.__try_to_send_message(slack, attachments, channel)
-        except Exception, exp:
+        except Exception as exp:
             self.logger.error('[SLACK] Cannot send alert: %s (%s) %s %s %s' % (exp, type(exp), str(exp), str(exp) == 'channel_not_found', exp.__dict__))
             # If it's just that the channel do not exists, try to create it
             if str(exp) == 'channel_not_found':
                 try:
                     self.logger.info('[SLACK] Channel %s do no exists. Trying to create it.' % channel)
                     slack.channels.create(channel)
-                except Exception, exp:
+                except Exception as exp:
                     self.logger.error('[SLACK] Cannot create channel %s: %s' % (channel, exp))
                     return
                 # Now try to resend the message
                 try:
                     self.__try_to_send_message(slack, attachments, channel)
-                except Exception, exp:
+                except Exception as exp:
                     self.logger.error('[SLACK] Did create channel %s but we still cannot send the message: %s' % (channel, exp))
     
     

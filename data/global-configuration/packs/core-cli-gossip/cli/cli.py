@@ -42,7 +42,7 @@ def do_members(detail=False):
     
     try:
         members = get_opsbro_json('/agent/members').values()
-    except get_request_errors(), exp:
+    except get_request_errors() as exp:
         logger.error('Cannot join opsbro agent to list members: %s' % exp)
         sys.exit(1)
     members = sorted(members, cmp=__sorted_members)
@@ -106,7 +106,7 @@ def do_members_history():
     
     try:
         history_entries = get_opsbro_json('/agent/members/history')
-    except get_request_errors(), exp:
+    except get_request_errors() as exp:
         logger.error('Cannot join opsbro agent to show member history: %s' % exp)
         sys.exit(1)
     
@@ -148,13 +148,13 @@ def do_leave(nuuid=''):
     if not nuuid:
         try:
             (code, r) = get_opsbro_local('/agent/uuid')
-        except get_request_errors(), exp:
+        except get_request_errors() as exp:
             logger.error(exp)
             return
         nuuid = r
     try:
         (code, r) = get_opsbro_local('/agent/leave/%s' % nuuid)
-    except get_request_errors(), exp:
+    except get_request_errors() as exp:
         logger.error(exp)
         return
     
@@ -175,12 +175,12 @@ def do_join(seed=''):
     
     try:
         (code, r) = get_opsbro_local('/agent/join/%s' % seed)
-    except get_request_errors(), exp:
+    except get_request_errors() as exp:
         logger.error(exp)
         return
     try:
         b = json.loads(r)
-    except ValueError, exp:  # bad json
+    except ValueError as exp:  # bad json
         logger.error('Bad return from the server %s' % exp)
         return
     cprint('Joining %s : ' % seed, end='')
@@ -198,7 +198,7 @@ def do_zone_change(name=''):
         print "Switching to zone", name
         try:
             r = put_opsbro_json('/agent/zone', name)
-        except get_request_errors(), exp:
+        except get_request_errors() as exp:
             logger.error(exp)
             return
         print_info_title('Result')
@@ -210,7 +210,7 @@ def do_zone_list():
         print_h1('Known zones')
         try:
             zones = get_opsbro_json('/agent/zones')
-        except get_request_errors(), exp:
+        except get_request_errors() as exp:
             logger.error(exp)
             return
         for (zname, zone) in zones.iteritems():
@@ -260,7 +260,7 @@ def do_detect_nodes(auto_join, timeout=5):
     # Send UDP broadcast packets from the daemon
     try:
         network_nodes = get_opsbro_json('/agent/detect?timeout=%d' % timeout, timeout=timeout+10)
-    except get_request_errors(), exp:
+    except get_request_errors() as exp:
         logger.error('Cannot join opsbro agent to detect network nodes: %s' % exp)
         sys.exit(1)
     cprint(" * Detection is DONE")
@@ -304,10 +304,10 @@ def do_wait_event(event_type, timeout=30):
         try:
             evt = get_opsbro_json(uri, timeout=1)  # slow timeout to allow fast looping
         # Timemouts: just loop
-        except get_not_critical_request_errors(), exp:
+        except get_not_critical_request_errors() as exp:
             logger.debug('Asking for event: get timeout (%s), skiping this turn' % exp)
             evt = None
-        except get_request_errors(), exp:
+        except get_request_errors() as exp:
             logger.error('Cannot ask for event %s because there is a critical error: %s' % (event_type, exp))
             sys.exit(2)
         
@@ -338,7 +338,7 @@ def do_gossip_add_event(event_type):
     
     try:
         r = post_opsbro_json('/agent/event', {'event_type': event_type})
-    except get_request_errors(), exp:
+    except get_request_errors() as exp:
         logger.error(exp)
         sys.exit(2)
     cprint('\n %s ' % CHARACTERS.arrow_left, color='grey', end='')
@@ -359,7 +359,7 @@ def do_wait_members(name='', display_name='', group='', count=1, timeout=30):
     for i in xrange(timeout):
         try:
             members = get_opsbro_json('/agent/members').values()
-        except get_request_errors(), exp:
+        except get_request_errors() as exp:
             logger.error(exp)
             sys.exit(2)
         if name:

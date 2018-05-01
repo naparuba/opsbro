@@ -26,7 +26,7 @@ class ScalewayHostingDriver(InterfaceHostingDriver):
         uri = 'http://169.254.42.42/conf?format=json'
         try:
             s = httper.get(uri)
-        except get_http_exceptions(), exp:
+        except get_http_exceptions() as exp:
             self.logger.error('Cannot get pubic IP for your Scaleway instance from %s. Error: %s.Exiting' % (uri, exp))
             raise
         self.conf = json.loads(s)

@@ -74,7 +74,7 @@ class TestEvaluater(OpsBroTest):
             expected = r['expected']
             try:
                 r = evaluater.eval_expr(rule)
-            except Exception, exp:
+            except Exception as exp:
                 r = traceback.format_exc()
             print "Rule: %s" % rule
             print "Expected: %s" % str(expected)

@@ -163,7 +163,7 @@ try:
     
     prev_path = os.path.dirname(opsbro_test_import.__file__)
     del opsbro_test_import
-except ImportError, exp:  # great, first install so
+except ImportError as exp:  # great, first install so
     pass
 
 # Now look at loading the local opsbro lib for version and banner
@@ -476,7 +476,7 @@ for (m, d) in mod_need.iteritems():
                     systepacketmgr.update_or_install(pkg)
                     cprint('%s' % CHARACTERS.check, color='green')
                     # __import__(m)
-                except Exception, exp:
+                except Exception as exp:
                     cprint('(missing in package)', color='cyan')
                     cprint('   - cannot install the package from the system. Switching to an installation based on the python pip system (need an internet connection)', color='grey')
                     _prefix = '      | '
@@ -490,7 +490,7 @@ for (m, d) in mod_need.iteritems():
                             cprint('   - Install from system package the python lib dependency: ', color='grey', end='')
                             cprint(pip_pkg)
                             systepacketmgr.update_or_install(pip_pkg)
-                        except Exception, exp:
+                        except Exception as exp:
                             cprint('    - WARNING: cannot install python lib dependency: %s : %s' % (pip_pkg, exp))
                             
                             # Remove duplicate from pip install
@@ -514,7 +514,7 @@ except ImportError:
         systepacketmgr.install_package('python-setuptools')
         cprint(' %s' % CHARACTERS.check, color='green')
         from setuptools import setup, find_packages
-    except Exception, exp:
+    except Exception as exp:
         cprint('Cannot install python setuptools from system (%s). Cannot continue the installation. Please install python-setuptools before re-run the installation.' % exp, color='red')
         sys.exit(2)
 
@@ -581,7 +581,7 @@ try:
         # Maybe some system need specific packages address on pypi, like add httpS on debian 6 :'(
         dependency_links=additionnal_pypi_repos,
     )
-except Exception, exp:
+except Exception as exp:
     print_fail_setup(exp)
     sys.exit(2)
 

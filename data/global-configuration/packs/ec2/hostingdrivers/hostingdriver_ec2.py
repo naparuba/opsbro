@@ -60,7 +60,7 @@ class EC2HostingDriver(InterfaceHostingDriver):
     def get_public_address(self):
         try:
             meta_data = self.get_meta_data()
-        except Exception, exp:
+        except Exception as exp:
             self.logger.error('Cannot get pubic IP for your EC2 instance. Error: %s' % exp)
             raise
         addr = meta_data['public-ipv4']
@@ -71,7 +71,7 @@ class EC2HostingDriver(InterfaceHostingDriver):
     def get_unique_uuid(self):
         try:
             meta_data = self.get_meta_data()
-        except Exception, exp:
+        except Exception as exp:
             self.logger.error('Cannot get unique uuid for your EC2 instance. Error: %s' % exp)
             raise
         addr = meta_data['instance-id']

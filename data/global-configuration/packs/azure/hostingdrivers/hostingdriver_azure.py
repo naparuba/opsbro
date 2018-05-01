@@ -52,7 +52,7 @@ class AzureHostingDriver(InterfaceHostingDriver):
         uri = 'http://169.254.169.254/metadata/instance?api-version=2017-08-01'
         try:
             s = httper.get(uri, headers={'Metadata': 'True'})
-        except get_http_exceptions(), exp:
+        except get_http_exceptions() as exp:
             self.logger.error('Cannot get pubic IP for your Azure instance from %s. Error: %s.Exiting' % (uri, exp))
             raise
         raw_data = json.loads(s)
@@ -68,7 +68,7 @@ class AzureHostingDriver(InterfaceHostingDriver):
     def get_public_address(self):
         try:
             meta_data = self.get_meta_data()
-        except Exception, exp:
+        except Exception as exp:
             self.logger.error('Cannot get pubic IP for your Azure instance. Error: %s' % exp)
             raise
         addr = meta_data['ipv4']['ipAddress'][0]['publicIpAddress']
@@ -79,7 +79,7 @@ class AzureHostingDriver(InterfaceHostingDriver):
     def get_unique_uuid(self):
         try:
             meta_data = self.get_meta_data()
-        except Exception, exp:
+        except Exception as exp:
             self.logger.error('Cannot get a unique uuid for your Azure instance. Error: %s' % exp)
             raise
         addr = meta_data['vmId']

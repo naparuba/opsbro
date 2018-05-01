@@ -127,5 +127,5 @@ class ShinkenEnterpriseModule(ConnectorModule):
         #    response = conn.getresponse()
         #    print response.status, response.reason
         #    conn.close()
-        # except Exception, exp:
+        # except Exception as exp:
         #    self.logger.error('Cannot send back discovery data to shinken: %s' % exp)

@@ -63,7 +63,7 @@ class DNSModule(ListenerModule):
             return
         try:
             self.sock.close()
-        except Exception, exp:
+        except Exception as exp:
             self.logger.error('Cannot close DNS socket: %s' % exp)
         self.sock = None
     
@@ -77,7 +77,7 @@ class DNSModule(ListenerModule):
         self.logger.info('DNS launched server port %d' % self.port)
         try:
             self.sock.bind(('', self.port))
-        except Exception, exp:
+        except Exception as exp:
             self.logger.error('Cannot open the DNS port %s : %s' % (self.port, exp))
             self.sock = None
     

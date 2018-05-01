@@ -55,7 +55,7 @@ class PackManager(object):
                         package_buf = f.read()
                         package = yamler.loads(package_buf)
                         self.load_package(package, package_pth, level)
-                except Exception, exp:  # todo: more precise catch? I think so
+                except Exception as exp:  # todo: more precise catch? I think so
                     logger.error('Cannot load package %s: %s' % (package_pth, exp))
     
     

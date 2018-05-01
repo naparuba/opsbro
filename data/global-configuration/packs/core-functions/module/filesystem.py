@@ -51,14 +51,14 @@ def grep_file(string, path, regexp=False):
     try:
         f = open(p, 'r')
         lines = f.readlines()
-    except Exception, exp:
+    except Exception as exp:
         logger.error('[evaluater::grep_file] Trying to grep file %s but cannot open/read it: %s' % (p, exp))
         return False
     pat = None
     if regexp:
         try:
             pat = re.compile(s, re.I)
-        except Exception, exp:
+        except Exception as exp:
             logger.error('[evaluater::grep_file]Cannot compile regexp expression: %s')
         return False
     if regexp:

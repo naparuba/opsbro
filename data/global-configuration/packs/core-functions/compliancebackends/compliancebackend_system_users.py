@@ -74,7 +74,7 @@ class SystemUserDriver(InterfaceComplianceDriver):
                 systepacketmgr.create_system_user(name, uid=uid, gid=gid, display_name=display_name, home_dir=home_dir, shell=shell)
                 did_fixed = True
                 current_user = getpwnam(name)
-            except Exception, exp:
+            except Exception as exp:
                 err = 'Cannot create the user %s: %s' % (name, exp)
                 rule.add_error(err)
                 rule.set_error()
@@ -122,7 +122,7 @@ class SystemUserDriver(InterfaceComplianceDriver):
             try:
                 systepacketmgr.modify_system_user(name, uid=uid, gid=gid, display_name=display_name, home_dir=home_dir, shell=shell)
                 did_fixed = True
-            except Exception, exp:
+            except Exception as exp:
                 err = 'Cannot modify the user %s: %s' % (name, exp)
                 rule.add_error(err)
                 rule.set_error()

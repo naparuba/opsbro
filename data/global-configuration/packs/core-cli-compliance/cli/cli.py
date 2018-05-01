@@ -71,13 +71,13 @@ def do_compliance_state():
         uri = '/compliance/state'
         try:
             (code, r) = get_opsbro_local(uri)
-        except get_request_errors(), exp:
+        except get_request_errors() as exp:
             logger.error(exp)
             return
         
         try:
             compliances = json.loads(r)
-        except ValueError, exp:  # bad json
+        except ValueError as exp:  # bad json
             logger.error('Bad return from the server %s' % exp)
             return
         print_h1('Compliances')
@@ -106,13 +106,13 @@ def do_compliance_history():
         uri = '/compliance/history'
         try:
             (code, r) = get_opsbro_local(uri)
-        except get_request_errors(), exp:
+        except get_request_errors() as exp:
             logger.error(exp)
             return
         
         try:
             histories = json.loads(r)
-        except ValueError, exp:  # bad json
+        except ValueError as exp:  # bad json
             logger.error('Bad return from the server %s' % exp)
             return
         print_h1('Compliance history')
@@ -155,13 +155,13 @@ def do_compliance_wait_compliant(compliance_name, timeout=30):
             uri = '/compliance/state'
             try:
                 (code, r) = get_opsbro_local(uri)
-            except get_request_errors(), exp:
+            except get_request_errors() as exp:
                 logger.error(exp)
                 return
             
             try:
                 compliances = json.loads(r)
-            except ValueError, exp:  # bad json
+            except ValueError as exp:  # bad json
                 logger.error('Bad return from the server %s' % exp)
                 return
             compliance = None

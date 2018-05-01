@@ -185,7 +185,7 @@ class Cluster(object):
                     buf = f.read()
                 try:
                     self.mfkey_priv = RSA.PrivateKey.load_pkcs1(buf)
-                except Exception, exp:
+                except Exception as exp:
                     logger.error('Invalid master private key at %s. (%s) Exiting.' % (self.master_key_priv, exp))
                     sys.exit(2)
                 logger.info('Master private key file %s is loaded' % self.master_key_priv)
@@ -206,7 +206,7 @@ class Cluster(object):
                     buf = f.read()
                 try:
                     self.mfkey_pub = RSA.PublicKey.load_pkcs1(buf)
-                except Exception, exp:
+                except Exception as exp:
                     logger.error('Invalid master public key at %s. (%s) Exiting.' % (self.master_key_pub, exp))
                     sys.exit(2)
                 logger.info('Master public key file %s is loaded' % self.master_key_pub)
@@ -796,13 +796,13 @@ class Cluster(object):
                     logger.debug("SYNC kv-changed response from %s " % repl['name'], len(r))
                     try:
                         to_merge = json.loads(r)
-                    except (ValueError, TypeError), exp:
+                    except (ValueError, TypeError) as exp:
                         logger.debug('SYNC : error asking to %s: %s' % (repl['name'], str(exp)))
                         continue
                     kvmgr.do_merge(to_merge)
                     logger.debug("SYNC thread done, bailing out")
                     return
-                except get_http_exceptions(), exp:
+                except get_http_exceptions() as exp:
                     logger.debug('SYNC : error asking to %s: %s' % (repl['name'], str(exp)))
                     continue
             time.sleep(1)
@@ -830,7 +830,7 @@ class Cluster(object):
                         f = open(fname, 'rb')
                         _lhash = hashlib.sha1(f.read()).hexdigest()
                         f.close()
-                    except Exception, exp:
+                    except Exception as exp:
                         logger.log('do_update_libexec_cfg_thread:: error in opening the %s file: %s' % (fname, exp))
                         _lhash = ''
                     if _lhash == _hash:
@@ -887,7 +887,7 @@ class Cluster(object):
                         f = open(fname, 'rb')
                         _lhash = hashlib.sha1(f.read()).hexdigest()
                         f.close()
-                    except Exception, exp:
+                    except Exception as exp:
                         logger.log(
                             'do_update_configuration_cfg_thread:: error in opening the %s file: %s' % (fname, exp))
                         _lhash = ''
@@ -979,7 +979,7 @@ class Cluster(object):
             logger.info('Cleaning lock file at %s' % self.lock_path)
             try:
                 os.unlink(self.lock_path)
-            except Exception, exp:
+            except Exception as exp:
                 logger.error('Cannot remove lock file %s: %s' % (self.lock_path, exp))
     
     
@@ -1086,7 +1086,7 @@ class Cluster(object):
                 logger.debug("CLEANUP we should clean the file", full_path)
                 try:
                     os.remove(full_path)
-                except OSError, exp:
+                except OSError as exp:
                     logger.log('WARNING: cannot cleanup the configuration file %s (%s)' % (full_path, exp))
     
     

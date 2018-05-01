@@ -23,7 +23,7 @@ def do_exec(group='*', cmd='uname -a'):
     
     try:
         (code, r) = get_opsbro_local('/exec/%s?cmd=%s' % (group, cmd))
-    except get_request_errors(), exp:
+    except get_request_errors() as exp:
         logger.error(exp)
         return
     print r
@@ -32,7 +32,7 @@ def do_exec(group='*', cmd='uname -a'):
     time.sleep(5)  # TODO: manage a real way to get the result..
     try:
         (code, r) = get_opsbro_local('/exec-get/%s' % cid)
-    except get_request_errors(), exp:
+    except get_request_errors() as exp:
         logger.error(exp)
         return
     j = json.loads(r)
