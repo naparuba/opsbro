@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 import traceback
 
@@ -61,7 +62,8 @@ class OpenPorts(Collector):
                 elif open_port['proto'].startswith('udp'):
                     open_port_details['udp'].append(open_port)
                 else:
-                    print "Unknown protocol??"
+                    self.set_error("Unknown protocol?? %s" % open_port['proto'])
+                    return False
         
         except Exception:
             self.set_error('get_open_ports: exception = %s' % traceback.format_exc())

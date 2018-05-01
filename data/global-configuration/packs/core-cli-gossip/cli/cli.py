@@ -4,7 +4,7 @@
 # Copyright (C) 2014:
 #    Gabes Jean, naparuba@gmail.com
 
-
+from __future__ import print_function
 import sys
 import json
 import time
@@ -122,7 +122,6 @@ def do_members_history():
             name = entry['name']
             if entry.get('display_name', ''):
                 name = '[ ' + entry.get('display_name') + ' ]'
-            #            print "Entry", entry
             old_state = entry['old_state']
             new_state = entry['state']
             
@@ -160,7 +159,7 @@ def do_leave(nuuid=''):
     
     if code != 200:
         logger.error('Node %s is missing' % nuuid)
-        print r
+        print(r)
         return
     cprint('Node %s is set to leave state' % nuuid, end='')
     cprint(': OK', color='green')
@@ -192,17 +191,17 @@ def do_join(seed=''):
 
 def do_zone_change(name=''):
     if not name:
-        print "Need a zone name"
+        cprint("Need a zone name")
         return
     with AnyAgent():
-        print "Switching to zone", name
+        cprint("Switching to zone", name)
         try:
             r = put_opsbro_json('/agent/zone', name)
         except get_request_errors() as exp:
             logger.error(exp)
             return
         print_info_title('Result')
-        print r
+        print(r)
 
 
 def do_zone_list():
@@ -251,7 +250,7 @@ def do_detect_nodes(auto_join, timeout=5):
     wait_for_agent_started(visual_wait=True)
     
     print_h1('UDP broadcast LAN detection')
-    print "Trying to detect other nodes on the network thanks to a UDP broadcast. Will last %ds." % timeout
+    print("Trying to detect other nodes on the network thanks to a UDP broadcast. Will last %ds." % timeout)
     cprint(' * The detection scan will be ', end='')
     cprint('%ds' % timeout, color='magenta', end='')
     cprint(' long.')
@@ -269,10 +268,10 @@ def do_detect_nodes(auto_join, timeout=5):
         cprint(' ERROR: ', color='red', end='')
         cprint("cannot detect (broadcast UDP) other nodes")
         sys.exit(1)
-    print "Other network nodes detected on this network:"
-    print '  Name                                 Zone        Address:port          Proxy    Groups'
+    cprint("Other network nodes detected on this network:")
+    cprint('  Name                                 Zone        Address:port          Proxy    Groups')
     for node in network_nodes:
-        print '  %-35s  %-10s  %s:%d  %5s     %s' % (node['name'], node['zone'], node['addr'], node['port'], node['is_proxy'], ','.join(node['groups']))
+        cprint('  %-35s  %-10s  %s:%d  %5s     %s' % (node['name'], node['zone'], node['addr'], node['port'], node['is_proxy'], ','.join(node['groups'])))
     if not auto_join:
         cprint('NOTICE: ', color='blue', end='')
         cprint("Auto join (--auto-join) is not enabled, so don't try to join theses nodes")
@@ -282,11 +281,11 @@ def do_detect_nodes(auto_join, timeout=5):
     not_proxys = [node for node in network_nodes if not node['is_proxy']]
     if all_proxys:
         node = all_proxys.pop()
-        print "A proxy node is detected, using it: %s (%s:%d)" % (node['name'], node['addr'], node['port'])
+        cprint("A proxy node is detected, using it: %s (%s:%d)" % (node['name'], node['addr'], node['port']))
         to_connect = '%s:%d' % (node['addr'], node['port'])
     else:
         node = not_proxys.pop()
-        print "No proxy node detected. Using a standard one: %s (%s:%d)" % (node['name'], node['addr'], node['port'])
+        cprint("No proxy node detected. Using a standard one: %s (%s:%d)" % (node['name'], node['addr'], node['port']))
         to_connect = '%s:%d' % (node['addr'], node['port'])
     do_join(to_connect)
 

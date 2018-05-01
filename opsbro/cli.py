@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+from __future__ import print_function
 import os
 import json
 import imp
@@ -133,7 +133,7 @@ class AnyAgent(object):
         try:
             from setproctitle import setproctitle
             setproctitle("Temporary agent")
-        except:
+        except ImportError:
             pass
     
     
@@ -515,7 +515,6 @@ class CLICommander(object):
         for to_analyse in to_analayses:
             # if we are too far in the command, cannot be this one
             if len(args) > len(to_analyse):
-                # print "SKIP impossible match", to_analyse
                 continue
         
         res = []
@@ -546,7 +545,6 @@ class CLICommander(object):
             perfect_match = False
             for to_analyse in to_analayses:
                 if to_analyse == args:
-                    # print "PERFECT FIT", to_analyse
                     perfect_match = True
             # Ok try to guess so
             if not perfect_match:
@@ -560,7 +558,7 @@ class CLICommander(object):
                     if propose_last_partial.startswith(last_partial):  # valid entry found
                         res.append(propose_last_partial)
         
-        print ' '.join(res)
+        cprint(' '.join(res))
         return
     
     
@@ -596,7 +594,6 @@ class CLICommander(object):
                     nb_chars += len(colorless_s)
                     # now really colorize it
                     s = '%s %s' % (prefix, sprintf(k, color='green'))
-                    # print "COLORLESS", len_colorless_raw
                     if len_colorless_raw < 25:
                         s = s + ' ' * (25 - len_colorless_raw)
                     

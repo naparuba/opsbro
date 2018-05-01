@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 
 import os
 import sys
@@ -39,7 +40,7 @@ package_data = ['*.py']
 # Is this setup.py call for a pypi interaction? if true, won't hook lot of things
 is_pypi_register_upload = ('register' in sys.argv or ('sdist' in sys.argv and 'upload' in sys.argv))
 if is_pypi_register_upload:
-    print "Pypi specal mode activated, skipping some black magic"
+    print("Pypi specal mode activated, skipping some black magic")
     if '-v' not in sys.argv:
         sys.argv.append('-v')
 
@@ -222,7 +223,7 @@ if allow_black_magic:
         cprint('    * Using the ', end='')
         cprint('update process', color='magenta')
     
-    print ''
+    print('')
 
 if '--update' in args or opts.upgrade or '--upgrade' in args:
     if 'update' in args:
@@ -309,7 +310,7 @@ elif 'bsd' in sys.platform or 'dragonfly' in sys.platform:
         )
     ]
 else:
-    raise "Unsupported platform, sorry"
+    raise Exception("Unsupported platform, sorry")
     data_files = []
 
 # Beware to install scripts in the bin dir
@@ -356,7 +357,7 @@ for o in not_allowed_options:
 ##################################       Look at prerequites, and if possible fix them with the system package instead of pip
 
 if allow_black_magic:
-    print ''
+    print('')
     title = 'Checking prerequites ' + sprintf('(1/3)', color='magenta', end='')
     print_h1(title, raw_title=True)
 
@@ -481,7 +482,7 @@ if not allow_black_magic:
     install_from_pip = set()
 
 # Try to import setup tools, and if not, switch to
-print '\n'
+print('\n')
 ##################################       Go install the python part
 if allow_black_magic:
     title = 'Python lib installation ' + sprintf('(2/3)', color='magenta', end='')
@@ -574,7 +575,7 @@ with open(installation_log, 'w') as f:
 
 ##################################       Install init.d script, the daemon script and bash completion part
 if allow_black_magic:
-    print '\n'
+    print('\n')
     title = 'Utility script installation ' + sprintf('(3/3)', color='magenta', end='')
     print_h1(title, raw_title=True)
 
@@ -636,7 +637,7 @@ if not root and is_install and allow_black_magic:
         __print_sub_install_part('bash completion rule')
 
 if allow_black_magic:
-    print ''
+    print('')
     print_h1('End', raw_title=True)
     cprint('OpsBro ', end='')
     cprint(what, color='magenta', end='')

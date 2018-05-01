@@ -1,3 +1,4 @@
+from __future__ import print_function
 import urllib2
 import shutil
 import os
@@ -5,7 +6,6 @@ import urlparse
 import ssl
 import hashlib
 
-from opsbro.evaluater import evaluater
 from opsbro.compliancemgr import InterfaceComplianceDriver
 from opsbro.util import make_dir
 
@@ -99,7 +99,6 @@ class GetURLDriver(InterfaceComplianceDriver):
             data = filedata.read()
         except Exception as exp:
             err = 'ERROR: downloading the uri: %s did fail withthe error: %s' % (url, exp)
-            print err
             rule.add_error(err)
             rule.set_error()
             return
@@ -109,7 +108,6 @@ class GetURLDriver(InterfaceComplianceDriver):
             sha1_hash = hashlib.sha1(data).hexdigest()
             if sha1 != sha1_hash:
                 err = 'ERROR: the file %s sha1 hash %s did not match defined one: %s' % (url, sha1_hash, sha1)
-                print err
                 rule.add_error(err)
                 rule.set_error()
                 return
@@ -118,7 +116,6 @@ class GetURLDriver(InterfaceComplianceDriver):
             md5_hash = hashlib.md5(data).hexdigest()
             if md5 != md5_hash:
                 err = 'ERROR: the file %s md5 hash %s did not match defined one: %s' % (url, md5_hash, md5)
-                print err
                 rule.add_error(err)
                 rule.set_error()
                 return
@@ -129,7 +126,6 @@ class GetURLDriver(InterfaceComplianceDriver):
                 f.write(data)
         except Exception as exp:
             err = 'ERROR: cannot save the file %s: %s' % (tmp_file, exp)
-            print err
             rule.add_error(err)
             rule.set_error()
             return
@@ -139,7 +135,6 @@ class GetURLDriver(InterfaceComplianceDriver):
             shutil.move(tmp_file, dest_file)
         except Exception as exp:
             err = 'ERROR: cannot save the file %s: %s' % (dest_file, exp)
-            print err
             rule.add_error(err)
             rule.set_error()
             return

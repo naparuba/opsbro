@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+from __future__ import print_function
 import os
 import sys
 import time
@@ -34,10 +37,11 @@ if is_tty():
     except (SyntaxError, ImportError) as exp:
         # Outch can't import a cprint, do a simple print
         def cprint(s, color='', on_color='', end='\n'):
-            if end == '':
-                print s,
-            else:
-                print s
+            print(s, end=end)
+            #if end == '':
+            #    print s,
+            #else:
+            #    print s
         
         
         # Also overwrite sprintf

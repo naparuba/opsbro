@@ -1,3 +1,4 @@
+from __future__ import print_function
 import re
 import socket
 import copy
@@ -80,7 +81,7 @@ class DNSQuery:
                         addr = socket.gethostbyname(addr)
                         r.append(addr)
                     except socket.gaierror:  # not found
-                        print 'DNS cannot find the hotname ip', addr
+                        print('DNS cannot find the hotname ip', addr)
                         # skip this node
         
         self.logger.debug('DNS return %s' % r)

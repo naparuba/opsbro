@@ -4,7 +4,7 @@
 # Copyright (C) 2014:
 #    Gabes Jean, naparuba@gmail.com
 
-
+from __future__ import print_function
 import json
 import time
 import sys
@@ -104,7 +104,7 @@ def do_generators_history():
             for entry in entries:
                 cprint('  - %s' % entry['pack_name'], color='blue', end='')
                 __print_generator_entry(entry, show_diff=True)
-            print "\n"
+            cprint("\n")
 
 
 def do_generators_wait_compliant(generator_name, timeout=30):

@@ -4,6 +4,7 @@
 # Copyright (C) 2014:
 #    Gabes Jean, naparuba@gmail.com
 
+from __future__ import print_function
 import sys
 import json
 import base64
@@ -81,7 +82,7 @@ def do_evaluator_eval(expr):
             return
         
         print_info_title('Result')
-        print r
+        cprint(r)
 
 
 def do_evaluator_wait_eval_true(expr, timeout=30):

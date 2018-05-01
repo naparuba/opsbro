@@ -1,3 +1,4 @@
+from __future__ import print_function
 import time
 import socket
 import hashlib
@@ -21,6 +22,7 @@ from opsbro.gossip import gossiper
 from opsbro.httpclient import get_http_exceptions, httper
 from opsbro.kv import kvmgr
 from opsbro.parameters import BoolParameter, IntParameter
+from opsbro.log import cprint
 
 
 class GraphiteModule(ListenerModule):
@@ -228,13 +230,13 @@ class GraphiteModule(ListenerModule):
         def get_graphite_metrics_find():
             response.content_type = 'application/json'
             key = request.GET.get('query', '*')
-            print "LIST GET TS FOR KEY", key
+            cprint("LIST GET TS FOR KEY", key)
             
             recursive = False
             if key.endswith('.*'):
                 recursive = True
                 key = key[:-2]
-                print "LIST RECURSVIE FOR", key
+                cprint("LIST RECURSVIE FOR", key)
             
             # Maybe ask all, if so recursive is On
             if key == '*':
@@ -246,27 +248,27 @@ class GraphiteModule(ListenerModule):
             l = len(key)
             added = {}
             for k in keys:
-                print "LIST KEY", k
+                cprint("LIST KEY", k)
                 title = k[l:]
                 # maybe we got a key that do not belong to us
                 # like srv-linux10 when we ask for linux1
                 # so if we don't got a . here, it's an invalid
                 # dir
-                print "LIST TITLE", title
+                cprint("LIST TITLE", title)
                 if key and not title.startswith('.'):
-                    print "LIST SKIPPING KEY", key
+                    cprint("LIST SKIPPING KEY", key)
                     continue
                 
                 # Ok here got sons, but maybe we are not asking for recursive ones, if so exit with
                 # just the key as valid tree
                 if not recursive:
-                    print "NO RECURSIVE AND EARLY EXIT for KEY", key
+                    cprint("NO RECURSIVE AND EARLY EXIT for KEY", key)
                     return json.dumps(
                         [{"leaf": 0, "context": {}, 'text': key, 'id': key, "expandable": 1, "allowChildren": 1}])
                 
                 if title.startswith('.'):
                     title = title[1:]
-                print "LIST TITLE CLEAN", title
+                cprint("LIST TITLE CLEAN", title)
                 # if there is a . in it, it's a dir we need to have
                 dname = title.split('.', 1)[0]
                 # If the dnmae was not added, do it
@@ -274,15 +276,15 @@ class GraphiteModule(ListenerModule):
                     added[dname] = True
                     r.append({"leaf"         : 0, "context": {}, 'text': dname, 'id': k[:l] + dname, 'expandable': 1,
                               'allowChildren': 1})
-                    print "LIST ADD DIR", dname, k[:l] + dname
+                    cprint("LIST ADD DIR", dname, k[:l] + dname)
                 
-                print "LIST DNAME KEY", dname, key, title.count('.')
+                cprint("LIST DNAME KEY", dname, key, title.count('.'))
                 if title.count('.') == 0:
                     # not a directory, add it directly but only if the
                     # key asked was our directory
                     r.append({"leaf": 1, "context": {}, 'text': title, 'id': k, "expandable": 0, "allowChildren": 0})
-                    print "LIST ADD FILE", title
-            print "LIST FINALLY RETURN", r
+                    cprint("LIST ADD FILE", title)
+            cprint("LIST FINALLY RETURN", r)
             return json.dumps(r)
         
         

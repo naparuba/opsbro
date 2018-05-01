@@ -4,7 +4,7 @@
 # Copyright (C) 2014:
 #    Gabes Jean, naparuba@gmail.com
 
-
+from __future__ import print_function
 import json
 import time
 import sys
@@ -141,7 +141,7 @@ def do_compliance_history():
                     # rule_name = entry['name']
                     # cprint('[%s] ' % (rule_name.ljust(30)), color='magenta', end='')
                     __print_rule_entry(entry)
-            print "\n"
+            cprint("\n")
 
 
 def do_compliance_wait_compliant(compliance_name, timeout=30):

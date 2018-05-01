@@ -4,7 +4,7 @@
 # Copyright (C) 2014:
 #    Gabes Jean, naparuba@gmail.com
 
-
+from __future__ import print_function
 import sys
 import base64
 import uuid
@@ -407,7 +407,7 @@ def do_keygen():
     k = uuid.uuid1().hex[:16]
     cprint('UDP Encryption key: (aka encryption_key)', end='')
     cprint(base64.b64encode(k), color='green')
-    print ''
+    cprint('')
     try:
         import rsa
     except ImportError:
@@ -415,14 +415,14 @@ def do_keygen():
         return
     pubkey, privkey = rsa.newkeys(2048)
     
-    print "Private RSA key (2048). (aka master_key_priv for for file mfkey.priv)"
+    cprint("Private RSA key (2048). (aka master_key_priv for for file mfkey.priv)")
     s_privkey = privkey.save_pkcs1()
     cprint(s_privkey, color='green')
-    print ''
-    print "Public RSA key (2048). (aka master_key_pub for file mfkey.pub)"
+    cprint('')
+    cprint("Public RSA key (2048). (aka master_key_pub for file mfkey.pub)")
     s_pubkey = pubkey.save_pkcs1()
     cprint(s_pubkey, color='green')
-    print ''
+    cprint('')
 
 
 # Sort threads by user time, if same, sort by name
@@ -494,9 +494,9 @@ def do_show_threads():
     cprint('Total process CPU consumption:  ', color='blue', end='')
     cprint('cpu(user):%s%%  ' % upercent, color='magenta', end='')
     cprint('cpu(system):%s%%' % syspercent)
-    print "\n"
+    cprint("\n")
     
-    print "Summary of CPU consumption based on opsbro parts:"
+    cprint("Summary of CPU consumption based on opsbro parts:")
     for p in parts_sorts_by_cpu_usage:
         upercent, syspercent = __get_cpu_time_percent_display(p, age)
         cprint('  * [ ', end='')
@@ -504,20 +504,20 @@ def do_show_threads():
         cprint(' ]  ', end='')
         cprint('cpu(user):%s%%  ' % upercent, color='magenta', end='')
         cprint('cpu(system):%s%%' % syspercent)
-    print ""
-    print "Daemon threads (persistent):"
+    cprint("")
+    cprint("Daemon threads (persistent):")
     for p in parts_sorts_by_name:
         cprint('[ ', end='')
         cprint('%-15s' % p['name'], color='blue', end='')
         cprint(' ]  ')
         for t in p['threads']:
             upercent, syspercent = __get_cpu_time_percent_display(t, age)
-            print '   * %-55s  thread id:%5d   cpu(user):%s%%   cpu(system):%s%%' % (t['name'], t['tid'], upercent, syspercent)
+            cprint('   * %-55s  thread id:%5d   cpu(user):%s%%   cpu(system):%s%%' % (t['name'], t['tid'], upercent, syspercent))
     if all_not_daemon_threads:
-        print "\nTemporary threads:"
+        cprint("\nTemporary threads:")
         for t in all_not_daemon_threads:
             upercent, syspercent = __get_cpu_time_percent_display(t, age)
-            print '   Name:%-55s  id:%d   cpu(user):%s%%   cpu(system):%s%%' % (t['name'], t['tid'], upercent, syspercent)
+            cprint('   Name:%-55s  id:%d   cpu(user):%s%%   cpu(system):%s%%' % (t['name'], t['tid'], upercent, syspercent))
 
 
 def do_list_follow_log():
@@ -527,9 +527,9 @@ def do_list_follow_log():
         logger.error('Cannot join opsbro agent to list logs: %s' % exp)
         sys.exit(1)
     parts.sort()
-    print "Available parts to follow logs:"
+    cprint("Available parts to follow logs:")
     for p in parts:
-        print "  * %s" % p
+        cprint("  * %s" % p)
 
 
 def do_follow_log(part=''):
@@ -538,10 +538,10 @@ def do_follow_log(part=''):
     try:
         import fcntl
     except ImportError:
-        print "Error: this action is not availabe on your OS."
+        cprint("Error: this action is not availabe on your OS.")
         return
     
-    print 'Try to follow log part %s' % part
+    cprint('Try to follow log part %s' % part)
     p = '/tmp/opsbro-follow-%s' % part
     
     # Clean fifo to be sure to clean previous runs
@@ -578,10 +578,10 @@ def do_follow_log(part=''):
                                 already_print = True
                                 break
                         if not already_print:
-                            print line
+                            cprint(line)
     finally:
         try:
-            print "\nDisabling log dumping for the part %s" % part
+            cprint("\nDisabling log dumping for the part %s" % part)
             os.unlink(p)
         except:
             pass

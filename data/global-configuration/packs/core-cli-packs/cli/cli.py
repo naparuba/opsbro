@@ -243,7 +243,7 @@ def do_packs_show():
             if no_such_objects:
                 __print_line_header(main_topic_color)
                 cprint(' * The pack do not provide objects: %s' % ','.join(no_such_objects), color='grey')
-            print ''
+            cprint('')
 
 
 def do_packs_list():

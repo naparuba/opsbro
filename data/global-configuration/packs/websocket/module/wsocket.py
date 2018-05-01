@@ -1,3 +1,4 @@
+from __future__ import print_function
 import json
 from opsbro.misc.websocketserver import WebSocket, SimpleWebSocketServer
 from opsbro.log import LoggerFactory
@@ -13,11 +14,11 @@ class WebExporter(WebSocket):
     
     
     def handleConnected(self):
-        print self.address, 'connected'
+        logger.debug(self.address, 'connected')
     
     
     def handleClose(self):
-        print self.address, 'closed'
+        logger.debug(self.address, 'closed')
 
 
 class WebSocketBackend(object):

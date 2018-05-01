@@ -4,7 +4,7 @@
 # Copyright (C) 2014:
 #    Gabes Jean, naparuba@gmail.com
 
-
+from __future__ import print_function
 import time
 import json
 
@@ -26,9 +26,9 @@ def do_exec(group='*', cmd='uname -a'):
     except get_request_errors() as exp:
         logger.error(exp)
         return
-    print r
+    print(r)
     cid = r
-    print "Command group launch as cid", cid
+    print("Command group launch as cid", cid)
     time.sleep(5)  # TODO: manage a real way to get the result..
     try:
         (code, r) = get_opsbro_local('/exec-get/%s' % cid)
@@ -51,7 +51,7 @@ def do_exec(group='*', cmd='uname -a'):
         if e['err']:
             cprint('Error:', end='')
             cprint(e['err'].strip(), color='red')
-        print ''
+        cprint('')
 
 
 exports = {

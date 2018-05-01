@@ -4,7 +4,7 @@
 # Copyright (C) 2014:
 #    Gabes Jean, naparuba@gmail.com
 
-
+from __future__ import print_function
 import sys
 import time
 
@@ -43,12 +43,12 @@ def pretty_print(d):
     __print_collector_state(d)
     
     if len(flat_results) == 0:
-        print "No collector data"
+        cprint("No collector data")
         return
     
     max_prefix_size = max([len(prefix) for (prefix, v) in flat_results])
     flat_results = sorted(flat_results, key=lambda x: x[0])
-    print "* Collector data:"
+    cprint("* Collector data:")
     for (prefix, v) in flat_results:
         cprint('collector.%s' % (d['name']), color='grey', end='')
         cprint('%s' % prefix.ljust(max_prefix_size), color='blue', end='')

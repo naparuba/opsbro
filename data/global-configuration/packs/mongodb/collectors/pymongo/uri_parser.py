@@ -324,5 +324,5 @@ if __name__ == '__main__':
     try:
         pprint.pprint(parse_uri(sys.argv[1]))
     except (InvalidURI, UnsupportedOption), e:
-        print e
+        print(e)
     sys.exit(0)
