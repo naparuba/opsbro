@@ -145,7 +145,10 @@ except AttributeError:
                     # the full path instead of just the lib name, so use os.path.basename() to strip it
                     clock_gettime = ctypes.CDLL(os.path.basename(ctypes.util.find_library('c')), use_errno=True).clock_gettime
                 except AttributeError:
-                    clock_gettime = ctypes.CDLL(os.path.basename(ctypes.util.find_library('rt')), use_errno=True).clock_gettime
+                    rt_path = ctypes.util.find_library('rt')
+                    if rt_path is None:
+                        raise Exception('The system rt librairy is missing, please install it')
+                    clock_gettime = ctypes.CDLL(os.path.basename(rt_path), use_errno=True).clock_gettime
                 
                 
                 class timespec(ctypes.Structure):
@@ -178,5 +181,5 @@ except AttributeError:
             if monotonic() - monotonic() > 0:
                 raise ValueError('monotonic() is not monotonic!')
         
-        except Exception:
-            raise RuntimeError('no suitable implementation for this system')
+        except Exception, exp:
+            raise RuntimeError('No suitable implementation of a monotonic clock for this system (%s)' % exp)

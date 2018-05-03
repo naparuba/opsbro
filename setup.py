@@ -429,7 +429,8 @@ setuptools_package_exceptions = {
 
 # Some distro have specific dependencies
 distro_prerequites = {
-    'alpine': ['musl-dev']
+    'alpine': ['musl-dev'],  # monotonic clock
+    'centos': ['libgomp'],  # monotonic clock
 }
 
 # If we are uploading to pypi, we just don't want to install/update packages here
