@@ -67,6 +67,13 @@ if os.name != 'nt':
     def put_opsbro_json(uri, data):
         local_socket = get_local_socket()
         return get_json(uri, local_socket, params=data, method='PUT')
+    
+    
+    def delete_opsbro_json(uri):
+        local_socket = get_local_socket()
+        return get_json(uri, local_socket, method='DELETE')
+
+
 else:
     def get_opsbro_json(uri, timeout=10):
         r = httper.get('http://127.0.0.1:6770%s' % uri)
@@ -88,6 +95,10 @@ else:
     
     def put_opsbro_json(uri, data):
         return get_json(uri, params=data, method='PUT')
+    
+    
+    def delete_opsbro_json(uri):
+        return get_json(uri, method='DELETE')
 
 
 def get_opsbro_agent_state():
@@ -451,7 +462,7 @@ class CLICommander(object):
         entry = self.get_cli_entry_from_args(command_args)
         if entry is None:
             self.print_list(command_args[0])
-            return
+            sys.exit(2)
         
         command_args = self.clean_command_args(command_args)
         

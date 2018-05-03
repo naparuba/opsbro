@@ -4,7 +4,7 @@ from .log import logger
 class SqliteDB(object):
     def __init__(self, path):
         from .misc.sqlitedict import SqliteDict
-        self.db = SqliteDict(path+'.sqlite', autocommit=True)
+        self.db = SqliteDict(path + '.sqlite', autocommit=True)
     
     
     def Get(self, key, fill_cache=False):
@@ -13,6 +13,13 @@ class SqliteDB(object):
     
     def Put(self, key, value):
         self.db[key] = value
+    
+    
+    def Delete(self, key):
+        try:
+            del self.db[key]
+        except KeyError:  # ok, already deleted :)
+            pass
     
     
     def GetStats(self):

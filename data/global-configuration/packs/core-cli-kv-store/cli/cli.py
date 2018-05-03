@@ -12,7 +12,7 @@ import time
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger
 from opsbro.unixclient import get_request_errors
-from opsbro.cli import print_info_title, post_opsbro_json, AnyAgent, get_opsbro_local
+from opsbro.cli import print_info_title, post_opsbro_json, AnyAgent, get_opsbro_local, put_opsbro_json, delete_opsbro_json
 
 
 def do_kv_store_get(key_name):
@@ -30,31 +30,39 @@ def do_kv_store_get(key_name):
 
 
 def do_kv_store_delete(key_name):
-    # We need an agent for this
+    if not key_name:
+        cprint("Need a key-name parameter", color='red')
+        sys.exit(2)
     with AnyAgent():
-        expr_64 = base64.b64encode(expr)
+        cprint(' - Deleting key ', end='')
+        cprint(key_name, color='magenta', end='')
+        cprint(' : ', end='')
+        sys.stdout.flush()
         try:
-            r = post_opsbro_json('/agent/evaluator/eval', {'expr': expr_64}, timeout=30)
+            delete_opsbro_json('/kv/%s' % key_name)
         except get_request_errors() as exp:
+            cprint(CHARACTERS.cross, color='red')
             logger.error(exp)
-            return
-        
-        print_info_title('Result')
-        cprint(r)
+            sys.exit(2)
+        cprint(CHARACTERS.check, color='green')
 
 
 def do_kv_store_put(key_name, value):
-    # We need an agent for this
+    if not key_name:
+        cprint("Need a key-name parameter", color='red')
+        sys.exit(2)
     with AnyAgent():
-        expr_64 = base64.b64encode(expr)
+        cprint(' - Set key ', end='')
+        cprint(key_name, color='magenta', end='')
+        cprint(' : ', end='')
+        sys.stdout.flush()
         try:
-            r = post_opsbro_json('/agent/evaluator/eval', {'expr': expr_64}, timeout=30)
+            put_opsbro_json('/kv/%s' % key_name, value)
         except get_request_errors() as exp:
+            cprint(CHARACTERS.cross, color='red')
             logger.error(exp)
-            return
-        
-        print_info_title('Result')
-        cprint(r)
+            sys.exit(2)
+        cprint(CHARACTERS.check, color='green')
 
 
 def do_kv_store_list():
@@ -149,22 +157,22 @@ exports = {
         'description': 'Get the value of a key'
     },
     
-    #    do_kv_store_delete     : {
-    #        'keywords'   : ['kv-store', 'delete'],
-    #        'args'       : [
-    #            {'name': 'key-name', 'description': 'Name of the key to delete'},
-    #        ],
-    #        'description': 'Delete a key/value'
-    #    },
+    do_kv_store_delete     : {
+        'keywords'   : ['kv-store', 'delete'],
+        'args'       : [
+            {'name': 'key-name', 'description': 'Name of the key to delete'},
+        ],
+        'description': 'Delete a key/value'
+    },
     
-    #    do_kv_store_put        : {
-    #        'keywords'   : ['kv-store', 'put'],
-    #        'args'       : [
-    #            {'name': 'key-name', 'description': 'Name of the key to put'},
-    #            {'name': 'value', 'description': 'Value to set'},
-    #        ],
-    #        'description': 'Put a new value for a key'
-    #    },
+    do_kv_store_put        : {
+        'keywords'   : ['kv-store', 'put'],
+        'args'       : [
+            {'name': 'key-name', 'description': 'Name of the key to put'},
+            {'name': 'value', 'description': 'Value to set'},
+        ],
+        'description': 'Put a new value for a key'
+    },
     
     #    do_kv_store_list       : {
     #        'keywords'   : ['kv-store', 'list'],

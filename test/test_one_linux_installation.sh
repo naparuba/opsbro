@@ -153,4 +153,59 @@ echo "PACKAGE: the runtime package detection is working well"
 #echo "Pack: openports counters are OK"
 
 
+echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  KV Store      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
+
+KEY="SUPERKEY/33"
+VALUE="SUPERVALUE"
+
+echo " - do not exists"
+GET=$(opsbro kv-store get $KEY)
+if [ $? == 0 ];then
+   echo "There should not be key $KEY"
+   echo $GET
+   exit 2
+fi
+
+echo " - set"
+SET=$(opsbro kv-store put $KEY $VALUE)
+if [ $? != 0 ];then
+   echo "There should be ok in set $KEY $VALUE"
+   echo $SET
+   exit 2
+fi
+
+echo " - get"
+GET=$(opsbro kv-store get $KEY)
+if [ $? != 0 ];then
+   echo "There should be key $KEY"
+   echo $GET
+   exit 2
+fi
+
+echo " - grep get"
+GET_GREP=$(echo $GET | grep $VALUE)
+if [ $? != 0 ];then
+   echo "There should be key $KEY $VALUE"
+   echo $GET_GREP
+   exit 2
+fi
+
+echo " - delete"
+DELETE=$(opsbro kv-store delete $KEY)
+if [ $? != 0 ];then
+   echo "There should be no more key $KEY"
+   echo $DELETE
+   exit 2
+fi
+
+echo " - get after delete"
+GET=$(opsbro kv-store get $KEY)
+if [ $? == 0 ];then
+   echo "There should not be key $KEY after delete"
+   echo $GET
+   exit 2
+fi
+
+echo "KV: get/put/delete is working"
+
 echo "************************************ One linux installation is OK *********************************************"
