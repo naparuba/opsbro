@@ -392,7 +392,7 @@ mod_need = {
 }
 
 # leveldb is replaced by sqlite, and leveldb will be used only if the user ask for it
-#if os.name != 'nt' and False:
+# if os.name != 'nt' and False:
 #    mod_need['leveldb'] = {
 #        'packages'    : {
 #            'debian'       : 'python-leveldb',
@@ -420,6 +420,17 @@ mod_need = {
 #        },
 #    }
 
+# Some distro have another name for python-setuptools, so list here only exceptions
+setuptools_package_exceptions = {
+    'alpine'       : 'py-setuptools',
+    'amazon-linux' : 'python27-setuptools',
+    'amazon-linux2': 'python2-setuptools',
+}
+
+# Some distro have specific dependencies
+distro_prerequites = {
+    'alpine': ['musl-dev']
+}
 
 # If we are uploading to pypi, we just don't want to install/update packages here
 if not allow_black_magic:
@@ -487,17 +498,35 @@ for (m, d) in mod_need.iteritems():
                     
                     install_from_pip.append(pip_failback)
                     # Disabling, currently no packages need it anymore (was for leveldb)
-                    #all_pip_packages = d.get('pip_packages', {})
-                    #pip_packages = all_pip_packages.get(system_distro, [])
-                    #for pip_pkg in pip_packages:
+                    # all_pip_packages = d.get('pip_packages', {})
+                    # pip_packages = all_pip_packages.get(system_distro, [])
+                    # for pip_pkg in pip_packages:
                     #    try:
                     #        cprint('   - Install from system package the python lib dependency: ', color='grey', end='')
                     #        cprint(pip_pkg)
                     #        systepacketmgr.update_or_install(pip_pkg)
                     #    except Exception as exp:
                     #        cprint('    - WARNING: cannot install python lib dependency: %s : %s' % (pip_pkg, exp))
-                            
-                            # Remove duplicate from pip install
+
+if allow_black_magic:
+    distro_specific_packages = distro_prerequites.get(system_distro, [])
+    if len(distro_specific_packages) >= 1:
+        cprint(' * This OS have specific prerequites:')
+    for package_name in distro_specific_packages:
+        cprint('   - Prerequite for ', color='grey', end='')
+        cprint(system_distro, color='magenta', end='')
+        cprint(' : ', color='grey', end='')
+        cprint('%-20s' % package_name, color='blue', end='')
+        cprint('       from system packages  : ', color='grey', end='')
+        sys.stdout.flush()
+        try:
+            systepacketmgr.update_or_install(package_name)
+            cprint('%s' % CHARACTERS.check, color='green')
+        except Exception as exp:
+            cprint('   - ERROR: cannot install the prerequite %s from the system. Please install it manually' % package_name, color='red')
+            sys.exit(2)
+
+# Remove duplicate from pip install
 install_from_pip = set(install_from_pip)
 
 # if we are uploading to pypi, we don't want to have dependencies, I don't want pip to do black magic. I already do black magic.
@@ -515,7 +544,8 @@ except ImportError:
     try:
         cprint(' * You are missing the python setuptools, trying to install it with system package:', end='')
         sys.stdout.flush()
-        systepacketmgr.install_package('python-setuptools')
+        package_name = setuptools_package_exceptions.get(system_distro, 'python-setuptools')
+        systepacketmgr.install_package(package_name)
         cprint(' %s' % CHARACTERS.check, color='green')
         from setuptools import setup, find_packages
     except Exception as exp:
