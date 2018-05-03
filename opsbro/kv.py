@@ -151,7 +151,7 @@ class KVBackend:
     def init(self, data_dir):
         self.data_dir = data_dir
         self.db_dir = os.path.join(data_dir, 'kv')
-        self.db = dbwrapper.get_db(self.db_dir)  # leveldb.LevelDB(self.db_dir)
+        self.db = dbwrapper.get_db(self.db_dir)
         self.ttldb = TTLDatabase(os.path.join(data_dir, 'ttl'))
         
         # We can now export our http interface

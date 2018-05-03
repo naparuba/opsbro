@@ -12,11 +12,18 @@ if [ $? != 0 ];then
    exit 2
 fi
 
-opsbro kv-store get "$CPU_KEY"
+VALUE=$(opsbro kv-store get "$CPU_KEY")
 if [ $? != 0 ];then
    echo "ERROR: the CPU key cannot be GET"
    exit 2
 fi
 
+
+echo "$VALUE" | grep pack_name
+if [ $? != 0 ];then
+   echo "ERROR: the VALUE seems void"
+   echo $VALUE
+   exit 2
+fi
 
 echo "OK: CLI kv store"

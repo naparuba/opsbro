@@ -10,9 +10,6 @@ RUN        /apt_get_install   python-crypto
 RUN        /apt_get_install   python-setuptools
 RUN        /apt_get_install   python-apt
 
-# DNS: need dig
-RUN        /apt_get_install  dnsutils
-
 ADD        . /root/opsbro-oss
 
 
@@ -21,4 +18,4 @@ WORKDIR    /root/opsbro-oss
 RUN        python setup.py install
 
 
-ENTRYPOINT     test/test_feature_dns_module.sh
+ENTRYPOINT     test/test_feature_kv_store.sh

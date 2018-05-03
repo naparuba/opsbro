@@ -585,3 +585,8 @@ https://github.com/zwindler/ansible-deploy-logstash
     * DRIVER core os
     * CORE enlever la dépendance à psutil sur les linux (/proc c'est pas là pour faire joli)
    * les fonctions non encore disponibles/exportées
+
+
+
+https://github.com/RaRe-Technologies/sqlitedict
+

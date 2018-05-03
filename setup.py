@@ -390,34 +390,36 @@ mod_need = {
         }
     },
 }
-# leveldb is not available on windows
-if os.name != 'nt':
-    mod_need['leveldb'] = {
-        'packages'    : {
-            'debian'       : 'python-leveldb',
-            'ubuntu'       : 'python-leveldb',
-            'amazon-linux' : 'python-leveldb',
-            'amazon-linux2': 'python-leveldb',
-            'centos'       : 'python-leveldb',
-            'redhat'       : 'python-leveldb',
-            'oracle-linux' : 'python-leveldb',
-            'fedora'       : 'python-leveldb',
-            'opensuse'     : 'python-leveldb',
-            'alpine'       : 'py-leveldb',
-        },
-        'pip_packages': {
-            'debian'       : ['build-essential', 'python-dev'],
-            'ubuntu'       : ['build-essential', 'python-dev'],
-            # NOTE: amazon: no python-devel/python-setuptools, only versionsed packages are available
-            'amazon-linux' : ['gcc', 'gcc-c++', 'python27-devel', 'libyaml-devel', 'python27-setuptools'],
-            'amazon-linux2': ['gcc', 'gcc-c++', 'python2-devel', 'libyaml-devel', 'python2-setuptools'],
-            'centos'       : ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
-            'redhat'       : ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
-            'oracle-linux' : ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
-            'fedora'       : [r'gcc-c++', 'libcurl', 'curl', 'libcurl-devel', 'python', 'gcc', 'python-devel', 'libyaml-devel', 'python-setuptools', 'redhat-rpm-config'],  # note: python-setuptools to be sure that setup() will succeed
-            'alpine'       : ['gcc', 'linux-headers', 'musl-dev', 'libgcc', 'libgc++', 'g++', 'curl-dev', 'py-setuptools', 'python-dev'],
-        },
-    }
+
+# leveldb is replaced by sqlite, and leveldb will be used only if the user ask for it
+#if os.name != 'nt' and False:
+#    mod_need['leveldb'] = {
+#        'packages'    : {
+#            'debian'       : 'python-leveldb',
+#            'ubuntu'       : 'python-leveldb',
+#            'amazon-linux' : 'python-leveldb',
+#            'amazon-linux2': 'python-leveldb',
+#            'centos'       : 'python-leveldb',
+#            'redhat'       : 'python-leveldb',
+#            'oracle-linux' : 'python-leveldb',
+#            'fedora'       : 'python-leveldb',
+#            'opensuse'     : 'python-leveldb',
+#            'alpine'       : 'py-leveldb',
+#        },
+#        'pip_packages': {
+#            'debian'       : ['build-essential', 'python-dev'],
+#            'ubuntu'       : ['build-essential', 'python-dev'],
+#            # NOTE: amazon: no python-devel/python-setuptools, only versionsed packages are available
+#            'amazon-linux' : ['gcc', 'gcc-c++', 'python27-devel', 'libyaml-devel', 'python27-setuptools'],
+#            'amazon-linux2': ['gcc', 'gcc-c++', 'python2-devel', 'libyaml-devel', 'python2-setuptools'],
+#            'centos'       : ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
+#            'redhat'       : ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
+#            'oracle-linux' : ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
+#            'fedora'       : [r'gcc-c++', 'libcurl', 'curl', 'libcurl-devel', 'python', 'gcc', 'python-devel', 'libyaml-devel', 'python-setuptools', 'redhat-rpm-config'],  # note: python-setuptools to be sure that setup() will succeed
+#            'alpine'       : ['gcc', 'linux-headers', 'musl-dev', 'libgcc', 'libgc++', 'g++', 'curl-dev', 'py-setuptools', 'python-dev'],
+#        },
+#    }
+
 
 # If we are uploading to pypi, we just don't want to install/update packages here
 if not allow_black_magic:
@@ -484,15 +486,16 @@ for (m, d) in mod_need.iteritems():
                     cprint('\n'.join(['%s%s' % (_prefix, s) for s in str(exp).splitlines()]), color='grey')
                     
                     install_from_pip.append(pip_failback)
-                    all_pip_packages = d.get('pip_packages', {})
-                    pip_packages = all_pip_packages.get(system_distro, [])
-                    for pip_pkg in pip_packages:
-                        try:
-                            cprint('   - Install from system package the python lib dependency: ', color='grey', end='')
-                            cprint(pip_pkg)
-                            systepacketmgr.update_or_install(pip_pkg)
-                        except Exception as exp:
-                            cprint('    - WARNING: cannot install python lib dependency: %s : %s' % (pip_pkg, exp))
+                    # Disabling, currently no packages need it anymore (was for leveldb)
+                    #all_pip_packages = d.get('pip_packages', {})
+                    #pip_packages = all_pip_packages.get(system_distro, [])
+                    #for pip_pkg in pip_packages:
+                    #    try:
+                    #        cprint('   - Install from system package the python lib dependency: ', color='grey', end='')
+                    #        cprint(pip_pkg)
+                    #        systepacketmgr.update_or_install(pip_pkg)
+                    #    except Exception as exp:
+                    #        cprint('    - WARNING: cannot install python lib dependency: %s : %s' % (pip_pkg, exp))
                             
                             # Remove duplicate from pip install
 install_from_pip = set(install_from_pip)

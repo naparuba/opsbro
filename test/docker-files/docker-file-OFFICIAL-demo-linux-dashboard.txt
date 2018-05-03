@@ -6,7 +6,6 @@ ADD        test/docker-helper/  /
 RUN        /apt_get_install  python
 RUN        /apt_get_install  less
 RUN        /apt_get_install  locales
-RUN        /apt_get_install  python-leveldb
 RUN        /apt_get_install  python-jinja2
 RUN        /apt_get_install  python-crypto
 RUN        /apt_get_install  python-setuptools

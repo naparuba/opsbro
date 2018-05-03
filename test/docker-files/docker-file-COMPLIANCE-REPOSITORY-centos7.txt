@@ -6,10 +6,6 @@ ADD        test/docker-helper/  /
 RUN        /yum_install epel-release
 RUN        /yum_install  python-jinja2
 RUN        /yum_install  python-crypto
-RUN        /yum_install  gcc
-RUN        /yum_install  gcc-c++
-RUN        /yum_install  python-devel
-RUN        /yum_install  libyaml-devel
 RUN        /yum_install  python-setuptools
 
 

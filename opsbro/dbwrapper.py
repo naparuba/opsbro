@@ -1,32 +1,33 @@
 from .log import logger
 
 
-class FakeDB(object):
-    def __init__(self):
-        self.already_error = False
+class SqliteDB(object):
+    def __init__(self, path):
+        from .misc.sqlitedict import SqliteDict
+        self.db = SqliteDict(path+'.sqlite', autocommit=True)
     
     
     def Get(self, key, fill_cache=False):
-        return ''
+        return self.db[key]
     
     
     def Put(self, key, value):
-        return
+        self.db[key] = value
     
     
     def GetStats(self):
-        return ''
+        return 'No stats from sqlitedb'
 
 
 class DBWrapper(object):
     def __init__(self):
         # only import leveldb when need
         self.leveldb = None
-        self.is_leveldb_lib_imported = False
     
     
+    # Want a database, if we can we ty leveldb, if not, fallback to sqlite
     def get_db(self, path):
-        if not self.is_leveldb_lib_imported:
+        if self.leveldb is None:
             try:
                 import leveldb
                 self.leveldb = leveldb
@@ -37,8 +38,8 @@ class DBWrapper(object):
             db = self.leveldb.LevelDB(path)
             logger.info('KV database at path %s is opened: %s' % (path, db))
             return db
-        logger.error('Librairy leveldb is missing, you cannot save KV values.')
-        return FakeDB()
+        logger.info('Librairy leveldb is missing, falling back to sqlite db backend.')
+        return SqliteDB(path)
 
 
 dbwrapper = DBWrapper()
