@@ -1,0 +1,21 @@
+name: core-cli-kv-store
+types:
+    - cli
+topics:
+    - generic
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description:  CLI for listing/querying about key/values store by OpsBro
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - cli
+    - agent
+    - kv
+    - kv-store
+
+dependencies:
+    core: ">=1.0"
+license: ""

@@ -341,6 +341,36 @@ def do_info(show_logs):
     logger.debug('Raw information: %s' % d)
 
 
+def do_node_uuid():
+    try:
+        d = get_opsbro_json('/agent/info')
+    except get_request_errors() as exp:
+        logger.error('Cannot join opsbro agent for info: %s' % exp)
+        sys.exit(1)
+    _uuid = d.get('uuid')
+    cprint(_uuid)
+
+
+def do_node_local_addr():
+    try:
+        d = get_opsbro_json('/agent/info')
+    except get_request_errors() as exp:
+        logger.error('Cannot join opsbro agent for info: %s' % exp)
+        sys.exit(1)
+    local_addr = d.get('local_addr')
+    cprint(local_addr)
+
+
+def do_node_public_addr():
+    try:
+        d = get_opsbro_json('/agent/info')
+    except get_request_errors() as exp:
+        logger.error('Cannot join opsbro agent for info: %s' % exp)
+        sys.exit(1)
+    public_addr = d.get('public_addr')
+    cprint(public_addr)
+
+
 def do_modules_state():
     try:
         d = get_opsbro_json('/agent/info')
@@ -715,6 +745,26 @@ exports = {
             {'name': '--show-logs', 'default': False, 'description': 'Dump last warning & error logs', 'type': 'bool'},
         ],
         'description': 'Show info af a daemon'
+    },
+    
+    do_node_uuid                  : {
+        'keywords'   : ['agent', 'print', 'uuid'],
+        'args'       : [
+        ],
+        'description': 'Print the node uniq uuid'
+    },
+    
+    do_node_local_addr            : {
+        'keywords'   : ['agent', 'print', 'local-addr'],
+        'args'       : [
+        ],
+        'description': 'Print the node local address'
+    },
+    do_node_public_addr           : {
+        'keywords'   : ['agent', 'print', 'public-addr'],
+        'args'       : [
+        ],
+        'description': 'Print the node public address'
     },
     
     do_modules_state              : {
