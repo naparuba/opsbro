@@ -133,6 +133,7 @@ def do_info(show_logs):
     monitoring = d.get('monitoring')
     compliance = d.get('compliance')
     generators = d.get('generators')
+    kv_store = d.get('kv')
     
     ################### Generic
     __print_topic_header(TOPIC_GENERIC)
@@ -309,6 +310,13 @@ def do_info(show_logs):
         s = '%.1f%%' % cpu_consumption
         __print_key_val('CPU Usage', s)
         __print_more('opsbro agent internal show-threads')
+    
+    kv_store_backend = kv_store.get('backend', None)
+    if kv_store_backend:
+        cprint(' - KV Backend: '.ljust(DEFAULT_INFO_COL_SIZE), end='', color='blue')
+        cprint(kv_store_backend['name'], color='green')
+        cprint('    - size: '.ljust(DEFAULT_INFO_COL_SIZE), end='', color='blue')
+        cprint('%.2fMB' % (kv_store['stats']['size'] / 1024.0 / 1024.0), color='green')
     
     cprint(' - Version: '.ljust(DEFAULT_INFO_COL_SIZE), end='', color='blue')
     cprint(version, color='green')

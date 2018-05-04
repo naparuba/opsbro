@@ -159,7 +159,10 @@ class KVBackend:
     
     
     def get_info(self):
-        return {'stats': self.db.GetStats()}
+        r = {'stats': self.db.GetStats(), 'backend': {}}
+        if self.db:
+            r['backend']['name'] = self.db.name
+        return r
     
     
     # We will open a file with the keys writen during a minute
