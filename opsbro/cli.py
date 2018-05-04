@@ -129,13 +129,14 @@ class AnyAgent(object):
     
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.tmp_agent is not None:
-            cprint('# * Stopping the temporary agent:', color='grey', end='')
+            cprint('')
+            cprint('%s Stopping the temporary agent:' % CHARACTERS.corner_top_left, color='grey', end='')
             sys.stdout.flush()
             self._do_agent_stop()
             # Be sure to kill it
             self.tmp_agent.terminate()
             cprint('%s OK' % CHARACTERS.check, color='grey')
-            cprint('# | if you want to start the agent can launch it with the "opsbro agent start" command', color='grey')
+            cprint('%s | if you want to start the agent: launch it with the "opsbro agent start" command' % CHARACTERS.corner_bottom_left, color='grey')
     
     
     @staticmethod
@@ -162,11 +163,12 @@ class AnyAgent(object):
                 additional_args['close_fds'] = True
             self.tmp_agent = subprocess.Popen(tmp_agent_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **additional_args)
             cprint('')
-            cprint('# This command need a started agent, and currently no one is started', color='grey')
-            cprint('# * Spawning a ', color='grey', end='')
+            cprint('%s This command need a started agent, and currently no one is started' % CHARACTERS.corner_top_left, color='grey')
+            cprint('%s | Spawning a ' % CHARACTERS.vbar, color='grey', end='')
             cprint('temporary one', color='yellow')
-            cprint('# | - process pid is %s' % self.tmp_agent.pid, color='grey')
-            cprint('# | - you can avoid the temporary agent by launching one with "opsbro agent start" or "/etc/init.d/opsbro start" ', color='grey')
+            cprint('%s | - process pid is %s' % (CHARACTERS.vbar, self.tmp_agent.pid), color='grey')
+            cprint('%s | - you can avoid the temporary agent by launching one with "opsbro agent start" or "/etc/init.d/opsbro start" ' % CHARACTERS.corner_bottom_left, color='grey')
+            cprint('')
             agent_state = wait_for_agent_started(visual_wait=True, wait_for_spawn=True)  # note: we wait for spawn as it can take some few seconds before the unix socket is available
         if agent_state == AGENT_STATE_STOPPED:
             raise Exception('Cannot have the agent, even a temporary one')
