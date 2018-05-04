@@ -1,0 +1,23 @@
+# This compliance is a short one, with no environments and just direct parameters
+compliance:
+   name: passwd is root/644
+   verify_if:   "is_in_group('linux')"
+   # We force to get back the file rights
+   mode: enforcing
+   interval: 60s
+   rule:
+      type: file-rights
+      # You can set variables in order to not repeat yourself in the if rules
+      # Here a fake one just for test
+      variables:
+         true: "True"
+
+      parameters:
+         file: /etc/passwd
+         owner: root
+         group: root
+         permissions: 644
+
+      # Same post commands for every env
+      post_commands:
+        - echo "success" > /tmp/success

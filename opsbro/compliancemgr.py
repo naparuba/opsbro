@@ -188,24 +188,31 @@ class Compliance(object):
 
 class Rule(object):
     def __init__(self, pack_name, pack_level, mode, compliance_name, rule_def, idx, nb_rules):
-        self.rule_def = rule_def
         self.compliance_name = compliance_name
         # If no name, we can take compliance name if it's the only rule
         # or the index if ther are more
-        self.name = self.rule_def.get('name', None)
+        self.name = rule_def.get('name', None)
         if self.name is None:
             if nb_rules == 1:
                 self.name = compliance_name
             else:
                 self.name = 'step %d' % idx
-        self.type = self.rule_def.get('type')
+        self.type = rule_def.get('type')
         self.environments = deque()
-        env_defs = self.rule_def.get('environments', [])
+        env_defs = rule_def.get('environments', [])
+        
+        # If there are no environnements, fake one with the parameters
+        if len(env_defs) == 0:
+            # Just name and parameters, no if or post commands are they will be global
+            fake_env_def = {'name': self.name, 'parameters': rule_def.get('parameters', {})}
+            env_defs = [fake_env_def]
+        
         for env_def in env_defs:
             env = ComplianceRuleEnvironment(env_def)
             self.environments.append(env)
-        self.post_commands = self.rule_def.get('post_commands', [])
-        self.variable_defs = self.rule_def.get('variables', {})
+        
+        self.post_commands = rule_def.get('post_commands', [])
+        self.variable_defs = rule_def.get('variables', {})
         self.pack_name = pack_name
         self.pack_level = pack_level
         self.mode = mode

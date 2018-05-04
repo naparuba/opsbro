@@ -10,9 +10,6 @@ RUN        /apt_get_install   python-crypto
 RUN        /apt_get_install   python-setuptools
 RUN        /apt_get_install   python-apt
 
-
-RUN        /apt_get_install   procps
-
 ADD        . /root/opsbro-oss
 
 
@@ -23,6 +20,7 @@ RUN        python setup.py install
 # Copy the mail pack into a local one to enable modification
 RUN        opsbro  packs overload global.linux
 # Copy the new compliance value
-ADD        test/test-files/test-compliance-get-uri/compliance/install-cockroachdb.yml   /var/lib/opsbro/local-configuration/packs/linux/compliance/
+ADD        test/test-files/test-compliance-file-rights-no-env-version/compliance/passwd.yml   /var/lib/opsbro/local-configuration/packs/linux/compliance/
 
-ENTRYPOINT     test/test_feature_compliance-get-url.sh
+# Should works excactly like the env version one
+ENTRYPOINT     test/test_feature_compliance-file-rights.sh
