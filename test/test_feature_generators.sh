@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+/etc/init.d/opsbro start
 
 opsbro generators wait-compliant sshkeys
 if [ $? != 0 ];then

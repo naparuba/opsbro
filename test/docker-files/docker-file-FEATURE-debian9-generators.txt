@@ -24,4 +24,4 @@ RUN        cp   /var/lib/opsbro/global-configuration/packs/test-generators/gener
 
 RUN        opsbro agent parameters add groups ssh-key-sample
 
-ENTRYPOINT     test/test_one_linux_installation.sh   && test/test_feature_generators.sh
+ENTRYPOINT     test/test_feature_generators.sh
