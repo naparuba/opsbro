@@ -7,7 +7,6 @@ ADD        . /root/opsbro-oss
 
 WORKDIR    /root/opsbro-oss
 
-
 RUN        python setup.py install
 
 # Copy the mail pack into a local one to enable modification

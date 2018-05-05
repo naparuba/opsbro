@@ -208,4 +208,44 @@ fi
 
 echo "KV: get/put/delete is working"
 
+
+
+
+echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  KV Store : install leveldb     ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
+
+# First we must have the sqlite backend
+INFO=$(opsbro agent info)
+
+echo "$INFO" | grep sqlite
+if [ $? != 0 ];then
+   echo "ERROR: The kv backend should be sqlite"
+   echo "$INFO"
+   exit 2
+fi
+
+opsbro agent parameters add groups "kv-store-backend:leveldb"
+
+
+opsbro compliance wait-compliant "Install Leveldb if in group kv-store-backend:leveldb" --timeout=60
+if [ $? != 0 ];then
+   echo "ERROR: Cannot install leveldb"
+   opsbro compliance state
+   opsbro compliance history
+   exit 2
+fi
+
+/etc/init.d/opsbro restart
+
+# Now must be leveldb
+INFO=$(opsbro agent info)
+
+echo "$INFO" | grep leveldb
+if [ $? != 0 ];then
+   echo "ERROR: The kv backend should be leveldb"
+   echo "$INFO"
+   exit 2
+fi
+
+echo "Leveldb install is OK"
+
 echo "************************************ One linux installation is OK *********************************************"
