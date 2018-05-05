@@ -231,7 +231,7 @@ def do_info(show_logs):
     monitoring_string = sprintf(' / ', color='grey', end='').join(monitoring_strings)
     __print_key_val('Check states', monitoring_string, topic=TOPIC_MONITORING)
     __print_topic_picto(TOPIC_MONITORING)
-    __print_more('opsbro detectors state')
+    __print_more('opsbro monitoring state')
     
     ################################## Metrology
     # Now collectors part

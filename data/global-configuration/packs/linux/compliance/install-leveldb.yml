@@ -22,17 +22,25 @@ compliance:
          - name: centos
            if:   "{{variables.is_centos}}"
            parameters:
-              packages:
-                 - python-leveldb
+             packages:
+                - gcc-c++
+                - libcurl
+                - curl
+                - libcurl-devel
+                - gcc
+                - python-devel
+                - redhat-rpm-config
+                - python-pip
            post_commands:
-              # on centos6, there is no "service" command available for nginx
-              - nginx
+              - pip install leveldb
 
-         - name: debian9
-           if: "{{variables.is_debian}} and {{collector.system.os.linux.major_version}} == 9"
+         # Debian 6 is not managed
+         # TODO: failback with leveldb C lib?
+         - name: debian6
+           if: "{{variables.is_debian}} and {{collector.system.os.linux.major_version}} == 6"
            parameters:
              packages:
-                - python-leveldb
+                - bash
 
          - name: debian
            if: "{{variables.is_debian}}"
@@ -45,15 +53,31 @@ compliance:
            if: "{{variables.is_fedora}}"
            parameters:
              packages:
-                - python-leveldb
+                - gcc-c++
+                - libcurl
+                - curl
+                - libcurl-devel
+                - gcc
+                - python-devel
+                - redhat-rpm-config
+                - python-pip
+           post_commands:
+              - pip install leveldb
+
 
 
          - name: alpine
            if: "{{variables.is_alpine}}"
            parameters:
               packages:
-                 - nginx
+                 - gcc
+                 - linux-headers
+                 - musl-dev
+                 - libgcc
+                 - libgc++
+                 - g++
+                 - python2-dev
+                 - py2-pip
            post_commands:
-              # on alpine, you must create the run dir first
-              - mkdir /run/nginx/
-              - nginx
+              - pip2 install leveldb
+

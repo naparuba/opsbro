@@ -223,29 +223,35 @@ if [ $? != 0 ];then
    exit 2
 fi
 
-opsbro agent parameters add groups "kv-store-backend:leveldb"
+# Some distro do not have access to leveldb anymore...
+if [ "X$SKIP_LEVELDB" == "X" ];then
+
+    opsbro agent parameters add groups "kv-store-backend:leveldb"
 
 
-opsbro compliance wait-compliant "Install Leveldb if in group kv-store-backend:leveldb" --timeout=60
-if [ $? != 0 ];then
-   echo "ERROR: Cannot install leveldb"
-   opsbro compliance state
-   opsbro compliance history
-   exit 2
+    opsbro compliance wait-compliant "Install Leveldb if in group kv-store-backend:leveldb" --timeout=60
+    if [ $? != 0 ];then
+       echo "ERROR: Cannot install leveldb"
+       opsbro compliance state
+       opsbro compliance history
+       exit 2
+    fi
+
+    /etc/init.d/opsbro restart
+
+    sleep 1
+
+    # Now must be leveldb
+    INFO=$(opsbro agent info)
+
+    echo "$INFO" | grep leveldb
+    if [ $? != 0 ];then
+       echo "ERROR: The kv backend should be leveldb"
+       echo "$INFO"
+       exit 2
+    fi
+
+    echo "Leveldb install is OK"
 fi
-
-/etc/init.d/opsbro restart
-
-# Now must be leveldb
-INFO=$(opsbro agent info)
-
-echo "$INFO" | grep leveldb
-if [ $? != 0 ];then
-   echo "ERROR: The kv backend should be leveldb"
-   echo "$INFO"
-   exit 2
-fi
-
-echo "Leveldb install is OK"
 
 echo "************************************ One linux installation is OK *********************************************"

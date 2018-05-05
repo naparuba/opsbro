@@ -16,5 +16,8 @@ RUN        echo 'APT::Get::force-yes "true";' >>/etc/apt/apt.conf.d/90ignore-rel
 RUN        /apt_get_install  python
 ADD         . /root/opsbro-oss
 
+# debian6 do not allow leveldb get from pip (openssl is too old to reach pypi & github...)
+ENV        SKIP_LEVELDB=TRUE
+
 WORKDIR     /root/opsbro-oss
 ENTRYPOINT         test/test_one_linux_installation.sh  && test/assert_group.sh "debian"
