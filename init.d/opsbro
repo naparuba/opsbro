@@ -38,8 +38,8 @@ ETC=/etc/opsbro
 
 export PATH="${PATH:+$PATH:}/usr/sbin:/bin:/sbin"
 # Try to set US lang, to allow easy sub command call even on non english system (yes like french system...)
-export LANG=en_US.UTF8   2>/dev/null
-export LC_ALL=en_US.UTF8 2>/dev/null
+export LANG=en_US.UTF8   >/dev/null  2>/dev/null
+export LC_ALL=en_US.UTF8 >/dev/null 2>/dev/null
 # Please python, manage utf8 by default, we are in 2017
 export PYTHONIOENCODING=utf8
 # Do not lock on print calls
@@ -229,8 +229,29 @@ do_stop() {
         return 0
     }
     stopoutput=$(opsbro agent stop)
-    echo "OK"
-    return 0
+    sleep 1
+    out=$(opsbro agent info)
+    rc=$?
+    if [ $rc == 0 ];then
+       echo "OK"
+       return 0
+    fi
+    sleep 5
+    out=$(opsbro agent info)
+    rc=$?
+    if [ $rc == 0 ];then
+       echo "OK"
+       return 0
+    fi
+    sleep 30
+    out=$(opsbro agent info)
+    rc=$?
+    if [ $rc == 0 ];then
+       echo "OK"
+       return 0
+    fi
+    echo "Asked to stop but still running"
+    return 2
 }
 
 

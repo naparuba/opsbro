@@ -81,3 +81,8 @@ compliance:
            post_commands:
               - pip2 install leveldb
 
+         - name: opensuse
+           if: "{{variables.is_opensuse}}"
+           parameters:
+             packages:
+                - python-leveldb
