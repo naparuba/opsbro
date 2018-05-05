@@ -228,8 +228,8 @@ if [ "X$SKIP_LEVELDB" == "X" ];then
 
     opsbro agent parameters add groups "kv-store-backend:leveldb"
 
-
-    opsbro compliance wait-compliant "Install Leveldb if in group kv-store-backend:leveldb" --timeout=60
+    # Note: compilation of leveldb can be long
+    opsbro compliance wait-compliant "Install Leveldb if in group kv-store-backend:leveldb" --timeout=180
     if [ $? != 0 ];then
        echo "ERROR: Cannot install leveldb"
        opsbro compliance state
