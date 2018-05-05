@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 
 
+/etc/init.d/opsbro start
+
+sleep 60
+
 echo "Starting to test Internal test (dummy check)"
 
 

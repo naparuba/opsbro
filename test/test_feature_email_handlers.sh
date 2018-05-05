@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+/etc/init.d/postfix start
+
+
+/etc/init.d/opsbro start
 
 sleep 5
 

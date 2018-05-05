@@ -21,4 +21,4 @@ RUN       python setup.py install
 # Copy the new checks
 ADD        test/test-files/test-internal-checks   /var/lib/opsbro/global-configuration/packs/
 
-ENTRYPOINT     test/test_one_linux_installation.sh   && test/test_feature_internal_checks.sh
+ENTRYPOINT     test/test_feature_internal_checks.sh
