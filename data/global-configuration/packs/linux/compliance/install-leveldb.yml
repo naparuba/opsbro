@@ -55,6 +55,7 @@ compliance:
              packages:
                 - bash
 
+
          - name: debian
            if: "{{variables.is_debian}}"
            parameters:
@@ -137,7 +138,7 @@ compliance:
              packages:
                 - gcc
                 - gcc-c++
-                - python2-devel
+                - python-devel
                 - python2-pip
            post_commands:
               - pip install leveldb
