@@ -76,19 +76,30 @@ compliance:
                 - python-leveldb
 
 
+         - name: fedora26_and_more
+           if: "{{variables.is_fedora}} and {{collector.system.os.linux.major_version}} >= 26"
+           parameters:
+             packages:
+                - gcc-c++
+                - gcc
+                - python2-devel
+                - redhat-rpm-config
+                - python2-pip
+           post_commands:
+              - pip install leveldb
+
+
          - name: fedora
            if: "{{variables.is_fedora}}"
            parameters:
              packages:
                 - gcc-c++
-                - libcurl
                 - gcc
                 - python-devel
                 - redhat-rpm-config
                 - python-pip
            post_commands:
               - pip install leveldb
-
 
 
          # Alpine 3.5->7 have pip2 command
