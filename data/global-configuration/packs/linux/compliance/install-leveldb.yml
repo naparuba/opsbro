@@ -19,20 +19,33 @@ compliance:
          is_oracle_linux: "{{collector.system.os.linux.distribution}} == 'oracle-linux'"
          is_opensuse: "{{collector.system.os.linux.distribution}} == 'opensuse'"
       environments:
-         - name: centos
-           if:   "{{variables.is_centos}}"
+         - name: centos6
+           if:   "{{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 6"
            parameters:
              packages:
+                - epel-release
                 - gcc-c++
-                - libcurl
                 - curl
-                - libcurl-devel
                 - gcc
                 - python-devel
-                - redhat-rpm-config
                 - python-pip
            post_commands:
               - pip install leveldb
+
+
+         - name: centos7
+           if:   "{{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 7"
+           parameters:
+             packages:
+                - epel-release
+                - gcc-c++
+                - curl
+                - gcc
+                - python-devel
+                - python2-pip
+           post_commands:
+              - pip install leveldb
+
 
          # Debian 6 is not managed
          # TODO: failback with leveldb C lib?
