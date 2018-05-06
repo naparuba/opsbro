@@ -105,3 +105,27 @@ compliance:
            parameters:
              packages:
                 - python-leveldb
+
+         - name: amazon_linux
+           if: "{{variables.is_amazon_linux}}"
+           parameters:
+             packages:
+                - gcc
+                - gcc-c++
+                - python27-devel
+                - python27-pip
+           post_commands:
+              - pip install leveldb
+
+
+         - name: amazon_linux2
+           if: "{{variables.is_amazon_linux2}}"
+           parameters:
+             packages:
+                - gcc
+                - gcc-c++
+                - python2-devel
+                - python2-pip
+           post_commands:
+              - pip install leveldb
+
