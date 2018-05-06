@@ -66,8 +66,9 @@ compliance:
 
 
 
-         - name: alpine
-           if: "{{variables.is_alpine}}"
+         # Alpine 3.5->7 have pip2 command
+         - name: alpine3_5_6_7
+           if: "{{variables.is_alpine}} and {{collector.system.os.linux.minor_version}} in (5, 6, 7)"
            parameters:
               packages:
                  - gcc
@@ -80,6 +81,24 @@ compliance:
                  - py2-pip
            post_commands:
               - pip2 install leveldb
+
+
+         # Alpine 3.1->4 have pip command and python-dev package
+         - name: alpine3_1_to_4
+           if: "{{variables.is_alpine}} and {{collector.system.os.linux.minor_version}} <= 4"
+           parameters:
+              packages:
+                 - gcc
+                 - linux-headers
+                 - musl-dev
+                 - libgcc
+                 - libgc++
+                 - g++
+                 - python-dev
+                 - py-pip
+           post_commands:
+              - pip2 install leveldb
+
 
          - name: opensuse
            if: "{{variables.is_opensuse}}"
