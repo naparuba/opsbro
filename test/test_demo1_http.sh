@@ -3,7 +3,9 @@
 # We are now a WAN based node
 #test/set_network_simulated_type WAN
 
-. test/common_shell_functions.sh
+# Load common shell functions
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $MYDIR/common_shell_functions.sh
 
 CASE=$1
 

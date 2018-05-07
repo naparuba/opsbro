@@ -1,15 +1,21 @@
 #!/usr/bin/env bash
 
-echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Installation   ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
-python setup.py install
+# Load common shell functions
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $MYDIR/common_shell_functions.sh
 
+
+##############################################################################
+print_header "Installation"
+
+python setup.py install
 if [ $? != 0 ]; then
    echo "ERROR: installation failed!"
    exit 2
 fi
 
-
-echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Starting       ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
+##############################################################################
+print_header "Starting"
 # Try to start daemon, but we don't want systemd hook there
 SYSTEMCTL_SKIP_REDIRECT=1 /etc/init.d/opsbro start
 if [ $? != 0 ]; then
@@ -19,9 +25,8 @@ fi
 
 # NOTE: the init script already wait for agent end of initialization
 
-
-echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Info           ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
-
+##############################################################################
+print_header "Info"
 
 opsbro agent info
 if [ $? != 0 ]; then
@@ -31,19 +36,21 @@ if [ $? != 0 ]; then
 fi
 
 
-echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Address?       ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
+print_header "Address"
 
 # Is there an address used by the daemon?
 echo "Checking agent addr"
-ADDR=$(opsbro agent info | grep Addr | awk '{print $2}')
-if [ "$ADDR" == "None" ]; then
+ADDR=$(opsbro agent print local-addr)
+if [ "X$ADDR" == "X" ]; then
     echo "The opsbro daemon do not have a valid address."
     echo `opsbro agent info`
     exit 2
 fi
+echo "Address: $ADDR"
 
 
-echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Linux GROUP      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
+##############################################################################
+print_header "linux Group"
 
 echo "Checking linux group"
 # Check if linux group is set
@@ -54,7 +61,8 @@ if [ $? != 0 ]; then
 fi
 
 
-echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Docker-container GROUP      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
+##############################################################################
+print_header "Docker container group"
 # Check if docker-container group is set
 echo "Checking agent docker group"
 
@@ -65,7 +73,8 @@ if [ $? != 0 ]; then
 fi
 
 
-echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  STANDARD LINUX PACK:  iostats counters      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
+##############################################################################
+print_header "Linux PACK: iostats coutners"
 IOSTATS=$(opsbro collectors show iostats)
 
 printf "%s" "$IOSTATS" | grep read_bytes > /dev/null
@@ -78,7 +87,8 @@ fi
 echo "Pack: iostats counters are OK"
 
 
-echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  STANDARD LINUX PACK:  cpustats counters      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
+##############################################################################
+print_header "Linux PACK: cpustats counters"
 CPUSTATS=$(opsbro collectors show cpustats)
 
 printf "%s" "$CPUSTATS" | grep 'cpu_all.%idle' > /dev/null
@@ -91,7 +101,8 @@ fi
 echo "Pack: cpustats counters are OK"
 
 
-echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  Runtime package detection      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
+##############################################################################
+print_header "Runtime package detection"
 
 # We are trying the fping package unless the distro test did ask us another
 if [ "X$TEST_PACKAGE_NAME" == "X" ];then
@@ -126,6 +137,7 @@ echo "PACKAGE: the runtime package detection is working well"
 
 
 #TODO: fis the networktraffic so it pop out directly at first loop
+# printf "\n\n"
 #echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  STANDARD LINUX PACK:  networktraffic counters      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
 #NETWORKSTATS=$(opsbro collectors show networktraffic)
 
@@ -139,6 +151,7 @@ echo "PACKAGE: the runtime package detection is working well"
 #echo "Pack: networkstats counters are OK"
 
 #TODO: openports need netstats
+#printf "\n\n"
 #echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  STANDARD LINUX PACK:  openports counters      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
 #OPENPORTS=$(opsbro collectors show openports)
 
@@ -153,65 +166,69 @@ echo "PACKAGE: the runtime package detection is working well"
 #echo "Pack: openports counters are OK"
 
 
-echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  KV Store      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
+##############################################################################
+print_header "KV Store (sqlite)"
 
-KEY="SUPERKEY/33"
-VALUE="SUPERVALUE"
+function test_key_store {
+    KEY="SUPERKEY/33"
+    VALUE="SUPERVALUE"
 
-echo " - do not exists"
-GET=$(opsbro kv-store get $KEY)
-if [ $? == 0 ];then
-   echo "There should not be key $KEY"
-   echo $GET
-   exit 2
-fi
+    echo " - do not exists"
+    GET=$(opsbro kv-store get $KEY)
+    if [ $? == 0 ];then
+       echo "There should not be key $KEY"
+       echo $GET
+       exit 2
+    fi
 
-echo " - set"
-SET=$(opsbro kv-store put $KEY $VALUE)
-if [ $? != 0 ];then
-   echo "There should be ok in set $KEY $VALUE"
-   echo $SET
-   exit 2
-fi
+    echo " - set"
+    SET=$(opsbro kv-store put $KEY $VALUE)
+    if [ $? != 0 ];then
+       echo "There should be ok in set $KEY $VALUE"
+       echo $SET
+       exit 2
+    fi
 
-echo " - get"
-GET=$(opsbro kv-store get $KEY)
-if [ $? != 0 ];then
-   echo "There should be key $KEY"
-   echo $GET
-   exit 2
-fi
+    echo " - get"
+    GET=$(opsbro kv-store get $KEY)
+    if [ $? != 0 ];then
+       echo "There should be key $KEY"
+       echo $GET
+       exit 2
+    fi
 
-echo " - grep get"
-GET_GREP=$(echo $GET | grep $VALUE)
-if [ $? != 0 ];then
-   echo "There should be key $KEY $VALUE"
-   echo $GET_GREP
-   exit 2
-fi
+    echo " - grep get"
+    GET_GREP=$(echo $GET | grep $VALUE)
+    if [ $? != 0 ];then
+       echo "There should be key $KEY $VALUE"
+       echo $GET_GREP
+       exit 2
+    fi
 
-echo " - delete"
-DELETE=$(opsbro kv-store delete $KEY)
-if [ $? != 0 ];then
-   echo "There should be no more key $KEY"
-   echo $DELETE
-   exit 2
-fi
+    echo " - delete"
+    DELETE=$(opsbro kv-store delete $KEY)
+    if [ $? != 0 ];then
+       echo "There should be no more key $KEY"
+       echo $DELETE
+       exit 2
+    fi
 
-echo " - get after delete"
-GET=$(opsbro kv-store get $KEY)
-if [ $? == 0 ];then
-   echo "There should not be key $KEY after delete"
-   echo $GET
-   exit 2
-fi
+    echo " - get after delete"
+    GET=$(opsbro kv-store get $KEY)
+    if [ $? == 0 ];then
+       echo "There should not be key $KEY after delete"
+       echo $GET
+       exit 2
+    fi
+}
 
-echo "KV: get/put/delete is working"
+test_key_store
+
+echo "KV (sqlite): get/put/delete is working"
 
 
-
-
-echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  KV Store : install leveldb     ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
+##############################################################################
+print_header "KV Store: leveldb"
 
 # First we must have the sqlite backend
 INFO=$(opsbro agent info)
@@ -252,6 +269,12 @@ if [ "X$SKIP_LEVELDB" == "X" ];then
     fi
 
     echo "Leveldb install is OK"
+
+    test_key_store
+
+    echo "KV (leveldb): get/put/delete is working"
 fi
 
+printf "\n\n"
+printf "\n\n"
 echo "************************************ One linux installation is OK *********************************************"

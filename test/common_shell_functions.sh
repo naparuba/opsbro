@@ -1,5 +1,10 @@
 echo "Loading the common shell functions"
 
+function print_header {
+   printf "\n\n\n"
+   printf '\033[94m¯`·.¸.·´¯`·.¸.·´¯`·.¸.·´\033[0m  \033[93m%s  \033[94m¯`·.¸.·´¯`·.¸.·´¯`·.¸.·´\033[0m\n\n' "$1"
+}
+
 
 function show_my_system_ip {
     ip addr show | grep 'scope global' | awk '{print $2}'

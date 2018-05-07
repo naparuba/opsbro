@@ -391,35 +391,6 @@ mod_need = {
     },
 }
 
-# leveldb is replaced by sqlite, and leveldb will be used only if the user ask for it
-# if os.name != 'nt' and False:
-#    mod_need['leveldb'] = {
-#        'packages'    : {
-#            'debian'       : 'python-leveldb',
-#            'ubuntu'       : 'python-leveldb',
-#            'amazon-linux' : 'python-leveldb',
-#            'amazon-linux2': 'python-leveldb',
-#            'centos'       : 'python-leveldb',
-#            'redhat'       : 'python-leveldb',
-#            'oracle-linux' : 'python-leveldb',
-#            'fedora'       : 'python-leveldb',
-#            'opensuse'     : 'python-leveldb',
-#            'alpine'       : 'py-leveldb',
-#        },
-#        'pip_packages': {
-#            'debian'       : ['build-essential', 'python-dev'],
-#            'ubuntu'       : ['build-essential', 'python-dev'],
-#            # NOTE: amazon: no python-devel/python-setuptools, only versionsed packages are available
-#            'amazon-linux' : ['gcc', 'gcc-c++', 'python27-devel', 'libyaml-devel', 'python27-setuptools'],
-#            'amazon-linux2': ['gcc', 'gcc-c++', 'python2-devel', 'libyaml-devel', 'python2-setuptools'],
-#            'centos'       : ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
-#            'redhat'       : ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
-#            'oracle-linux' : ['gcc', 'gcc-c++', 'python-devel', 'libyaml-devel'],
-#            'fedora'       : [r'gcc-c++', 'libcurl', 'curl', 'libcurl-devel', 'python', 'gcc', 'python-devel', 'libyaml-devel', 'python-setuptools', 'redhat-rpm-config'],  # note: python-setuptools to be sure that setup() will succeed
-#            'alpine'       : ['gcc', 'linux-headers', 'musl-dev', 'libgcc', 'libgc++', 'g++', 'curl-dev', 'py-setuptools', 'python-dev'],
-#        },
-#    }
-
 # Some distro have another name for python-setuptools, so list here only exceptions
 setuptools_package_exceptions = {
     'alpine'       : 'py-setuptools',
