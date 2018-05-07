@@ -14,7 +14,7 @@ from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger, sprintf
 from opsbro.library import libstore
 from opsbro.unixclient import get_request_errors, get_not_critical_request_errors
-from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, put_opsbro_json, wait_for_agent_started, AnyAgent, post_opsbro_json
+from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, put_opsbro_json, wait_for_agent_started, post_opsbro_json
 from opsbro.cli_display import print_h1, print_h2
 from opsbro.threadmgr import threader
 
@@ -193,35 +193,34 @@ def do_zone_change(name=''):
     if not name:
         cprint("Need a zone name")
         return
-    with AnyAgent():
-        cprint("Switching to zone", name)
-        try:
-            r = put_opsbro_json('/agent/zone', name)
-        except get_request_errors() as exp:
-            logger.error(exp)
-            return
-        print_info_title('Result')
-        print(r)
+    
+    cprint("Switching to zone", name)
+    try:
+        r = put_opsbro_json('/agent/zone', name)
+    except get_request_errors() as exp:
+        logger.error(exp)
+        return
+    print_info_title('Result')
+    print(r)
 
 
 def do_zone_list():
-    with AnyAgent():
-        print_h1('Known zones')
-        try:
-            zones = get_opsbro_json('/agent/zones')
-        except get_request_errors() as exp:
-            logger.error(exp)
-            return
-        for (zname, zone) in zones.iteritems():
-            cprint(' * ', end='')
-            cprint(zname, color='magenta')
-            sub_zones = zone.get('sub-zones', [])
-            if not sub_zones:
-                continue
-            cprint('  Sub zones:')
-            for sub_zname in sub_zones:
-                cprint('    - ', end='')
-                cprint(sub_zname, color='cyan')
+    print_h1('Known zones')
+    try:
+        zones = get_opsbro_json('/agent/zones')
+    except get_request_errors() as exp:
+        logger.error(exp)
+        return
+    for (zname, zone) in zones.iteritems():
+        cprint(' * ', end='')
+        cprint(zname, color='magenta')
+        sub_zones = zone.get('sub-zones', [])
+        if not sub_zones:
+            continue
+        cprint('  Sub zones:')
+        for sub_zname in sub_zones:
+            cprint('    - ', end='')
+            cprint(sub_zname, color='cyan')
 
 
 def __print_detection_spinner(timeout):
@@ -258,7 +257,7 @@ def do_detect_nodes(auto_join, timeout=5):
     
     # Send UDP broadcast packets from the daemon
     try:
-        network_nodes = get_opsbro_json('/agent/detect?timeout=%d' % timeout, timeout=timeout+10)
+        network_nodes = get_opsbro_json('/agent/detect?timeout=%d' % timeout, timeout=timeout + 10)
     except get_request_errors() as exp:
         logger.error('Cannot join opsbro agent to detect network nodes: %s' % exp)
         sys.exit(1)
@@ -450,18 +449,20 @@ exports = {
     },
     
     do_zone_change     : {
-        'keywords'   : ['gossip', 'zone', 'change'],
-        'args'       : [
+        'keywords'             : ['gossip', 'zone', 'change'],
+        'args'                 : [
             {'name': 'name', 'default': '', 'description': 'Change to the zone'},
         ],
-        'description': 'Change the zone of the node'
+        'allow_temporary_agent': {'enabled': True, },
+        'description'          : 'Change the zone of the node'
     },
     
     do_zone_list       : {
-        'keywords'   : ['gossip', 'zone', 'list'],
-        'args'       : [
+        'keywords'             : ['gossip', 'zone', 'list'],
+        'args'                 : [
         ],
-        'description': 'List all known zones of the node'
+        'allow_temporary_agent': {'enabled': True, },
+        'description'          : 'List all known zones of the node'
     },
     
     do_detect_nodes    : {

@@ -109,6 +109,15 @@ def get_opsbro_agent_state():
     return agent_state
 
 
+class NoContextClass(object):
+    def __enter__(self):
+        pass
+    
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+
 class AnyAgent(object):
     def __init__(self):
         self.did_start_a_tmp_agent = False
@@ -242,10 +251,11 @@ class Dummy():
 
 
 class CLIEntry(object):
-    def __init__(self, f, args, description, topic):
+    def __init__(self, f, args, description, allow_temporary_agent, topic):
         self.f = f
         self.args = args
         self.description = description
+        self.allow_temporary_agent = allow_temporary_agent
         self.topic = topic
 
 
@@ -378,7 +388,8 @@ class CLICommander(object):
         m_keywords = raw_entry.get('keywords', [])
         args = raw_entry.get('args', [])
         description = raw_entry.get('description', '')
-        e = CLIEntry(f, args, description, main_topic)
+        allow_temporary_agent = raw_entry.get('allow_temporary_agent', None)
+        e = CLIEntry(f, args, description, allow_temporary_agent, main_topic)
         # Finally save it
         self.insert_keywords_entry(m_keywords, e)
     
@@ -456,6 +467,16 @@ class CLICommander(object):
         return []
     
     
+    # Look at entry like allow_temporary_agent and give a matching context
+    def __get_execution_context(self, entry):
+        temp_agent = entry.allow_temporary_agent
+        if temp_agent is None:
+            return NoContextClass()
+        if temp_agent.get('enabled', False):
+            return AnyAgent()
+        return NoContextClass()
+    
+    
     # Execute a function based on the command line
     def one_loop(self, command_args):
         logger.debug("ARGS: %s" % command_args)
@@ -504,13 +525,18 @@ class CLICommander(object):
         cmd_opts, cmd_args = command_parser.parse_args(command_args)
         f = entry.f
         logger.debug("CALLING " + str(f) + " WITH " + str(cmd_args) + " and " + str(cmd_opts))
-        try:
-            f(*cmd_args, **cmd_opts.__dict__)
-        except TypeError as exp:
-            logger.error('Bad call: missing or too much arguments: %s (%s)' % (exp, str(traceback.print_exc())))
-            sys.exit(2)
-        except Exception as exp:
-            logger.error('The call did fail: %s' % (str(traceback.print_exc())))
+        
+        
+        # Look if this call need a specific execution context, like a temporary agent
+        execution_ctx = self.__get_execution_context(entry)
+        with execution_ctx:
+            try:
+                f(*cmd_args, **cmd_opts.__dict__)
+            except TypeError as exp:
+                logger.error('Bad call: missing or too much arguments: %s (%s)' % (exp, str(traceback.print_exc())))
+                sys.exit(2)
+            except Exception as exp:
+                logger.error('The call did fail: %s' % (str(traceback.print_exc())))
     
     
     def print_completion(self, args):

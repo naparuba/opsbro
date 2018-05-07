@@ -307,7 +307,7 @@ elif 'bsd' in sys.platform or 'dragonfly' in sys.platform:
     ]
 else:
     raise Exception("Unsupported platform, sorry")
-    data_files = []
+
 
 # Beware to install scripts in the bin dir
 # compute scripts

@@ -7,7 +7,7 @@ import sys
 import time
 import base64
 
-from opsbro.cli import post_opsbro_json, AnyAgent
+from opsbro.cli import post_opsbro_json
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, sprintf, logger
 from opsbro.cli_display import print_h1
@@ -125,33 +125,31 @@ def do_dashboards_show(dashboard_name, occurences):
     stdout_utf8 = codecs.getwriter("utf-8")(sys.stdout)
     sys.stdout = stdout_utf8
     
-    # We don't care if we are in the installed agent or a temporary spawn one
-    with AnyAgent():
-        from opsbro.dashboardmanager import get_dashboarder
-        dashboarder = get_dashboarder()
-        
-        dashboard = dashboarder.dashboards.get(dashboard_name, None)
-        if dashboard is None:
-            logger.error('There is no such dashboard %s. Please use the dashboards list command to view all available dashboards' % dashboard_name)
-            sys.exit(2)
-        
-        ui = _get_ui_from_dashboard(dashboard)
-        
-        if ui is None:
-            sys.exit(1)
-        
-        i = 0
-        while True:
-            try:
-                ui.display(dashboard['title'])
-                time.sleep(10)
-            except KeyboardInterrupt:
-                # Clean the screen before exiting
-                cprint('\033c')
-                return
-            if occurences != 0 and i > occurences:
-                return
-            i += 1
+    from opsbro.dashboardmanager import get_dashboarder
+    dashboarder = get_dashboarder()
+    
+    dashboard = dashboarder.dashboards.get(dashboard_name, None)
+    if dashboard is None:
+        logger.error('There is no such dashboard %s. Please use the dashboards list command to view all available dashboards' % dashboard_name)
+        sys.exit(2)
+    
+    ui = _get_ui_from_dashboard(dashboard)
+    
+    if ui is None:
+        sys.exit(1)
+    
+    i = 0
+    while True:
+        try:
+            ui.display(dashboard['title'])
+            time.sleep(10)
+        except KeyboardInterrupt:
+            # Clean the screen before exiting
+            cprint('\033c')
+            return
+        if occurences != 0 and i > occurences:
+            return
+        i += 1
 
 
 def do_dashboards_list():
@@ -190,12 +188,13 @@ def do_dashboards_list():
 exports = {
     
     do_dashboards_show: {
-        'keywords'   : ['dashboards', 'show'],
-        'args'       : [
+        'keywords'             : ['dashboards', 'show'],
+        'args'                 : [
             {'name': 'dashboard_name', 'description': 'Dashboard name'},
             {'name': '--occurences', 'type': 'int', 'default': 0, 'description': 'How much refresh for the dashboards. By default 0 (means infinite)'},
         ],
-        'description': 'Show a specific dashboard'
+        'allow_temporary_agent': {'enabled': True, },
+        'description'          : 'Show a specific dashboard'
     },
     
     do_dashboards_list: {
