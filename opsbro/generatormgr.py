@@ -32,7 +32,7 @@ class GeneratorMgr(object):
         generator['name'] = generator['id'] = gname
         if 'notes' not in generator:
             generator['notes'] = ''
-
+        
         generator['generate_if'] = generator.get('generate_if', 'False')
         
         for prop in ['path', 'template']:

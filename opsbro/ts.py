@@ -60,9 +60,9 @@ class TSBackend(object):
             self.db.Put(key, '')
             logger.debug('TS propagating a new key', key)
             # now propagate the key to the other ts nodes
-            #TODO: get back /ts/new broadcast messages, but beware of overload the
+            # TODO: get back /ts/new broadcast messages, but beware of overload the
             # gossip links with too much messages
-            #gossiper.stack_new_ts_broadcast(key)
+            # gossiper.stack_new_ts_broadcast(key)
         return False
     
     

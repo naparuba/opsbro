@@ -179,8 +179,8 @@ class InterfaceHostingDriver(object):
     # If we are not in a cloud or something, our public == best local address
     def get_public_address(self):
         return self.get_local_address()
-
-
+    
+    
     def get_unique_uuid(self):
         product_uuid_p = '/sys/class/dmi/id/product_uuid'
         # Be sure not to be in a docket container, if so, will be host dmi
@@ -190,7 +190,7 @@ class InterfaceHostingDriver(object):
                 buf = f.read().strip()
             self.logger.info('[SERVER-UUID] using the DMI (bios) uuid as server unique UUID: %s' % buf.lower())
             return buf
-    
+        
         # windows: we ask to WMI for the baord serial number
         if os.name == 'nt':
             c = windowser.get_wmi()
@@ -205,7 +205,7 @@ class InterfaceHostingDriver(object):
                     return buf
                 except AttributeError as exp:
                     self.logger.error('[SERVER-UUID] Cannot get the unique bios/board serial number: %s' % exp)
-    
+        
         # Cannot find: we will have to guess it
         return None
 

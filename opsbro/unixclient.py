@@ -101,7 +101,7 @@ def get_local(u, local_socket, params={}, method='GET', timeout=10):
 
 
 def get_not_critical_request_errors():
-    return (socket.timeout, )
+    return (socket.timeout,)
 
 
 def get_request_errors():

@@ -38,10 +38,6 @@ if is_tty():
         # Outch can't import a cprint, do a simple print
         def cprint(s, color='', on_color='', end='\n'):
             print(s, end=end)
-            #if end == '':
-            #    print s,
-            #else:
-            #    print s
         
         
         # Also overwrite sprintf

@@ -15,22 +15,22 @@ class ConfigurationManager(object):
     # The parameter for the main cluster class is list here, and we will give back to it what we did read in the
     # local.yaml file (one set ones)
     cluster_parameters = {
-        'display_name'                  : {'type': 'string', 'mapto': 'display_name'},
-        'port'                          : {'type': 'int', 'mapto': 'port'},
-        'data'                          : {'type': 'path', 'mapto': 'data_dir'},
-        'libexec'                       : {'type': 'path', 'mapto': 'libexec_dir'},
-        'log'                           : {'type': 'path', 'mapto': 'log_dir'},
-        'lock'                          : {'type': 'path', 'mapto': 'lock_path'},
-        'socket'                        : {'type': 'path', 'mapto': 'socket_path'},
-        'log_level'                     : {'type': 'string', 'mapto': 'log_level'},
-        'bootstrap'                     : {'type': 'bool', 'mapto': 'bootstrap'},
-        'seeds'                         : {'type': 'list', 'mapto': 'seeds'},
-        'groups'                        : {'type': 'list', 'mapto': 'groups'},
-        'encryption_key'                : {'type': 'string', 'mapto': 'encryption_key'},
-        'master_key_priv'               : {'type': 'string', 'mapto': 'master_key_priv'},
-        'master_key_pub'                : {'type': 'string', 'mapto': 'master_key_pub'},
-        'node-zone'                     : {'type': 'string', 'mapto': 'zone'},
-        'proxy-node'                    : {'type': 'bool', 'mapto': 'is_proxy'},
+        'display_name'                          : {'type': 'string', 'mapto': 'display_name'},
+        'port'                                  : {'type': 'int', 'mapto': 'port'},
+        'data'                                  : {'type': 'path', 'mapto': 'data_dir'},
+        'libexec'                               : {'type': 'path', 'mapto': 'libexec_dir'},
+        'log'                                   : {'type': 'path', 'mapto': 'log_dir'},
+        'lock'                                  : {'type': 'path', 'mapto': 'lock_path'},
+        'socket'                                : {'type': 'path', 'mapto': 'socket_path'},
+        'log_level'                             : {'type': 'string', 'mapto': 'log_level'},
+        'bootstrap'                             : {'type': 'bool', 'mapto': 'bootstrap'},
+        'seeds'                                 : {'type': 'list', 'mapto': 'seeds'},
+        'groups'                                : {'type': 'list', 'mapto': 'groups'},
+        'encryption_key'                        : {'type': 'string', 'mapto': 'encryption_key'},
+        'master_key_priv'                       : {'type': 'string', 'mapto': 'master_key_priv'},
+        'master_key_pub'                        : {'type': 'string', 'mapto': 'master_key_pub'},
+        'node-zone'                             : {'type': 'string', 'mapto': 'zone'},
+        'proxy-node'                            : {'type': 'bool', 'mapto': 'is_proxy'},
         'service_discovery_topic_enabled'       : {'type': 'bool', 'mapto': 'service_discovery_topic_enabled'},
         'automatic_detection_topic_enabled'     : {'type': 'bool', 'mapto': 'automatic_detection_topic_enabled'},
         'monitoring_topic_enabled'              : {'type': 'bool', 'mapto': 'monitoring_topic_enabled'},
@@ -253,7 +253,6 @@ class ConfigurationManager(object):
             hname = os.path.splitext(os.path.basename(fname))[0]
             compliancemgr = self.get_compliancemgr()
             compliancemgr.import_compliance(compliance, fp, hname, mod_time=mod_time, pack_name=pack_name, pack_level=pack_level)
-    
     
     
     # Compliance object

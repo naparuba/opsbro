@@ -613,7 +613,7 @@ class Gossip(object):
             logger.warning('SUSPECT: SOMEONE THINK I AM SUSPECT, BUT I AM %s' % my_state)
             # Is we are leaving, let the other know we are not a suspect, but a leaving node
             self.increase_incarnation_and_broadcast()
-
+            
             return
         
         logger.info('SUSPECTING: I suspect node %s' % node['name'])
@@ -1113,10 +1113,10 @@ class Gossip(object):
             j_ret = json.loads(uncrypted_ret)
             logger.info('PING (relay) got a return from %s' % ntgt['name'], j_ret)
             # An aswer? great it is alive! Let it know our _from node
-            ack = {'type': 'ack', 'seqno': 0, 'node':j_ret['node']}
+            ack = {'type': 'ack', 'seqno': 0, 'node': j_ret['node']}
             ret_msg = json.dumps(ack)
             enc_ret_msg = encrypter.encrypt(ret_msg)
-            #sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
+            # sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
             sock.sendto(enc_ret_msg, addr)
             sock.close()
         except (socket.timeout, socket.gaierror) as exp:
@@ -1167,7 +1167,7 @@ class Gossip(object):
         # so we must compute the time where we should finish
         start = time.time()
         end = start + timeout
-
+        
         while True:
             now = time.time()
             remaining_time = end - now
@@ -1267,6 +1267,7 @@ class Gossip(object):
         addr = dest['addr']
         port = dest['port']
         total_size = 0
+        sock = None
         # and go for it!
         try:
             encrypter = libstore.get_encrypter()
@@ -1280,7 +1281,8 @@ class Gossip(object):
         except (socket.timeout, socket.gaierror) as exp:
             logger.error("ERROR: cannot sent the UDP message of len %d to %s: %s" % (len(message), dest['uuid'], exp))
         try:
-            sock.close()
+            if sock is not None:
+                sock.close()
         except Exception:
             pass
     

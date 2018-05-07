@@ -496,7 +496,7 @@ def do_the_job(LOOP):
         n = d['node']
         max_vote = max(max_vote, n.nb_vote)
         if n.state == 'leader':
-            if leader != None:
+            if leader is not None:
                 print("WE GOT 2 LEADER, WTF DID YOU DID JEAN?????")
                 sys.exit("JEAN HOW CAN YOU BREAK SUCH AN ALGO?")
             

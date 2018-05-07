@@ -230,7 +230,6 @@ def print_2tab(e, capitalize=True, col_size=DEFAULT_INFO_COL_SIZE):
         # If it's a dict, we got additionnal data like color or type
         if isinstance(v, dict):
             color = v.get('color', 'green')
-            _type = v.get('type', 'std')
             value = v.get('value')
             cprint(value, color=color)
         else:
