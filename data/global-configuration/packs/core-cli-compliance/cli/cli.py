@@ -12,8 +12,8 @@ import sys
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger
 from opsbro.unixclient import get_request_errors
-from opsbro.cli import get_opsbro_local
-from opsbro.cli_display import print_h1, print_h2
+from opsbro.cli import get_opsbro_local, put_opsbro_json
+from opsbro.cli_display import print_h1, print_h2, get_terminal_size
 from opsbro.compliancemgr import COMPLIANCE_LOG_COLORS, COMPLIANCE_STATE_COLORS
 
 
@@ -65,7 +65,7 @@ def __print_compliance_entry(compliance):
         __print_rule_entry(rule)
 
 
-def do_compliance_state():
+def do_compliance_state(compliance_name=''):
     uri = '/compliance/state'
     try:
         (code, r) = get_opsbro_local(uri)
@@ -81,6 +81,8 @@ def do_compliance_state():
     print_h1('Compliances')
     packs = {}
     for (cname, compliance) in compliances.iteritems():
+        if compliance_name and compliance['name'] != compliance_name:
+            continue
         pack_name = compliance['pack_name']
         if pack_name not in packs:
             packs[pack_name] = {}
@@ -140,7 +142,7 @@ def do_compliance_history():
         cprint("\n")
 
 
-def do_compliance_wait_compliant(compliance_name, timeout=30):
+def do_compliance_wait_compliant(compliance_name, timeout=30, exit_if_ok=True):
     import itertools
     spinners = itertools.cycle(CHARACTERS.spinners)
     
@@ -165,17 +167,35 @@ def do_compliance_wait_compliant(compliance_name, timeout=30):
         if not compliance:
             logger.error("Cannot find the compliance '%s'" % compliance_name)
             sys.exit(2)
+        logger.debug('Current compliance data', compliance)
+        current_step = ''
         current_state = compliance['state']
+        if compliance['is_running']:
+            current_state = 'RUNNING'
+            current_step = compliance['current_step']
+        # Clean line
+        try:
+            terminal_height, terminal_width = get_terminal_size()
+        except:  # beware, maybe we don't have a tty
+            terminal_width = 100
+        cprint('\r' + ' ' * terminal_width, end='')
         cprint('\r %s ' % spinners.next(), color='blue', end='')
         cprint('%s' % compliance_name, color='magenta', end='')
         cprint(' is ', end='')
         cprint('%15s ' % current_state, color=COMPLIANCE_STATE_COLORS.get(current_state, 'cyan'), end='')
         cprint(' (%d/%d)' % (i, timeout), end='')
+        if current_step:
+            cprint(' [ in step ', end='')
+            cprint(current_step, color='magenta', end='')
+            cprint(' ]', end='')
         # As we did not \n, we must flush stdout to print it
         sys.stdout.flush()
         if current_state == 'COMPLIANT':
             cprint("\nThe compliance rule %s is compliant" % compliance_name)
-            sys.exit(0)
+            if exit_if_ok:
+                sys.exit(0)
+            else:
+                return
         logger.debug("Current state %s" % current_state)
         
         time.sleep(1)
@@ -183,11 +203,27 @@ def do_compliance_wait_compliant(compliance_name, timeout=30):
     sys.exit(2)
 
 
+def do_compliance_launch(compliance_name, timeout=30):
+    cprint("Launching compliance %s" % compliance_name)
+    try:
+        founded = put_opsbro_json('/compliance/launch', compliance_name)
+    except get_request_errors() as exp:
+        logger.error(exp)
+        return
+    if not founded:
+        cprint('ERROR: cannot find the compliance %s' % compliance_name, color='red')
+        sys.exit(2)
+    do_compliance_wait_compliant(compliance_name, timeout=timeout, exit_if_ok=False)
+    do_compliance_state(compliance_name=compliance_name)
+
+
 exports = {
     do_compliance_state         : {
         'keywords'             : ['compliance', 'state'],
         'description'          : 'Print the current state of the node compliance',
-        'args'                 : [],
+        'args'                 : [
+            {'name': 'compliance-name', 'description': 'If set, only show the compliance with this rule. If not, show all compliance'},
+        ],
         'allow_temporary_agent': {'enabled': True, },
         
     },
@@ -207,5 +243,15 @@ exports = {
         ],
         'allow_temporary_agent': {'enabled': True, },
         'description'          : 'Wait until the compliance rule is in COMPLIANT state'
+    },
+    
+    do_compliance_launch        : {
+        'keywords'             : ['compliance', 'launch'],
+        'args'                 : [
+            {'name': 'compliance-name', 'description': 'Name of the compliance rule to force to be launched and then for compliance state'},
+            {'name': '--timeout', 'type': 'int', 'default': 30, 'description': 'Timeout to let the initialization'},
+        ],
+        'allow_temporary_agent': {'enabled': True, },
+        'description'          : 'Force a rule to be launched and wait until the compliance rule is in COMPLIANT state'
     },
 }

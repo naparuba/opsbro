@@ -468,7 +468,8 @@ class CLICommander(object):
     
     
     # Look at entry like allow_temporary_agent and give a matching context
-    def __get_execution_context(self, entry):
+    @staticmethod
+    def __get_execution_context(entry):
         temp_agent = entry.allow_temporary_agent
         if temp_agent is None:
             return NoContextClass()
@@ -526,7 +527,6 @@ class CLICommander(object):
         f = entry.f
         logger.debug("CALLING " + str(f) + " WITH " + str(cmd_args) + " and " + str(cmd_opts))
         
-        
         # Look if this call need a specific execution context, like a temporary agent
         execution_ctx = self.__get_execution_context(entry)
         with execution_ctx:
@@ -535,7 +535,7 @@ class CLICommander(object):
             except TypeError as exp:
                 logger.error('Bad call: missing or too much arguments: %s (%s)' % (exp, str(traceback.print_exc())))
                 sys.exit(2)
-            except Exception as exp:
+            except Exception:
                 logger.error('The call did fail: %s' % (str(traceback.print_exc())))
     
     
@@ -600,7 +600,8 @@ class CLICommander(object):
         return
     
     
-    def __chunker(self, seq, size):
+    @staticmethod
+    def __chunker(seq, size):
         return [seq[pos:pos + size] for pos in xrange(0, len(seq), size)]
     
     
@@ -677,7 +678,8 @@ class CLICommander(object):
                     cprint(chunk)
     
     
-    def __get_terminal_size(self):
+    @staticmethod
+    def __get_terminal_size():
         try:
             height, width = get_terminal_size()
         except:

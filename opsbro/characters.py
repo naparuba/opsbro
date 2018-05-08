@@ -4,7 +4,6 @@ import os
 
 class Characters(object):
     # Box drawing
-    # NOTE: if you have more heavy chars, I'm interested, because all I did found is ┏ but the vertical sign is not continue (space in putty at least)
     vbar = u'│'
     hbar = u'─'
     hbar_light = u'─'

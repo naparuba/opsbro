@@ -1,6 +1,7 @@
 compliance:
-   name: Install Leveldb if in group kv-store-backend:leveldb
-   verify_if:   "is_in_group('kv-store-backend:leveldb')"
+#   name: Install Leveldb if in group kv-store-backend:leveldb
+   name: Install Leveldb
+#   verify_if:   "is_in_group('kv-store-backend:leveldb')"
    mode: enforcing
    interval: 1s
    note: This installer will install the leveldb librairy
