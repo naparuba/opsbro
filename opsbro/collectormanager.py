@@ -23,8 +23,8 @@ from .util import make_dir
 logger = LoggerFactory.create_logger('collector')
 
 # Common rule for printing the COLLECTORS for the outside world
-COLLECTORS_STATE_COLORS = {'OK': 'green', 'ERROR': 'red', 'NOT-ELIGIBLE': 'grey', 'RUNNING': 'grey'}
-COLLECTORS_STATES = ['OK', 'NOT-ELIGIBLE', 'RUNNING', 'ERROR']
+COLLECTORS_STATE_COLORS = {'OK': 'green', 'ERROR': 'red', 'NOT-ELIGIBLE': 'grey', 'RUNNING': 'grey', 'PENDING':'grey'}
+COLLECTORS_STATES = ['PENDING', 'OK', 'NOT-ELIGIBLE', 'RUNNING', 'ERROR']
 
 
 def get_collectors(self):

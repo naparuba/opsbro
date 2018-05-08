@@ -12,7 +12,7 @@ class SqliteDBBackend(object):
     def __init__(self, path):
         self.path = path + '.sqlite'
         from .misc.sqlitedict import SqliteDict
-        self.db = SqliteDict(self.path, autocommit=True)
+        self.db = SqliteDict(self.path, autocommit=True, journal_mode='OFF')
     
     
     def Get(self, key, fill_cache=False):

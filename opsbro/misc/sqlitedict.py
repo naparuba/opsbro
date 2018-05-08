@@ -408,31 +408,35 @@ class SqliteMultithread(Thread):
                 try:
                     cursor.execute(req, arg)
                 except Exception as err:
-                    self.exception = (e_type, e_value, e_tb) = sys.exc_info()
-                    inner_stack = traceback.extract_stack()
-
-                    # An exception occurred in our thread, but we may not
-                    # immediately able to throw it in our calling thread, if it has
-                    # no return `res` queue: log as level ERROR both the inner and
-                    # outer exception immediately.
-                    #
-                    # Any iteration of res.get() or any next call will detect the
-                    # inner exception and re-raise it in the calling Thread; though
-                    # it may be confusing to see an exception for an unrelated
-                    # statement, an ERROR log statement from the 'sqlitedict.*'
-                    # namespace contains the original outer stack location.
-                    self.log.error('Inner exception:')
-                    for item in traceback.format_list(inner_stack):
-                        self.log.error(item)
-                    self.log.error('')  # deliniate traceback & exception w/blank line
-                    for item in traceback.format_exception_only(e_type, e_value):
-                        self.log.error(item)
-
-                    self.log.error('')  # exception & outer stack w/blank line
-                    self.log.error('Outer stack:')
-                    for item in traceback.format_list(outer_stack):
-                        self.log.error(item)
-                    self.log.error('Exception will be re-raised at next call.')
+                    # Retry once
+                    try:
+                        cursor.execute(req, arg)
+                    except Exception as err:
+                        self.exception = (e_type, e_value, e_tb) = sys.exc_info()
+                        inner_stack = traceback.extract_stack()
+    
+                        # An exception occurred in our thread, but we may not
+                        # immediately able to throw it in our calling thread, if it has
+                        # no return `res` queue: log as level ERROR both the inner and
+                        # outer exception immediately.
+                        #
+                        # Any iteration of res.get() or any next call will detect the
+                        # inner exception and re-raise it in the calling Thread; though
+                        # it may be confusing to see an exception for an unrelated
+                        # statement, an ERROR log statement from the 'sqlitedict.*'
+                        # namespace contains the original outer stack location.
+                        self.log.error('Inner exception:')
+                        for item in traceback.format_list(inner_stack):
+                            self.log.error(item)
+                        self.log.error('')  # deliniate traceback & exception w/blank line
+                        for item in traceback.format_exception_only(e_type, e_value):
+                            self.log.error(item)
+    
+                        self.log.error('')  # exception & outer stack w/blank line
+                        self.log.error('Outer stack:')
+                        for item in traceback.format_list(outer_stack):
+                            self.log.error(item)
+                        self.log.error('Exception will be re-raised at next call.')
 
                 if res:
                     for rec in cursor:
