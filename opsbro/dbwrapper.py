@@ -10,9 +10,12 @@ class SqliteDBBackend(object):
     
     
     def __init__(self, path):
+        self.did_error = False
+        self.last_error = ''
+        
         self.path = path + '.sqlite'
         from .misc.sqlitedict import SqliteDict
-        self.db = SqliteDict(self.path, autocommit=True, journal_mode='OFF')
+        self.db = SqliteDict(self.path, autocommit=True)#, journal_mode='OFF')
     
     
     def Get(self, key, fill_cache=False):
@@ -20,8 +23,13 @@ class SqliteDBBackend(object):
     
     
     def Put(self, key, value):
-        self.db[key] = value
-    
+        try:
+            self.db[key] = value
+        except Exception as exp:
+            err = 'The SQLite backend did raise an error: %s. On old system like centos 7.0/7.1, sqlite have stability issues, and you should switch to leveldb instead.' % exp
+            self.last_error = err
+            self.did_error = True
+            
     
     def Delete(self, key):
         try:
@@ -35,7 +43,7 @@ class SqliteDBBackend(object):
     
     
     def GetStats(self):
-        return {'size': self.__get_size(), 'raw': 'No stats from sqlitedb'}
+        return {'size': self.__get_size(), 'raw': 'No stats from sqlitedb', 'error':self.last_error}
 
 
 class LevelDBBackend(object):
@@ -72,7 +80,7 @@ class LevelDBBackend(object):
     
     
     def GetStats(self):
-        return {'size': self.__get_size(), 'raw': self.db.GetStats()}
+        return {'size': self.__get_size(), 'raw': self.db.GetStats(), 'error':''}
 
 
 class DBWrapper(object):

@@ -317,6 +317,11 @@ def do_info(show_logs):
         cprint(kv_store_backend['name'], color='green')
         cprint('    - size: '.ljust(DEFAULT_INFO_COL_SIZE), end='', color='blue')
         cprint('%.2fMB' % (kv_store['stats']['size'] / 1024.0 / 1024.0), color='green')
+        
+        kv_store_error = kv_store['stats']['error']
+        if kv_store_error != '':
+            cprint('    - error: '.ljust(DEFAULT_INFO_COL_SIZE), color='blue', end='')
+            cprint(kv_store_error, color='red')
     
     cprint(' - Version: '.ljust(DEFAULT_INFO_COL_SIZE), end='', color='blue')
     cprint(version, color='green')
