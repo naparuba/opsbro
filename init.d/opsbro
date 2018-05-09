@@ -232,21 +232,21 @@ do_stop() {
     sleep 1
     out=$(opsbro agent info)
     rc=$?
-    if [ $rc == 0 ];then
+    if [ $rc != 0 ];then
        echo "OK"
        return 0
     fi
     sleep 5
     out=$(opsbro agent info)
     rc=$?
-    if [ $rc == 0 ];then
+    if [ $rc != 0 ];then
        echo "OK"
        return 0
     fi
     sleep 30
     out=$(opsbro agent info)
     rc=$?
-    if [ $rc == 0 ];then
+    if [ $rc != 0 ];then
        echo "OK"
        return 0
     fi
