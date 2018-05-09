@@ -2,5 +2,5 @@ detector:
     add_groups:
         - xen
     apply_if: "{{collector.hypervisor.hypervisor}} == 'XenVMMXenVMM'"
-    interval: "10s"
+    interval: "3600s"
 

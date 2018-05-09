@@ -1,6 +1,7 @@
 detector:
     add_groups:
         - virtualbox
-    apply_if: "{{collector.hypervisor.hypervisor}} == 'VBoxVBoxVBox'"
-    interval: "10s"
+    # Note that under linux, VirtualBox is shown as KVM hypervisor, but is hidding itself into the bios data
+    apply_if: "{{collector.hypervisor.hypervisor}} == 'VBoxVBoxVBox' or {{collector.dmidecode.product_name|UNKNOWN}} == 'VirtualBox'"
+    interval: "3600s"
 
