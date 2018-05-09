@@ -308,7 +308,6 @@ elif 'bsd' in sys.platform or 'dragonfly' in sys.platform:
 else:
     raise Exception("Unsupported platform, sorry")
 
-
 # Beware to install scripts in the bin dir
 # compute scripts
 scripts = [s for s in glob('bin/opsbro*') if not s.endswith('.py')]
@@ -400,8 +399,12 @@ setuptools_package_exceptions = {
 
 # Some distro have specific dependencies
 distro_prerequites = {
-    'alpine': ['musl-dev'],  # monotonic clock
-    'centos': ['libgomp'],  # monotonic clock
+    'alpine': [{'package_name': 'musl-dev'}],  # monotonic clock
+    'centos': [
+        {'package_name': 'libgomp'},  # monotonic clock
+        {'package_name': 'epel-release', 'only_for': ['7.0', '7.1']},  # need for leveldb
+        {'package_name': 'leveldb', 'only_for': ['7.0', '7.1']},  # sqlite on old centos is broken
+    ],
 }
 
 # If we are uploading to pypi, we just don't want to install/update packages here
@@ -484,7 +487,17 @@ if allow_black_magic:
     distro_specific_packages = distro_prerequites.get(system_distro, [])
     if len(distro_specific_packages) >= 1:
         cprint(' * This OS have specific prerequites:')
-    for package_name in distro_specific_packages:
+    for package in distro_specific_packages:
+        package_name = package.get('package_name')
+        only_for = package.get('only_for', [])
+        # Maybe this package is only for specific versions, like old centos 7 versions
+        if len(only_for) != 0:
+            match_version = False
+            for only_for_version in only_for:
+                if system_distroversion.startswith(only_for_version):
+                    match_version = True
+            if not match_version:
+                continue
         cprint('   - Prerequite for ', color='grey', end='')
         cprint(system_distro, color='magenta', end='')
         cprint(' : ', color='grey', end='')

@@ -10,6 +10,9 @@ ADD        . /root/opsbro-oss
 
 WORKDIR    /root/opsbro-oss
 
+# centos7.0 and 7.1 have a unstable sqlite lib
+ENV        SKIP_SQLITE=TRUE
+
 # TCL: very little
 ENV        TEST_PACKAGE_NAME=tcl
 ENTRYPOINT        test/test_one_linux_installation.sh  && test/assert_group.sh "centos"

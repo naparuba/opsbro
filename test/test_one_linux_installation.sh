@@ -165,9 +165,8 @@ echo "PACKAGE: the runtime package detection is working well"
 
 #echo "Pack: openports counters are OK"
 
+print_header "KV Store (sqlite/leveldb)"
 
-##############################################################################
-print_header "KV Store (sqlite)"
 
 function test_key_store {
     KEY="SUPERKEY/33"
@@ -222,23 +221,30 @@ function test_key_store {
     fi
 }
 
-test_key_store
-
-echo "KV (sqlite): get/put/delete is working"
-
-
 ##############################################################################
-print_header "KV Store: leveldb"
+# Some distro do not have access to sqlite, as it is unstable (centos 7.0 and 7.1)
+if [ "X$SKIP_SQLITE" == "X" ];then
 
-# First we must have the sqlite backend
-INFO=$(opsbro agent info)
+    test_key_store
 
-echo "$INFO" | grep sqlite
-if [ $? != 0 ];then
-   echo "ERROR: The kv backend should be sqlite"
-   echo "$INFO"
-   exit 2
-fi
+    echo "KV (sqlite): get/put/delete is working"
+
+
+    ##############################################################################
+    print_header "KV Store: leveldb"
+
+    # First we must have the sqlite backend
+    INFO=$(opsbro agent info)
+
+    echo "$INFO" | grep sqlite
+    if [ $? != 0 ];then
+       echo "ERROR: The kv backend should be sqlite"
+       echo "$INFO"
+       exit 2
+    fi
+
+fi  # end of SQLITE
+
 
 # Some distro do not have access to leveldb anymore...
 if [ "X$SKIP_LEVELDB" == "X" ];then
@@ -271,7 +277,7 @@ if [ "X$SKIP_LEVELDB" == "X" ];then
     test_key_store
 
     echo "KV (leveldb): get/put/delete is working"
-fi
+fi  # end of LEVELDB
 
 printf "\n\n"
 printf "\n\n"
