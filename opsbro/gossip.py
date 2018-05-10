@@ -35,6 +35,12 @@ KGOSSIP = 10
 logger = LoggerFactory.create_logger('gossip')
 
 
+class NODE_STATES(object):
+    ALIVE = 'alive'
+    DEAD = 'dead'
+    LEAVE = 'leave'
+
+
 # Main class for a Gossip cluster
 class Gossip(object):
     def __init__(self):
@@ -340,7 +346,7 @@ class Gossip(object):
         nodes = []
         with self.nodes_lock:
             for (uuid, node) in self.nodes.iteritems():
-                if node['state'] in ['dead', 'leave']:
+                if node['state'] in [NODE_STATES.DEAD, NODE_STATES.LEAVE]:
                     continue
                 groups = node.get('groups', [])
                 if group in groups:
@@ -430,9 +436,9 @@ class Gossip(object):
         node = self.nodes[self.uuid]
         node['incarnation'] = self.incarnation
         my_state = node['state']
-        if my_state == 'alive':
+        if my_state == NODE_STATES.ALIVE:
             self.stack_alive_broadcast(node)
-        elif my_state == 'leave':
+        elif my_state == NODE_STATES.LEAVE:
             self.stack_leave_broadcast(node)
         else:
             logger.error('Asking for an unknown broadcast type for node: %s => %s' % (node, my_state))
@@ -471,7 +477,7 @@ class Gossip(object):
     # get my own node entry
     def __get_boostrap_node(self):
         node = {'addr'       : self.addr, 'port': self.port, 'name': self.name, 'display_name': self.display_name,
-                'incarnation': self.incarnation, 'uuid': self.uuid, 'state': 'alive', 'groups': self.groups,
+                'incarnation': self.incarnation, 'uuid': self.uuid, 'state': NODE_STATES.ALIVE, 'groups': self.groups,
                 'services'   : {}, 'checks': {}, 'zone': self.zone, 'is_proxy': self.is_proxy}
         return node
     
@@ -531,7 +537,7 @@ class Gossip(object):
         name = node['name']
         incarnation = node['incarnation']
         uuid = node['uuid']
-        state = node['state'] = 'alive'
+        state = node['state'] = NODE_STATES.ALIVE
         
         # Maybe it's me? we must look for a special case:
         # maybe we did clean all our local data, and the others did remember us (we did keep
@@ -603,7 +609,7 @@ class Gossip(object):
         # We only case about into about alive nodes, dead and suspect
         # are not interesting :)
         prev_state = node['state']
-        if prev_state != 'alive':
+        if prev_state != NODE_STATES.ALIVE:
             return
         
         # Maybe it's us?? We need to say FUCKING NO, I'm alive!! (or maybe leave, but not a suspect)
@@ -613,7 +619,6 @@ class Gossip(object):
             logger.warning('SUSPECT: SOMEONE THINK I AM SUSPECT, BUT I AM %s' % my_state)
             # Is we are leaving, let the other know we are not a suspect, but a leaving node
             self.increase_incarnation_and_broadcast()
-            
             return
         
         logger.info('SUSPECTING: I suspect node %s' % node['name'])
@@ -633,10 +638,12 @@ class Gossip(object):
     # Someone ask us about a leave node, so believe it
     # Leave node are about all states, so we don't filter by current state
     # if the incarnation is ok, we believe it
-    def set_leave(self, leaved):
+    # FORCE: if True, means we can believe it, it's not from gossip, but from
+    #        a protected HTTP call
+    def set_leave(self, leaved, force=False):
         incarnation = leaved['incarnation']
         uuid = leaved['uuid']
-        state = 'leave'
+        state = NODE_STATES.LEAVE
         
         logger.info('SET_LEAVE::', uuid, leaved['name'], incarnation)
         
@@ -651,7 +658,7 @@ class Gossip(object):
         
         prev_state = node['state']
         # Maybe we already know it's leaved, so don't update it
-        if prev_state == 'leave':
+        if prev_state == NODE_STATES.LEAVE:
             return
         
         # If for me it must be with my own incarnation number so we are sure it's really us that should leave
@@ -666,27 +673,35 @@ class Gossip(object):
                 logger.info('Dropping old information (LEAVE) about a node (%s). Our memory incarnation: %s Message incarnation:%s' % (uuid, node['incarnation'], incarnation))
                 return
         
-        # Maybe it's us?? If so we must send our broadcast and exit in few seconds
+        # Maybe it's us, but from a untrusted source (gossip), if so fix it on the gossip network
         if uuid == self.uuid:
-            logger.info('LEAVE: someone is asking me for leaving.')
-            # Mark myself as leave so
-            node['state'] = state
-            self.increase_incarnation_and_broadcast()
-            
-            
-            # Define a function that will wait 10s to let the others nodes know that we did leave
-            # and then ask for a clean stop of the daemon
-            def bailout_after_leave(self):
-                wait_time = 10
-                logger.info('Waiting out %s seconds before exiting as we are set in leave state' % wait_time)
-                time.sleep(10)
-                logger.info('Exiting from a self leave message')
-                # Will set self.interrupted = True to every thread that loop
-                pubsub.pub('interrupt')
-            
-            
-            threader.create_and_launch(bailout_after_leave, args=(self,), name='Exiting agent after set to leave', part='agent')
-            return
+            if not force:
+                # Ok it's really our own incarnation, we must fix it
+                if incarnation == node['incarnation']:
+                    self.increase_incarnation_and_broadcast()
+                return
+            # Ok the CLI or HTTP protected call ask us to be in leave mode
+            else:
+                
+                logger.info('LEAVE: someone is asking me for leaving.')
+                # Mark myself as leave so
+                node['state'] = state
+                self.increase_incarnation_and_broadcast()
+                
+                
+                # Define a function that will wait 10s to let the others nodes know that we did leave
+                # and then ask for a clean stop of the daemon
+                def bailout_after_leave(self):
+                    wait_time = 10
+                    logger.info('Waiting out %s seconds before exiting as we are set in leave state' % wait_time)
+                    time.sleep(10)
+                    logger.info('Exiting from a self leave message')
+                    # Will set self.interrupted = True to every thread that loop
+                    pubsub.pub('interrupt')
+                
+                
+                threader.create_and_launch(bailout_after_leave, args=(self,), name='Exiting agent after set to leave', part='agent')
+                return
         
         logger.info('LEAVING: The node %s is leaving' % node['name'])
         # Ok it's definitivly someone else that is now suspected, update this, and update it :)
@@ -706,7 +721,7 @@ class Gossip(object):
     def set_dead(self, suspect):
         incarnation = suspect['incarnation']
         uuid = suspect['uuid']
-        state = 'dead'
+        state = NODE_STATES.DEAD
         
         # Maybe we didn't even have this nodes in our list?
         if uuid not in self.nodes:
@@ -726,7 +741,7 @@ class Gossip(object):
         # * suspect : we already did receive it
         # * leave : it is already out in a way
         prev_state = node['state']
-        if prev_state != 'alive':
+        if prev_state != NODE_STATES.ALIVE:
             return
         
         # Maybe it's us?? We need to say FUCKING NO, I'm alive!!
@@ -760,13 +775,13 @@ class Gossip(object):
             state = node['state']
             
             # Try to incorporate it
-            if state == 'alive':
+            if state == NODE_STATES.ALIVE:
                 self.set_alive(node)
             # note: for dead, we never believe others for dead, we set suspect
             # and wait for timeout to finish
-            elif state == 'dead' or state == 'suspect':
+            elif state == NODE_STATES.DEAD or state == 'suspect':
                 self.set_suspect(node)
-            elif state == 'leave':
+            elif state == NODE_STATES.LEAVE:
                 self.set_leave(node)
     
     
@@ -804,7 +819,7 @@ class Gossip(object):
             if n['uuid'] == self.uuid:
                 continue
             # skip bad nodes, must be alive
-            if n['state'] != 'alive':
+            if n['state'] != NODE_STATES.ALIVE:
                 continue
             # if our zone, will be OK
             nzone = n['zone']
@@ -872,7 +887,7 @@ class Gossip(object):
             top_zones = zonemgr.get_top_zones_from(self.zone)
             for zname in top_zones:
                 # we don't care about leave node, but we need others to be proxy
-                others = [n for n in nodes.values() if n['zone'] == zname and n['state'] != 'leave' and n['is_proxy'] is True]
+                others = [n for n in nodes.values() if n['zone'] == zname and n['state'] != NODE_STATES.LEAVE and n['is_proxy'] is True]
                 # Maybe there is no valid nodes for this zone, skip it
                 if len(others) == 0:
                     continue
@@ -884,7 +899,7 @@ class Gossip(object):
                     self.__do_gossip_push(dest, consume=False)
         
         # always send to our zone, but not for leave nodes
-        others = [n for n in nodes.values() if n['uuid'] != self.uuid and n['zone'] == self.zone and n['state'] != 'leave']
+        others = [n for n in nodes.values() if n['uuid'] != self.uuid and n['zone'] == self.zone and n['state'] != NODE_STATES.LEAVE]
         logger.debug("launch_gossip:: our zone nodes %d" % len(others))
         
         # Maybe every one is dead, if o bail out
@@ -919,7 +934,7 @@ class Gossip(object):
                 continue
             # for ping, only leave nodes are not available, we can try to ping dead/suspect
             # to know if they are still bad
-            if n['state'] == 'leave':
+            if n['state'] == NODE_STATES.LEAVE:
                 continue
             # if our zone, will be OK
             nzone = n['zone']
@@ -997,10 +1012,10 @@ class Gossip(object):
                 msg = json.loads(uncrypted_ret)
                 new_other = msg['node']
                 logger.info('PING got a return from %s (%s) (node state)=%s: %s' % (new_other['name'], new_other['display_name'], new_other['state'], msg))
-                if new_other['state'] == 'alive':
+                if new_other['state'] == NODE_STATES.ALIVE:
                     # An aswer? great it is alive!
                     self.set_alive(other, strong=True)
-                elif new_other['state'] == 'leave':
+                elif new_other['state'] == NODE_STATES.LEAVE:
                     self.set_leave(new_other)
                 else:
                     logger.error('PING the other node %s did give us a unamanged state: %s' % (new_other['name'], new_other['state']))
@@ -1012,7 +1027,7 @@ class Gossip(object):
             logger.info("PING: go indirect mode")
             with self.nodes_lock:
                 possible_relays = [n for n in self.nodes.values() if
-                                   n['uuid'] != self.uuid and n != other and n['state'] == 'alive']
+                                   n['uuid'] != self.uuid and n != other and n['state'] == NODE_STATES.ALIVE]
             
             if len(possible_relays) == 0:
                 logger.info("PING: no possible relays for ping")
@@ -1047,10 +1062,10 @@ class Gossip(object):
             logger.info('PING got a return from %s (%s) via a relay: %s' % (new_other['name'], new_other['display_name'], msg))
             logger.debug('RELAY set alive', other['name'])
             # Ok it's no more suspected, great :)
-            if new_other['state'] == 'alive':
+            if new_other['state'] == NODE_STATES.ALIVE:
                 # An aswer? great it is alive!
                 self.set_alive(other, strong=True)
-            elif new_other['state'] == 'leave':
+            elif new_other['state'] == NODE_STATES.LEAVE:
                 self.set_leave(new_other)
             else:
                 logger.error('PING the other node %s did give us a unamanged state: %s' % (new_other['name'], new_other['state']))
@@ -1080,7 +1095,7 @@ class Gossip(object):
         # ask for a future ping
         fr_uuid = m['from']
         node = self.get(fr_uuid)
-        if node and node['state'] != 'alive':
+        if node and node['state'] != NODE_STATES.ALIVE:
             logger.debug('PINGBACK +ing node', node['name'])
             self.to_ping_back.append(fr_uuid)
     
@@ -1426,11 +1441,11 @@ class Gossip(object):
                 stime = node.get('suspect_time', now)
                 if stime < (now - suspect_timeout):
                     logger.info("SUSPECT: NODE", node['name'], node['incarnation'], node['state'], "is NOW DEAD")
-                    node['state'] = 'dead'
+                    node['state'] = NODE_STATES.DEAD
                     # warn internal elements
                     self.node_did_change(node['uuid'])
                     # Save this change into our history
-                    self.__add_node_state_change_history_entry(node, 'suspect', 'dead')
+                    self.__add_node_state_change_history_entry(node, 'suspect', NODE_STATES.DEAD)
                     # and external ones
                     self.stack_dead_broadcast(node)
         
@@ -1439,7 +1454,7 @@ class Gossip(object):
         with self.nodes_lock:
             for node in self.nodes.values():
                 # Only look at suspect nodes of course...
-                if node['state'] != 'leave':
+                if node['state'] != NODE_STATES.LEAVE:
                     continue
                 ltime = node.get('leave_time', now)
                 logger.debug("LEAVE TIME for node %s %s %s %s" % (node['name'], ltime, now - leave_timeout, (now - leave_timeout) - ltime))
@@ -1466,7 +1481,7 @@ class Gossip(object):
     def create_alive_msg(self, node):
         r = self.__get_node_basic_msg(node)
         r['type'] = 'alive'
-        r['state'] = 'alive'
+        r['state'] = NODE_STATES.ALIVE
         return r
     
     
@@ -1485,14 +1500,14 @@ class Gossip(object):
     def create_dead_msg(self, node):
         r = self.__get_node_basic_msg(node)
         r['type'] = 'dead'
-        r['state'] = 'dead'
+        r['state'] = NODE_STATES.DEAD
         return r
     
     
     def create_leave_msg(self, node):
         r = self.__get_node_basic_msg(node)
         r['type'] = 'leave'
-        r['state'] = 'leave'
+        r['state'] = NODE_STATES.LEAVE
         return r
     
     
@@ -1575,13 +1590,13 @@ class Gossip(object):
             return self.uuid
         
         
-        @http_export('/agent/leave/:nuuid')
+        @http_export('/agent/leave/:nuuid', protected=True)
         def set_node_leave(nuuid):
             with self.nodes_lock:
                 node = self.nodes.get(nuuid, None)
             if node is None:
                 return abort(404, 'This node is not found')
-            self.set_leave(node)
+            self.set_leave(node, force=True)
             return
         
         
@@ -1600,7 +1615,7 @@ class Gossip(object):
             return json.dumps(r)
         
         
-        @http_export('/agent/join/:other')
+        @http_export('/agent/join/:other', protected=True)
         def agent_join(other):
             response.content_type = 'application/json'
             addr = other
@@ -1639,7 +1654,7 @@ class Gossip(object):
             return json.dumps(m)
         
         
-        @http_export('/agent/detect')
+        @http_export('/agent/detect', protected=True)
         def agent_members():
             response.content_type = 'application/json'
             timeout = int(request.GET.get('timeout', '5'))
