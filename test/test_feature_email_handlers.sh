@@ -18,5 +18,11 @@ if [ $NB_EMAILS_DEFERED -eq 0 ] && [ $NB_EMAILS_ACTIVE -eq 0 ]; then
     exit 2
 fi
 
+echo "Emails: Defered:$NB_EMAILS_DEFERED   Active:$NB_EMAILS_ACTIVE "
+
+echo "DEFERED"
+cat /var/spool/postfix/defer*/*
+echo "ACTIVE"
+cat /var/spool/postfix/active/*
 
 echo "Email handler OK"
