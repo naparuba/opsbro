@@ -1,0 +1,29 @@
+FROM debian:9
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+
+RUN        /apt_get_install python
+
+RUN        /apt_get_install locales
+
+RUN        cp /etc/locale.gen /etc/locale.gen.old
+RUN        sed -i "s/# en_US.UTF-8 UTF-8/fr_FR.UTF-8 UTF-8/g" /etc/locale.gen
+RUN        /usr/sbin/locale-gen
+
+ENV        LANG=fr_FR.UTF8
+
+
+# Check that french is active
+RUN          ls /notexists_ 2>&1 | grep 'Aucun fichier ou dossier de ce type'
+
+
+ADD        . /root/opsbro-oss
+
+WORKDIR    /root/opsbro-oss
+
+# TCL: very little
+ENV        TEST_PACKAGE_NAME=tcl
+ENTRYPOINT        test/test_one_linux_installation.sh  && test/assert_group.sh "debian"
+
+
