@@ -17,13 +17,13 @@ from .jsonmgr import jsoner
 from .now import NOW
 from .ts import tsmgr
 from .gossip import gossiper
-from .util import make_dir
+from .basemanager import BaseManager
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('collector')
 
 # Common rule for printing the COLLECTORS for the outside world
-COLLECTORS_STATE_COLORS = {'OK': 'green', 'ERROR': 'red', 'NOT-ELIGIBLE': 'grey', 'RUNNING': 'grey', 'PENDING':'grey'}
+COLLECTORS_STATE_COLORS = {'OK': 'green', 'ERROR': 'red', 'NOT-ELIGIBLE': 'grey', 'RUNNING': 'grey', 'PENDING': 'grey'}
 COLLECTORS_STATES = ['PENDING', 'OK', 'NOT-ELIGIBLE', 'RUNNING', 'ERROR']
 
 
@@ -43,8 +43,12 @@ def get_collectors(self):
     self.load_all_collectors()
 
 
-class CollectorManager:
+class CollectorManager(BaseManager):
+    history_directory_suffix = 'collector'
+    
+    
     def __init__(self):
+        super(CollectorManager, self).__init__()
         self.collectors = {}
         
         self.did_run = False  # did our data are all ok or we did not launch all?
@@ -53,9 +57,7 @@ class CollectorManager:
         self.results_lock = threading.RLock()
         self.results = {}
         
-        self.history_directory = None
-        self.__current_history_entry = []
-        self.__current_history_entry_lock = threading.RLock()
+        self.logger = logger
     
     
     def load_directory(self, directory, pack_name='', pack_level=''):
@@ -202,72 +204,12 @@ class CollectorManager:
                 tsmgr.tsb.add_value(timestamp, key, value, local=True)
     
     
-    def __prepare_history_directory(self):
-        # Prepare the history
-        from .configurationmanager import configmgr
-        data_dir = configmgr.get_data_dir()
-        self.history_directory = os.path.join(data_dir, 'collector_history')
-        logger.debug('Asserting existence of the collector history directory: %s' % self.history_directory)
-        if not os.path.exists(self.history_directory):
-            make_dir(self.history_directory)
-    
-    
-    def add_history_entry(self, history_entry):
-        with self.__current_history_entry_lock:
-            self.__current_history_entry.append(history_entry)
-    
-    
-    def __write_history_entry(self):
-        # Noting to do?
-        if not self.__current_history_entry:
-            return
-        # We must lock because checks can exit in others threads
-        with self.__current_history_entry_lock:
-            now = int(time.time())
-            pth = os.path.join(self.history_directory, '%d.json' % now)
-            logger.info('Saving new collector history entry to %s' % pth)
-            buf = json.dumps(self.__current_history_entry)
-            with open(pth, 'w') as f:
-                f.write(buf)
-            # Now we can reset it
-            self.__current_history_entry = []
-    
-    
-    def get_history(self):
-        r = []
-        current_size = 0
-        max_size = 1024 * 1024
-        reg = self.history_directory + '/*.json'
-        history_files = glob.glob(reg)
-        # Get from the more recent to the older
-        history_files.sort()
-        history_files.reverse()
-        
-        # Do not send more than 1MB, but always a bit more, not less
-        for history_file in history_files:
-            epoch_time = int(os.path.splitext(os.path.basename(history_file))[0])
-            with open(history_file, 'r') as f:
-                e = json.loads(f.read())
-            r.append({'date': epoch_time, 'entries': e})
-            
-            # If we are now too big, return directly
-            size = os.path.getsize(history_file)
-            current_size += size
-            if current_size > max_size:
-                # Give older first
-                r.reverse()
-                return r
-        # give older first
-        r.reverse()
-        return r
-    
-    
     # Main thread for launching collectors
     def do_collector_thread(self):
         logger.log('COLLECTOR thread launched')
         cur_launchs = {}
         # Before run, be sure we have a history directory ready
-        self.__prepare_history_directory()
+        self.prepare_history_directory()
         while not stopper.interrupted:
             now = int(time.time())
             for (colname, e) in self.collectors.iteritems():
@@ -295,7 +237,7 @@ class CollectorManager:
                 del cur_launchs[colname]
             self.did_run = True  # ok our data are filled, you can use this data
             # Each loop we save our history data (collector state changed)
-            self.__write_history_entry()
+            self.write_history_entry()
             time.sleep(1)
     
     

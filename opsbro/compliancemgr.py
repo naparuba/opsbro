@@ -10,9 +10,9 @@ from .log import LoggerFactory
 from .stop import stopper
 from .httpdaemon import http_export, response, request
 from .evaluater import evaluater
-from .util import make_dir
 from .topic import topiker, TOPIC_SYSTEM_COMPLIANCE
 from .handlermgr import handlermgr
+from .basemanager import BaseManager
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('compliance')
@@ -500,14 +500,17 @@ class Compliance(object):
         self.__current_step = rule.get_name()
 
 
-class ComplianceManager(object):
+class ComplianceManager(BaseManager):
+    history_directory_suffix = 'compliance'
+    
+    
     def __init__(self):
+        super(ComplianceManager, self).__init__()
         self.compliances = {}
         self.did_run = False
         self.drivers = {}
         
-        self.history_directory = None
-        self.__current_history_entry = []
+        self.logger = logger
     
     
     def load_backends(self):
@@ -523,13 +526,8 @@ class ComplianceManager(object):
             logger.debug('Trying compliance driver %s' % ctx.name)
             self.drivers[cls.name] = ctx
         
-        # Prepare the history
-        from .configurationmanager import configmgr
-        data_dir = configmgr.get_data_dir()
-        self.history_directory = os.path.join(data_dir, 'compliance_history')
-        logger.debug('Asserting existence of the compliance history directory: %s' % self.history_directory)
-        if not os.path.exists(self.history_directory):
-            make_dir(self.history_directory)
+        # The configuration backend is ready, we can assert the presence of our history directory
+        self.prepare_history_directory()
     
     
     @staticmethod
@@ -575,24 +573,6 @@ class ComplianceManager(object):
         
         # Add it into the list
         self.compliances[full_path] = compliance
-    
-    
-    def add_history_entry(self, history_entry):
-        self.__current_history_entry.append(history_entry)
-    
-    
-    def __write_history_entry(self):
-        # Noting to do?
-        if not self.__current_history_entry:
-            return
-        now = int(time.time())
-        pth = os.path.join(self.history_directory, '%d.json' % now)
-        logger.info('Saving new compliance history entry to %s' % pth)
-        buf = json.dumps(self.__current_history_entry)
-        with open(pth, 'w') as f:
-            f.write(buf)
-        # Now we can reset it
-        self.__current_history_entry = []
     
     
     def __launch_compliances(self):
@@ -647,35 +627,6 @@ class ComplianceManager(object):
                 handlermgr.launch_compliance_handlers(compliance, did_change=did_change)
     
     
-    def get_history(self):
-        r = []
-        current_size = 0
-        max_size = 1024 * 1024
-        reg = self.history_directory + '/*.json'
-        history_files = glob.glob(reg)
-        # Get from the more recent to the older
-        history_files.sort()
-        history_files.reverse()
-        
-        # Do not send more than 1MB, but always a bit more, not less
-        for history_file in history_files:
-            epoch_time = int(os.path.splitext(os.path.basename(history_file))[0])
-            with open(history_file, 'r') as f:
-                e = json.loads(f.read())
-            r.append({'date': epoch_time, 'entries': e})
-            
-            # If we are now too big, return directly
-            size = os.path.getsize(history_file)
-            current_size += size
-            if current_size > max_size:
-                # Give older first
-                r.reverse()
-                return r
-        # give older first
-        r.reverse()
-        return r
-    
-    
     def do_compliance_thread(self):
         from .collectormanager import collectormgr
         # if the collector manager did not run, our evaluation can be invalid, so wait for all collectors to run at least once
@@ -686,7 +637,7 @@ class ComplianceManager(object):
                 self.__launch_compliances()
             self.did_run = True
             # For each changes, we write a history entry
-            self.__write_history_entry()
+            self.write_history_entry()
             time.sleep(1)
     
     

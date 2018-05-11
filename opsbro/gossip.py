@@ -8,8 +8,6 @@ import copy
 import sys
 import bisect
 import threading
-import os
-import glob
 from collections import deque
 
 # some singleton :)
@@ -23,9 +21,9 @@ from .library import libstore
 from .httpclient import get_http_exceptions, httper
 from .zonemanager import zonemgr
 from .stop import stopper
-from .util import make_dir
 from .handlermgr import handlermgr
 from .topic import topiker, TOPIC_SERVICE_DISCOVERY
+from .basemanager import BaseManager
 
 KGOSSIP = 10
 
@@ -42,9 +40,13 @@ class NODE_STATES(object):
 
 
 # Main class for a Gossip cluster
-class Gossip(object):
+class Gossip(BaseManager):
+    history_directory_suffix = 'nodes'
+    
+    
     def __init__(self):
-        pass
+        super(Gossip, self).__init__()
+        self.logger = logger
     
     
     def init(self, nodes, nodes_lock, addr, port, name, display_name, incarnation, uuid, groups, seeds, bootstrap, zone, is_proxy):
@@ -79,10 +81,7 @@ class Gossip(object):
         self.export_http()
         
         # When something change, we save it in the history
-        self.history_directory = None
-        self.__prepare_history_directory()  # the configmgr is ready at this state
-        self.__current_history_entry = []
-        self.__current_history_entry_lock = threading.RLock()
+        self.prepare_history_directory()  # the configmgr is ready at this state
         
         # create my own object, but do not export it to other nodes
         self.__register_myself()
@@ -203,60 +202,6 @@ class Gossip(object):
             return group in self.groups
     
     
-    def __prepare_history_directory(self):
-        # Prepare the history
-        from .configurationmanager import configmgr
-        data_dir = configmgr.get_data_dir()
-        self.history_directory = os.path.join(data_dir, 'nodes_history')
-        logger.debug('Asserting existence of the nodes history directory: %s' % self.history_directory)
-        if not os.path.exists(self.history_directory):
-            make_dir(self.history_directory)
-    
-    
-    def __write_history_entry(self):
-        with self.__current_history_entry_lock:
-            # Noting to do?
-            if not self.__current_history_entry:
-                return
-            now = int(time.time())
-            pth = os.path.join(self.history_directory, '%d.json' % now)
-            logger.info('Saving new compliance history entry to %s' % pth)
-            buf = json.dumps(self.__current_history_entry)
-            with open(pth, 'w') as f:
-                f.write(buf)
-            # Now we can reset it
-            self.__current_history_entry = []
-    
-    
-    def get_history(self):
-        r = []
-        current_size = 0
-        max_size = 1024 * 1024
-        reg = self.history_directory + '/*.json'
-        history_files = glob.glob(reg)
-        # Get from the more recent to the older
-        history_files.sort()
-        history_files.reverse()
-        
-        # Do not send more than 1MB, but always a bit more, not less
-        for history_file in history_files:
-            epoch_time = int(os.path.splitext(os.path.basename(history_file))[0])
-            with open(history_file, 'r') as f:
-                e = json.loads(f.read())
-            r.append({'date': epoch_time, 'entries': e})
-            
-            # If we are now too big, return directly
-            size = os.path.getsize(history_file)
-            current_size += size
-            if current_size > max_size:
-                # Give older first
-                r.reverse()
-                return r
-        # give older first
-        r.reverse()
-        return r
-    
-    
     def __add_group_change_history_entry(self, group, action):
         node = self.nodes[self.uuid]
         history_entry = {'type': 'group-%s' % action,
@@ -264,8 +209,7 @@ class Gossip(object):
                          'uuid': node['uuid'], 'group': group,
                          }
         
-        with self.__current_history_entry_lock:
-            self.__current_history_entry.append(history_entry)
+        self.add_history_entry(history_entry)
     
     
     def __add_node_state_change_history_entry(self, node, old_state, new_state):
@@ -274,8 +218,7 @@ class Gossip(object):
                          'uuid': node['uuid'], 'old_state': old_state, 'state': new_state,
                          }
         logger.info('__add_node_state_change_history_entry:: %s' % history_entry)
-        with self.__current_history_entry_lock:
-            self.__current_history_entry.append(history_entry)
+        self.add_history_entry(history_entry)
     
     
     def __add_node_zone_change_history_entry(self, node, old_zone, new_zone):
@@ -284,14 +227,13 @@ class Gossip(object):
                          'uuid': node['uuid'], 'old_zone': old_zone, 'zone': new_zone,
                          }
         logger.info('__add_node_zone_change_history_entry:: %s' % history_entry)
-        with self.__current_history_entry_lock:
-            self.__current_history_entry.append(history_entry)
+        self.add_history_entry(history_entry)
     
     
     # Each seconds we try to save a history entry (about add/remove groups, or new nodes)
     def do_history_save_loop(self):
         while not stopper.interrupted:
-            self.__write_history_entry()
+            self.write_history_entry()
             time.sleep(1)
     
     
