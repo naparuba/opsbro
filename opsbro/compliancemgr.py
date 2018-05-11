@@ -291,7 +291,33 @@ class Compliance(object):
     # fo notification, not all state changes are interesting
     # PENDING -> NOT-ELIGIBLE is not an interesting email to receive, so only list here state
     # changes with a real meaning, like COMPLIANT->ERROR for example
-    notification_interesting_state_changes = set()
+    notification_interesting_state_changes = set([
+        # FROM, TO
+        
+        # Pending ->
+        (COMPLIANCE_STATES.PENDING, COMPLIANCE_STATES.FIXED),
+        (COMPLIANCE_STATES.PENDING, COMPLIANCE_STATES.ERROR),
+        
+        # Unknown ->
+        (COMPLIANCE_STATES.UNKNOWN, COMPLIANCE_STATES.FIXED),
+        (COMPLIANCE_STATES.UNKNOWN, COMPLIANCE_STATES.ERROR),
+        
+        # NOT-ELIGIBLE ->
+        (COMPLIANCE_STATES.NOT_ELIGIBLE, COMPLIANCE_STATES.FIXED),
+        (COMPLIANCE_STATES.NOT_ELIGIBLE, COMPLIANCE_STATES.ERROR),
+        
+        # FIXED ->
+        # FIXEd-> compliant is a normal step, we do nto notify about it
+        (COMPLIANCE_STATES.FIXED, COMPLIANCE_STATES.ERROR),  # did just break
+        
+        # Compliant ->
+        (COMPLIANCE_STATES.COMPLIANT, COMPLIANCE_STATES.ERROR),
+        
+        # ERROR->
+        (COMPLIANCE_STATES.ERROR, COMPLIANCE_STATES.FIXED),  # the agent did fixed it
+        (COMPLIANCE_STATES.ERROR, COMPLIANCE_STATES.COMPLIANT),  # the admin did fixed it
+    
+    ])
     
     # When computing our state based on rules one:
     # Get the most important rule state
@@ -346,6 +372,10 @@ class Compliance(object):
         return self.__state
     
     
+    def get_old_state(self):
+        return self.__old_state
+    
+    
     def get_verify_if(self):
         return self.verify_if
     
@@ -357,6 +387,12 @@ class Compliance(object):
     
     def set_forced(self):
         self.__forced = True
+    
+    
+    # Look at the old state -> state change, and look if it's in the list of
+    # interesting changes
+    def is_last_change_interesting_for_notification(self):
+        return (self.__old_state, self.__state) in self.notification_interesting_state_changes
     
     
     def should_be_launched(self):
@@ -606,8 +642,8 @@ class ComplianceManager(object):
                 self.add_history_entry(history_entry)
             
             # We should give the compliance launch to handlers module, but only when the
-            # compliance state do change
-            if did_change:
+            # compliance state do change and the change is an interesting one
+            if did_change and compliance.is_last_change_interesting_for_notification():
                 handlermgr.launch_compliance_handlers(compliance, did_change=did_change)
     
     

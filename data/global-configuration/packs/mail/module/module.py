@@ -56,7 +56,7 @@ class MailHandlerModule(HandlerModule):
         try:
             self.logger.debug("Handler: MAIL connection to %s" % smtp_server)
             s = self.smtplib.SMTP(smtp_server, timeout=30)
-            r = s.sendmail(addr_from, contacts, msg)
+            r = s.sendmail(addr_from, contacts, msg.as_string())
             s.quit()
             self.logger.info('Did send an email to %d contacts (%s) about %s' % (len(contacts), ','.join(contacts), about_what))
         except Exception:
@@ -64,12 +64,13 @@ class MailHandlerModule(HandlerModule):
     
     
     def __get_msg(self, addr_from, subject_m, text_m):
-        msg = '''From: %s
-        Subject: %s
-
-        %s
-
-        ''' % (addr_from, subject_m, text_m)
+        from email.mime.text import MIMEText
+        from email.header import Header
+        
+        msg = MIMEText(text_m, 'plain', 'utf-8')
+        msg['From'] = addr_from
+        msg['Subject'] = Header(subject_m, 'utf-8')
+        
         return msg
     
     
@@ -154,28 +155,27 @@ class MailHandlerModule(HandlerModule):
             self.__send_email(addr_from, msg, 'group modification')
         except:
             self.logger.error('Cannot send mail for group modification: %s' % traceback.format_exc())
-
-
+    
+    
     def send_mail_compliance(self, compliance):
         have_templates = self.__compute_templates('compliance')
         if not have_templates:
             self.logger.error('We do not have templates available, skiping the email sending')
             return
-        subject_tpl = self.__get_computed_template('group', 'subject')
-        text_tpl = self.__get_computed_template('group', 'text')
+        subject_tpl = self.__get_computed_template('compliance', 'subject')
+        text_tpl = self.__get_computed_template('compliance', 'text')
         try:
             _time = datetime.datetime.fromtimestamp(int(time.time())).strftime('%Y-%m-%d %H:%M:%S')
-            subject_m = subject_tpl.render(group=group, group_modification=group_modification)
-            text_m = text_tpl.render(group=group, group_modification=group_modification)
+            subject_m = subject_tpl.render(compliance=compliance, _time=_time)
+            text_m = text_tpl.render(compliance=compliance, _time=_time)
             addr_from = self.get_parameter('addr_from')
             msg = self.__get_msg(addr_from, subject_m, text_m)
-        
-            self.__send_email(addr_from, msg, 'group modification')
+            
+            self.__send_email(addr_from, msg, 'compliance rule state change')
         except:
-            self.logger.error('Cannot send mail for group modification: %s' % traceback.format_exc())
-
-
-
+            self.logger.error('Cannot send mail for compliance modification: %s' % traceback.format_exc())
+    
+    
     def handle(self, obj, event):
         enabled = self.get_parameter('enabled')
         if not enabled:
@@ -201,8 +201,8 @@ class MailHandlerModule(HandlerModule):
         
         # Compliance: only when change, and only some switch cases should be
         # notify (drop useless changes)
-        #if evt_type == 'compliance_execution':
-        #    evt_data = event['evt_data']
-        #    compliance_did_change = evt_data['compliance_did_change']
-        #    if compliance_did_change:
-        #        self.send_mail_compliance(obj)
+        if evt_type == 'compliance_execution':
+            evt_data = event['evt_data']
+            compliance_did_change = evt_data['compliance_did_change']
+            if compliance_did_change:
+                self.send_mail_compliance(obj)
