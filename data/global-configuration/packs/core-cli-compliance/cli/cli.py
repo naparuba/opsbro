@@ -14,7 +14,7 @@ from opsbro.log import cprint, logger
 from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_local, put_opsbro_json
 from opsbro.cli_display import print_h1, print_h2, get_terminal_size
-from opsbro.compliancemgr import COMPLIANCE_LOG_COLORS, COMPLIANCE_STATE_COLORS
+from opsbro.compliancemgr import COMPLIANCE_LOG_COLORS, COMPLIANCE_STATES, COMPLIANCE_STATE_COLORS
 
 
 def __print_rule_entry(rule):
@@ -146,7 +146,7 @@ def do_compliance_wait_compliant(compliance_name, timeout=30, exit_if_ok=True):
     import itertools
     spinners = itertools.cycle(CHARACTERS.spinners)
     
-    current_state = 'UNKNOWN'
+    current_state = COMPLIANCE_STATES.UNKNOWN
     for i in xrange(timeout):
         uri = '/compliance/state'
         try:
@@ -171,7 +171,7 @@ def do_compliance_wait_compliant(compliance_name, timeout=30, exit_if_ok=True):
         current_step = ''
         current_state = compliance['state']
         if compliance['is_running']:
-            current_state = 'RUNNING'
+            current_state = COMPLIANCE_STATES.RUNNING
             current_step = compliance['current_step']
         # Clean line
         try:
@@ -190,7 +190,7 @@ def do_compliance_wait_compliant(compliance_name, timeout=30, exit_if_ok=True):
             cprint(' ]', end='')
         # As we did not \n, we must flush stdout to print it
         sys.stdout.flush()
-        if current_state == 'COMPLIANT':
+        if current_state == COMPLIANCE_STATES.COMPLIANT:
             cprint("\nThe compliance rule %s is compliant" % compliance_name)
             if exit_if_ok:
                 sys.exit(0)

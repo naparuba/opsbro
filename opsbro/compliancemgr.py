@@ -12,13 +12,30 @@ from .httpdaemon import http_export, response, request
 from .evaluater import evaluater
 from .util import make_dir
 from .topic import topiker, TOPIC_SYSTEM_COMPLIANCE
+from .handlermgr import handlermgr
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('compliance')
 
-COMPLIANCE_STATE_COLORS = {'RUNNING': 'magenta', 'COMPLIANT': 'green', 'FIXED': 'cyan', 'ERROR': 'red', 'UNKNOWN': 'grey', 'NOT-ELIGIBLE': 'grey'}
+
+class COMPLIANCE_STATES(object):
+    RUNNING = 'RUNNING'
+    COMPLIANT = 'COMPLIANT'
+    FIXED = 'FIXED'
+    ERROR = 'ERROR'
+    UNKNOWN = 'UNKNOWN'  # cannot launch it
+    PENDING = 'PENDING'  # never launched
+    NOT_ELIGIBLE = 'NOT-ELIGIBLE'
+
+
+COMPLIANCE_STATE_COLORS = {COMPLIANCE_STATES.RUNNING     : 'magenta',
+                           COMPLIANCE_STATES.COMPLIANT   : 'green',
+                           COMPLIANCE_STATES.FIXED       : 'cyan',
+                           COMPLIANCE_STATES.ERROR       : 'red',
+                           COMPLIANCE_STATES.PENDING     : 'grey',
+                           COMPLIANCE_STATES.NOT_ELIGIBLE: 'grey'}
+ALL_COMPLIANCE_STATES = COMPLIANCE_STATE_COLORS.keys()
 COMPLIANCE_LOG_COLORS = {'SUCCESS': 'green', 'ERROR': 'red', 'FIX': 'cyan', 'COMPLIANT': 'green'}
-COMPLIANCE_STATES = ['RUNNING', 'COMPLIANT', 'FIXED', 'ERROR', 'UNKNOWN', 'NOT-ELIGIBLE']
 
 
 class ComplianceRuleEnvironment(object):
@@ -81,157 +98,6 @@ class InterfaceComplianceDriver(object):
         rule.add_error('The driver %s is missing launch action.' % self.__class__)
 
 
-class Compliance(object):
-    def __init__(self, pack_name, pack_level, name, mode, verify_if, rule_defs):
-        self.pack_name = pack_name
-        self.pack_level = pack_level
-        self.name = name
-        self.mode = mode
-        self.verify_if = verify_if
-        
-        self.__forced = False
-        
-        self.__state = 'UNKNOWN'
-        self.__old_state = 'UNKNOWN'
-        
-        self.__current_step = ''
-        self.__is_running = False
-        
-        self.rules = []
-        nb_rules = len(rule_defs)
-        idx = 0
-        for rule_def in rule_defs:
-            idx += 1
-            rule = Rule(pack_name, pack_level, mode, self.name, rule_def, idx, nb_rules)
-            self.rules.append(rule)
-    
-    
-    def get_name(self):
-        return self.name
-    
-    
-    def get_state(self):
-        return self.__state
-    
-    
-    def get_verify_if(self):
-        return self.verify_if
-    
-    
-    def set_not_eligible(self):
-        for rule in self.rules:
-            rule.set_not_eligible()
-    
-    
-    def set_forced(self):
-        self.__forced = True
-    
-    
-    def should_be_launched(self):
-        if self.__forced:
-            return True
-        
-        verify_if = self.get_verify_if()
-        try:
-            r = evaluater.eval_expr(verify_if)
-            if not r:
-                self.set_not_eligible()
-                return False
-            return True
-        except Exception as exp:
-            err = ' (%s) if rule (%s) evaluation did fail: %s' % (self.name, verify_if, exp)
-            logger.error(err)
-            self.add_error(err)
-            self.set_error()
-            return False
-    
-    
-    def __set_state(self, state):
-        if self.__state == state:
-            return
-        
-        self.__old_state = self.__state
-        self.__state = state
-        logger.info('Compliance rule %s switch from %s to %s' % (self.name, self.__old_state, self.__state))
-    
-    
-    def get_history_entries(self):
-        history_entries = []
-        for rule in self.rules:
-            history_entry = rule.get_history_entry()
-            if history_entry:
-                history_entries.append(history_entry)
-        return history_entries
-    
-    
-    # Get the most important rule
-    #       0          1       2       3           4
-    # NOT-ELIGIBLE > ERROR > FIXED > COMPLIANT > UNKNOWN
-    def compute_state(self):
-        computed_state_ids = {'NOT-ELIGIBLE': 0, 'ERROR': 1, 'FIXED': 2, 'COMPLIANT': 3, 'UNKNOWN': 4}
-        computed_state_reverse = {0: 'NOT-ELIGIBLE', 1: 'ERROR', 2: 'FIXED', 3: 'COMPLIANT', 4: 'UNKNOWN'}
-        computed_state_id = 4
-        for rule in self.rules:
-            state = rule.get_state()
-            if state == 'NOT-ELIGIBLE':
-                self.__set_state(state)
-                return
-            state_id = computed_state_ids.get(state)
-            if state_id < computed_state_id:
-                computed_state_id = state_id
-        # Get back the state
-        computed_state = computed_state_reverse.get(computed_state_id)
-        self.__set_state(computed_state)
-        # And so we did finish
-        self.__is_running = False
-        self.__current_step = ''
-    
-    
-    def get_rules(self):
-        return self.rules
-    
-    
-    # Before run, reset all our rules to drop old infos/state
-    # and set us as running
-    def prepare_running(self):
-        for rule in self.rules:
-            rule.reset()
-        self.__is_running = True
-    
-    
-    # Dump our state, and our rules ones
-    def get_json_dump(self):
-        r = {'name'      : self.name, 'state': self.__state, 'old_state': self.__old_state,
-             'mode'      : self.mode,
-             'pack_level': self.pack_level, 'pack_name': self.pack_name,
-             'is_running': self.__is_running, 'current_step': self.__current_step,
-             'rules'     : []}
-        
-        for rule in self.rules:
-            j = rule.get_json_dump()
-            r['rules'].append(j)
-        return r
-    
-    
-    def add_error(self, error):
-        for rule in self.rules:
-            rule.add_error(error)
-    
-    
-    def set_error(self):
-        for rule in self.rules:
-            rule.set_error()
-    
-    
-    def set_unknown(self):
-        for rule in self.rules:
-            rule.set_unknown()
-    
-    
-    def set_current_step(self, rule):
-        self.__current_step = rule.get_name()
-
-
 class Rule(object):
     def __init__(self, pack_name, pack_level, mode, compliance_name, rule_def, idx, nb_rules):
         self.compliance_name = compliance_name
@@ -263,8 +129,8 @@ class Rule(object):
         self.pack_level = pack_level
         self.mode = mode
         
-        self.__state = 'UNKNOWN'
-        self.__old_state = 'UNKNOWN'
+        self.__state = COMPLIANCE_STATES.PENDING
+        self.__old_state = COMPLIANCE_STATES.PENDING
         self.__infos = []
         self.__did_change = False
         self.reset()
@@ -374,7 +240,7 @@ class Rule(object):
     
     
     def is_in_error(self):
-        return self.__state == 'ERROR'
+        return self.__state == COMPLIANCE_STATES.ERROR
     
     
     def __set_state(self, state):
@@ -388,23 +254,23 @@ class Rule(object):
     
     
     def set_error(self):
-        self.__set_state('ERROR')
+        self.__set_state(COMPLIANCE_STATES.ERROR)
     
     
     def set_compliant(self):
-        self.__set_state('COMPLIANT')
+        self.__set_state(COMPLIANCE_STATES.COMPLIANT)
     
     
     def set_fixed(self):
-        self.__set_state('FIXED')
+        self.__set_state(COMPLIANCE_STATES.FIXED)
     
     
     def set_unknown(self):
-        self.__set_state('UNKNOWN')
+        self.__set_state(COMPLIANCE_STATES.UNKNOWN)
     
     
     def set_not_eligible(self):
-        self.__set_state('NOT-ELIGIBLE')
+        self.__set_state(COMPLIANCE_STATES.NOT_ELIGIBLE)
     
     
     def get_state(self):
@@ -419,6 +285,183 @@ class Rule(object):
         if not self.__did_change:
             return None
         return self.get_json_dump()
+
+
+class Compliance(object):
+    # fo notification, not all state changes are interesting
+    # PENDING -> NOT-ELIGIBLE is not an interesting email to receive, so only list here state
+    # changes with a real meaning, like COMPLIANT->ERROR for example
+    notification_interesting_state_changes = set()
+    
+    # When computing our state based on rules one:
+    # Get the most important rule state
+    #       0          1       2       3           4          5
+    # NOT-ELIGIBLE > ERROR > FIXED > COMPLIANT > UNKNOWN > PENDING
+    computed_state_ids = {COMPLIANCE_STATES.NOT_ELIGIBLE: 0,
+                          COMPLIANCE_STATES.ERROR       : 1,
+                          COMPLIANCE_STATES.FIXED       : 2,
+                          COMPLIANCE_STATES.COMPLIANT   : 3,
+                          COMPLIANCE_STATES.UNKNOWN     : 4,
+                          COMPLIANCE_STATES.PENDING     : 5,
+                          }
+    computed_state_reverse = {0: COMPLIANCE_STATES.NOT_ELIGIBLE,
+                              1: COMPLIANCE_STATES.ERROR,
+                              2: COMPLIANCE_STATES.FIXED,
+                              3: COMPLIANCE_STATES.COMPLIANT,
+                              4: COMPLIANCE_STATES.UNKNOWN,
+                              5: COMPLIANCE_STATES.PENDING,
+                              }
+    least_significative_computed_state_ids = 5
+    
+    
+    def __init__(self, pack_name, pack_level, name, mode, verify_if, rule_defs):
+        self.pack_name = pack_name
+        self.pack_level = pack_level
+        self.name = name
+        self.mode = mode
+        self.verify_if = verify_if
+        
+        self.__forced = False
+        
+        self.__state = COMPLIANCE_STATES.PENDING
+        self.__old_state = COMPLIANCE_STATES.PENDING
+        
+        self.__current_step = ''
+        self.__is_running = False
+        
+        self.rules = []
+        nb_rules = len(rule_defs)
+        idx = 0
+        for rule_def in rule_defs:
+            idx += 1
+            rule = Rule(pack_name, pack_level, mode, self.name, rule_def, idx, nb_rules)
+            self.rules.append(rule)
+    
+    
+    def get_name(self):
+        return self.name
+    
+    
+    def get_state(self):
+        return self.__state
+    
+    
+    def get_verify_if(self):
+        return self.verify_if
+    
+    
+    def set_not_eligible(self):
+        for rule in self.rules:
+            rule.set_not_eligible()
+    
+    
+    def set_forced(self):
+        self.__forced = True
+    
+    
+    def should_be_launched(self):
+        if self.__forced:
+            return True
+        
+        verify_if = self.get_verify_if()
+        try:
+            r = evaluater.eval_expr(verify_if)
+            if not r:
+                self.set_not_eligible()
+                return False
+            return True
+        except Exception as exp:
+            err = ' (%s) if rule (%s) evaluation did fail: %s' % (self.name, verify_if, exp)
+            logger.error(err)
+            self.add_error(err)
+            self.set_error()
+            return False
+    
+    
+    def __set_state(self, state):
+        if self.__state == state:
+            return False
+        
+        self.__old_state = self.__state
+        self.__state = state
+        logger.info('Compliance rule %s switch from %s to %s' % (self.name, self.__old_state, self.__state))
+        return True
+    
+    
+    def get_history_entries(self):
+        history_entries = []
+        for rule in self.rules:
+            history_entry = rule.get_history_entry()
+            if history_entry:
+                history_entries.append(history_entry)
+        return history_entries
+    
+    
+    # Get the most important rule
+    #       0          1       2       3           4          5
+    # NOT-ELIGIBLE > ERROR > FIXED > COMPLIANT > UNKNOWN > PENDING
+    def compute_state(self):
+        computed_state_id = self.least_significative_computed_state_ids
+        for rule in self.rules:
+            state = rule.get_state()
+            if state == COMPLIANCE_STATES.NOT_ELIGIBLE:
+                did_change = self.__set_state(state)
+                return did_change
+            state_id = self.computed_state_ids.get(state)
+            if state_id < computed_state_id:
+                computed_state_id = state_id
+        # Get back the state
+        computed_state = self.computed_state_reverse.get(computed_state_id)
+        did_change = self.__set_state(computed_state)
+        # And so we did finish
+        self.__is_running = False
+        self.__current_step = ''
+        return did_change
+    
+    
+    def get_rules(self):
+        return self.rules
+    
+    
+    # Before run, reset all our rules to drop old infos/state
+    # and set us as running
+    def prepare_running(self):
+        for rule in self.rules:
+            rule.reset()
+        self.__is_running = True
+    
+    
+    # Dump our state, and our rules ones
+    def get_json_dump(self):
+        r = {'name'      : self.name, 'state': self.__state, 'old_state': self.__old_state,
+             'mode'      : self.mode,
+             'pack_level': self.pack_level, 'pack_name': self.pack_name,
+             'is_running': self.__is_running, 'current_step': self.__current_step,
+             'rules'     : []}
+        
+        for rule in self.rules:
+            j = rule.get_json_dump()
+            r['rules'].append(j)
+        return r
+    
+    
+    def add_error(self, error):
+        for rule in self.rules:
+            rule.add_error(error)
+    
+    
+    def set_error(self):
+        for rule in self.rules:
+            rule.set_error()
+    
+    
+    def set_unknown(self):
+        for rule in self.rules:
+            rule.set_unknown()
+    
+    
+    def set_current_step(self, rule):
+        self.__current_step = rule.get_name()
 
 
 class ComplianceManager(object):
@@ -453,7 +496,8 @@ class ComplianceManager(object):
             make_dir(self.history_directory)
     
     
-    def load_directory(self, directory, pack_name='', pack_level=''):
+    @staticmethod
+    def load_directory(directory, pack_name='', pack_level=''):
         logger.debug('Loading compliance driver directory at %s for pack %s' % (directory, pack_name))
         pth = directory + '/compliancebackend_*.py'
         collector_files = glob.glob(pth)
@@ -556,10 +600,15 @@ class ComplianceManager(object):
                 if rule.is_in_error():
                     one_step_in_error = True
             
-            compliance.compute_state()
+            did_change = compliance.compute_state()
             history_entries = compliance.get_history_entries()
             for history_entry in history_entries:
                 self.add_history_entry(history_entry)
+            
+            # We should give the compliance launch to handlers module, but only when the
+            # compliance state do change
+            if did_change:
+                handlermgr.launch_compliance_handlers(compliance, did_change=did_change)
     
     
     def get_history(self):
@@ -607,7 +656,7 @@ class ComplianceManager(object):
     
     def get_infos(self):
         counts = {}
-        for state in COMPLIANCE_STATES:
+        for state in ALL_COMPLIANCE_STATES:
             counts[state] = 0
         compliances = self.compliances.values()
         for c in compliances:
@@ -634,7 +683,7 @@ class ComplianceManager(object):
         compliance = self.__get_rule_by_name(rule_name)
         if compliance is not None:
             return compliance.get_state()
-        return 'UNKNOWN'
+        return COMPLIANCE_STATES.UNKNOWN
     
     
     def export_http(self):

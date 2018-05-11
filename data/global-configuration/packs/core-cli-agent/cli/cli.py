@@ -31,7 +31,7 @@ from opsbro.module import TYPES_DESCRIPTIONS, MODULE_STATE_COLORS, MODULE_STATES
 from opsbro.topic import TOPICS, TOPICS_LABELS, TOPICS_LABEL_BANNER, MAX_TOPICS_LABEL_SIZE, TOPICS_COLORS, topiker, TOPIC_SERVICE_DISCOVERY, TOPIC_AUTOMATIC_DECTECTION, TOPIC_GENERIC, TOPIC_METROLOGY, TOPIC_MONITORING, TOPIC_SYSTEM_COMPLIANCE, \
     TOPIC_CONFIGURATION_AUTOMATION
 from opsbro.monitoring import CHECK_STATES, STATE_ID_COLORS, STATE_COLORS
-from opsbro.compliancemgr import COMPLIANCE_STATES, COMPLIANCE_STATE_COLORS
+from opsbro.compliancemgr import ALL_COMPLIANCE_STATES, COMPLIANCE_STATE_COLORS
 from opsbro.generator import GENERATOR_STATES, GENERATOR_STATE_COLORS
 
 NO_ZONE_DEFAULT = '(no zone)'
@@ -282,7 +282,7 @@ def do_info(show_logs):
     __print_topic_header(TOPIC_SYSTEM_COMPLIANCE)
     
     strs = []
-    for state in COMPLIANCE_STATES:
+    for state in ALL_COMPLIANCE_STATES:
         nb = compliance[state]
         state_color = COMPLIANCE_STATE_COLORS.get(state, 'grey')
         color = 'grey' if nb == 0 else state_color
