@@ -6,6 +6,7 @@ from slacker import Slacker
 from opsbro.module import HandlerModule
 from opsbro.gossip import gossiper
 from opsbro.parameters import StringParameter, StringListParameter
+from opsbro.compliancemgr import COMPLIANCE_STATE_COLORS
 
 
 class SlackHandlerModule(HandlerModule):
@@ -95,6 +96,31 @@ class SlackHandlerModule(HandlerModule):
         self.__do_send_message(slack, attachments, channel)
     
     
+    def __send_slack_compliance(self, compliance):
+        token = self.__get_token()
+        
+        if not token:
+            self.logger.error('[SLACK] token is not configured on the slack module. skipping slack messages.')
+            return
+        slack = Slacker(token)
+        # title = '{date_num} {time_secs} [node:`%s`][addr:`%s`] Check `%s` is going %s' % (gossiper.display_name, gossiper.addr, check['name'], check['state'])
+        content = 'The compliance %s changed from %s to %s' % (compliance.get_name(), compliance.get_state(), compliance.get_old_state())
+        channel = self.get_parameter('channel')
+        state_color = COMPLIANCE_STATE_COLORS.get(compliance.get_state())
+        color = {'magenta': '#221220', 'green': 'good', 'cyan': '#cde6ff', 'red': 'danger', 'grey': '#cccccc'}.get(state_color, '#cccccc')
+        node_name = '%s (%s)' % (gossiper.name, gossiper.addr)
+        if gossiper.display_name:
+            node_name = '%s [%s]' % (node_name, gossiper.display_name)
+        attachment = {"pretext": ' ', "text": content, 'color': color, 'author_name': node_name, 'footer': 'Send by OpsBro on %s' % node_name, 'ts': int(time.time())}
+        fields = [
+            {"title": "Node", "value": node_name, "short": True},
+            {"title": "Compliance:%s" % compliance.get_name(), "value": compliance.get_state(), "short": True},
+        ]
+        attachment['fields'] = fields
+        attachments = [attachment]
+        self.__do_send_message(slack, attachments, channel)
+    
+    
     def __do_send_message(self, slack, attachments, channel):
         try:
             self.__try_to_send_message(slack, attachments, channel)
@@ -122,7 +148,7 @@ class SlackHandlerModule(HandlerModule):
             self.logger.debug('Slack module is not enabled, skipping check alert sent')
             return
         
-        self.logger.info('Manage an obj event: %s (event=%s)' % (obj, event))
+        self.logger.debug('Manage an obj event: %s (event=%s)' % (obj, event))
         
         evt_type = event['evt_type']
         if evt_type == 'check_execution':
@@ -135,3 +161,11 @@ class SlackHandlerModule(HandlerModule):
             evt_data = event['evt_data']
             group_modification = evt_data['modification']
             self.__send_slack_group(obj, group_modification)
+        
+        # Compliance: only when change, and only some switch cases should be
+        # notify (drop useless changes)
+        if evt_type == 'compliance_execution':
+            evt_data = event['evt_data']
+            compliance_did_change = evt_data['compliance_did_change']
+            if compliance_did_change:
+                self.__send_slack_compliance(obj)
