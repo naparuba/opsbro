@@ -6,9 +6,12 @@ import time
 
 from .util import make_dir
 
+
 # This class is an abstract for various manager
 class BaseManager(object):
     history_directory_suffix = 'UNSET'
+    
+    
     def __init__(self):
         self.history_directory = None
         self._current_history_entry = []
@@ -44,6 +47,7 @@ class BaseManager(object):
                 f.write(buf)
             # Now we can reset it
             self._current_history_entry = []
+    
     
     def get_history(self):
         r = []
