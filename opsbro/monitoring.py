@@ -9,8 +9,6 @@ import random
 import subprocess
 import socket
 import hashlib
-import threading
-import glob
 
 from .log import LoggerFactory
 from .gossip import gossiper
@@ -22,8 +20,8 @@ from .perfdata import PerfDatas
 from .evaluater import evaluater
 from .ts import tsmgr
 from .handlermgr import handlermgr
-from .util import make_dir
 from .topic import topiker, TOPIC_MONITORING
+from .basemanager import BaseManager
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('monitoring')
@@ -33,8 +31,14 @@ STATE_ID_COLORS = {0: 'green', 2: 'red', 1: 'yellow', 3: 'cyan'}
 STATE_COLORS = {'ok': 'green', 'warning': 'yellow', 'critical': 'red', 'unknown': 'grey', 'pending': 'grey'}
 
 
-class MonitoringManager(object):
+class MonitoringManager(BaseManager):
+    history_directory_suffix = 'monitoring'
+    
+    
     def __init__(self):
+        super(MonitoringManager, self).__init__()
+        self.logger = logger
+        
         self.checks = {}
         self.services = {}
         
@@ -43,11 +47,6 @@ class MonitoringManager(object):
         
         # Compile the macro pattern once
         self.macro_pat = re.compile(r'(\$ *(.*?) *\$)+')
-        
-        # History part
-        self.history_directory = None
-        self.__current_history_entry = []
-        self.__current_history_entry_lock = threading.RLock()
     
     
     def load(self, cfg_dir, cfg_data):
@@ -295,37 +294,6 @@ class MonitoringManager(object):
             node['checks'] = checks_entry
     
     
-    def __prepare_history_directory(self):
-        # Prepare the history
-        from .configurationmanager import configmgr
-        data_dir = configmgr.get_data_dir()
-        self.history_directory = os.path.join(data_dir, 'monitoring_history')
-        logger.debug('Asserting existence of the monitoring history directory: %s' % self.history_directory)
-        if not os.path.exists(self.history_directory):
-            make_dir(self.history_directory)
-    
-    
-    def __add_history_entry(self, history_entry):
-        with self.__current_history_entry_lock:
-            self.__current_history_entry.append(history_entry)
-    
-    
-    def __write_history_entry(self):
-        # Noting to do?
-        if not self.__current_history_entry:
-            return
-        # We must lock because checks can exit in others threads
-        with self.__current_history_entry_lock:
-            now = int(time.time())
-            pth = os.path.join(self.history_directory, '%d.json' % now)
-            logger.info('Saving new monitoring history entry to %s' % pth)
-            buf = json.dumps(self.__current_history_entry)
-            with open(pth, 'w') as f:
-                f.write(buf)
-            # Now we can reset it
-            self.__current_history_entry = []
-    
-    
     # Try to find the params for a macro in the foloowing objets, in that order:
     # * check
     # * service
@@ -455,35 +423,6 @@ class MonitoringManager(object):
         return r
     
     
-    def get_checks_history(self):
-        r = []
-        current_size = 0
-        max_size = 1024 * 1024
-        reg = self.history_directory + '/*.json'
-        history_files = glob.glob(reg)
-        # Get from the more recent to the older
-        history_files.sort()
-        history_files.reverse()
-        
-        # Do not send more than 1MB, but always a bit more, not less
-        for history_file in history_files:
-            epoch_time = int(os.path.splitext(os.path.basename(history_file))[0])
-            with open(history_file, 'r') as f:
-                e = json.loads(f.read())
-            r.append({'date': epoch_time, 'entries': e})
-            
-            # If we are now too big, return directly
-            size = os.path.getsize(history_file)
-            current_size += size
-            if current_size > max_size:
-                # Give older first
-                r.reverse()
-                return r
-        # give older first
-        r.reverse()
-        return r
-    
-    
     # get a check return and look it it did change a service state. Also save
     # the result in the __health KV
     def __analyse_check(self, check, did_change):
@@ -494,7 +433,7 @@ class MonitoringManager(object):
             gossiper.update_check_state_id(check['name'], check['state_id'])
             # and save a history entry about it
             history_entry = self.__get_history_entry_from_check(check)
-            self.__add_history_entry(history_entry)
+            self.add_history_entry(history_entry)
         
         # by default warn others nodes if the check did change
         warn_about_our_change = did_change
@@ -575,7 +514,7 @@ class MonitoringManager(object):
     # Main thread for launching checks (each with its own thread)
     def do_check_thread(self):
         # Before run, be sure we have a history directory ready
-        self.__prepare_history_directory()
+        self.prepare_history_directory()
         
         logger.log('CHECK thread launched')
         cur_launchs = {}
@@ -614,7 +553,7 @@ class MonitoringManager(object):
                 del cur_launchs[cid]
             
             # each seconds we try to look if there are history info to save
-            self.__write_history_entry()
+            self.write_history_entry()
             
             time.sleep(1)
     
@@ -849,7 +788,7 @@ class MonitoringManager(object):
         @http_export('/monitoring/history/checks', method='GET')
         def get_monitoring_history_checks():
             response.content_type = 'application/json'
-            r = self.get_checks_history()
+            r = self.get_history()
             return json.dumps(r)
 
 

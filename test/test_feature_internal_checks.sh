@@ -16,4 +16,14 @@ if [ $? != 0 ]; then
 fi
 
 
+HISTORY=$(opsbro monitoring history)
+echo "$HISTORY" |grep 'System Load Average'
+if [ $? != 0 ];then
+   echo "ERROR: the history seems to be missing System Load Average entry"
+   echo "$HISTORY"
+   exit 2
+fi
+
+echo "$HISTORY"
+
 echo "OK:  internal checks are working"
