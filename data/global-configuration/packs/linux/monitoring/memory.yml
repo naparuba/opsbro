@@ -1,7 +1,7 @@
 check:
     if_group: linux
 
-    ok_output: "'OK: memory is at %d%%' % {{collector.memory.phys_used}}"
+    ok_output: "'OK: memory is:\\n %d%% %s' % ({{collector.memory.phys_used}}, get_horizontal_bar({{collector.memory.phys_used}}, width=40))"
     
     critical_if: "{{collector.memory.phys_used}} > {{parameters.memory_critical}}"
     critical_output: "'CRITICAL: memory is at %d%%' % {{collectors.memory.phys_used}}"
