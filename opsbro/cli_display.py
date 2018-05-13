@@ -13,6 +13,7 @@ from .log import cprint, logger, sprintf
 from .characters import CHARACTERS
 from .yamlmgr import yamler
 from .misc.lolcat import lolcat
+from .colorpalette import colorpalette, COLOR_PACK_CITRON_TO_VIOLET
 
 
 # raw_title means do not format it, use it's own color
@@ -429,8 +430,25 @@ _donut_0 = u'''
 '''.replace('XX', r'%2d').replace('Y', r'%%')
 
 
+class HBarPrinter(object):
+    @staticmethod
+    def get_hbar(pct_0_1, width):
+        fill_len = int(width * pct_0_1)
+        bar = ''
+        for i in range(fill_len):
+            pct = 1 - 1.0 * i / width
+            char_color = colorpalette.get_color_from_percent_between_0_1(pct, color_pack=COLOR_PACK_CITRON_TO_VIOLET)
+            bar += lolcat.get_line(CHARACTERS.bar_fill, char_color, spread=None)
+        
+        pad_size = width - fill_len
+        padding_bar = CHARACTERS.bar_unfill * pad_size
+        
+        return sprintf(bar, end='') + sprintf(padding_bar, color='grey', end='')
+
+
 class DonutPrinter(object):
-    def get_donut(self, value):
+    @staticmethod
+    def get_donut(value):
         
         try:
             if 0 < value < 1:  # round 0

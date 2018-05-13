@@ -13,46 +13,39 @@ try:
 except NameError:
     unichr = chr
 
-from opsbro.cli_display import DonutPrinter, get_terminal_size
+from opsbro.cli_display import DonutPrinter, get_terminal_size, HBarPrinter
 from opsbro.misc.lolcat import lolcat
 from opsbro.info import TITLE_COLOR
 from opsbro.misc.bro_quotes import get_quote
+from opsbro.colorpalette import colorpalette
+from opsbro.characters import CHARACTERS
 
 # "graphic" elements
 
-border_bl = u'└'
-border_br = u'┘'
-border_tl = u'┌'
-border_tr = u'┐'
-border_h = u'─'
-border_v = u'│'
-hbar_elements = (u"▏", u"▎", u"▍", u"▌", u"▋", u"▊", u"▉")
-vbar_elements = (u"▁", u"▂", u"▃", u"▄", u"▅", u"▆", u"▇", u"█")
-braille_left = (0x01, 0x02, 0x04, 0x40, 0)
-braille_right = (0x08, 0x10, 0x20, 0x80, 0)
+border_bl = CHARACTERS.corner_bottom_left #u'└'
+border_br = CHARACTERS.corner_bottom_right # u'┘'
+border_tl = CHARACTERS.corner_top_left # u'┌'
+border_tr = CHARACTERS.corner_top_right # u'┐'
+border_h = CHARACTERS.hbar #u'─'
+border_v = CHARACTERS.vbar # u'│'
+#hbar_elements = (u"▏", u"▎", u"▍", u"▌", u"▋", u"▊", u"▉")
+#vbar_elements = (u"▁", u"▂", u"▃", u"▄", u"▅", u"▆", u"▇", u"█")
+#braille_left = (0x01, 0x02, 0x04, 0x40, 0)
+#braille_right = (0x08, 0x10, 0x20, 0x80, 0)
 braille_r_left = (0x04, 0x02, 0x01)
 braille_r_right = (0x20, 0x10, 0x08)
 
 TBox = namedtuple('TBox', 'x y w h')
 
 from opsbro.log import cprint
-from opsbro.characters import CHARACTERS
+
+
 
 
 def LOG(s):
     f = open('/tmp/log.txt', 'a')
     f.write(s + '\n')
     f.close()
-
-
-COLOR_PACK_LIGHT_GREEN_TO_DARK_PURPLE = 1
-# lower (light green=59) to max (dark purple=28)
-DARK_PURPLE = 28
-LIGHT_GREEN = 59
-
-COLOR_PACK_CITRON_TO_VIOLET = 2
-CITRON = 0
-VIOLET = 28
 
 
 class Tile(object):
@@ -84,21 +77,6 @@ class Tile(object):
     # NOTE: +1 because the position are starting at 1, not 0
     def _jump_to(self, x, y):
         cprint(u'\033[%d;%dH' % (x + 1, y + 1), end='')
-    
-    
-    def _get_color_from_percent_between_0_1(self, pct, color_pack=COLOR_PACK_LIGHT_GREEN_TO_DARK_PURPLE):
-        if color_pack == COLOR_PACK_LIGHT_GREEN_TO_DARK_PURPLE:
-            COLOR_START = DARK_PURPLE
-            COLOR_END = LIGHT_GREEN
-        elif color_pack == COLOR_PACK_CITRON_TO_VIOLET:
-            COLOR_START = CITRON
-            COLOR_END = VIOLET
-        else:
-            raise Exception('Bad color pack %s' % color_pack)
-        # get a degraded color
-        color_range = COLOR_END - COLOR_START
-        color = COLOR_START + (pct * color_range)
-        return int(color)
     
     
     def _draw_borders(self, tbox):
@@ -373,24 +351,12 @@ class HGauge(Tile):
         self._refresh_value()
         self.title = self.title_orig + (': %d %s' % (self.value, self.unit))
         tbox = self._draw_borders_and_title(tbox)
+        self._jump_to(tbox.x, tbox.y)
         
         value_ratio = max(0, min(1, self.value / 100.0))
         
-        fill_len = int(tbox.w * value_ratio)
-        bar = ''
-        for i in range(fill_len):
-            char_color = self._get_color_from_percent_between_0_1(1 - 1.0 * i / tbox.w, color_pack=COLOR_PACK_CITRON_TO_VIOLET)
-            LOG('Current color: %s\n' % char_color)
-            bar += lolcat.get_line(CHARACTERS.bar_fill, char_color, spread=None)
-        
-        self._jump_to(tbox.x, tbox.y + 1)
-        
-        pad_size = tbox.w - fill_len
-        padding_bar = CHARACTERS.bar_unfill * pad_size
-        
-        self._jump_to(tbox.x, tbox.y)
+        bar = HBarPrinter().get_hbar(value_ratio, tbox.w)
         cprint(bar, end='')
-        cprint(padding_bar, color='grey', end='')
 
 
 '''
@@ -716,7 +682,8 @@ class HBrailleFilledChart(Tile):
         
         for line_idx in range(box_height):
             # get a degraded color, wil be the same for all the line
-            line_color = self._get_color_from_percent_between_0_1(1.0 * line_idx / box_height)
+            pct = 1.0 * line_idx / box_height
+            line_color = colorpalette.get_color_from_percent_between_0_1(pct)
             bar = ''
             for col_idx in range(box_width):
                 dp_index = (col_idx - box_width) * 2

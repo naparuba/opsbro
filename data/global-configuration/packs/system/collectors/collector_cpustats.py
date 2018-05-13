@@ -20,7 +20,7 @@ class CpuStats(Collector):
         r = {}
         with open('/proc/stat') as procfile:
             lines = procfile.readlines()
-        
+        nb_cpus = 0
         for line in lines:
             # Example of line:
             # cat /proc/stat
@@ -33,12 +33,17 @@ class CpuStats(Collector):
             h_name = elts[0]
             if h_name == 'cpu':
                 h_name = 'cpu_all'
+            else:
+                nb_cpus += 1
             r[h_name] = {}
             values = [int(v.strip()) for v in elts[1:] if v.strip()]
             columns = (r'%user', r'%nice', r'%system', r'%idle', r'%iowait', r'%irq', r'%softirq', r'%steal', r'%guest', r'%guest_nice')
             for i in xrange(0, len(columns)):
                 r[h_name][columns[i]] = values[i]
-        
+        # if we have multiple cpus, prepare the all in a percent way
+        if nb_cpus >= 2:
+            for (column, v) in r['cpu_all'].iteritems():
+                r['cpu_all'][column] = int(v / float(nb_cpus))
         return r
     
     
