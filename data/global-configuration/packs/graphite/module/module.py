@@ -4,7 +4,11 @@ import socket
 import hashlib
 import json
 import re
-import cPickle
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
+    
 import base64
 
 # DO NOT FORGEET:
@@ -392,7 +396,7 @@ class GraphiteModule(ListenerModule):
                                     r.append((None, tt))
                             else:
                                 raw = base64.b64decode(raw64)
-                                v = cPickle.loads(raw)
+                                v = pickle.loads(raw)
                                 raw_values = v['values']
                                 for i in xrange(60):
                                     # Get teh value and the time

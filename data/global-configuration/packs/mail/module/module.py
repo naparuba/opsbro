@@ -89,12 +89,12 @@ class MailHandlerModule(HandlerModule):
         try:
             with open(full_pth) as f:
                 buf = f.read().decode('utf8', 'ignore')
-        except Exception, exp:
+        except Exception as exp:
             self.logger.error('Cannot load template file %s_%s_template (%s) : %s' % (for_what, which_template, full_pth, exp))
             return False
         try:
             tpl = self.jinja2.Template(buf)
-        except Exception, exp:
+        except Exception as exp:
             self.logger.error('The template %s_%s_template (%s) did raised an error when parsing: %s' % (for_what, which_template, full_pth, exp))
             return False
         # Ok we can save it

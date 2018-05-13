@@ -5,6 +5,7 @@ class LibraryStore(object):
         self.__jinja2 = None
         self.__pprint = None
         self.__pygments = None
+        self.__StringIO = None
     
     
     def get_encrypter(self):
@@ -55,5 +56,16 @@ class LibraryStore(object):
         self.__pygments = pygments
         return self.__pygments
 
+
+    def get_StringIO(self):
+        if self.__StringIO is not None:
+            return self.__StringIO
+        try:
+            from cStringIO import StringIO
+        except ImportError:
+            from StringIO import StringIO
+        self.__StringIO = StringIO
+        return self.__StringIO
+        
 
 libstore = LibraryStore()

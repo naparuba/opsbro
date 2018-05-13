@@ -74,7 +74,7 @@ class DiskUsage(Collector):
                     volume[1] = int(volume[1]) / 1024  # total
                     volume[2] = int(volume[2]) / 1024  # Used
                     volume[3] = int(volume[3]) / 1024  # Available
-                except Exception, e:
+                except Exception as e:
                     logger.error('getDiskUsage: parsing, loop %s - Used or Available not present' % (repr(e),))
                 d['total'] = volume[1]
                 d['used'] = volume[2]

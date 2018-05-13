@@ -1,12 +1,13 @@
 import os
 import sys
-from cStringIO import StringIO
 import shutil
 import datetime
 import time
 
 from .characters import CHARACTERS
 import opsbro.misc
+from .library import libstore
+
 
 p = os.path.join(os.path.dirname(opsbro.misc.__file__), 'internalyaml')
 sys.path.insert(0, p)
@@ -70,6 +71,7 @@ class YamlMgr(object):
     
     
     def dumps(self, o):
+        StringIO = libstore.get_StringIO()
         f = StringIO()
         yaml.round_trip_dump(o, f, default_flow_style=False)
         buf = f.getvalue()

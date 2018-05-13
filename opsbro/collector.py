@@ -109,7 +109,7 @@ class Collector(ParameterBasedType):
             self.logger.debug('OUTPUT, ERR', output, err)
             try:
                 proc.kill()
-            except Exception, e:
+            except Exception as e:
                 pass
             if err:
                 self.set_error('Error in sub process: %s' % err)

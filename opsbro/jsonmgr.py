@@ -1,5 +1,5 @@
 import json
-from util import byteify
+from .util import byteify
 
 
 # Class to wrap several things to json, like manage some utf8 things and such things

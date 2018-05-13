@@ -31,7 +31,7 @@ class Launcher(object):
         if os.path.exists('/tmp'):
             try:
                 os.chdir('/tmp')
-            except Exception, e:
+            except Exception as e:
                 raise Exception('Invalid working directory /tmp')
     
     
@@ -39,7 +39,7 @@ class Launcher(object):
         logger.info("Unlinking lock file %s" % self.lock_path)
         try:
             os.unlink(self.lock_path)
-        except Exception, e:
+        except Exception as e:
             logger.error("Got an error unlinking our pidfile: %s" % (e))
     
     

@@ -1671,9 +1671,9 @@ if __name__ == '__main__':
     import time
     t0 = time.time()
     system = WMI()
-    print "TIME: ", time.time() - t0
+    print("TIME: ", time.time() - t0)
     for my_computer in system.Win32_ComputerSystem():
         print ("Disks on", my_computer.Name)
         for disk in system.Win32_LogicalDisk():
             print (disk.Caption, disk.Description, disk.ProviderName or "")
-    print "TIME2", time.time() - t0
+    print("TIME2", time.time() - t0)

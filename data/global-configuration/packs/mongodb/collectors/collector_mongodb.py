@@ -319,7 +319,7 @@ class Mongodb(Collector):
                         if v is not None:
                             status['dbStats'][database][key] = v
         
-        except Exception, ex:
+        except Exception:
             logger.error('Unable to get MongoDB status - Exception = %s', traceback.format_exc())
             return False
         

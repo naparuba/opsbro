@@ -8,7 +8,13 @@
 import os
 import json
 import socket
-import urllib2
+try:
+    import urllib2
+    AbstractHTTPHandler = urllib2.AbstractHTTPHandler
+    Request = urllib2.Request
+except ImportError:
+    from urllib.request import AbstractHTTPHandler, Request
+    
 import urllib
 import httplib
 from urlparse import urlsplit
@@ -43,7 +49,7 @@ class UnixHTTPConnection(httplib.HTTPConnection):
 
 # Class that makes Unix sockets work with urllib2 without any additional
 # dependencies.
-class UnixSocketHandler(urllib2.AbstractHTTPHandler):
+class UnixSocketHandler(AbstractHTTPHandler):
     def unix_open(self, req):
         full_path = "%s%s" % urlsplit(req.get_full_url())[1:3]
         path = os.path.sep
@@ -56,13 +62,13 @@ class UnixSocketHandler(urllib2.AbstractHTTPHandler):
         
         # add a host or else urllib2 complains
         url = req.get_full_url().replace(unix_socket, "/localhost")
-        new_req = urllib2.Request(url, req.get_data(), dict(req.header_items()))
+        new_req = Request(url, req.get_data(), dict(req.header_items()))
         new_req.timeout = req.timeout
         new_req.get_method = req.get_method  # Also copy specific method from the original header
         return self.do_open(UnixHTTPConnection(unix_socket), new_req)
     
     
-    unix_request = urllib2.AbstractHTTPHandler.do_request_
+    unix_request = AbstractHTTPHandler.do_request_
 
 
 # Get on the local socket. Beware to monkeypatch the get
@@ -90,7 +96,7 @@ def get_local(u, local_socket, params={}, method='GET', timeout=10):
         uri = 'unix:/%s%s' % (local_socket, u)
     
     logger.debug("Connecting to local http/unix socket at: %s with method %s" % (uri, method))
-    req = urllib2.Request(uri, data)
+    req = Request(uri, data)
     req.get_method = lambda: method
     for (k, v) in special_headers:
         req.add_header(k, v)

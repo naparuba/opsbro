@@ -49,7 +49,7 @@ class Nginx(Collector):
             self.set_error('Unable to get Nginx status - HTTPException = %s' % e)
             return False
         
-        except Exception, e:
+        except Exception as e:
             self.set_error('Unable to get Nginx status - Exception = %s' % traceback.format_exc())
             return False
         

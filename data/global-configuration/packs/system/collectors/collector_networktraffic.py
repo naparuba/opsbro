@@ -131,10 +131,10 @@ class NetworkTraffic(Collector):
                     if int(pythonVersion[1]) >= 6:
                         try:
                             proc.kill()
-                        except Exception, e:
+                        except Exception as e:
                             logger.debug('Process already terminated')
                 
-                except Exception, e:
+                except Exception as e:
                     logger.error('getNetworkTraffic: exception = %s', traceback.format_exc())
                     
                     return False
@@ -142,7 +142,7 @@ class NetworkTraffic(Collector):
                 if int(pythonVersion[1]) >= 6:
                     try:
                         proc.kill()
-                    except Exception, e:
+                    except Exception as e:
                         logger.debug('Process already terminated')
             
             logger.debug('getNetworkTraffic: open success, parsing')

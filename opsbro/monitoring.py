@@ -378,7 +378,7 @@ class MonitoringManager(BaseManager):
             b = False
             try:
                 computed_variables = self.__get_variables(check)
-            except Exception, exp:
+            except Exception as exp:
                 output = "ERROR: the variable expression fail: %s" % exp
                 b = True
                 rc = 2

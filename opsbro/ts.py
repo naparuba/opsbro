@@ -2,7 +2,10 @@ import os
 import time
 import threading
 import base64
-import cPickle
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 import json
 
 from .stats import STATS
@@ -10,7 +13,6 @@ from .log import LoggerFactory
 from .threadmgr import threader
 from .now import NOW
 from .dbwrapper import dbwrapper
-from .gossip import gossiper
 from .stop import stopper
 from .kv import kvmgr
 from .httpdaemon import http_export, response
@@ -18,7 +20,7 @@ from .httpdaemon import http_export, response
 # DO NOT FORGEET:
 # sysctl -w net.core.rmem_max=26214400
 
-SERIALIZER = cPickle
+SERIALIZER = pickle
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('time-series')

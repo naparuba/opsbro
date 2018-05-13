@@ -9,7 +9,10 @@ import stat
 import optparse
 import shutil
 import imp
-from cStringIO import StringIO
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 from glob import glob
 import atexit
 

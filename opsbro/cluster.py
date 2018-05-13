@@ -6,7 +6,6 @@ import threading
 import time
 import hashlib
 import signal
-import cStringIO
 import tempfile
 import tarfile
 import base64
@@ -842,7 +841,8 @@ class Cluster(object):
                     logger.log('WARNING: cannot load the libexec script from kv %s' % p)
                     continue
                 vtar = base64.b64decode(v64)
-                f = cStringIO.StringIO(vtar)
+                StringIO = libstore.get_StringIO()
+                f = StringIO(vtar)
                 with tarfile.open(fileobj=f, mode="r:gz") as tar:
                     files = tar.getmembers()
                     if len(files) != 1:
@@ -901,7 +901,8 @@ class Cluster(object):
                     logger.log('WARNING: cannot load the configuration script from kv %s' % p)
                     continue
                 vtar = base64.b64decode(v64)
-                f = cStringIO.StringIO(vtar)
+                StringIO = libstore.get_StringIO()
+                f = StringIO(vtar)
                 with tarfile.open(fileobj=f, mode="r:gz") as tar:
                     files = tar.getmembers()
                     if len(files) != 1:

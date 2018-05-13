@@ -130,7 +130,7 @@ class Memory(Collector):
                     if int(pythonVersion[1]) >= 6:
                         try:
                             proc.kill()
-                        except Exception, e:
+                        except Exception as e:
                             logger.debug('Process already terminated')
                     
                     sysinfo = sysinfo.split('\n')
@@ -165,13 +165,13 @@ class Memory(Collector):
                 
                 except OSError, e:
                     logger.debug('getMemoryUsage: sysinfo not available')
-                except Exception, e:
+                except Exception as e:
                     logger.error('getMemoryUsage: exception = %s', traceback.format_exc())
             finally:
                 if int(pythonVersion[1]) >= 6:
                     try:
                         proc.kill()
-                    except Exception, e:
+                    except Exception as e:
                         logger.debug('Process already terminated')
             
             if physFree == None:
@@ -188,7 +188,7 @@ class Memory(Collector):
                         if int(pythonVersion[1]) >= 6:
                             try:
                                 proc.kill()
-                            except Exception, e:
+                            except Exception as e:
                                 logger.debug('Process already terminated')
                         
                         logger.debug('getMemoryUsage: attempting Popen (vmstat)')
@@ -198,10 +198,10 @@ class Memory(Collector):
                         if int(pythonVersion[1]) >= 6:
                             try:
                                 proc.kill()
-                            except Exception, e:
+                            except Exception as e:
                                 logger.debug('Process already terminated')
                     
-                    except Exception, e:
+                    except Exception as e:
                         logger.error('getMemoryUsage: exception = %s', traceback.format_exc())
                         
                         return False
@@ -209,7 +209,7 @@ class Memory(Collector):
                     if int(pythonVersion[1]) >= 6:
                         try:
                             proc.kill()
-                        except Exception, e:
+                        except Exception as e:
                             logger.debug('Process already terminated')
                 
                 logger.debug('getMemoryUsage: Popen success, parsing')
@@ -253,10 +253,10 @@ class Memory(Collector):
                     if int(pythonVersion[1]) >= 6:
                         try:
                             proc.kill()
-                        except Exception, e:
+                        except Exception as e:
                             logger.debug('Process already terminated')
                 
-                except Exception, e:
+                except Exception as e:
                     logger.error('getMemoryUsage: exception = %s', traceback.format_exc())
                     
                     return False
@@ -264,7 +264,7 @@ class Memory(Collector):
                 if int(pythonVersion[1]) >= 6:
                     try:
                         proc.kill()
-                    except Exception, e:
+                    except Exception as e:
                         logger.debug('Process already terminated')
             
             lines = swapinfo.split('\n')
@@ -299,7 +299,7 @@ class Memory(Collector):
                     if int(pythonVersion[1]) >= 6:
                         try:
                             proc.kill()
-                        except Exception, e:
+                        except Exception as e:
                             logger.debug('Process already terminated')
                     
                     logger.debug('getMemoryUsage: attempting Popen (sysctl)')
@@ -309,17 +309,17 @@ class Memory(Collector):
                     if int(pythonVersion[1]) >= 6:
                         try:
                             proc.kill()
-                        except Exception, e:
+                        except Exception as e:
                             logger.debug('Process already terminated')
                 
-                except Exception, e:
+                except Exception as e:
                     logger.error('getMemoryUsage: exception = %s', traceback.format_exc())
                     return False
             finally:
                 if int(pythonVersion[1]) >= 6:
                     try:
                         proc.kill()
-                    except Exception, e:
+                    except Exception as e:
                         logger.debug('Process already terminated')
             
             logger.debug('getMemoryUsage: Popen success, parsing')

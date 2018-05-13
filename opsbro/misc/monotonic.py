@@ -181,5 +181,5 @@ except AttributeError:
             if monotonic() - monotonic() > 0:
                 raise ValueError('monotonic() is not monotonic!')
         
-        except Exception, exp:
+        except Exception as exp:
             raise RuntimeError('No suitable implementation of a monotonic clock for this system (%s)' % exp)

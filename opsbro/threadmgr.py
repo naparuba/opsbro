@@ -8,11 +8,11 @@ import sys
 import os
 import time
 import traceback
-import cStringIO
 import json
 from .httpdaemon import http_export, response
 from .log import logger
 from .pubsub import pubsub
+from .library import libstore
 
 # this part is doomed for windows portability, will be fun to manage :)
 try:
@@ -143,7 +143,6 @@ elif sys.platform.startswith("linux"):
 
 # The f() wrapper
 def w(d, f, name, is_essential, args):
-    import cStringIO
     import traceback
     import time
     from opsbro.log import logger
@@ -160,7 +159,8 @@ def w(d, f, name, is_essential, args):
     try:
         f(*args)
     except Exception:
-        output = cStringIO.StringIO()
+        StringIO = libstore.get_StringIO()
+        output = StringIO()
         traceback.print_exc(file=output)
         logger.error("Thread %s is exiting on error. Back trace of this error: %s" % (name, output.getvalue()))
         output.close()
