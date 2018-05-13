@@ -1,9 +1,12 @@
 check:
     interval: 10s
     if_group: linux
+
+    variables:
+       cpu_used:  "100-{{collector.cpustats.cpu_all.%idle}}"
+
+    ok_output: "'OK cpu is great:\\n%s' % get_donut({{variables.cpu_used}})"
     
-    ok_output: "'OK cpu is great:\\n%s' % get_donut(100-{{collector.cpustats.cpu_all.%idle}})"
-    
-    critical_if: "{{collector.cpustats.cpu_all.%idle}} < 100 - {{parameters.cpu_critical}}"
-    critical_output: "'Critical: cpu is very high:\\n%s' % get_donut(100-{{collector.cpustats.cpu_all.%idle}})"
+    critical_if: "{{variables.cpu_used}} >= {{parameters.cpu_critical}}"
+    critical_output: "'Critical: cpu is very high:\\n%s' % get_donut({{variables.cpu_used}})"
 

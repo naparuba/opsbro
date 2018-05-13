@@ -1,12 +1,16 @@
 check:
     if_group: linux
 
-    ok_output: "'OK: memory is:\\n %d%% %s' % ({{collector.memory.phys_used}}, get_horizontal_bar({{collector.memory.phys_used}}, width=40))"
-    
-    critical_if: "{{collector.memory.phys_used}} > {{parameters.memory_critical}}"
-    critical_output: "'CRITICAL: memory is at %d%%' % {{collectors.memory.phys_used}}"
+    variables:
+        used_pct: "{{collector.memory.phys_used}}"
+        bar:      "get_horizontal_bar({{collector.memory.phys_used}}, width=40)"
 
-    warning_if: "{{collector.memory.phys_used}} > {{parameters.threshold.memory_warning}}"
-    warning_output:  "'WARNING: memory is at %d%%' % {{collector.memory.phys_used}}"
+    ok_output: "'OK: memory is:\\n %d%% %s' % ({{variables.used_pct}}, {{variables.bar}})"
+    
+    critical_if: "{{variables.used_pct}} > {{parameters.memory_critical}}"
+    critical_output: "'CRITICAL: memory is:\\n %d%% %s' % ({{variables.used_pct}}, {{variables.bar}})"
+
+    warning_if: "{{variables.used_pct}} > {{parameters.threshold.memory_warning}}"
+    warning_output:  "'WARNING: memory is:\\n %d%% %s' % ({{variables.used_pct}}, {{variables.bar}})"
 
     interval: 30s

@@ -85,6 +85,8 @@ class MonitoringManager(BaseManager):
         check['old_state'] = 'pending'
         check['old_state_id'] = 3
         check['output'] = ''
+        check['variables'] = check.get('variables', {})
+        check['computed_variables'] = {}
         self.checks[check['id']] = check
     
     
@@ -292,7 +294,19 @@ class MonitoringManager(BaseManager):
                     continue
                 checks_entry[cname] = {'state_id': check['state_id']}  # by default state are unknown
             node['checks'] = checks_entry
+
+
+    def __get_variables(self, check):
+        variables = check['variables']
     
+        # We need to evaluate our variables if there are some
+        computed_variables = {}
+        for (k, expr) in variables.iteritems():
+            try:
+                computed_variables[k] = evaluater.eval_expr(expr)
+            except Exception as exp:
+                raise Exception('the variable %s expr %s did fail to evaluate: %s' % (k, expr, exp))
+        return computed_variables
     
     # Try to find the params for a macro in the foloowing objets, in that order:
     # * check
@@ -362,20 +376,27 @@ class MonitoringManager(BaseManager):
         err = ''
         if critical_if or warning_if:
             b = False
+            try:
+                computed_variables = self.__get_variables(check)
+            except Exception, exp:
+                output = "ERROR: the variable expression fail: %s" % exp
+                b = True
+                rc = 2
+                computed_variables = {}
             if critical_if:
-                b = evaluater.eval_expr(critical_if, check=check)
+                b = evaluater.eval_expr(critical_if, check=check, variables=computed_variables)
                 if b:
-                    output = evaluater.eval_expr(check.get('critical_output', ''))
+                    output = evaluater.eval_expr(check.get('critical_output', ''), variables=computed_variables)
                     rc = 2
             if not b and warning_if:
-                b = evaluater.eval_expr(warning_if, check=check)
+                b = evaluater.eval_expr(warning_if, check=check, variables=computed_variables)
                 if b:
-                    output = evaluater.eval_expr(check.get('warning_output', ''))
+                    output = evaluater.eval_expr(check.get('warning_output', ''), variables=computed_variables)
                     rc = 1
             # if unset, we are in OK
             if rc == 3:
                 rc = 0
-                output = evaluater.eval_expr(check.get('ok_output', ''))
+                output = evaluater.eval_expr(check.get('ok_output', ''), variables=computed_variables)
         else:
             script = check['script']
             logger.debug("CHECK start: MACRO launching %s" % script)
