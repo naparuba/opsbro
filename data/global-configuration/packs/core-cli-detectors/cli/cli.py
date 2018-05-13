@@ -65,7 +65,7 @@ def do_detect_run():
     print_info_title('Detectors results')
     all_groups = []
     new_groups = []
-    for (k, v) in d.iteritems():
+    for (k, v) in d.items():
         all_groups.extend(v['groups'])
         new_groups.extend(v['new_groups'])
     e = [('Groups', ','.join(all_groups))]

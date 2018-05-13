@@ -32,7 +32,7 @@ class Httper(object):
         
         req = urllib2.Request(uri, data)
         req.get_method = lambda: 'GET'
-        for (k, v) in headers.iteritems():
+        for (k, v) in headers.items():
             req.add_header(k, v)
         
         request = url_opener.open(req)
@@ -61,7 +61,7 @@ class Httper(object):
         
         req = urllib2.Request(uri, data)
         req.get_method = lambda: 'DELETE'
-        for (k, v) in headers.iteritems():
+        for (k, v) in headers.items():
             req.add_header(k, v)
         request = url_opener.open(req)
         response = request.read()
@@ -82,7 +82,7 @@ class Httper(object):
         
         req = urllib2.Request(uri, data)
         req.get_method = lambda: 'POST'
-        for (k, v) in headers.iteritems():
+        for (k, v) in headers.items():
             req.add_header(k, v)
         request = url_opener.open(req)
         response = request.read()
@@ -106,7 +106,7 @@ class Httper(object):
         
         req = urllib2.Request(uri, data)
         req.get_method = lambda: 'PUT'
-        for (k, v) in headers.iteritems():
+        for (k, v) in headers.items():
             req.add_header(k, v)
         request = url_opener.open(req)
         response = request.read()

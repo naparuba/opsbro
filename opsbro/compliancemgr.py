@@ -168,7 +168,7 @@ class Rule(object):
         
         # We need to evaluate our variables if there are some
         variables = {}
-        for (k, expr) in variables_params.iteritems():
+        for (k, expr) in variables_params.items():
             try:
                 variables[k] = evaluater.eval_expr(expr)
             except Exception as exp:
@@ -576,7 +576,7 @@ class ComplianceManager(BaseManager):
     
     
     def __launch_compliances(self):
-        for (compliance_id, compliance) in self.compliances.iteritems():
+        for (compliance_id, compliance) in self.compliances.items():
             
             name = compliance.get_name()
             
@@ -678,7 +678,7 @@ class ComplianceManager(BaseManager):
         def get_compliance_state():
             response.content_type = 'application/json'
             nc = {}
-            for (c_id, compliance) in self.compliances.iteritems():
+            for (c_id, compliance) in self.compliances.items():
                 nc[c_id] = compliance.get_json_dump()
             return json.dumps(nc)
         

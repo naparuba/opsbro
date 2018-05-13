@@ -165,7 +165,7 @@ def do_dashboards_list():
         sys.exit(0)
     
     packs = {}
-    for (dname, dashboard) in dashboards.iteritems():
+    for (dname, dashboard) in dashboards.items():
         pack_name = dashboard['pack_name']
         if pack_name not in packs:
             packs[pack_name] = {}

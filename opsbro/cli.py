@@ -446,7 +446,7 @@ class CLICommander(object):
                 exports = getattr(m, 'exports', {})
                 # get the topics from the pack definition
                 topics = packer.get_pack_all_topics(pname)
-                for (f, raw_entry) in exports.iteritems():
+                for (f, raw_entry) in exports.items():
                     self._create_cli_entry(f, raw_entry, topics)
         
         logger.debug('We load the keywords %s' % self.keywords)
@@ -541,7 +541,7 @@ class CLICommander(object):
     
     def print_completion(self, args):
         to_analayses = []
-        for (k, d) in self.keywords.iteritems():
+        for (k, d) in self.keywords.items():
             if k != 'global':
                 to_analayses.append([k])
                 for sub_k in d.keys():

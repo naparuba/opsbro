@@ -80,7 +80,7 @@ def do_compliance_state(compliance_name=''):
         return
     print_h1('Compliances')
     packs = {}
-    for (cname, compliance) in compliances.iteritems():
+    for (cname, compliance) in compliances.items():
         if compliance_name and compliance['name'] != compliance_name:
             continue
         pack_name = compliance['pack_name']
@@ -127,7 +127,7 @@ def do_compliance_history():
             if compliance_name not in entries_by_compliances:
                 entries_by_compliances[compliance_name] = {'pack_name': pack_name, 'mode': mode, 'entries': []}
             entries_by_compliances[compliance_name]['entries'].append(entry)
-        for (compliance_name, d) in entries_by_compliances.iteritems():
+        for (compliance_name, d) in entries_by_compliances.items():
             pack_name = d['pack_name']
             mode = d['mode']
             entries = d['entries']
@@ -161,7 +161,7 @@ def do_compliance_wait_compliant(compliance_name, timeout=30, exit_if_ok=True):
             logger.error('Bad return from the server %s' % exp)
             return
         compliance = None
-        for (cname, c) in compliances.iteritems():
+        for (cname, c) in compliances.items():
             if c['name'] == compliance_name:
                 compliance = c
         if not compliance:

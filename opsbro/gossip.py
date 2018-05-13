@@ -96,7 +96,7 @@ class Gossip(BaseManager):
         now = int(time.time())
         to_del = []
         with self.events_lock:
-            for (cid, e) in self.events.iteritems():
+            for (cid, e) in self.events.items():
                 ctime = e.get('ctime', 0)
                 if ctime < now - self.max_event_age:
                     to_del.append(cid)
@@ -140,7 +140,7 @@ class Gossip(BaseManager):
         top_zones = zonemgr.get_top_zones_from(self.zone)
         sub_zones = zonemgr.get_sub_zones_from(self.zone)
         with self.nodes_lock:
-            for (nuuid, node) in self.nodes.iteritems():
+            for (nuuid, node) in self.nodes.items():
                 nzone = node['zone']
                 # My zone, we keep
                 if nzone == self.zone:
@@ -287,7 +287,7 @@ class Gossip(BaseManager):
     def find_group_nodes(self, group):
         nodes = []
         with self.nodes_lock:
-            for (uuid, node) in self.nodes.iteritems():
+            for (uuid, node) in self.nodes.items():
                 if node['state'] in [NODE_STATES.DEAD, NODE_STATES.LEAVE]:
                     continue
                 groups = node.get('groups', [])
@@ -708,7 +708,7 @@ class Gossip(BaseManager):
     
     # Someone send us it's nodes, we are merging it with ours
     def merge_nodes(self, nodes):
-        for (k, node) in nodes.iteritems():
+        for (k, node) in nodes.items():
             # Maybe it's me? bail out
             if node['uuid'] == self.uuid:
                 logger.debug('SKIPPING myself node entry in merge nodes')
@@ -729,7 +729,7 @@ class Gossip(BaseManager):
     
     def merge_events(self, events):
         with self.events_lock:
-            for (eventid, event) in events.iteritems():
+            for (eventid, event) in events.items():
                 logger.debug('Try to merge event', eventid, event)
                 payload = event.get('payload', {})
                 # if bad event or already known one, delete it
@@ -1290,7 +1290,7 @@ class Gossip(BaseManager):
             nodes = copy.deepcopy(self.nodes)
         sub_zones = zonemgr.get_sub_zones_from(self.zone)
         nodes_to_send = {}
-        for (nuuid, node) in nodes.iteritems():
+        for (nuuid, node) in nodes.items():
             nzone = node['zone']
             if nzone != self.zone and nzone not in sub_zones:
                 # skip this node
@@ -1353,7 +1353,7 @@ class Gossip(BaseManager):
         if other_node_zone in sub_zones:
             only_my_zone_proxies = {}
             with self.nodes_lock:
-                for (nuuid, node) in self.nodes.iteritems():
+                for (nuuid, node) in self.nodes.items():
                     if node['is_proxy'] and node['zone'] == self.zone:
                         only_my_zone_proxies[nuuid] = node
                         logger.debug('PUSH-PULL: give back data about proxy node: %s' % node['name'])
@@ -1631,7 +1631,7 @@ class Gossip(BaseManager):
             response.content_type = 'application/json'
             evt = None
             with self.events_lock:
-                for (cid, e) in self.events.iteritems():
+                for (cid, e) in self.events.items():
                     e_type = e.get('payload', {}).get('type', None)
                     if e_type == event_type:
                         evt = e

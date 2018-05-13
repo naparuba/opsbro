@@ -42,20 +42,20 @@ class CpuStats(Collector):
                 r[h_name][columns[i]] = values[i]
         # if we have multiple cpus, prepare the all in a percent way
         if nb_cpus >= 2:
-            for (column, v) in r['cpu_all'].iteritems():
+            for (column, v) in r['cpu_all'].items():
                 r['cpu_all'][column] = int(v / float(nb_cpus))
         return r
     
     
     def compute_linux_cpu_stats(self, new_cpu_raw_stats, diff_time):
         r = {}
-        for (k, new_stats) in new_cpu_raw_stats.iteritems():
+        for (k, new_stats) in new_cpu_raw_stats.items():
             old_stats = self.prev_linux_stats.get(k, None)
             # A new cpu did spawn? wait a loop to compute it
             if old_stats is None:
                 continue
             r[k] = {}
-            for (t, new_v) in new_stats.iteritems():
+            for (t, new_v) in new_stats.items():
                 old_v = old_stats[t]
                 this_type_consumed = (new_v - old_v) / float(diff_time)
                 r[k][t] = this_type_consumed

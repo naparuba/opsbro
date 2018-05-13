@@ -189,7 +189,7 @@ class GraphiteModule(ListenerModule):
                 l.append(line)
                 forwards[ts_node_manager] = l
         
-        for (uuid, lst) in forwards.iteritems():
+        for (uuid, lst) in forwards.items():
             node = gossiper.get(uuid)
             # maybe the node disapear? bail out, we are not lucky
             if node is None:

@@ -57,7 +57,7 @@ def to_best_int_float(val):
 # get a dict but with key as lower
 def lower_dict(d):
     r = {}
-    for (k, v) in d.iteritems():
+    for (k, v) in d.items():
         r[k.lower()] = v
     return r
 
@@ -100,7 +100,7 @@ def guess_server_const_uuid():
 # recursivly change a dict with pure bytes
 def byteify(input):
     if isinstance(input, dict):
-        return dict([(byteify(key), byteify(value)) for key, value in input.iteritems()])
+        return dict([(byteify(key), byteify(value)) for key, value in input.items()])
     elif isinstance(input, list):
         return [byteify(element) for element in input]
     elif isinstance(input, str):

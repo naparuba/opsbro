@@ -437,7 +437,7 @@ if allow_black_magic:
         cprint("   - it won't use the package system to install dependencies")
         cprint("   - and so it will use the python pip dependency system instead (internet connection is need).")
 
-for (m, d) in mod_need.iteritems():
+for (m, d) in mod_need.items():
     cprint(' * Checking dependency for ', end='')
     cprint('%-20s' % m, color='blue', end='')
     cprint(' : ', end='')

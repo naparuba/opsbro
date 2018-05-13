@@ -38,7 +38,7 @@ def do_exec(group='*', cmd='uname -a'):
     j = json.loads(r)
     
     res = j['res']
-    for (uuid, e) in res.iteritems():
+    for (uuid, e) in res.items():
         node = e['node']
         nname = node['name']
         color = {'alive': 'green', 'dead': 'red', 'suspect': 'yellow', 'leave': 'cyan'}.get(node['state'], 'cyan')

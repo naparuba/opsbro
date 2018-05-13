@@ -68,7 +68,7 @@ class KernelStats(Collector):
             # Now loop through each interface
             by_sec_keys = ['ctxt', 'processes', 'pgfault', 'pgmajfault']
             to_add = {}
-            for (k, v) in data.iteritems():
+            for (k, v) in data.items():
                 if k in by_sec_keys:
                     if k in self.store:
                         to_add['%s/s' % k] = (v - self.store[k]) / diff

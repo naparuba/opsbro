@@ -152,7 +152,7 @@ class StatsdModule(ListenerModule):
             self.timers = {}
         
         _t = time.time()
-        for (mname, timer) in timers.iteritems():
+        for (mname, timer) in timers.items():
             # We will need to compute the mean_99, count_99, upper_99, sum_99, sum_quares_99
             # but also std, upper, lower, count, count_ps, sum, sum_square, mean, median
             _t = time.time()

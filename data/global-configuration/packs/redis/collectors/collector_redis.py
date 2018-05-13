@@ -91,7 +91,7 @@ class Redis(Collector):
         info['available'] = True
         
         to_add = {}
-        for (k, v) in info.iteritems():
+        for (k, v) in info.items():
             if k in self.RATE_KEYS:
                 if k in self.store:
                     nv = (v - self.store[k]) / diff

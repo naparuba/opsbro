@@ -39,7 +39,7 @@ class ParameterBasedType(object):
         pack_parameters = configmgr.get_parameters_from_pack(self.pack_name)
         
         # We prepare the config
-        for (prop, property) in self.parameters.iteritems():
+        for (prop, property) in self.parameters.items():
             # Maybe the property is not defined in the yml
             if prop not in pack_parameters:
                 if property.have_default():
@@ -64,7 +64,7 @@ class ParameterBasedType(object):
         pack_parameters = configmgr.get_parameters_from_pack(self.pack_name)
         
         r = {'state': self.__state, 'errors': self.__configuration_error, 'parameters': {}}
-        for (prop, property) in self.parameters.iteritems():
+        for (prop, property) in self.parameters.items():
             value = None
             is_missing = False
             is_valid = True

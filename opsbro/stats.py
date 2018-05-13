@@ -44,7 +44,7 @@ class Stats(object):
     
     
     def show(self):
-        return ', '.join(['%s:%.4f' % (k, v) for (k, v) in self.stats.iteritems()])
+        return ', '.join(['%s:%.4f' % (k, v) for (k, v) in self.stats.items()])
 
 
 STATS = Stats()

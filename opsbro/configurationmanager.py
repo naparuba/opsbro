@@ -179,7 +179,7 @@ class ConfigurationManager(object):
         
         # grok all others data so we can use them in our checks
         cluster_parameters = self.__class__.cluster_parameters
-        for (k, v) in o.iteritems():
+        for (k, v) in o.items():
             # check, service, ... are already managed
             if k in self.known_types:
                 continue
@@ -308,7 +308,7 @@ class ConfigurationManager(object):
         if pack_name not in self.pack_parameters:
             self.pack_parameters[pack_name] = {'pack_level': pack_level, 'properties': {}}
         pack_entry = self.pack_parameters[pack_name]
-        for (k, v) in o.iteritems():
+        for (k, v) in o.items():
             pack_entry['properties'][k] = v
     
     

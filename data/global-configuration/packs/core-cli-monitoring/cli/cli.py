@@ -42,7 +42,7 @@ def do_state(name=''):
     if len(services) == 0:
         cprint('No services', color='grey')
     else:
-        for (sname, service) in services.iteritems():
+        for (sname, service) in services.items():
             state = service['state_id']
             cprint('\t%s ' % sname.ljust(20), end='')
             c = {0: 'green', 2: 'red', 1: 'yellow', 3: 'cyan'}.get(state, 'cyan')
@@ -58,7 +58,7 @@ def do_state(name=''):
     
     print_h1('Checks')
     packs = {}
-    for (cname, check) in checks.iteritems():
+    for (cname, check) in checks.items():
         pack_name = check['pack_name']
         if pack_name not in packs:
             packs[pack_name] = {}
@@ -159,7 +159,7 @@ def do_wait_ok(check_name, timeout=30):
             return
         checks = states['checks']
         check = None
-        for (cname, c) in checks.iteritems():
+        for (cname, c) in checks.items():
             if c['display_name'] == name:
                 check = c
         if not check:

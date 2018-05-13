@@ -211,7 +211,7 @@ def do_zone_list():
     except get_request_errors() as exp:
         logger.error(exp)
         return
-    for (zname, zone) in zones.iteritems():
+    for (zname, zone) in zones.items():
         cprint(' * ', end='')
         cprint(zname, color='magenta')
         sub_zones = zone.get('sub-zones', [])

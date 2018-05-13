@@ -18,7 +18,7 @@ from opsbro.characters import CHARACTERS
 
 def _extract_data_from_results(d, prefix, res):
     if isinstance(d, dict):
-        for (k, v) in d.iteritems():
+        for (k, v) in d.items():
             _extract_data_from_results(v, prefix + '.' + k, res)
             continue
     elif isinstance(d, list) or isinstance(d, set):
@@ -77,7 +77,7 @@ def do_collectors_show(name='', all=False):
         return
     
     disabled = []
-    for (cname, d) in collectors.iteritems():
+    for (cname, d) in collectors.items():
         if name and not name == cname:
             continue
         if not name and not d['active'] and not all:
@@ -106,7 +106,7 @@ def do_collectors_state():
 
 def do_collectors_run(name):
     collectormgr.load_collectors({})
-    for (colname, e) in collectormgr.collectors.iteritems():
+    for (colname, e) in collectormgr.collectors.items():
         colname = e['name']
         if colname != name:
             continue
@@ -129,7 +129,7 @@ def do_collectors_wait_ok(collector_name, timeout=30):
             logger.error(exp)
             return
         collector = None
-        for (cname, c) in collectors.iteritems():
+        for (cname, c) in collectors.items():
             if cname == collector_name:
                 collector = c
         if not collector:

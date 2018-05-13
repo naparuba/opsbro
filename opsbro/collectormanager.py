@@ -120,7 +120,7 @@ class CollectorManager(BaseManager):
     
     # Now we hae our collectors and our parameters, link both
     def get_parameters_from_packs(self):
-        for (cname, e) in self.collectors.iteritems():
+        for (cname, e) in self.collectors.items():
             e['inst'].get_parameters_from_pack()
     
     
@@ -131,7 +131,7 @@ class CollectorManager(BaseManager):
     def get_info(self):
         res = {}
         with self.results_lock:
-            for (cname, e) in self.collectors.iteritems():
+            for (cname, e) in self.collectors.items():
                 d = {'name': e['name'], 'state': e['inst'].state, 'log': e['inst'].log}
                 res[cname] = d
         return res
@@ -140,7 +140,7 @@ class CollectorManager(BaseManager):
     def get_retention(self):
         res = {}
         with self.results_lock:
-            for (cname, e) in self.collectors.iteritems():
+            for (cname, e) in self.collectors.items():
                 res[cname] = {}
                 res[cname]['results'] = e['results']
                 res[cname]['metrics'] = e['metrics']
@@ -151,7 +151,7 @@ class CollectorManager(BaseManager):
     
     def load_retention(self, data):
         with self.results_lock:
-            for (cname, e) in data.iteritems():
+            for (cname, e) in data.items():
                 # maybe this collectr is missing now
                 if cname not in self.collectors:
                     continue
@@ -166,7 +166,7 @@ class CollectorManager(BaseManager):
         elts = s.split('.')
         d = {}
         # construct will all results of our collectors
-        for (k, v) in self.collectors.iteritems():
+        for (k, v) in self.collectors.items():
             d[k] = v['results']
         
         for k in elts:
@@ -212,7 +212,7 @@ class CollectorManager(BaseManager):
         self.prepare_history_directory()
         while not stopper.interrupted:
             now = int(time.time())
-            for (colname, e) in self.collectors.iteritems():
+            for (colname, e) in self.collectors.items():
                 colname = e['name']
                 inst = e['inst']
                 # maybe a collection is already running
@@ -226,7 +226,7 @@ class CollectorManager(BaseManager):
                     e['last_check'] = now
             
             to_del = []
-            for (colname, t) in cur_launchs.iteritems():
+            for (colname, t) in cur_launchs.items():
                 # if the thread is finish, join it
                 # NOTE: but also wait for all first execution to finish
                 if not t.is_alive() or not self.did_run:
@@ -261,7 +261,7 @@ class CollectorManager(BaseManager):
         def GET_collectors():
             response.content_type = 'application/json'
             res = {}
-            for (ccls, e) in self.collectors.iteritems():
+            for (ccls, e) in self.collectors.items():
                 cname, c = self.get_collector_json_extract(e)
                 res[cname] = c
             return jsoner.dumps(res)

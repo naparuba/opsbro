@@ -137,7 +137,7 @@ class Collector(ParameterBasedType):
                 s.add(nts)
             return
         # For each key,
-        for (k, v) in d.iteritems():
+        for (k, v) in d.items():
             nl = l[:]  # use a copy to l so it won't be overwriten
             nl.append(k)
             self.create_ts_from_data(v, nl, s)

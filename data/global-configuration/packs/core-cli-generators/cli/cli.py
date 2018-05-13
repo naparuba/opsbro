@@ -56,7 +56,7 @@ def do_generators_state(show_diff=False):
         return
     print_h1('Generators')
     packs = {}
-    for (cname, generator) in generators.iteritems():
+    for (cname, generator) in generators.items():
         pack_name = generator['pack_name']
         if pack_name not in packs:
             packs[pack_name] = {}
@@ -122,7 +122,7 @@ def do_generators_wait_compliant(generator_name, timeout=30):
             logger.error('Bad return from the server %s' % exp)
             return
         generator = None
-        for (cname, c) in generators.iteritems():
+        for (cname, c) in generators.items():
             if c['name'] == generator_name:
                 generator = c
         if not generator:

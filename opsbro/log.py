@@ -104,7 +104,7 @@ class Logger(object):
     
     def linkify_methods(self):
         methods = {'DEBUG': self.do_debug, 'WARNING': self.do_warning, 'INFO': self.do_info, 'ERROR': self.do_error}
-        for (s, m) in methods.iteritems():
+        for (s, m) in methods.items():
             level = getattr(logging, s)
             # If the level is enough, link it
             if level >= self.level:

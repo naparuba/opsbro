@@ -503,7 +503,7 @@ class KVBackend:
             replicats = self.get_my_replicats()
             if len(replicats) == 0:
                 time.sleep(1)
-            for (ukey, bl) in replication_backlog.iteritems():
+            for (ukey, bl) in replication_backlog.items():
                 # REF: bl = {'value':(ukey, value), 'repl':[], 'hkey':hkey, 'meta':meta}
                 _, value = bl['value']
                 for uuid in replicats:

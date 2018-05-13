@@ -63,7 +63,7 @@ class MonitoringManager(BaseManager):
         defaults_ = {'interval'       : '10s', 'script': '', 'ok_output': '', 'critical_if': '',
                      'critical_output': '', 'warning_if': '', 'warning_output': '', 'last_check': 0,
                      'notes'          : ''}
-        for (k, v) in defaults_.iteritems():
+        for (k, v) in defaults_.items():
             if k not in check:
                 check[k] = v
         if service:
@@ -180,7 +180,7 @@ class MonitoringManager(BaseManager):
         logger.log('CHECK loading check retention file %s' % check_retention)
         with open(check_retention, 'r') as f:
             loaded = json.loads(f.read())
-            for (cid, c) in loaded.iteritems():
+            for (cid, c) in loaded.items():
                 if cid in self.checks:
                     check = self.checks[cid]
                     to_load = ['last_check', 'output', 'state', 'state_id', 'old_state', 'old_state_id']
@@ -195,7 +195,7 @@ class MonitoringManager(BaseManager):
         logger.log('Service loading service retention file %s' % service_retention)
         with open(service_retention, 'r') as f:
             loaded = json.loads(f.read())
-            for (cid, c) in loaded.iteritems():
+            for (cid, c) in loaded.items():
                 if cid in self.services:
                     service = self.services[cid]
                     to_load = ['state_id', 'incarnation']
@@ -266,7 +266,7 @@ class MonitoringManager(BaseManager):
         node = gossiper.get(gossiper.uuid)
         with gossiper.nodes_lock:
             groups = node['groups']
-            for (sname, service) in self.services.iteritems():
+            for (sname, service) in self.services.items():
                 if_group = service.get('if_group', '')
                 if if_group and if_group in groups:
                     node['services'][sname] = service
@@ -280,7 +280,7 @@ class MonitoringManager(BaseManager):
         with gossiper.nodes_lock:
             groups = node['groups']
             active_checks = []
-            for (cname, check) in self.checks.iteritems():
+            for (cname, check) in self.checks.items():
                 if_group = check.get('if_group', '*')
                 if if_group == '*' or if_group in groups:
                     active_checks.append(cname)
@@ -289,7 +289,7 @@ class MonitoringManager(BaseManager):
             self.update_checks_kv()
             # and in our own node object
             checks_entry = {}
-            for (cname, check) in self.checks.iteritems():
+            for (cname, check) in self.checks.items():
                 if cname not in active_checks:
                     continue
                 checks_entry[cname] = {'state_id': check['state_id']}  # by default state are unknown
@@ -301,7 +301,7 @@ class MonitoringManager(BaseManager):
     
         # We need to evaluate our variables if there are some
         computed_variables = {}
-        for (k, expr) in variables.iteritems():
+        for (k, expr) in variables.items():
             try:
                 computed_variables[k] = evaluater.eval_expr(expr)
             except Exception as exp:
@@ -522,7 +522,7 @@ class MonitoringManager(BaseManager):
     def do_update_checks_kv(self):
         logger.info("CHECK UPDATING KV checks")
         names = []
-        for (cid, check) in self.checks.iteritems():
+        for (cid, check) in self.checks.items():
             # Only the checks that we are really managing
             if cid in self.active_checks:
                 names.append(check['name'])
@@ -545,7 +545,7 @@ class MonitoringManager(BaseManager):
                 time.sleep(1)
                 continue
             now = int(time.time())
-            for (cid, check) in self.checks.iteritems():
+            for (cid, check) in self.checks.items():
                 # maybe this chck is not a activated one for us, if so, bail out
                 if cid not in self.active_checks:
                     continue
@@ -566,7 +566,7 @@ class MonitoringManager(BaseManager):
                     cur_launchs[cid] = t
             
             to_del = []
-            for (cid, t) in cur_launchs.iteritems():
+            for (cid, t) in cur_launchs.items():
                 if not t.is_alive():
                     t.join()
                     to_del.append(cid)
@@ -605,7 +605,7 @@ class MonitoringManager(BaseManager):
                 l.append(line)
                 forwards[ts_node_manager] = l
         
-        for (uuid, lst) in forwards.iteritems():
+        for (uuid, lst) in forwards.items():
             node = gossiper.get(uuid)
             # maybe the node disapear? bail out, we are not lucky
             if node is None:
@@ -648,7 +648,7 @@ class MonitoringManager(BaseManager):
             # by default it's us
             # maybe its us, maybe not
             if nuuid == '' or nuuid == gossiper.uuid:
-                for (cid, check) in self.checks.iteritems():
+                for (cid, check) in self.checks.items():
                     # maybe this chck is not a activated one for us, if so, bail out
                     if cid not in self.active_checks:
                         continue
@@ -761,8 +761,8 @@ class MonitoringManager(BaseManager):
                 service['failing-members'] = []
                 service['failing'] = 0
             with gossiper.nodes_lock:
-                for (uuid, node) in gossiper.nodes.iteritems():
-                    for (sname, service) in node['services'].iteritems():
+                for (uuid, node) in gossiper.nodes.items():
+                    for (sname, service) in node['services'].items():
                         if sname not in services:
                             continue
                         services[sname]['members'].append(node['name'])
@@ -792,7 +792,7 @@ class MonitoringManager(BaseManager):
             service['failing'] = 0
             sname = service.get('name')
             with gossiper.nodes_lock:
-                for (uuid, node) in gossiper.nodes.iteritems():
+                for (uuid, node) in gossiper.nodes.items():
                     if sname not in node['services']:
                         continue
                     service['members'].append(node['name'])

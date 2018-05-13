@@ -132,7 +132,7 @@ class Cluster(object):
         # now we read them, set it in our object
         parameters_from_local_configuration = configmgr.get_parameters_for_cluster_from_configuration()
         
-        for (k, v) in parameters_from_local_configuration.iteritems():
+        for (k, v) in parameters_from_local_configuration.items():
             logger.debug('Setting parameter from local configuration: %s => %s' % (k, v))
             setattr(self, k, v)
         
@@ -583,7 +583,7 @@ class Cluster(object):
             
             r['httpservers'] = {}
             # Look at both http servers
-            for (k, server) in gserver.iteritems():
+            for (k, server) in gserver.items():
                 if server is None:
                     r['httpservers'][k] = None
                     continue

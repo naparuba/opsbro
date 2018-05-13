@@ -148,7 +148,7 @@ def do_info(show_logs):
     modules_by_states = {}
     for module_state in MODULE_STATES:
         modules_by_states[module_state] = []
-    for (module_name, module) in modules.iteritems():
+    for (module_name, module) in modules.items():
         modules_by_states[module['state']].append(module)
     
     strs = []
@@ -393,7 +393,7 @@ def do_modules_state():
     modules = d.get('modules', {})
     print_info_title('Modules')
     modules_types = {}
-    for (module_name, module) in modules.iteritems():
+    for (module_name, module) in modules.items():
         module_type = module['module_type']
         if module_type not in modules_types:
             modules_types[module_type] = {}
@@ -402,7 +402,7 @@ def do_modules_state():
     modules_type_names = modules_types.keys()
     modules_type_names.sort()
     
-    for (module_type, _modules) in modules_types.iteritems():
+    for (module_type, _modules) in modules_types.items():
         cprint(' - [', end='')
         cprint(' %-10s ' % module_type.capitalize(), color='magenta', end='')
         cprint(' ]: ', end='')
@@ -519,7 +519,7 @@ def do_show_threads():
         e['threads'].append(t)
     
     # Sort threads inside the parts
-    for (pname, e) in threads_into_parts.iteritems():
+    for (pname, e) in threads_into_parts.items():
         e['threads'].sort(_sort_threads)
     
     # Now have parts sort by their times (from bigger to min)
@@ -615,7 +615,7 @@ def do_follow_log(part=''):
                     w = 0.001
                     for line in data.splitlines():
                         already_print = False
-                        for (k, color) in colors.iteritems():
+                        for (k, color) in colors.items():
                             if k in line:
                                 cprint(line, color=color)
                                 already_print = True

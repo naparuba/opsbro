@@ -72,7 +72,7 @@ class GeneratorMgr(BaseManager):
         logger.log('GENERATOR thread launched')
         while not stopper.interrupted:
             logger.debug('Looking for %d generators' % len(self.generators))
-            for (gname, g) in self.generators.iteritems():
+            for (gname, g) in self.generators.items():
                 logger.debug('LOOK AT GENERATOR', g, 'to be apply if', g.generate_if)
                 # Maybe this generator is not for us...
                 if not g.must_be_launched():
@@ -118,7 +118,7 @@ class GeneratorMgr(BaseManager):
         def get_generator_state():
             response.content_type = 'application/json'
             nc = {}
-            for (c_id, c) in self.generators.iteritems():
+            for (c_id, c) in self.generators.items():
                 nc[c_id] = c.get_json_dump()
             return json.dumps(nc)
 

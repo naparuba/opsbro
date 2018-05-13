@@ -15,7 +15,7 @@ logger = LoggerFactory.create_logger('docker')
 
 def lower_dict(d):
     nd = {}
-    for k, v in d.iteritems():
+    for k, v in d.items():
         nk = k.lower()
         if isinstance(v, dict):  # yes, it's recursive :)
             v = lower_dict(v)
@@ -129,7 +129,7 @@ class DockerManager(object):
         stats = cgroupmgr.get_containers_metrics(cids)
         
         now = time.time()
-        for (cid, nst) in stats.iteritems():
+        for (cid, nst) in stats.items():
             c_stats = self.stats.get(cid, {})
             if self.last_stats != 0:
                 diff = now - self.last_stats
@@ -181,7 +181,7 @@ class DockerManager(object):
         if self.con is None:
             return
         images = {}
-        for (cid, cont) in self.containers.iteritems():
+        for (cid, cont) in self.containers.items():
             # avoid containers with no stats, it's not a good thing here :)
             if cid not in self.stats:
                 continue
@@ -192,13 +192,13 @@ class DockerManager(object):
         
         img_stats = {}
         # print "IMAGES", images
-        for (img, cids) in images.iteritems():
+        for (img, cids) in images.items():
             # print 'IMAGE', img
             # print cids
             s = {}
             img_stats[img] = s
             for cid in cids:
-                for (k, d) in self.stats[cid].iteritems():
+                for (k, d) in self.stats[cid].items():
                     # if the first value, keep it as a whole
                     if s.get(k, None) is None:
                         s[k] = d
@@ -215,7 +215,7 @@ class DockerManager(object):
         # Now be sure to have updated images
         self.load_images()
         
-        for (img_id, s) in img_stats.iteritems():
+        for (img_id, s) in img_stats.items():
             img = None
             for d in self.images:
                 if d['Id'] == img_id:

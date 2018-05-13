@@ -25,14 +25,14 @@ class ShinkenEnterpriseModule(ConnectorModule):
         self.logger.info('Pushing back ours groups and discovery informations to Shinken Enterprise')
         
         collectors_data = {}
-        for (ccls, e) in collectormgr.collectors.iteritems():
+        for (ccls, e) in collectormgr.collectors.items():
             cname, c = collectormgr.get_collector_json_extract(e)
             collectors_data[cname] = c
             
         # In groups=> templates, we do not want : and . in the names
         _mapping = {':': '--', '.': '--'}
         use_value = ','.join(groups)
-        for (k, v) in _mapping.iteritems():
+        for (k, v) in _mapping.items():
             use_value = use_value.replace(k, v)
 
         payload = {

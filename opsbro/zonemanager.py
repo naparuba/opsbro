@@ -34,7 +34,7 @@ class ZoneManager(object):
                 self.tree_top_to_bottom[zname] = sub_zone_set
                 self.tree_bottom_to_top[zname] = set()  # prepare the next loop
             
-            for (zname, sub_zones) in self.tree_top_to_bottom.iteritems():
+            for (zname, sub_zones) in self.tree_top_to_bottom.items():
                 for sub_zone_name in sub_zones:
                     self.tree_bottom_to_top[sub_zone_name].add(zname)
             

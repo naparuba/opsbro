@@ -48,7 +48,7 @@ def __print_element_parameters(elt, pack_name, pack_level, main_topic_color, wha
         cprint(CHARACTERS.check, color='green')
     else:
         cprint('%s  %s %s' % (config_snapshot['state'], CHARACTERS.arrow_left, config_snapshot['errors']), color='red')
-    for parameter_name, parameter_snap in config_snapshot['parameters'].iteritems():
+    for parameter_name, parameter_snap in config_snapshot['parameters'].items():
         __print_line_header(main_topic_color)
         cprint('   %s- ' % (' ' * offset), end='')
         cprint('%s.packs.%s.%s.' % (pack_level, pack_name, what), color='grey', end='')
@@ -122,7 +122,7 @@ def do_packs_show():
     
     from opsbro.monitoring import monitoringmgr
     checks = monitoringmgr.checks
-    for cname, check in checks.iteritems():
+    for cname, check in checks.items():
         pack_name = check['pack_name']
         pack_level = check['pack_level']
         packs[pack_level][pack_name]['checks'][cname] = check
@@ -136,14 +136,14 @@ def do_packs_show():
     
     from opsbro.collectormanager import collectormgr
     collectors = collectormgr.collectors
-    for colname, collector in collectors.iteritems():
+    for colname, collector in collectors.items():
         pack_name = collector['inst'].pack_name
         pack_level = collector['inst'].pack_level
         packs[pack_level][pack_name]['collectors'][colname] = collector
     
     from opsbro.generatormgr import generatormgr
     generators = generatormgr.generators
-    for gname, generator in generators.iteritems():
+    for gname, generator in generators.items():
         pack_name = generator.pack_name
         pack_level = generator.pack_level
         packs[pack_level][pack_name]['generators'][gname] = generator
@@ -190,7 +190,7 @@ def do_packs_show():
                 __print_line_header(main_topic_color)
                 print_element_breadcumb(pack_name, pack_level, 'checks')
                 cprint(' (%d)' % len(checks), color='magenta')
-                for cname, check in checks.iteritems():
+                for cname, check in checks.items():
                     __print_line_header(main_topic_color)
                     cprint('  - ', end='')
                     cprint('checks > %-15s' % cname.split(os.sep)[-1], color='cyan', end='')
@@ -216,7 +216,7 @@ def do_packs_show():
                 __print_line_header(main_topic_color)
                 print_element_breadcumb(pack_name, pack_level, 'collectors')
                 cprint(' (%d)' % len(collectors), color='magenta')
-                for colname, collector_d in collectors.iteritems():
+                for colname, collector_d in collectors.items():
                     __print_line_header(main_topic_color)
                     collector = collector_d['inst']
                     cprint('  - ', end='')
@@ -233,7 +233,7 @@ def do_packs_show():
                 __print_line_header(main_topic_color)
                 print_element_breadcumb(pack_name, pack_level, 'generators')
                 cprint(' (%d)' % len(generators), color='magenta')
-                for gname, generator in generators.iteritems():
+                for gname, generator in generators.items():
                     __print_line_header(main_topic_color)
                     cprint('  - ', end='')
                     cprint('generators > %-15s' % gname.split(os.sep)[-1], color='cyan', end='')
@@ -250,8 +250,8 @@ def do_packs_list():
     from opsbro.packer import packer
     packs = packer.get_packs()
     all_pack_names = set()
-    for (level, packs_in_level) in packs.iteritems():
-        for (pname, _) in packs_in_level.iteritems():
+    for (level, packs_in_level) in packs.items():
+        for (pname, _) in packs_in_level.items():
             all_pack_names.add(pname)
     
     print_h2('Legend (topics)')

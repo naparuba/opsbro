@@ -62,7 +62,7 @@ class DetectorMgr(object):
         logger.log('DETECTOR thread launched')
         while not stopper.interrupted:
             matching_groups = set()
-            for (gname, gen) in self.detectors.iteritems():
+            for (gname, gen) in self.detectors.items():
                 interval = int(gen['interval'].split('s')[0])  # todo manage like it should
                 should_be_launch = gen['last_launch'] < int(time.time()) - interval
                 if should_be_launch:
@@ -141,7 +141,7 @@ class DetectorMgr(object):
         def _runrunrunr(dname=''):
             response.content_type = 'application/json'
             res = {}
-            for (gname, gen) in self.detectors.iteritems():
+            for (gname, gen) in self.detectors.items():
                 if dname and dname != gname:
                     continue
                 res[gname] = {'matched': False, 'groups': [], 'new_groups': []}
