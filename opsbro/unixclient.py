@@ -88,9 +88,9 @@ def get_local(u, local_socket, params={}, method='GET', timeout=10):
     special_headers = []
     
     if method == 'GET' and params:
-        u = "%s?%s" % (u, urllib.urlencode(params))
+        u = "%s?%s" % (u, urlencode(params))
     if method == 'POST' and params:
-        data = urllib.urlencode(params)
+        data = urlencode(params)
     if method == 'PUT' and params:
         special_headers.append(('Content-Type', 'your/contenttype'))
         data = params
