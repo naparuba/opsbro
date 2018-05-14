@@ -9,6 +9,10 @@ import logging
 import json
 import codecs
 
+PY3 = sys.version_info >= (3,)
+if PY3:
+    unicode = str
+
 from .misc.colorama import init as init_colorama
 
 
@@ -69,7 +73,7 @@ else:
 
 
 def get_unicode_string(s):
-    if isinstance(s, str):
+    if isinstance(s, str) and not PY3:
         return unicode(s, 'utf8', errors='ignore')
     return unicode(s)
 
@@ -119,7 +123,7 @@ class Logger(object):
         # We can start with a void data dir
         if not os.path.exists(self.data_dir):
             os.mkdir(self.data_dir)
-        self.log_file = codecs.open(os.path.join(self.data_dir, 'daemon.log'), 'a', encoding="utf-8")
+        self.log_file = codecs.open(os.path.join(self.data_dir, 'daemon.log'), 'ab', encoding="utf-8")
     
     
     # If a level is set to force, a not foce setting is not taken
@@ -188,7 +192,7 @@ class Logger(object):
         else:
             f = self.logs.get(part, None)
             if f is None:
-                f = codecs.open(os.path.join(self.data_dir, '%s.log' % part), 'a', encoding="utf-8")
+                f = codecs.open(os.path.join(self.data_dir, '%s.log' % part), 'ab', encoding="utf-8")
                 self.logs[part] = f
             f.write(s)
             f.flush()

@@ -1,3 +1,10 @@
+import sys
+
+PY3 = (sys.version_info[0] == 3)
+if PY3:
+    basestring = str  # python 3 do not have basestring
+
+
 # A ParameterBasedType will have access to the pack parameters
 class ParameterBasedType(object):
     # pack name & level will be fill when we will load the klass
@@ -35,7 +42,7 @@ class ParameterBasedType(object):
     
     
     def get_parameters_from_pack(self):
-        from configurationmanager import configmgr
+        from .configurationmanager import configmgr
         pack_parameters = configmgr.get_parameters_from_pack(self.pack_name)
         
         # We prepare the config
@@ -60,7 +67,7 @@ class ParameterBasedType(object):
     
     # Someone need to know what is my conf and if it's ok
     def get_configuration_snapshot(self):
-        from configurationmanager import configmgr
+        from .configurationmanager import configmgr
         pack_parameters = configmgr.get_parameters_from_pack(self.pack_name)
         
         r = {'state': self.__state, 'errors': self.__configuration_error, 'parameters': {}}

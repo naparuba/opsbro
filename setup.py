@@ -12,13 +12,16 @@ import imp
 try:
     from cStringIO import StringIO
 except ImportError:
-    from StringIO import StringIO
+    from io import StringIO
 from glob import glob
 import atexit
 
 # We have some warnings because we reimport some libs. We don't want them to be shown at install
 import warnings
 
+PY3 = sys.version_info >= (3,)
+if PY3:
+    basestring = str  # no basestring in python 3
 
 def _disable_warns(*args, **kwargs):
     pass
@@ -31,8 +34,8 @@ warnings.showwarning = _disable_warns
 python_version = sys.version_info
 if python_version < (2, 6):
     sys.exit("OpsBro require as a minimum Python 2.6, sorry")
-elif python_version >= (3,):
-    sys.exit("OpsBro is not yet compatible with Python 3.x, sorry")
+#elif python_version >= (3,):
+#    sys.exit("OpsBro is not yet compatible with Python 3.x, sorry")
 
 package_data = ['*.py']
 

@@ -1,6 +1,7 @@
 from .parameters import ParameterBasedType
 from .log import LoggerFactory
 from .packer import packer
+from .misc.six import add_metaclass
 
 TYPES_DESCRIPTIONS = {'generic'  : 'Generic module', 'functions_export': 'Such modules give functions that are useful by evaluation rules',
                       'connector': 'Suchs modules will export data to external tools',
@@ -11,27 +12,30 @@ MODULE_STATE_COLORS = {'STARTED': 'green', 'DISABLED': 'grey'}
 MODULE_STATES = ['STARTED', 'DISABLED']
 
 
+class ModulesMetaClass(type):
+    __inheritors__ = set()
+    
+    
+    def __new__(meta, name, bases, dct):
+        klass = type.__new__(meta, name, bases, dct)
+        # This class need to implement a real role to be load
+        if klass.implement:
+            # When creating the class, we need to look at the module where it is. It will be create like this (in modulemanager)
+            # module___global___windows___collector_iis ==> level=global  pack_name=windows, collector_name=collector_iis
+            from_module = dct['__module__']
+            elts = from_module.split('___')
+            # Let the klass know it
+            klass.pack_level = elts[1]
+            klass.pack_name = elts[2]
+            meta.__inheritors__.add(klass)
+        return klass
+
+
+@add_metaclass(ModulesMetaClass)
 class Module(ParameterBasedType):
     implement = ''
     module_type = 'generic'
     
-    class __metaclass__(type):
-        __inheritors__ = set()
-        
-        
-        def __new__(meta, name, bases, dct):
-            klass = type.__new__(meta, name, bases, dct)
-            # This class need to implement a real role to be load
-            if klass.implement:
-                # When creating the class, we need to look at the module where it is. It will be create like this (in modulemanager)
-                # module___global___windows___collector_iis ==> level=global  pack_name=windows, collector_name=collector_iis
-                from_module = dct['__module__']
-                elts = from_module.split('___')
-                # Let the klass know it
-                klass.pack_level = elts[1]
-                klass.pack_name = elts[2]
-                meta.__inheritors__.add(klass)
-            return klass
     
     @classmethod
     def get_sub_class(cls):

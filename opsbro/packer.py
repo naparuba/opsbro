@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import json
 import os
+import codecs
 
 from .yamlmgr import yamler
 from .log import LoggerFactory
@@ -51,7 +52,7 @@ class PackManager(object):
             package_pth = os.path.join(pname, 'package.yml')
             if os.path.exists(package_pth):
                 try:
-                    with open(package_pth, 'r') as f:
+                    with codecs.open(package_pth, 'r', encoding='utf8') as f:
                         package_buf = f.read()
                         package = yamler.loads(package_buf)
                         self.load_package(package, package_pth, level)

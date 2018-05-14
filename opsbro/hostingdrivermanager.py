@@ -4,6 +4,10 @@ import imp
 import socket
 import sys
 
+PY3 = sys.version_info >= (3,)
+if PY3:
+    def cmp(a, b):
+        return ((a > b) - (a < b))
 try:
     import fcntl
 except ImportError:
@@ -12,6 +16,7 @@ import struct
 
 from .misc.windows import windowser
 from .log import LoggerFactory
+from .misc.six import add_metaclass
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('hosting-driver')
@@ -25,30 +30,33 @@ HOSTING_DRIVER_LAYER_DEFAULT = 5
 HOSTING_DRIVER_LAYER_UNSET = 6
 
 
+class HostingDriverMetaclass(type):
+    __inheritors__ = set()
+    
+    
+    def __new__(meta, name, bases, dct):
+        klass = type.__new__(meta, name, bases, dct)
+        # When creating the class, we need to look at the module where it is. It will be create like this (in collectormanager)
+        # collector___global___windows___collector_iis ==> level=global  pack_name=windows, collector_name=collector_iis
+        from_module = dct['__module__']
+        elts = from_module.split('___')
+        # Note: the master class InterfaceHostingDriver will go in this too, but its module won't match the ___ filter
+        if len(elts) != 1:
+            # Let the klass know it
+            klass.pack_level = elts[1]
+            klass.pack_name = elts[2]
+        
+        meta.__inheritors__.add(klass)
+        return klass
+
+
+@add_metaclass(HostingDriverMetaclass)
 # Base class for hosting driver. MUST be used
 class InterfaceHostingDriver(object):
     name = '__MISSING__NAME__'
     is_default = False
     layer = HOSTING_DRIVER_LAYER_UNSET
     
-    class __metaclass__(type):
-        __inheritors__ = set()
-        
-        
-        def __new__(meta, name, bases, dct):
-            klass = type.__new__(meta, name, bases, dct)
-            # When creating the class, we need to look at the module where it is. It will be create like this (in collectormanager)
-            # collector___global___windows___collector_iis ==> level=global  pack_name=windows, collector_name=collector_iis
-            from_module = dct['__module__']
-            elts = from_module.split('___')
-            # Note: the master class InterfaceHostingDriver will go in this too, but its module won't match the ___ filter
-            if len(elts) != 1:
-                # Let the klass know it
-                klass.pack_level = elts[1]
-                klass.pack_name = elts[2]
-            
-            meta.__inheritors__.add(klass)
-            return klass
     
     @classmethod
     def get_sub_class(cls):
@@ -245,7 +253,11 @@ class HostingDriverMgr(object):
         hostingctx_clss = InterfaceHostingDriver.get_sub_class()
         
         # Get first cloud > virtualisation > plysical > default > unset
-        hostingctx_clss = sorted(hostingctx_clss, cmp=self.__default_last)
+        if not PY3:
+            hostingctx_clss = sorted(hostingctx_clss, cmp=self.__default_last)
+        else:
+            from functools import cmp_to_key
+            hostingctx_clss = sorted(hostingctx_clss, key=cmp_to_key(self.__default_last))
         for cls in hostingctx_clss:
             # skip base module Collector
             if cls == InterfaceHostingDriver:

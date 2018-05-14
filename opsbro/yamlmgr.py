@@ -8,7 +8,6 @@ from .characters import CHARACTERS
 import opsbro.misc
 from .library import libstore
 
-
 p = os.path.join(os.path.dirname(opsbro.misc.__file__), 'internalyaml')
 sys.path.insert(0, p)
 

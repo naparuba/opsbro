@@ -113,10 +113,10 @@ class Launcher(object):
         # Now the fork/setsid/fork..
         try:
             pid = os.fork()
-        except OSError, e:
+        except OSError as e:
             s = "%s [%d]" % (e.strerror, e.errno)
             logger.error(s)
-            raise Exception, s
+            raise Exception(s)
         
         if pid != 0:
             # In the father: we check if our child exit correctly
@@ -142,8 +142,8 @@ class Launcher(object):
         os.setsid()
         try:
             pid = os.fork()
-        except OSError, e:
-            raise Exception, "%s [%d]" % (e.strerror, e.errno)
+        except OSError as e:
+            raise Exception("%s [%d]" % (e.strerror, e.errno))
         if pid != 0:
             # we are the last step and the real daemon is actually correctly created at least.
             # we have still the last responsibility to write the pid of the daemon itself.

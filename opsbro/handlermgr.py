@@ -25,8 +25,8 @@ class HandlerManager(object):
         
         for (htype, module) in self.handler_modules.items():
             module.handle(group, {'evt_type': 'group_change', 'evt_data': {'modification': what}})
-
-
+    
+    
     def launch_compliance_handlers(self, compliance, did_change):
         logger.debug('Launch handlers(compliance): %s (didchange=%s)' % (compliance.get_name(), did_change))
         

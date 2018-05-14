@@ -294,11 +294,11 @@ class MonitoringManager(BaseManager):
                     continue
                 checks_entry[cname] = {'state_id': check['state_id']}  # by default state are unknown
             node['checks'] = checks_entry
-
-
+    
+    
     def __get_variables(self, check):
         variables = check['variables']
-    
+        
         # We need to evaluate our variables if there are some
         computed_variables = {}
         for (k, expr) in variables.items():
@@ -307,6 +307,7 @@ class MonitoringManager(BaseManager):
             except Exception as exp:
                 raise Exception('the variable %s expr %s did fail to evaluate: %s' % (k, expr, exp))
         return computed_variables
+    
     
     # Try to find the params for a macro in the foloowing objets, in that order:
     # * check

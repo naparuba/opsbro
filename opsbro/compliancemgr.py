@@ -13,6 +13,7 @@ from .evaluater import evaluater
 from .topic import topiker, TOPIC_SYSTEM_COMPLIANCE
 from .handlermgr import handlermgr
 from .basemanager import BaseManager
+from .misc.six import add_metaclass
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('compliance')
@@ -62,28 +63,31 @@ class ComplianceRuleEnvironment(object):
         return self.post_commands
 
 
+class ComplianceMetaClass(type):
+    __inheritors__ = set()
+    
+    
+    def __new__(meta, name, bases, dct):
+        klass = type.__new__(meta, name, bases, dct)
+        # When creating the class, we need to look at the module where it is. It will be create like this (in collectormanager)
+        # collector___global___windows___collector_iis ==> level=global  pack_name=windows, collector_name=collector_iis
+        from_module = dct['__module__']
+        elts = from_module.split('___')
+        # Note: the master class ComplianceDriver will go in this too, but its module won't match the ___ filter
+        if len(elts) != 1:
+            # Let the klass know it
+            klass.pack_level = elts[1]
+            klass.pack_name = elts[2]
+        
+        meta.__inheritors__.add(klass)
+        return klass
+
+
+@add_metaclass(ComplianceMetaClass)
 # Base class for hosting driver. MUST be used
 class InterfaceComplianceDriver(object):
     name = '__MISSING__NAME__'
     
-    class __metaclass__(type):
-        __inheritors__ = set()
-        
-        
-        def __new__(meta, name, bases, dct):
-            klass = type.__new__(meta, name, bases, dct)
-            # When creating the class, we need to look at the module where it is. It will be create like this (in collectormanager)
-            # collector___global___windows___collector_iis ==> level=global  pack_name=windows, collector_name=collector_iis
-            from_module = dct['__module__']
-            elts = from_module.split('___')
-            # Note: the master class ComplianceDriver will go in this too, but its module won't match the ___ filter
-            if len(elts) != 1:
-                # Let the klass know it
-                klass.pack_level = elts[1]
-                klass.pack_name = elts[2]
-            
-            meta.__inheritors__.add(klass)
-            return klass
     
     @classmethod
     def get_sub_class(cls):

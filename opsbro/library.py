@@ -55,8 +55,8 @@ class LibraryStore(object):
             pygments = None
         self.__pygments = pygments
         return self.__pygments
-
-
+    
+    
     def get_StringIO(self):
         if self.__StringIO is not None:
             return self.__StringIO
@@ -66,6 +66,6 @@ class LibraryStore(object):
             from StringIO import StringIO
         self.__StringIO = StringIO
         return self.__StringIO
-        
+
 
 libstore = LibraryStore()

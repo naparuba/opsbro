@@ -1,6 +1,10 @@
 import os
 import sys
 
+PY3 = sys.version_info >= (3,)
+if PY3:
+    basestring = str  # no basestring in python 3
+
 from .defaultpaths import DEFAULT_DATA_DIR
 from .log import LoggerFactory
 from .httpdaemon import http_export, response

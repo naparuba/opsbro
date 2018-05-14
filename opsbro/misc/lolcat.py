@@ -110,7 +110,7 @@ class LolCat(object):
             
         for i, c in enumerate(s):
             rgb = self.rainbow(0.1, offset + i / spread)
-            if isinstance(c, str):
+            if isinstance(c, str) and not PY3:
                 c = c.encode('utf-8', 'replace')
             r += u''.join([self.wrap(self.ansi(rgb)), c if PY3 else c, ])
         r += '\x1b[0m'

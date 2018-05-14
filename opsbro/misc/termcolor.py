@@ -28,6 +28,7 @@ from __future__ import print_function
 import os
 import codecs
 import sys
+PY3 = sys.version_info >= (3,)
 
 # We want to print as UTF8
 # TODO: what about windows? will it works even on old XP?
@@ -127,7 +128,14 @@ def cprint(text, color=None, on_color=None, attrs=None, **kwargs):
     """
     # Force writing to a utf8 encoded stdout
     kwargs['file'] = stdout_utf8
-    print((colored(text, color, on_color, attrs)), **kwargs)
+    s = colored(text, color, on_color, attrs)
+    if not PY3:
+        print((s), **kwargs)
+    else:  # Python3 have issue with print() so direct writh to buffer instead
+        stdout_utf8.buffer.write(bytes(s, 'utf8'))
+        if kwargs.get('end', '\n') == '\n':
+            stdout_utf8.buffer.write(b'\n')
+        stdout_utf8.flush()
 
 
 def sprintf(text, color=None, on_color=None, attrs=None, **kwargs):

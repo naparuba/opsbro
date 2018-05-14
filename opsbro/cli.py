@@ -10,6 +10,10 @@ import time
 import itertools
 import subprocess
 
+PY3 = (sys.version_info[0] == 3)
+if PY3:
+    xrange = range  # note: python 3 do not have xrange
+
 from .configurationmanager import configmgr
 from .collectormanager import collectormgr
 from .modulemanager import modulemanager
@@ -608,7 +612,7 @@ class CLICommander(object):
     # Ok magic ahead: we will try to look at printing the options with color
     # AND by looking at the terminal width to have a responsive display
     def __print_sub_level_tree(self, ptr, prefix, first_level=False):
-        cmds = ptr.keys()
+        cmds = list(ptr.keys())  # note: python3 keys is not a list
         cmds.sort()
         
         _, term_width = self.__get_terminal_size()
@@ -690,7 +694,7 @@ class CLICommander(object):
     def print_list(self, keyword=''):
         cprint('')
         print_h1('Available commands')
-        sub_cmds = self.keywords.keys()
+        sub_cmds = list(self.keywords.keys())  # note: python 3 keys is not a list
         sub_cmds.remove('global')
         sub_cmds.sort()
         sub_cmds.insert(0, 'global')

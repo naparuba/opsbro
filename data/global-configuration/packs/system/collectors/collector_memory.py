@@ -163,7 +163,7 @@ class Memory(Collector):
                                     cached = match.group(0)
                                     logger.debug('getMemoryUsage: sysinfo: found cached %s', cached)
                 
-                except OSError, e:
+                except OSError as e:
                     logger.debug('getMemoryUsage: sysinfo not available')
                 except Exception as e:
                     logger.error('getMemoryUsage: exception = %s', traceback.format_exc())
