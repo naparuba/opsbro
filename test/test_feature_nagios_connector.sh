@@ -43,10 +43,10 @@ cat /var/log/opsbro/module.shinken.log
 opsbro agent info
 
 # Let a loop for opsbro to send checks to Nagios
-sleep 1
+sleep 15
 
 # There sould be some alerts now in nagios log
-EXPORTED_CHECKS=$(cat  /usr/local/nagios/var/nagios.log | grep 'SERVICE ALERT' | grep Agent-dummy | wc -l)
+EXPORTED_CHECKS=$(cat  /usr/local/nagios/var/nagios.log | grep 'PROCESS_SERVICE_CHECK_RESULT' | wc -l)
 
 if [ $EXPORTED_CHECKS == 0 ]; then
     echo "ERROR: the checks executions are not send into nagios"
