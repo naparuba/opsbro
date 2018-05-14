@@ -100,7 +100,7 @@ class LolCat(object):
         # if options.force or self.output.isatty():
         s = STRIP_ANSI.sub('', s)
         r = ''
-        if isinstance(s, str):
+        if isinstance(s, str) and not PY3:  # str are alrady utf8 in python3
             s = s.decode('utf-8', 'replace')
 
         # We must consider the classic CMD as a no tty, as it's just too limited

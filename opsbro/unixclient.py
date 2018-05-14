@@ -8,16 +8,26 @@
 import os
 import json
 import socket
+
+try:  # Python 2
+    from urllib2 import AbstractHTTPHandler, Request, build_opener, URLError, HTTPHandler
+except ImportError:  # Python 3
+    from urllib.request import AbstractHTTPHandler, Request, build_opener, HTTPHandler
+    from urllib.error import URLError
+try:  # Python 2
+    from httplib import HTTPConnection
+except ImportError:  # Python 3
+    from http.client import HTTPConnection
+
 try:
-    import urllib2
-    AbstractHTTPHandler = urllib2.AbstractHTTPHandler
-    Request = urllib2.Request
+    from urllib import urlencode
 except ImportError:
-    from urllib.request import AbstractHTTPHandler, Request
-    
-import urllib
-import httplib
-from urlparse import urlsplit
+    from urllib.parse import urlencode
+
+try:  # Python 2
+    from urlparse import urlsplit
+except ImportError:
+    from urllib.parse import urlsplit
 
 from .log import logger
 
@@ -25,9 +35,9 @@ from .log import logger
 DEFAULT_SOCKET_TIMEOUT = 5
 
 
-# Class used in conjuction with UnixSocketHandler to make urllib2
+# Class used in conjuction with UnixSocketHandler to make urllib
 # compatible with Unix sockets.
-class UnixHTTPConnection(httplib.HTTPConnection):
+class UnixHTTPConnection(HTTPConnection):
     socket_timeout = DEFAULT_SOCKET_TIMEOUT
     
     
@@ -43,11 +53,11 @@ class UnixHTTPConnection(httplib.HTTPConnection):
     
     
     def __call__(self, *args, **kwargs):
-        httplib.HTTPConnection.__init__(self, *args, **kwargs)
+        HTTPConnection.__init__(self, *args, **kwargs)
         return self
 
 
-# Class that makes Unix sockets work with urllib2 without any additional
+# Class that makes Unix sockets work with urllib without any additional
 # dependencies.
 class UnixSocketHandler(AbstractHTTPHandler):
     def unix_open(self, req):
@@ -60,7 +70,7 @@ class UnixSocketHandler(AbstractHTTPHandler):
                 break
             unix_socket = path
         
-        # add a host or else urllib2 complains
+        # add a host or else urllib complains
         url = req.get_full_url().replace(unix_socket, "/localhost")
         new_req = Request(url, req.get_data(), dict(req.header_items()))
         new_req.timeout = req.timeout
@@ -89,10 +99,10 @@ def get_local(u, local_socket, params={}, method='GET', timeout=10):
     # * windows: TCP
     # * unix   : unix socket
     if os.name == 'nt':
-        url_opener = urllib2.build_opener(urllib2.HTTPHandler)
+        url_opener = build_opener(HTTPHandler)
         uri = 'http://127.0.0.1:6770%s' % u
     else:  # unix
-        url_opener = urllib2.build_opener(UnixSocketHandler())
+        url_opener = build_opener(UnixSocketHandler())
         uri = 'unix:/%s%s' % (local_socket, u)
     
     logger.debug("Connecting to local http/unix socket at: %s with method %s" % (uri, method))
@@ -111,7 +121,7 @@ def get_not_critical_request_errors():
 
 
 def get_request_errors():
-    request_errors = (urllib2.URLError, socket.timeout)
+    request_errors = (URLError, socket.timeout)
     return request_errors
 
 

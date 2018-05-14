@@ -1,8 +1,17 @@
 import json
-import urllib2
 import urllib
-import httplib
+
+try:
+    from httplib import HTTPException
+except ImportError:
+    from http.client import HTTPException
 from socket import error as SocketError
+
+try:
+    from urllib2 import Request, build_opener, URLError, HTTPError, HTTPHandler
+except ImportError:
+    from urllib.request import Request, build_opener, HTTPHandler
+    from urllib.error import URLError, HTTPError
 
 _HTTP_EXCEPTIONS = None
 
@@ -11,7 +20,7 @@ def get_http_exceptions():
     global _HTTP_EXCEPTIONS
     if _HTTP_EXCEPTIONS is not None:
         return _HTTP_EXCEPTIONS
-    HTTP_EXCEPTIONS = (urllib2.HTTPError, urllib2.URLError, SocketError, httplib.HTTPException)
+    HTTP_EXCEPTIONS = (HTTPError, URLError, SocketError, HTTPException)
     _HTTP_EXCEPTIONS = HTTP_EXCEPTIONS
     return _HTTP_EXCEPTIONS
 
@@ -28,9 +37,9 @@ class Httper(object):
         if params:
             uri = "%s?%s" % (uri, urllib.urlencode(params))
         
-        url_opener = urllib2.build_opener(urllib2.HTTPHandler)
+        url_opener = build_opener(HTTPHandler)
         
-        req = urllib2.Request(uri, data)
+        req = Request(uri, data)
         req.get_method = lambda: 'GET'
         for (k, v) in headers.items():
             req.add_header(k, v)
@@ -41,9 +50,6 @@ class Httper(object):
         status_code = request.code
         request.close()
         
-        #
-        # if code != 200:
-        #    raise urllib2.HTTPError('')
         if not with_status_code:
             return response
         else:
@@ -57,9 +63,9 @@ class Httper(object):
         if params:
             uri = "%s?%s" % (uri, urllib.urlencode(params))
         
-        url_opener = urllib2.build_opener(urllib2.HTTPHandler)
+        url_opener = build_opener(HTTPHandler)
         
-        req = urllib2.Request(uri, data)
+        req = Request(uri, data)
         req.get_method = lambda: 'DELETE'
         for (k, v) in headers.items():
             req.add_header(k, v)
@@ -78,9 +84,9 @@ class Httper(object):
             # data = urllib.urlencode(params)
             data = json.dumps(params)
         
-        url_opener = urllib2.build_opener(urllib2.HTTPHandler)
+        url_opener = build_opener(HTTPHandler)
         
-        req = urllib2.Request(uri, data)
+        req = Request(uri, data)
         req.get_method = lambda: 'POST'
         for (k, v) in headers.items():
             req.add_header(k, v)
@@ -102,9 +108,9 @@ class Httper(object):
             uri = "%s?%s" % (uri, urllib.urlencode(params))
             headers['Content-Type'] = 'your/contenttype'
         
-        url_opener = urllib2.build_opener(urllib2.HTTPHandler)
+        url_opener = build_opener(HTTPHandler)
         
-        req = urllib2.Request(uri, data)
+        req = Request(uri, data)
         req.get_method = lambda: 'PUT'
         for (k, v) in headers.items():
             req.add_header(k, v)

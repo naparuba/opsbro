@@ -86,7 +86,7 @@ TOPICS_COLORS = {
     TOPIC_GENERIC                 : DEFAULT_COLOR_ID,
 }
 
-_TOPICS_COLORS_VALUES = TOPICS_COLORS.values()
+_TOPICS_COLORS_VALUES = list(TOPICS_COLORS.values())  # note: in python3 values is a generator, not a true list
 random.shuffle(_TOPICS_COLORS_VALUES)
 TOPICS_COLORS_RANDOM_VALUES_LOOP = itertools.cycle(_TOPICS_COLORS_VALUES)
 

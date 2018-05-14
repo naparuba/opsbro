@@ -79,9 +79,9 @@ line_after = banner_lines[_idx + 1].rstrip()
 def _lolify(s):
     l = []
     chunk_size = 5
-    for i in xrange(0, len(s), chunk_size):
+    for i in range(0, len(s), chunk_size):  # note: python3 do not have xrange
         chunk = s[i:i + chunk_size]
-        _color_idx = TOPICS_COLORS_RANDOM_VALUES_LOOP.next()
+        _color_idx = next(TOPICS_COLORS_RANDOM_VALUES_LOOP) # Python 3 do nto have .next()
         l.append(lolcat.get_line(u'%s' % chunk, _color_idx, spread=3))
     return u''.join(l)
 
