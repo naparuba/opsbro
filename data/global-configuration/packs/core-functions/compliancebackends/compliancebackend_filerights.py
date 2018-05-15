@@ -49,7 +49,7 @@ class FileRightsDriver(InterfaceComplianceDriver):
         
         self.logger.debug('Looking at file rights %s/%s/%s/%s with mode %s' % (file_path, owner, group, permissions, mode))
         file_stat = os.stat(file_path)
-        file_permissions = int(oct(file_stat.st_mode & 0x777)[1:])  # => to have something like 644  # note: Ox because of python 3
+        file_permissions = int(oct(file_stat.st_mode & 0o777)[1:])  # => to have something like 644  # note: Ox because of python 3
         self.logger.debug('Comparing mode: file:%s %s rule:%s ' % (file_permissions, type(file_permissions), permissions))
         if getpwuid is None and (owner is not '' or group is not ''):
             self.logger.error('Cannot look at owner/group for this os')
