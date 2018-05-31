@@ -92,7 +92,7 @@ class InterfaceHostingDriver(object):
         # so try to guess
         if len(res) == 0:
             logger.info('Cannot use the hostname -I call for linux, trying to guess local addresses')
-            for prefi in ['bond', 'eth', 'venet']:
+            for prefi in ['bond', 'eth', 'venet', 'wlan']:
                 for i in xrange(0, 10):
                     ifname = '%s%d' % (prefi, i)
                     try:

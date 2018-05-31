@@ -146,6 +146,9 @@ class Hypervisor(Collector):
         res = {'hypervisor': ''}
         try:
             cpu = CPUID()
+        except SystemError:  # not a x86
+            self.set_not_eligible('Cpuid/hypervisor is only available for x86 cpus')
+            return res
         except Exception as exp:
             self.set_error('Cannot get cpuid/hypervisor information: %s' % exp)
             return res

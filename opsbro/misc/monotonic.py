@@ -141,9 +141,13 @@ except AttributeError:
             
             else:
                 try:
-                    # NOTE: on alpine linux 2.7, there is a issue with find(c) that is giving back
-                    # the full path instead of just the lib name, so use os.path.basename() to strip it
-                    clock_gettime = ctypes.CDLL(os.path.basename(ctypes.util.find_library('c')), use_errno=True).clock_gettime
+                    clib_path = ctypes.util.find_library('c')
+                    if clib_path:
+                        # NOTE: on alpine linux 2.7, there is a issue with find(c) that is giving back
+                        # the full path instead of just the lib name, so use os.path.basename() to strip it
+                        clib_path = os.path.basename(clib_path)
+                    # NOTE: if none, will get libc :)
+                    clock_gettime = ctypes.CDLL(clib_path, use_errno=True).clock_gettime
                 except AttributeError:
                     rt_path = ctypes.util.find_library('rt')
                     if rt_path is None:
