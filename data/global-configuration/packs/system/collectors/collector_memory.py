@@ -57,7 +57,7 @@ class Memory(Collector):
                     # We are only interested in the KB data so regexp that out
                     match = re.search(regexp, values[1])
                     
-                    if match != None:
+                    if match is not None:
                         meminfo[str(values[0])] = int(match.group(0))
                 except IndexError:
                     break
@@ -78,7 +78,7 @@ class Memory(Collector):
                 # logger.debug('getMemoryUsage: formatting (phys)')
                 
                 physTotal = meminfo['memtotal']
-                physFree = meminfo['memfree'] + meminfo['buffers'] + meminfo['cached']
+                physFree = meminfo['memfree'] + meminfo['buffers'] + meminfo['cached'] + meminfo['sreclaimable']  # also count io cache and system one (slab)
                 physUsed = 100 * (physTotal - float(physFree)) / physTotal
                 
                 # Convert to MB
