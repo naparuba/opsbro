@@ -13,6 +13,8 @@ class TestEncrypter(OpsBroTest):
     def setUp(self):
         encrypter.load('NTdiN2NlNmE4NTViMTFlNA==')
         print "ENCRYPTER", encrypter
+        if encrypter.get_AES() is None:
+            raise Exception('The Crypto librairy is missing')
     
     
     def test_encryption(self):

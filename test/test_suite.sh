@@ -7,7 +7,13 @@ echo "##################### Launching TEST $TEST_SUITE"
 # Travis: only need to run the installation once, it it not link to a specific python version. They don't need to use CPU for nothing ;)
 if [ "$TEST_SUITE" == "PYTHON" ]; then
    echo "Installing dependencies for TESTING"
-   pip install -r ../dependencies
+   pip install jinja2
+   pip install leveldb
+   pip install pycrypto
+   pip install requests
+   pip install Crypto
+   pip install pygments
+   pip install pyOpenSSL
    pip install coveralls
    pip install nose-cov
    pip install unittest2
