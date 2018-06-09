@@ -1,0 +1,41 @@
+dashboard:
+    title:  Raspberry pi system overall
+    content:
+        vertical_split:
+                   - text:
+                      title: "General"
+                      value: "'Raspberry pi (temperature=%sC) | CPU %s (%s core(s)) | IP: %s' % ( colorize({{collector.raspberrypi.temperature}}, 34) ,colorize({{collector.system.cpu_model_name}}, 24), colorize({{collector.system.cpu_count}}, 4), colorize({{collector.system.public_ip}}, 14) )"
+                   - horizontal_gauge:
+                      title: CPU value
+                      value: "100-{{collector.cpustats.cpu_all.%idle}}"
+                      unit: "%"
+                   - horizontal_chart:
+                      title: CPU Chart
+                      value: "100-{{collector.cpustats.cpu_all.%idle}}"
+                      unit: "%"
+                   - horizontal_split:
+                      - donut:
+                         title: "Physical memory"
+                         value: "{{collector.memory.phys_used}}"
+                         unit: "%"
+                      - donut:
+                         title: "Swap"
+                         value: "{{collector.memory.swap_used}}"
+                         unit: "%"
+                      - horizontal_gauge:
+                         title: "Disk /"
+                         value: "{{collector.diskusage./.pct_used}}"
+                         unit: "%"
+                   - text:
+                      title: "Network activity"
+                      value: "'Eth0 recv: %s pkt/s' % colorize({{collector.networktraffic.eth0.recv_packets/s}}, 44)"
+
+
+
+
+
+# CPU gauge
+# CPU CHART
+# Memory donut  | swap donut | disks horizontal gauge
+# Text: network text
+# TODO: Process table

@@ -345,6 +345,11 @@ class HGauge(Tile):
         self.value = self.vcallback()
         if self.value is None:
             self.value = 0
+        if isinstance(self.value, basestring):
+            try:
+                self.value = int(self.value)
+            except ValueError:
+                self.value = 0
     
     
     def _display(self, tbox, parent):

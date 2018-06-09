@@ -1,0 +1,6 @@
+detector:
+    add_groups:
+        - raspberry-pi
+    apply_if: "{{collector.raspberrypi.is_raspberry_pi}} == True"
+    interval: "86400s"
+

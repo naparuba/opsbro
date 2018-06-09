@@ -42,6 +42,8 @@ def __get_pack_breadcumb(pack_name, pack_level, end='', topic_picto='large'):
 
 
 def _get_expr_evaluator(expr):
+    if isinstance(expr, str):
+        expr = expr.decode('utf8', 'ignore')
     this_expr = expr
     
     
