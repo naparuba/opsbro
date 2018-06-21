@@ -19,7 +19,10 @@ class GetURLDriver(InterfaceComplianceDriver):
         
         # NOTE: ssl.SSLContext is only availabe on last python 2.7 versions
         if hasattr(ssl, 'SSLContext'):
-            self.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+            # NOTE: was before, but seems to be not as large as default context
+            ## self.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+            self.ssl_context = ssl.create_default_context()
+            self.ssl_context.options &= ~ssl.OP_NO_SSLv3  # reenable SSLv3 if need
             self.ssl_context.check_hostname = False
             self.ssl_context.verify_mode = ssl.CERT_NONE
         else:
