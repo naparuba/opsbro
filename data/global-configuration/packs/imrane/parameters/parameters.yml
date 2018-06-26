@@ -1,0 +1,16 @@
+
+# Is the imrane listener module is enabled
+# default to false
+enabled: false
+
+
+# Which port to listen for HTTP data
+agregator-group:     imrane-agregator
+
+
+# Which port to listen for HTTP data
+collector-group:     imrane-collector
+
+
+# sqlite database path
+database-path:      /tmp/agregator.db

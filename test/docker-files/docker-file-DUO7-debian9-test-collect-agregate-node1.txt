@@ -1,0 +1,26 @@
+FROM debian:9
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+
+RUN        /apt_get_install  python
+# All need for debian, so faster test (we are testging feature here, not install)
+RUN        /apt_get_install   python-jinja2
+RUN        /apt_get_install   python-crypto
+RUN        /apt_get_install   python-setuptools
+RUN        /apt_get_install   python-apt
+
+# Need for tests
+RUN        /apt_get_install   sqlite
+
+ADD        . /root/opsbro-oss
+WORKDIR       /root/opsbro-oss
+
+RUN       python setup.py install
+
+# Ask for an encrypted test
+RUN       opsbro agent parameters set encryption_key NGNjZWI2ZmEyMzEyMTFlOA==
+
+
+# The node1 will try to connect to node2 and auto join it
+ENTRYPOINT    test/test_duo7_collect_agregate.sh "NODE1"

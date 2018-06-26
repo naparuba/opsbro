@@ -1,0 +1,20 @@
+name: imrane
+topics:
+    - metrology
+types:
+    - pack
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description:  Module to allow aseImrane to agregate data to a datab
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - module
+    - imrane
+
+dependencies:
+    core: ">=1.0"
+license: ""

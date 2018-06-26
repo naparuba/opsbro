@@ -17,8 +17,11 @@ fi
 ##############################################################################
 print_header "Starting"
 # Try to start daemon, but we don't want systemd hook there
-SYSTEMCTL_SKIP_REDIRECT=1 /etc/init.d/opsbro start
+SYSTEMCTL_SKIP_REDIRECT=1 /etc/init.d/opsbro --debug start
 if [ $? != 0 ]; then
+   cat /var/log/opsbro/daemon.log
+   cat /var/log/opsbro/*log
+   ps axjf
    echo "ERROR: daemon start failed!"
    exit 2
 fi
@@ -32,6 +35,8 @@ opsbro agent info
 if [ $? != 0 ]; then
     echo "ERROR: information get failed!"
     cat /var/log/opsbro/daemon.log
+    cat /var/log/opsbro/*log
+    ps axjf
     exit 2
 fi
 
@@ -129,6 +134,9 @@ opsbro evaluator wait-eval-true "has_package('$TEST_PACKAGE_NAME')" --timeout=10
 if [ $? != 0 ];then
    echo "ERROR: the $TEST_PACKAGE_NAME package should have been detected"
    cat $MASSIVE_INSTALL_LOG
+   cat /var/log/opsbro/daemon.log
+   cat /var/log/opsbro/*log
+   ps axjf
    exit 2
 fi
 
