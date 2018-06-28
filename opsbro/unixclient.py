@@ -60,6 +60,16 @@ class UnixHTTPConnection(HTTPConnection):
 # Class that makes Unix sockets work with urllib without any additional
 # dependencies.
 class UnixSocketHandler(AbstractHTTPHandler):
+    
+    @staticmethod
+    def __get_req_data(req):
+        # Python 2:
+        if hasattr(req, 'get_data'):
+            return req.get_data()
+        # Python 3
+        return req.data
+    
+    
     def unix_open(self, req):
         full_path = "%s%s" % urlsplit(req.get_full_url())[1:3]
         path = os.path.sep
@@ -72,7 +82,7 @@ class UnixSocketHandler(AbstractHTTPHandler):
         
         # add a host or else urllib complains
         url = req.get_full_url().replace(unix_socket, "/localhost")
-        new_req = Request(url, req.get_data(), dict(req.header_items()))
+        new_req = Request(url, self.__get_req_data(req), dict(req.header_items()))
         new_req.timeout = req.timeout
         new_req.get_method = req.get_method  # Also copy specific method from the original header
         return self.do_open(UnixHTTPConnection(unix_socket), new_req)

@@ -12,6 +12,7 @@ import codecs
 PY3 = sys.version_info >= (3,)
 if PY3:
     unicode = str
+    basestring = str
 
 from .misc.colorama import init as init_colorama
 
@@ -61,6 +62,9 @@ else:
     def cprint(s, color='', on_color='', end='\n'):
         if not isinstance(s, basestring):
             s = str(s)
+        if (PY3 and isinstance(s, bytes)):
+            print('\n\nTYPE OF s: %s\n\n' % type(s))
+            s = s.decode('utf8', 'ignore')
         if end == '':
             stdout_utf8.write(s)
         else:

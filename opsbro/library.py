@@ -62,8 +62,8 @@ class LibraryStore(object):
             return self.__StringIO
         try:
             from cStringIO import StringIO
-        except ImportError:
-            from StringIO import StringIO
+        except ImportError:  # Python3
+            from io import StringIO
         self.__StringIO = StringIO
         return self.__StringIO
 

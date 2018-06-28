@@ -1,10 +1,17 @@
+import sys
 import os
 import traceback
 import subprocess
 
+PY3 = sys.version_info >= (3,)
+if PY3:
+    unicode = str
+    basestring = str
+
 from .misc.six import add_metaclass
 from .log import LoggerFactory
 from .parameters import ParameterBasedType
+from .util import string_decode
 
 
 class CollectorMetaclass(type):
@@ -80,7 +87,7 @@ class Collector(ParameterBasedType):
         self.__state_refresh_this_loop = True
         # Be sure we are saving unicode string, as they can be json.dumps
         if isinstance(txt, str):
-            txt = txt.decode('utf8', 'ignore')
+            txt = string_decode(txt)
         self.logger.error(txt, do_print=False)
         self.log = txt
         self.__set_state('ERROR')
@@ -158,7 +165,7 @@ class Collector(ParameterBasedType):
         # Detect if we will change status before then end of this loop
         self.__did_state_change = False
         
-        from collectormanager import collectormgr
+        from .collectormanager import collectormgr
         self.logger.debug('Launching main for %s' % self.__class__)
         # Reset log
         self.log = ''

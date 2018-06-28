@@ -2,12 +2,15 @@ import time
 import os
 import subprocess
 import threading
+import sys
 
 from opsbro.log import LoggerFactory
 from .linux_system_backend import LinuxBackend
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('system-packages')
+
+PY3 = (sys.version_info[0] == 3)
 
 
 class AptBackend(LinuxBackend):
@@ -39,7 +42,11 @@ class AptBackend(LinuxBackend):
     def _assert_apt(self):
         if self.apt is None:
             try:
-                self.install_package('python-apt')
+                # NOTE: python2 and 3 do nto have the same system package
+                pkg = 'python-apt'
+                if PY3:
+                    pkg = 'python3-apt'
+                self.install_package(pkg)
                 import apt
                 self.apt = apt
             except Exception as exp:

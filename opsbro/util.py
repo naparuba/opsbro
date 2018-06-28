@@ -1,3 +1,4 @@
+import sys
 import os
 import shutil
 import glob
@@ -5,6 +6,8 @@ import socket
 import hashlib
 import time
 import uuid as libuuid
+
+PY3 = sys.version_info >= (3,)
 
 from .log import logger
 from .hostingdrivermanager import get_hostingdrivermgr
@@ -74,9 +77,21 @@ def get_server_const_uuid():
     hosttingdrvmgr = get_hostingdrivermgr()
     unique_uuid = hosttingdrvmgr.get_unique_uuid()
     if unique_uuid:
-        return hashlib.sha1(unique_uuid.lower()).hexdigest()
-    
+        return get_sha1_hash(unique_uuid.lower())
     return ''
+
+
+def get_sha1_hash(s):
+    # NOTE: hashlib (in python3) take str, not unicode
+    if isinstance(s, str):
+        s = s.encode('utf8', 'ignore')
+    return hashlib.sha1(s).hexdigest()
+
+
+def string_decode(s):
+    if isinstance(s, str) and not PY3:  # python3 already is unicode in str
+        return s.decode('utf8', 'ignore')
+    return s
 
 
 # Try to guess uuid, but can be just a guess, so TRY to have a constant
@@ -103,7 +118,7 @@ def byteify(input):
         return dict([(byteify(key), byteify(value)) for key, value in input.items()])
     elif isinstance(input, list):
         return [byteify(element) for element in input]
-    elif isinstance(input, str):
+    elif isinstance(input, str) and not PY3:  # python3 already is unicode in str
         return input.decode('utf8', 'ignore')
     else:
         return input

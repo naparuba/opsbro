@@ -3,7 +3,6 @@ import json
 import time
 import threading
 import shutil
-import hashlib
 import socket
 
 from .httpclient import get_http_exceptions, httper
@@ -16,6 +15,7 @@ from .httpdaemon import response, http_export, abort, request
 from .gossip import gossiper
 from .library import libstore
 from .stop import stopper
+from .util import get_sha1_hash
 
 REPLICATS = 1
 
@@ -338,7 +338,7 @@ class KVBackend:
         # we have to compute our internal key mapping. For user key it's: /data/KEY
         key = ukey
         
-        hkey = hashlib.sha1(key).hexdigest()
+        hkey = get_sha1_hash(key)
         nuuid = gossiper.find_group_node('kv', hkey)
         logger.debug('KV: DELETE node that manage the key %s' % nuuid)
         # that's me :)
@@ -366,7 +366,7 @@ class KVBackend:
     def get_key(self, ukey):
         # we have to compute our internal key mapping. For user key it's: /data/KEY
         key = ukey
-        hkey = hashlib.sha1(key).hexdigest()
+        hkey = get_sha1_hash(key)
         nuuid = gossiper.find_group_node('kv', hkey)
         logger.info('KV: key %s is managed by %s' % (ukey, nuuid))
         # that's me :)
@@ -398,7 +398,7 @@ class KVBackend:
         # we have to compute our internal key mapping. For user key it's: /data/KEY
         key = ukey
         
-        hkey = hashlib.sha1(key).hexdigest()
+        hkey = get_sha1_hash(key)
         
         nuuid = gossiper.find_group_node('kv', hkey)
         

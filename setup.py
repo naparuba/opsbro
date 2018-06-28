@@ -9,6 +9,7 @@ import stat
 import optparse
 import shutil
 import imp
+
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -23,6 +24,7 @@ PY3 = sys.version_info >= (3,)
 if PY3:
     basestring = str  # no basestring in python 3
 
+
 def _disable_warns(*args, **kwargs):
     pass
 
@@ -34,7 +36,7 @@ warnings.showwarning = _disable_warns
 python_version = sys.version_info
 if python_version < (2, 6):
     sys.exit("OpsBro require as a minimum Python 2.6, sorry")
-#elif python_version >= (3,):
+# elif python_version >= (3,):
 #    sys.exit("OpsBro is not yet compatible with Python 3.x, sorry")
 
 package_data = ['*.py']
@@ -535,7 +537,10 @@ except ImportError:
     try:
         cprint(' * You are missing the python setuptools, trying to install it with system package:', end='')
         sys.stdout.flush()
-        package_name = setuptools_package_exceptions.get(system_distro, 'python-setuptools')
+        default_setuptools_pkg = 'python-setuptools'
+        if PY3:
+            default_setuptools_pkg = 'python3-setuptools'
+        package_name = setuptools_package_exceptions.get(system_distro, default_setuptools_pkg)
         systepacketmgr.install_package(package_name)
         cprint(' %s' % CHARACTERS.check, color='green')
         from setuptools import setup, find_packages
