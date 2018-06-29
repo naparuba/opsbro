@@ -83,7 +83,7 @@ class ImraneModule(ListenerModule):
             database_enabled = gossiper.is_in_group(agregator_group)
             
             if not database_enabled:
-                self.logger.info('IMRANE: not a database thread')
+                self.logger.debug('IMRANE: not a database thread')
                 time.sleep(1)
                 continue
             
@@ -127,7 +127,7 @@ class ImraneModule(ListenerModule):
             collector_enabled = gossiper.is_in_group(collector_group)
             
             if not collector_enabled:
-                self.logger.info('IMRANE: not a collector thread')
+                self.logger.debug('IMRANE: not a collector thread')
                 time.sleep(1)
                 continue
             self.logger.info('IMRANE: collector loop')

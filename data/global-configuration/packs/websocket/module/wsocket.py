@@ -44,7 +44,7 @@ class WebSocketBackend(object):
             return
         
         # get in one show the connections because connections can change during send
-        clients = self.server.connections.values()[:]
+        clients = list(self.server.connections.values())[:]  # note: python3 transform into a list
         for client in clients:
             try:
                 client.sendMessage(msg)

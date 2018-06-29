@@ -1,5 +1,7 @@
 import socket
 
+from .util import string_encode
+
 UDP_IP = "192.168.56.104"
 UDP_PORT = 18125  # curently disable
 
@@ -22,7 +24,8 @@ class Stats(object):
     def stack(self, s):
         self.buf.append(s)
         if len(self.buf) > 20:
-            self.sock.sendto('\n'.join(self.buf), (UDP_IP, UDP_PORT))
+            pkt = string_encode('\n'.join(self.buf))
+            self.sock.sendto(pkt, (UDP_IP, UDP_PORT))
             self.buf = []
     
     

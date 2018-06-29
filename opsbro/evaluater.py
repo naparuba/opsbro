@@ -7,6 +7,9 @@ import base64
 import inspect
 import types
 import itertools
+import sys
+
+PY3 = sys.version_info >= (3,)
 
 from .collectormanager import collectormgr
 from .log import LoggerFactory
@@ -80,7 +83,7 @@ for f in (abs, min, max, sum, sorted, len, set):
     # NOTE: find why, but we need to call the not decorated function... cool...
     _export_evaluater_function(f, function_group='basic')
 
-names = {'True': True, 'False': False}
+names = {'True': True, 'False': False, 'None': None}
 
 
 class Evaluater(object):
@@ -215,6 +218,11 @@ class Evaluater(object):
             return operators[type(node.op)](self.eval_(node.operand))
         elif isinstance(node, ast.Name):  # name? try to look at it
             key = node.id
+            v = names.get(key, None)
+            return v
+        # None, True, False are nameconstants in python3, but names in 2
+        elif PY3 and isinstance(node, ast.NameConstant):
+            key = node.value
             v = names.get(key, None)
             return v
         elif isinstance(node, ast.Subscript):  # {}['key'] access

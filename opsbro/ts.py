@@ -215,7 +215,7 @@ class TSBackend(object):
             hour_e['nb'] += 1
             hour_e['sum'] += e['avg']
             # We try to look at which minute we are in the hour object
-            minute_hour_idx = (cur_min - hour) / 60
+            minute_hour_idx = (cur_min - hour) // 60
             hour_e['values'][minute_hour_idx] = e['avg']
             hour_e['avg'] = hour_e['sum'] / float(hour_e['nb'])
         STATS.incr('hour-compute', time.time() - _t)
@@ -258,7 +258,7 @@ class TSBackend(object):
             day_e['nb'] += 1
             day_e['sum'] += e['avg']
             # We try to look at which minute we are in the day object
-            minute_day_idx = (cur_min - day) / 60
+            minute_day_idx = (cur_min - day) // 60
             day_e['values'][minute_day_idx] = e['avg']
             day_e['avg'] = day_e['sum'] / float(day_e['nb'])
         STATS.incr('day-compute', time.time() - _t)

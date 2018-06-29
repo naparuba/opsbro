@@ -87,10 +87,19 @@ def get_sha1_hash(s):
         s = s.encode('utf8', 'ignore')
     return hashlib.sha1(s).hexdigest()
 
-
+# Bytes to unicode
 def string_decode(s):
     if isinstance(s, str) and not PY3:  # python3 already is unicode in str
         return s.decode('utf8', 'ignore')
+    if PY3 and isinstance(s, bytes):
+        return s.decode('utf8', 'ignore')
+    return s
+
+
+# Unicode to bytes
+def string_encode(s):
+    if isinstance(s, str) and PY3:
+        return s.encode('utf8', 'ignore')
     return s
 
 

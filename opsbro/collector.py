@@ -7,6 +7,7 @@ PY3 = sys.version_info >= (3,)
 if PY3:
     unicode = str
     basestring = str
+    long = int
 
 from .misc.six import add_metaclass
 from .log import LoggerFactory
@@ -128,6 +129,7 @@ class Collector(ParameterBasedType):
         except Exception as exp:
             self.set_error('Collector [%s] execute command [%s] error: %s' % (self.__class__.__name__.lower(), cmd, traceback.format_exc()))
             return False
+        output = string_decode(output)
         return output
     
     
