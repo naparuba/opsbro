@@ -40,7 +40,7 @@ class Mysql(Collector):
             try:
                 import MySQLdb
                 self.MySQLdb = MySQLdb
-            except ImportError, exp1:
+            except ImportError as exp1:
                 try:
                     mydir = os.path.dirname(__file__)
                     sys.path.insert(0, mydir)
@@ -84,7 +84,7 @@ class Mysql(Collector):
                 cursor = db.cursor()
                 cursor.execute('SELECT VERSION()')
                 result = cursor.fetchone()
-            except self.MySQLdb.OperationalError, message:
+            except self.MySQLdb.OperationalError as message:
                 logger.error('getMySQLStatus: MySQL query error when getting version: %s', message)
             
             version = result[0].split('-')  # Might include a description e.g. 4.1.26-log. See http://dev.mysql.com/doc/refman/4.1/en/information-functions.html#function_version
@@ -103,7 +103,7 @@ class Mysql(Collector):
             cursor = db.cursor()
             cursor.execute('SHOW STATUS LIKE "Connections"')
             result = cursor.fetchone()
-        except self.MySQLdb.OperationalError, message:
+        except self.MySQLdb.OperationalError as message:
             logger.error('getMySQLStatus: MySQL query error when getting Connections = %s', message)
         
         if self.mysqlConnectionsStore is None:
@@ -133,7 +133,7 @@ class Mysql(Collector):
             cursor = db.cursor()
             cursor.execute(query)
             result = cursor.fetchone()
-        except self.MySQLdb.OperationalError, message:
+        except self.MySQLdb.OperationalError as message:
             logger.error('getMySQLStatus: MySQL query error when getting Created_tmp_disk_tables = %s', message)
         
         createdTmpDiskTables = float(result[1])
@@ -147,7 +147,7 @@ class Mysql(Collector):
             cursor = db.cursor()
             cursor.execute('SHOW STATUS LIKE "Max_used_connections"')
             result = cursor.fetchone()
-        except self.MySQLdb.OperationalError, message:
+        except self.MySQLdb.OperationalError as message:
             logger.error('getMySQLStatus: MySQL query error when getting Max_used_connections = %s', message)
         
         maxUsedConnections = int(result[1])
@@ -160,7 +160,7 @@ class Mysql(Collector):
             cursor = db.cursor()
             cursor.execute('SHOW STATUS LIKE "Open_files"')
             result = cursor.fetchone()
-        except self.MySQLdb.OperationalError, message:
+        except self.MySQLdb.OperationalError as message:
             logger.error('getMySQLStatus: MySQL query error when getting Open_files = %s', message)
         
         openFiles = int(result[1])
@@ -180,7 +180,7 @@ class Mysql(Collector):
             cursor = db.cursor()
             cursor.execute(query)
             result = cursor.fetchone()
-        except self.MySQLdb.OperationalError, message:
+        except self.MySQLdb.OperationalError as message:
             logger.error('getMySQLStatus: MySQL query error when getting Slow_queries = %s', message)
         
         if self.mysqlSlowQueriesStore is None:
@@ -206,7 +206,7 @@ class Mysql(Collector):
             cursor = db.cursor()
             cursor.execute('SHOW STATUS LIKE "Table_locks_waited"')
             result = cursor.fetchone()
-        except self.MySQLdb.OperationalError, message:
+        except self.MySQLdb.OperationalError as message:
             logger.error('getMySQLStatus: MySQL query error when getting Table_locks_waited = %s', message)
         
         tableLocksWaited = float(result[1])
@@ -220,7 +220,7 @@ class Mysql(Collector):
             cursor = db.cursor()
             cursor.execute('SHOW STATUS LIKE "Threads_connected"')
             result = cursor.fetchone()
-        except self.MySQLdb.OperationalError, message:
+        except self.MySQLdb.OperationalError as message:
             logger.error('getMySQLStatus: MySQL query error when getting Threads_connected = %s', message)
         
         threadsConnected = int(result[1])
@@ -235,11 +235,11 @@ class Mysql(Collector):
                 cursor = db.cursor(self.MySQLdb.cursors.DictCursor)
                 cursor.execute('SHOW SLAVE STATUS')
                 result = cursor.fetchone()
-            except self.MySQLdb.OperationalError, message:
+            except self.MySQLdb.OperationalError as message:
                 self.set_error('getMySQLStatus: MySQL query error when getting SHOW SLAVE STATUS = %s' % message)
                 result = None
             
-            if result != None:
+            if result is not None:
                 try:
                     secondsBehindMaster = result['Seconds_Behind_Master']
                     logger.debug('getMySQLStatus: secondsBehindMaster = %s' % secondsBehindMaster)

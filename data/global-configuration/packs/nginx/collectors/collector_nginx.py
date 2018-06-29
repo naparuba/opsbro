@@ -37,15 +37,15 @@ class Nginx(Collector):
             request = urllib2.urlopen(req)
             response = request.read()
         
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError as e:
             self.set_error('Unable to get Nginx status - HTTPError = %s' % e)
             return False
         
-        except urllib2.URLError, e:
+        except urllib2.URLError as e:
             self.set_error('Unable to get Nginx status - URLError = %s' % e)
             return False
         
-        except httplib.HTTPException, e:
+        except httplib.HTTPException as e:
             self.set_error('Unable to get Nginx status - HTTPException = %s' % e)
             return False
         

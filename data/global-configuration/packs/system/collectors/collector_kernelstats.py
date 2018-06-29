@@ -48,7 +48,7 @@ class KernelStats(Collector):
                     lines.extend(stats.readlines())
                 with open('/proc/vmstat', 'r') as vmstat:
                     lines.extend(vmstat.readlines())
-            except IOError, e:
+            except IOError as e:
                 logger.error('getKernelStat: exception = %s', e)
                 return False
             

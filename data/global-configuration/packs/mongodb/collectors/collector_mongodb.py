@@ -101,7 +101,7 @@ class Mongodb(Collector):
             try:
                 status['version'] = statusOutput['version']
                 logger.debug('getMongoDBStatus: version %s', statusOutput['version'])
-            except KeyError, ex:
+            except KeyError as ex:
                 logger.error('getMongoDBStatus: version KeyError exception = %s', ex)
                 pass
             
@@ -117,7 +117,7 @@ class Mongodb(Collector):
                 status['globalLock']['currentQueue']['readers'] = statusOutput['globalLock']['currentQueue']['readers']
                 status['globalLock']['currentQueue']['writers'] = statusOutput['globalLock']['currentQueue']['writers']
             
-            except KeyError, ex:
+            except KeyError as ex:
                 logger.debug('getMongoDBStatus: globalLock KeyError exception = %s' % ex)
                 pass
             
@@ -130,7 +130,7 @@ class Mongodb(Collector):
                 status['mem']['virtual'] = statusOutput['mem']['virtual']
                 status['mem']['mapped'] = statusOutput['mem']['mapped']
             
-            except KeyError, ex:
+            except KeyError as ex:
                 logger.debug('getMongoDBStatus: memory KeyError exception = %s', ex)
                 pass
             
@@ -142,7 +142,7 @@ class Mongodb(Collector):
                 status['connections']['current'] = statusOutput['connections']['current']
                 status['connections']['available'] = statusOutput['connections']['available']
             
-            except KeyError, ex:
+            except KeyError as ex:
                 logger.debug('getMongoDBStatus: connections KeyError exception = %s', ex)
                 pass
             
@@ -154,7 +154,7 @@ class Mongodb(Collector):
                 status['extraInfo']['heapUsage'] = statusOutput['extra_info']['heap_usage_bytes']
                 status['extraInfo']['pageFaults'] = statusOutput['extra_info']['page_faults']
             
-            except KeyError, ex:
+            except KeyError as ex:
                 logger.debug('getMongoDBStatus: extra info KeyError exception = %s', ex)
                 pass
             
@@ -168,13 +168,13 @@ class Mongodb(Collector):
                 status['backgroundFlushing']['lastFlushLength'] = statusOutput['backgroundFlushing']['last_ms']
                 status['backgroundFlushing']['flushLengthAvrg'] = statusOutput['backgroundFlushing']['average_ms']
             
-            except KeyError, ex:
+            except KeyError as ex:
                 logger.debug('getMongoDBStatus: backgroundFlushing KeyError exception = %s', ex)
                 pass
             
             # Per second metric calculations (opcounts and asserts)
             try:
-                if self.mongoDBStore == None:
+                if self.mongoDBStore is None:
                     logger.debug('getMongoDBStatus: per second metrics no cached data, so storing for first time')
                     self.setMongoDBStore(statusOutput)
                 
@@ -230,7 +230,7 @@ class Mongodb(Collector):
                             'getMongoDBStatus: per second metrics negative value calculated, mongod likely restarted, so clearing cache')
                         self.setMongoDBStore(statusOutput)
             
-            except KeyError, ex:
+            except KeyError as ex:
                 logger.debug('getMongoDBStatus: per second metrics KeyError exception = %s' % ex)
                 pass
             
@@ -241,7 +241,7 @@ class Mongodb(Collector):
                 status['cursors'] = {}
                 status['cursors']['totalOpen'] = statusOutput['cursors']['totalOpen']
             
-            except KeyError, ex:
+            except KeyError as ex:
                 logger.debug('getMongoDBStatus: cursors KeyError exception = %s' % ex)
                 pass
             

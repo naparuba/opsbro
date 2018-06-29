@@ -47,7 +47,7 @@ class NetworkTraffic(Collector):
                 lines = proc.readlines()
                 proc.close()
             
-            except IOError, e:
+            except IOError as e:
                 logger.error('getNetworkTraffic: exception = %s', e)
                 return False
             
@@ -110,9 +110,9 @@ class NetworkTraffic(Collector):
                     logger.debug('getNetworkTraffic: %s = %s' % (key, self.networkTrafficStore[key]['recv_bytes']))
                     logger.debug('getNetworkTraffic: %s = %s' % (key, self.networkTrafficStore[key]['trans_bytes']))
                 
-                except KeyError, ex:
+                except KeyError as ex:
                     logger.error('getNetworkTraffic: no data for %s' % key)
-                except ValueError, ex:
+                except ValueError as ex:
                     logger.error('getNetworkTraffic: invalid data for %s' % key)
             
             logger.debug('getNetworkTraffic: completed, returning')
@@ -180,7 +180,7 @@ class NetworkTraffic(Collector):
                             
                             face = line[0]
                             faces[face] = faceData
-                        except IndexError, e:
+                        except IndexError as e:
                             continue
             
             logger.debug('getNetworkTraffic: parsed, looping')
@@ -219,10 +219,10 @@ class NetworkTraffic(Collector):
                         self.networkTrafficStore[key]['recv_bytes'] = faces[face]['recv_bytes']
                         self.networkTrafficStore[key]['trans_bytes'] = faces[face]['trans_bytes']
                 
-                except KeyError, ex:
+                except KeyError as ex:
                     logger.error('getNetworkTraffic: no data for %s', key)
                 
-                except ValueError, ex:
+                except ValueError as ex:
                     logger.error('getNetworkTraffic: invalid data for %s', key)
             
             logger.debug('getNetworkTraffic: completed, returning')

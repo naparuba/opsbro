@@ -40,7 +40,7 @@ class Memory(Collector):
             try:
                 with open('/proc/meminfo', 'r') as meminfoProc:
                     lines = meminfoProc.readlines()
-            except IOError, e:
+            except IOError as e:
                 logger.error('getMemoryUsage: exception = %s', e)
                 return False
             
@@ -278,7 +278,7 @@ class Memory(Collector):
                     try:
                         swapUsed += int(swapParts[len(swapParts) - 3]) / 1024
                         swapFree += int(swapParts[len(swapParts) - 2]) / 1024
-                    except IndexError, e:
+                    except IndexError as e:
                         pass
             
             logger.debug('getMemoryUsage: parsed swapinfo, completed, returning')
