@@ -47,7 +47,7 @@ class Mysql(Collector):
                     import pymysql as MySQLdb
                     self.MySQLdb = MySQLdb
                     sys.path = sys.path[1:]
-                except ImportError, exp2:
+                except ImportError as exp2:
                     sys.path = sys.path[1:]
                     self.set_error('Unable to import MySQLdb (%s) or embedded pymsql (%s)' % (exp1, exp2))
                     return False
