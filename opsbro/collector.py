@@ -131,8 +131,33 @@ class Collector(ParameterBasedType):
             return False
         output = string_decode(output)
         return output
-    
-    
+
+
+    # Execute a shell command and return the result or '' if there is an error
+    def execute_shell_and_state(self, cmd):
+        # Get output from a command
+        self.logger.debug('execute_shell:: %s' % cmd)
+        output = ''
+        try:
+            close_fds = True
+            # windows do not manage close fds
+            if os.name == 'nt':
+                close_fds = False
+            proc = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE, close_fds=close_fds)
+            self.logger.debug('PROC LAUNCHED', proc)
+            output, err = proc.communicate()
+            self.logger.debug('OUTPUT, ERR', output, err)
+            exit_status = proc.returncode
+            try:
+                proc.kill()
+            except Exception as e:
+                pass
+        except Exception as exp:
+            return 'Cannot execute command %s: %s' % (cmd, 2)
+        output = string_decode(output)
+        return exit_status, output
+
+
     # from a dict recursivly build a ts
     # 'bla':{'foo':bar, 'titi': toto} => bla.foo.bar bla.titi.toto
     def create_ts_from_data(self, d, l, s):

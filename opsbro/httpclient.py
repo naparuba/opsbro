@@ -31,7 +31,7 @@ class Httper(object):
     
     
     @staticmethod
-    def get(uri, params={}, headers={}, with_status_code=False):
+    def get(uri, params={}, headers={}, with_status_code=False, timeout=10):
         data = None  # always none in GET
         
         if params:
@@ -44,7 +44,7 @@ class Httper(object):
         for (k, v) in headers.items():
             req.add_header(k, v)
         
-        request = url_opener.open(req)
+        request = url_opener.open(req, timeout=timeout)
         
         response = request.read()
         status_code = request.code

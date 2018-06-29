@@ -1,5 +1,4 @@
 import os
-import commands
 import re
 
 from opsbro.collector import Collector
@@ -28,9 +27,9 @@ class Dmidecode(Collector):
             return res
         # Ok not direct access, try to launch with
         else:  # try dmidecode way, if exists
-            for p in commands.getoutput('LANG=C dmidecode -s').split('\n'):
+            for p in self.execute_shell('LANG=C dmidecode -s').split('\n'):
                 if re.search('^ ', p):
-                    buf = commands.getoutput('LANG=C dmidecode -s %s' % p).strip()
+                    buf = self.execute_shell('LANG=C dmidecode -s %s' % p).strip()
                     if 'No such file or directory' in buf:
                         logger.warning('Cannot access to dmi information with dmidecode command, exiting this collector.')
                         self.set_not_eligible('Cannot get DMI informations because the dmidecode command is missing.')

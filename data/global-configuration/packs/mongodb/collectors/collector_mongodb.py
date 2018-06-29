@@ -1,8 +1,11 @@
 import traceback
-import urlparse
 import datetime
 import os
 import sys
+try:  # Python 2
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
 
 from opsbro.collector import Collector
 from opsbro.util import to_best_int_float
@@ -58,7 +61,7 @@ class Mongodb(Collector):
         
         try:
             mongoURI = ''
-            parsed = urlparse.urlparse(self.get_parameter('uri'))
+            parsed = urlparse(self.get_parameter('uri'))
             
             # Can't use attributes on Python 2.4
             if parsed[0] != 'mongodb':
