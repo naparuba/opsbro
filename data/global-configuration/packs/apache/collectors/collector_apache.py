@@ -1,7 +1,6 @@
-import httplib
-import urllib2
 import traceback
 
+from opsbro.httpclient import get_http_exceptions, httper
 from opsbro.collector import Collector
 from opsbro.parameters import StringParameter
 
@@ -45,11 +44,8 @@ class Apache(Collector):
                     urllib2.install_opener(opener)
         '''
         try:
-            req = urllib2.Request('http://localhost/server-status/?auto', None, {})
-            request = urllib2.urlopen(req)
-            response = request.read()
-        
-        except Exception as exp:
+            response = httper.get('http://localhost/server-status/?auto', timeout=3)
+        except get_http_exceptions() as exp:
             stack = traceback.format_exc()
             self.log = stack
             self.set_error('Unable to get Apache status - Exception = %s' % exp)

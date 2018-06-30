@@ -3,6 +3,7 @@ import re
 import urllib2
 import traceback
 
+from opsbro.httpclient import get_http_exceptions, httper
 from opsbro.collector import Collector
 from opsbro.parameters import StringParameter
 
@@ -29,30 +30,11 @@ class Nginx(Collector):
         logger.debug('getNginxStatus: config set')
         
         try:
-            logger.debug('getNginxStatus: attempting urlopen')
+            response = httper.get(self.get_parameter('uri'), timeout=3)
+        except get_http_exceptions() as exp:
+            self.set_error('Unable to get Nginx status - HTTPError = %s' % exp)
+            return False
             
-            req = urllib2.Request(self.get_parameter('uri'), None, {})
-            
-            # Do the request, log any errors
-            request = urllib2.urlopen(req)
-            response = request.read()
-        
-        except urllib2.HTTPError as e:
-            self.set_error('Unable to get Nginx status - HTTPError = %s' % e)
-            return False
-        
-        except urllib2.URLError as e:
-            self.set_error('Unable to get Nginx status - URLError = %s' % e)
-            return False
-        
-        except httplib.HTTPException as e:
-            self.set_error('Unable to get Nginx status - HTTPException = %s' % e)
-            return False
-        
-        except Exception as e:
-            self.set_error('Unable to get Nginx status - Exception = %s' % traceback.format_exc())
-            return False
-        
         logger.debug('getNginxStatus: urlopen success, start parsing')
         
         # Thanks to http://hostingfu.com/files/nginx/nginxstats.py for this code
