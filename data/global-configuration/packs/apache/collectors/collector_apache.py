@@ -44,7 +44,10 @@ class Apache(Collector):
                     urllib2.install_opener(opener)
         '''
         try:
-            response = httper.get('http://localhost/server-status/?auto', timeout=3)
+            uri = 'http://%s/server-status/?auto' % self.get_parameter('hostname')
+            user = self.get_parameter('user')
+            password = self.get_parameter('password')
+            response = httper.get(uri, timeout=3,user=user, password=password)
         except get_http_exceptions() as exp:
             stack = traceback.format_exc()
             self.log = stack

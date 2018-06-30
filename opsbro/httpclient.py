@@ -8,9 +8,9 @@ except ImportError:
 from socket import error as SocketError
 
 try:
-    from urllib2 import Request, build_opener, URLError, HTTPError, HTTPHandler
+    from urllib2 import Request, build_opener, URLError, HTTPError, HTTPHandler, HTTPPasswordMgrWithDefaultRealm, HTTPBasicAuthHandler
 except ImportError:
-    from urllib.request import Request, build_opener, HTTPHandler
+    from urllib.request import Request, build_opener, HTTPHandler, HTTPPasswordMgrWithDefaultRealm, HTTPBasicAuthHandler
     from urllib.error import URLError, HTTPError
 
 _HTTP_EXCEPTIONS = None
@@ -31,13 +31,20 @@ class Httper(object):
     
     
     @staticmethod
-    def get(uri, params={}, headers={}, with_status_code=False, timeout=10):
+    def get(uri, params={}, headers={}, with_status_code=False, timeout=10, user=None, password=None):
         data = None  # always none in GET
         
         if params:
             uri = "%s?%s" % (uri, urllib.urlencode(params))
         
-        url_opener = build_opener(HTTPHandler)
+        if user and password:
+            handler = HTTPHandler
+        else:
+            passwordMgr = HTTPPasswordMgrWithDefaultRealm()
+            passwordMgr.add_password(None, uri, user, password)
+            handler = HTTPBasicAuthHandler(passwordMgr)
+        
+        url_opener = build_opener(handler)
         
         req = Request(uri, data)
         req.get_method = lambda: 'GET'
