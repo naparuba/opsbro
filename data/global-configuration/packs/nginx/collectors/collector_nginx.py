@@ -1,6 +1,4 @@
-import httplib
 import re
-import urllib2
 import traceback
 
 from opsbro.httpclient import get_http_exceptions, httper
