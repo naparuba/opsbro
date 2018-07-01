@@ -17,6 +17,7 @@ fi
 opsbro collectors wait-ok rabbitmq
 if [ $? != 0 ]; then
     echo "ERROR: Rabbitmq collector is not responding"
+    opsbro collectors state
     exit 2
 fi
 

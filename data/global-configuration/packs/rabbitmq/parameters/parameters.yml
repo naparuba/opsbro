@@ -1,10 +1,12 @@
 
 
-# ri to connect to rabbimq administration API
+# uri to connect to rabbimq administration API
+# Enable it with:
+# rabbitmq-plugins enable rabbitmq_management
 uri: http://localhost:15672/api/overview
 
 # which user to connect to your rabbitmq endpoints
-user: root
+user: guest
 
 # password to use for your rabbitmq endpoints
-password: ''
+password: guest

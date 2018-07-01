@@ -37,7 +37,8 @@ class Httper(object):
         if params:
             uri = "%s?%s" % (uri, urllib.urlencode(params))
         
-        if user and password:
+        # We need both user & password to use them
+        if not user or not  password:
             handler = HTTPHandler
         else:
             passwordMgr = HTTPPasswordMgrWithDefaultRealm()
