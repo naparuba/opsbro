@@ -5,7 +5,6 @@
 #    Gabes Jean, naparuba@gmail.com
 
 from __future__ import print_function
-import json
 import time
 import sys
 
@@ -15,6 +14,7 @@ from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_local, put_opsbro_json
 from opsbro.cli_display import print_h1, print_h2, get_terminal_size
 from opsbro.compliancemgr import COMPLIANCE_LOG_COLORS, COMPLIANCE_STATES, COMPLIANCE_STATE_COLORS
+from opsbro.jsonmgr import jsoner
 
 
 def __print_rule_entry(rule):
@@ -74,7 +74,7 @@ def do_compliance_state(compliance_name=''):
         return
     
     try:
-        compliances = json.loads(r)
+        compliances = jsoner.loads(r)
     except ValueError as exp:  # bad json
         logger.error('Bad return from the server %s' % exp)
         return
@@ -87,12 +87,12 @@ def do_compliance_state(compliance_name=''):
         if pack_name not in packs:
             packs[pack_name] = {}
         packs[pack_name][cname] = compliance
-    pnames = packs.keys()
+    pnames = list(packs.keys())  # python3
     pnames.sort()
     for pname in pnames:
         pack_entries = packs[pname]
         cprint('* Pack %s' % pname, color='blue')
-        cnames = pack_entries.keys()
+        cnames = list(pack_entries.keys())  # python3
         cnames.sort()
         for cname in cnames:
             cprint('  - %s' % pname, color='blue', end='')
@@ -109,7 +109,7 @@ def do_compliance_history():
         return
     
     try:
-        histories = json.loads(r)
+        histories = jsoner.loads(r)
     except ValueError as exp:  # bad json
         logger.error('Bad return from the server %s' % exp)
         return
@@ -147,7 +147,7 @@ def do_compliance_wait_compliant(compliance_name, timeout=30, exit_if_ok=True):
     spinners = itertools.cycle(CHARACTERS.spinners)
     
     current_state = COMPLIANCE_STATES.UNKNOWN
-    for i in xrange(timeout):
+    for i in range(timeout):  # no xrange in python3
         uri = '/compliance/state'
         try:
             (code, r) = get_opsbro_local(uri)
@@ -156,7 +156,7 @@ def do_compliance_wait_compliant(compliance_name, timeout=30, exit_if_ok=True):
             return
         
         try:
-            compliances = json.loads(r)
+            compliances = jsoner.loads(r)
         except ValueError as exp:  # bad json
             logger.error('Bad return from the server %s' % exp)
             return
@@ -179,7 +179,7 @@ def do_compliance_wait_compliant(compliance_name, timeout=30, exit_if_ok=True):
         except:  # beware, maybe we don't have a tty
             terminal_width = 100
         cprint('\r' + ' ' * terminal_width, end='')
-        cprint('\r %s ' % spinners.next(), color='blue', end='')
+        cprint('\r %s ' % next(spinners), color='blue', end='')  # no spinnner.next in python3
         cprint('%s' % compliance_name, color='magenta', end='')
         cprint(' is ', end='')
         cprint('%15s ' % current_state, color=COMPLIANCE_STATE_COLORS.get(current_state, 'cyan'), end='')

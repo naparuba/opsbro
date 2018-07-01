@@ -16,6 +16,9 @@ if PY3:
 
 from .misc.colorama import init as init_colorama
 
+# Lasy load to avoid recursive import
+string_decode = None
+
 
 def is_tty():
     # TODO: what about windows? how to have beautiful & Windows?
@@ -59,17 +62,33 @@ else:
     stdout_utf8 = codecs.getwriter("utf-8")(sys.stdout)
     
     
+    # stdout_utf8.errors = 'ignore'
+    
     def cprint(s, color='', on_color='', end='\n'):
+        global string_decode
+        if string_decode is None:
+            from .util import string_decode
+            string_decode = string_decode
         if not isinstance(s, basestring):
             s = str(s)
-        if (PY3 and isinstance(s, bytes)):
-            print('\n\nTYPE OF s: %s\n\n' % type(s))
-            s = s.decode('utf8', 'ignore')
-        if end == '':
-            stdout_utf8.write(s)
-        else:
-            stdout_utf8.write(s)
-            stdout_utf8.write('\n')
+        # Python 2 and 3: good luck for unicode in a terminal.
+        # It's a nightmare to manage all of this, if you have a common code
+        # that allow to run WITHOUT a terminal, I take it :)
+        if PY3:
+            s = string_decode(s)
+            raw_bytes, consumed = stdout_utf8.encode(s, 'strict')
+            if end == '':
+                sys.stdout.buffer.write(raw_bytes)
+                # stdout_utf8.write(s)
+            else:
+                sys.stdout.buffer.write(raw_bytes)
+                sys.stdout.buffer.write(b'\n')
+        else:  # PY2
+            if end == '':
+                stdout_utf8.write(s)
+            else:
+                stdout_utf8.write(s)
+                stdout_utf8.write('\n')
     
     
     def sprintf(s, color='', end=''):

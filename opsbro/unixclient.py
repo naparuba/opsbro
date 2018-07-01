@@ -6,7 +6,6 @@
 
 
 import os
-import json
 import socket
 
 try:  # Python 2
@@ -30,6 +29,7 @@ except ImportError:
     from urllib.parse import urlsplit
 
 from .log import logger
+from .jsonmgr import jsoner
 
 #### For local socket handling
 DEFAULT_SOCKET_TIMEOUT = 5
@@ -151,7 +151,7 @@ def get_json(uri, local_socket='', params={}, multi=False, method='GET', timeout
         r = "[{0}]".format(r.replace("}{", "},{"))
     
     try:
-        d = json.loads(r)
+        d = jsoner.loads(r)
     except ValueError as exp:  # bad json
         logger.debug("ERROR local unix get json raw return did raise an exception  in bad json (%s) %s" % (r, exp))
         logger.error('Bad return from the server %s: "%s"' % (exp, r))

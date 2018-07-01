@@ -213,7 +213,7 @@ def wait_for_agent_started(timeout=30, visual_wait=False, exit_if_stopped=False,
         if agent_state == 'ok':
             break
         if visual_wait:
-            cprint('\r %s ' % spinners.next(), color='blue', end='')
+            cprint('\r %s ' % next(spinners), color='blue', end='')  # note: spinners.next() do not exists in python3
             cprint(' agent is still ', end='')
             cprint('initializing', color='yellow', end='')
             cprint(' (collector, detector,... are not finish)', end='')

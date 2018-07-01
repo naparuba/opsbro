@@ -1,5 +1,6 @@
 import json
 import urllib
+import ssl
 
 try:
     from httplib import HTTPException
@@ -8,9 +9,9 @@ except ImportError:
 from socket import error as SocketError
 
 try:
-    from urllib2 import Request, build_opener, URLError, HTTPError, HTTPHandler, HTTPPasswordMgrWithDefaultRealm, HTTPBasicAuthHandler
+    from urllib2 import Request, build_opener, URLError, HTTPError, HTTPHandler, HTTPPasswordMgrWithDefaultRealm, HTTPBasicAuthHandler, HTTPSHandler
 except ImportError:
-    from urllib.request import Request, build_opener, HTTPHandler, HTTPPasswordMgrWithDefaultRealm, HTTPBasicAuthHandler
+    from urllib.request import Request, build_opener, HTTPHandler, HTTPPasswordMgrWithDefaultRealm, HTTPBasicAuthHandler, HTTPSHandler
     from urllib.error import URLError, HTTPError
 
 _HTTP_EXCEPTIONS = None
@@ -27,23 +28,34 @@ def get_http_exceptions():
 
 class Httper(object):
     def __init__(self):
-        pass
+        # NOTE: ssl.SSLContext is only availabe on last python 2.7 versions
+        if hasattr(ssl, 'SSLContext'):
+            # NOTE: was before, but seems to be not as large as default context
+            ## self.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+            self.ssl_context = ssl.create_default_context()
+            self.ssl_context.options &= ~ssl.OP_NO_SSLv3  # reenable SSLv3 if need
+            self.ssl_context.check_hostname = False
+            self.ssl_context.verify_mode = ssl.CERT_NONE
+        else:
+            self.ssl_context = None
     
     
-    @staticmethod
-    def get(uri, params={}, headers={}, with_status_code=False, timeout=10, user=None, password=None):
+    def get(self, uri, params={}, headers={}, with_status_code=False, timeout=10, user=None, password=None):
         data = None  # always none in GET
         
         if params:
             uri = "%s?%s" % (uri, urllib.urlencode(params))
         
-        # We need both user & password to use them
-        if not user or not  password:
-            handler = HTTPHandler
-        else:
+        # SSL, user/password and basic
+        # NOTE: currently don't manage ssl & user/password
+        if uri.startswith('https://'):
+            handler = HTTPSHandler(context=self.ssl_context)
+        elif user and password:
             passwordMgr = HTTPPasswordMgrWithDefaultRealm()
             passwordMgr.add_password(None, uri, user, password)
             handler = HTTPBasicAuthHandler(passwordMgr)
+        else:
+            handler = HTTPHandler
         
         url_opener = build_opener(handler)
         

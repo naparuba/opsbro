@@ -1,13 +1,16 @@
 from __future__ import print_function
-import urllib2
 import shutil
 import os
-import urlparse
-import ssl
+
+try:  # Python 2
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
 import hashlib
 
 from opsbro.compliancemgr import InterfaceComplianceDriver
 from opsbro.util import make_dir
+from opsbro.httpclient import get_http_exceptions, httper
 
 
 class GetURLDriver(InterfaceComplianceDriver):
@@ -16,17 +19,6 @@ class GetURLDriver(InterfaceComplianceDriver):
     
     def __init__(self):
         super(GetURLDriver, self).__init__()
-        
-        # NOTE: ssl.SSLContext is only availabe on last python 2.7 versions
-        if hasattr(ssl, 'SSLContext'):
-            # NOTE: was before, but seems to be not as large as default context
-            ## self.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
-            self.ssl_context = ssl.create_default_context()
-            self.ssl_context.options &= ~ssl.OP_NO_SSLv3  # reenable SSLv3 if need
-            self.ssl_context.check_hostname = False
-            self.ssl_context.verify_mode = ssl.CERT_NONE
-        else:
-            self.ssl_context = None
     
     
     # environments:   <- take first to win
@@ -67,7 +59,7 @@ class GetURLDriver(InterfaceComplianceDriver):
             rule.set_error()
             return
         
-        parsed_uri = urlparse.urlparse(url)
+        parsed_uri = urlparse(url)
         file_name = os.path.basename(parsed_uri.path)
         self.logger.debug("TRY DOWNLOADING %s => %s " % (url, file_name))
         
@@ -95,12 +87,8 @@ class GetURLDriver(InterfaceComplianceDriver):
         
         self.logger.debug('START DOWNLOAd', url)
         try:
-            args = {}
-            if self.ssl_context:
-                args['context'] = self.ssl_context
-            filedata = urllib2.urlopen(url, **args)
-            data = filedata.read()
-        except Exception as exp:
+            data = httper.get(url)
+        except get_http_exceptions() as exp:
             err = 'ERROR: downloading the uri: %s did fail withthe error: %s' % (url, exp)
             rule.add_error(err)
             rule.set_error()
