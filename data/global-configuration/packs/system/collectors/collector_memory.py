@@ -35,7 +35,7 @@ class Memory(Collector):
             return data
         
         # If Linux like procfs system is present and mounted we use meminfo, else we use "native" mode (vmstat and swapinfo)
-        if sys.platform == 'linux2':
+        if sys.platform.startswith('linux'):
             # logger.debug('getMemoryUsage: linux2')
             try:
                 with open('/proc/meminfo', 'r') as meminfoProc:

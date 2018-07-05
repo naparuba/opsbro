@@ -24,6 +24,7 @@ from .stop import stopper
 from .handlermgr import handlermgr
 from .topic import topiker, TOPIC_SERVICE_DISCOVERY
 from .basemanager import BaseManager
+from .jsonmgr import jsoner
 
 KGOSSIP = 10
 
@@ -951,7 +952,7 @@ class Gossip(BaseManager):
             uncrypted_ret = encrypter.decrypt(ret)
             logger.info('RECEIVING PING RESPONSE: %s' % uncrypted_ret)
             try:
-                msg = json.loads(uncrypted_ret)
+                msg = jsoner.loads(uncrypted_ret)
                 new_other = msg['node']
                 logger.info('PING got a return from %s (%s) (node state)=%s: %s' % (new_other['name'], new_other['display_name'], new_other['state'], msg))
                 if new_other['state'] == NODE_STATES.ALIVE:
@@ -999,7 +1000,7 @@ class Gossip(BaseManager):
                 return
             sock.close()
             uncrypted_ret = encrypter.decrypt(ret)
-            msg = json.loads(uncrypted_ret)
+            msg = jsoner.loads(uncrypted_ret)
             new_other = msg['node']
             logger.info('PING got a return from %s (%s) via a relay: %s' % (new_other['name'], new_other['display_name'], msg))
             logger.debug('RELAY set alive', other['name'])
@@ -1067,7 +1068,7 @@ class Gossip(BaseManager):
             sock.settimeout(3)
             ret = sock.recv(65535)
             uncrypted_ret = encrypter.decrypt(ret)
-            j_ret = json.loads(uncrypted_ret)
+            j_ret = jsoner.loads(uncrypted_ret)
             logger.info('PING (relay) got a return from %s' % ntgt['name'], j_ret)
             # An aswer? great it is alive! Let it know our _from node
             ack = {'type': 'ack', 'seqno': 0, 'node': j_ret['node']}
@@ -1143,7 +1144,7 @@ class Gossip(BaseManager):
                 continue
             try:
                 d_str = encrypter.decrypt(data)
-                d = json.loads(d_str)
+                d = jsoner.loads(d_str)
             # If bad json, skip it
             except ValueError:
                 continue
@@ -1313,7 +1314,7 @@ class Gossip(BaseManager):
             r = httper.get(uri, params=payload)
             logger.debug("push-pull response", r)
             try:
-                back = json.loads(r)
+                back = jsoner.loads(r)
             except ValueError as exp:
                 logger.error('ERROR CONNECTING TO %s:%s' % other, exp)
                 return False
@@ -1577,7 +1578,7 @@ class Gossip(BaseManager):
             
             data = request.GET.get('msg')
             
-            msg = json.loads(data)
+            msg = jsoner.loads(data)
             # First: load nodes from the distant node
             t = msg.get('type', None)
             if t is None or t != 'push-pull-msg':  # bad message, skip it

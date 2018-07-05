@@ -1,7 +1,7 @@
 import os
-import json
 
 from .log import LoggerFactory
+from .jsonmgr import jsoner
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('monitoring')
@@ -21,7 +21,7 @@ class Tutorial(object):
         with open(self.tutorial_data_path, 'r') as f:
             buf = f.read()
             
-            data = json.loads(buf, encoding='utf8')
+            data = jsoner.loads(buf, encoding='utf8')
             return data
     
     

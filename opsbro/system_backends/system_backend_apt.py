@@ -4,8 +4,9 @@ import subprocess
 import threading
 import sys
 
-from opsbro.log import LoggerFactory
+from ..log import LoggerFactory
 from .linux_system_backend import LinuxBackend
+from ..util import exec_command
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('system-packages')
@@ -148,8 +149,7 @@ class AptBackend(LinuxBackend):
                 logger.debug('APT: apt-key list already have key %s' % key)
                 return True
         
-        p = subprocess.Popen(['apt-key', 'export', key], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = p.communicate()
+        return_code, stdout, stderr = exec_command(['apt-key', 'export', key])
         logger.info('APT (apt-key listing):: stdout/stderr: %s/%s' % (stdout, stderr))
         lines = stdout.splitlines()
         for line in lines:
@@ -168,10 +168,9 @@ class AptBackend(LinuxBackend):
         logger.info('APT :: updating repository key %s from key server: %s' % (key, key_server))
         if not key_server.startswith('hkp://'):
             key_server = 'hkp://%s' % key_server
-        p = subprocess.Popen(['apt-key', 'adv', '--keyserver', key_server, '--recv', key], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = p.communicate()
+        return_code, stdout, stderr = exec_command(['apt-key', 'adv', '--keyserver', key_server, '--recv', key])
         logger.info('APT (apt-key adv):: stdout/stderr: %s/%s' % (stdout, stderr))
-        if p.returncode != 0:
+        if return_code != 0:
             raise Exception('APT: apt-key adv update did not succeed (%s), exiting from serveur key update' % (stdout + stderr))
         with self.gpg_cache_lock:
             self.gpg_cache[key] = True

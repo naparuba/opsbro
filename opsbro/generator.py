@@ -11,7 +11,7 @@ from .log import LoggerFactory
 from .gossip import gossiper
 from .library import libstore
 from .evaluater import evaluater
-from .util import unified_diff
+from .util import unified_diff, exec_command
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('generator')
@@ -331,12 +331,10 @@ class Generator(object):
             return
         
         try:
-            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, preexec_fn=os.setsid)
+            rc, output, err = exec_command(cmd)
         except Exception as exp:
             self.set_error('Generator %s command launch (%s) fail : %s' % (self.g['name'], cmd, exp))
             return
-        output, err = p.communicate()
-        rc = p.returncode
         if rc != 0:
             self.set_error('Generator %s command launch (%s) error (rc=%s): %s' % (self.g['name'], cmd, rc, '\n'.join([output, err])))
             return

@@ -211,7 +211,7 @@ def do_compliance_launch(compliance_name, timeout=30):
         logger.error(exp)
         return
     if not founded:
-        cprint('ERROR: cannot find the compliance %s' % compliance_name, color='red')
+        cprint('ERROR: cannot find the compliance %s (founded=%s)' % (compliance_name, founded), color='red')
         sys.exit(2)
     do_compliance_wait_compliant(compliance_name, timeout=timeout, exit_if_ok=False)
     do_compliance_state(compliance_name=compliance_name)

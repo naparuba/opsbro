@@ -296,7 +296,7 @@ def do_wait_event(event_type, timeout=30):
     import itertools
     spinners = itertools.cycle(CHARACTERS.spinners)
     
-    for i in xrange(timeout):
+    for i in range(timeout):
         uri = '/agent/event/%s' % event_type
         logger.info('ASK FOR EVENT %s' % event_type)
         try:
@@ -318,7 +318,7 @@ def do_wait_event(event_type, timeout=30):
             cprint('detected', color='green')
             sys.exit(0)
         # Not detected? increase loop
-        cprint('\r %s ' % spinners.next(), color='blue', end='')
+        cprint('\r %s ' % next(spinners), color='blue', end='')
         cprint('%s' % event_type, color='magenta', end='')
         cprint(' is ', end='')
         cprint('NOT DETECTED', color='magenta', end='')
@@ -354,7 +354,7 @@ def do_wait_members(name='', display_name='', group='', count=1, timeout=30):
     import itertools
     spinners = itertools.cycle(CHARACTERS.spinners)
     
-    for i in xrange(timeout):
+    for i in range(timeout):
         try:
             members = get_opsbro_json('/agent/members').values()
         except get_request_errors() as exp:
@@ -398,7 +398,7 @@ def do_wait_members(name='', display_name='', group='', count=1, timeout=30):
                 sys.exit(0)
         
         # Not detected? increase loop
-        cprint('\r %s ' % spinners.next(), color='blue', end='')
+        cprint('\r %s ' % next(spinners), color='blue', end='')
         if name:
             cprint('%s' % name, color='magenta', end='')
         elif display_name:

@@ -5,6 +5,10 @@ import os
 import time
 from string import digits
 
+PY3 = sys.version_info >= (3,)
+if PY3:
+    basestring = str
+
 from opsbro.collector import Collector
 from opsbro.now import NOW
 
@@ -124,8 +128,8 @@ class IoStats(Collector):
                 iostats[_label] = v
             return iostats
         
-        if sys.platform != 'linux2':
-            self.set_not_eligible('Unsupported platform for this collector')
+        if not sys.platform.startswith('linux'):  # linux2 on python2, linux on python3
+            self.set_not_eligible('Unsupported platform (%s) for this collector' % sys.platform)
             return False
         
         new_stats = self._get_disk_stats()

@@ -1,6 +1,5 @@
 import re
 import os
-import json
 import tempfile
 import shutil
 import copy
@@ -22,6 +21,7 @@ from .ts import tsmgr
 from .handlermgr import handlermgr
 from .topic import topiker, TOPIC_MONITORING
 from .basemanager import BaseManager
+from .jsonmgr import jsoner
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('monitoring')
@@ -132,7 +132,7 @@ class MonitoringManager(BaseManager):
         
         o = {'check': check}
         logger.debug('HTTP check saving the object %s into the file %s' % (o, p))
-        buf = json.dumps(o, sort_keys=True, indent=4)
+        buf = jsoner.dumps(o, sort_keys=True, indent=4)
         tempdir = tempfile.mkdtemp()
         f = open(os.path.join(tempdir, 'temp.json'), 'w')
         f.write(buf)
@@ -179,7 +179,7 @@ class MonitoringManager(BaseManager):
         
         logger.log('CHECK loading check retention file %s' % check_retention)
         with open(check_retention, 'r') as f:
-            loaded = json.loads(f.read())
+            loaded = jsoner.loads(f.read())
             for (cid, c) in loaded.items():
                 if cid in self.checks:
                     check = self.checks[cid]
@@ -194,7 +194,7 @@ class MonitoringManager(BaseManager):
         
         logger.log('Service loading service retention file %s' % service_retention)
         with open(service_retention, 'r') as f:
-            loaded = json.loads(f.read())
+            loaded = jsoner.loads(f.read())
             for (cid, c) in loaded.items():
                 if cid in self.services:
                     service = self.services[cid]
@@ -234,7 +234,7 @@ class MonitoringManager(BaseManager):
         
         o = {'service': service}
         logger.debug('HTTP service saving the object %s into the file %s' % (o, p))
-        buf = json.dumps(o, sort_keys=True, indent=4)
+        buf = jsoner.dumps(o, sort_keys=True, indent=4)
         tempdir = tempfile.mkdtemp()
         f = open(os.path.join(tempdir, 'temp.json'), 'w')
         f.write(buf)
@@ -485,7 +485,7 @@ class MonitoringManager(BaseManager):
     
     # Save the check as a jsono object into the __health/ KV part
     def put_check(self, check):
-        value = json.dumps(check)
+        value = jsoner.dumps(check)
         key = '__health/%s/%s' % (gossiper.uuid, check['name'])
         logger.debug('CHECK SAVING %s:%s(len=%d)' % (key, value, len(value)))
         kvmgr.put_key(key, value, allow_udp=True)
@@ -528,7 +528,7 @@ class MonitoringManager(BaseManager):
             if cid in self.active_checks:
                 names.append(check['name'])
                 self.put_check(check)
-        all_checks = json.dumps(names)
+        all_checks = jsoner.dumps(names)
         key = '__health/%s' % gossiper.uuid
         kvmgr.put_key(key, all_checks)
     
@@ -673,12 +673,12 @@ class MonitoringManager(BaseManager):
                     logger.error('Cannot access to the checks list for', nuuid)
                     return r
                 
-                lst = json.loads(v)
+                lst = jsoner.loads(v)
                 for cid in lst:
                     v = kvmgr.get_key('__health/%s/%s' % (node['uuid'], cid))
                     if v is None:  # missing check entry? not a real problem
                         continue
-                    check = json.loads(v)
+                    check = jsoner.loads(v)
                     r['checks'][cid] = check
                 return r
         
@@ -709,7 +709,7 @@ class MonitoringManager(BaseManager):
         def interface_PUT_agent_check(cname):
             value = request.body.getvalue()
             try:
-                check = json.loads(value)
+                check = jsoner.loads(value)
             except ValueError:  # bad json
                 return abort(400, 'Bad json entry')
             self.save_check(cname, check)
@@ -734,7 +734,7 @@ class MonitoringManager(BaseManager):
         def interface_PUT_agent_service(sname):
             value = request.body.getvalue()
             try:
-                service = json.loads(value)
+                service = jsoner.loads(value)
             except ValueError:  # bad json
                 return abort(400, 'Bad json entry')
             self.save_service(sname, service)
@@ -811,7 +811,7 @@ class MonitoringManager(BaseManager):
         def get_monitoring_history_checks():
             response.content_type = 'application/json'
             r = self.get_history()
-            return json.dumps(r)
+            return jsoner.dumps(r)
 
 
 monitoringmgr = MonitoringManager()

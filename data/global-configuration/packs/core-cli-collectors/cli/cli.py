@@ -97,7 +97,7 @@ def do_collectors_state():
     except get_request_errors() as exp:
         logger.error(exp)
         return
-    cnames = collectors.keys()
+    cnames = list(collectors.keys())
     cnames.sort()
     for cname in cnames:
         d = collectors[cname]
@@ -122,7 +122,7 @@ def do_collectors_wait_ok(collector_name, timeout=30):
     spinners = itertools.cycle(CHARACTERS.spinners)
     
     current_state = 'PENDING'
-    for i in xrange(timeout):
+    for i in range(timeout):
         try:
             collectors = get_opsbro_json('/collectors')
         except get_request_errors() as exp:
@@ -136,7 +136,7 @@ def do_collectors_wait_ok(collector_name, timeout=30):
             logger.error("Cannot find the collector '%s'" % collector_name)
             sys.exit(2)
         current_state = collector['state']
-        cprint('\r %s ' % spinners.next(), color='blue', end='')
+        cprint('\r %s ' % next(spinners), color='blue', end='')
         cprint('%s' % collector_name, color='magenta', end='')
         cprint(' is ', end='')
         cprint('%15s ' % current_state, color=COLLECTORS_STATE_COLORS.get(current_state, 'cyan'), end='')

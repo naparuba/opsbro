@@ -1,6 +1,7 @@
 import os
 
 from .log import logger
+from .util import unicode_to_bytes
 
 leveldb_lib = None
 failback_leveldb_lib = None
@@ -52,10 +53,11 @@ class FailbackLevelDBBackend(object):
     
     
     def __init__(self, path):
-        self.path = path
+        # Leveldb in python3 need a bytes types (like C strings)
+        self.path = unicode_to_bytes(path)
         logger.info('[Failback leveldb] Opening KV database at path %s' % path)
-        self.db = failback_leveldb_lib.DB(path, create_if_missing=True)
-        logger.info('[Failback leveldb] KV database at path %s is opened: %s' % (path, self.db))
+        self.db = failback_leveldb_lib.DB(self.path, create_if_missing=True)
+        logger.info('[Failback leveldb] KV database at path %s is opened: %s' % (self.path, self.db))
     
     
     def Get(self, key, fill_cache=False):

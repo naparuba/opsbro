@@ -264,7 +264,7 @@ class Cluster(object):
         # up to date info)
         if os.path.exists(self.nodes_file):
             with open(self.nodes_file, 'r') as f:
-                nodes = json.loads(f.read())
+                nodes = jsoner.loads(f.read())
                 # If we were in nodes, remove it, we will refresh it
                 if self.uuid in nodes:
                     del nodes[self.uuid]
@@ -276,7 +276,7 @@ class Cluster(object):
         # Load some files, like the old incarnation file
         if os.path.exists(self.incarnation_file):
             with open(self.incarnation_file, 'r') as f:
-                self.incarnation = json.loads(f.read())
+                self.incarnation = jsoner.loads(f.read())
                 self.incarnation += 1
         else:
             self.incarnation = 0
@@ -297,7 +297,7 @@ class Cluster(object):
         # we keep the data about the last time we were launch, to detect crash and such things
         if os.path.exists(self.last_alive_file):
             with open(self.last_alive_file, 'r') as f:
-                self.last_alive = json.loads(f.read())
+                self.last_alive = jsoner.loads(f.read())
         else:
             self.last_alive = int(time.time())
         
@@ -384,7 +384,7 @@ class Cluster(object):
         
         logger.log('Collectors loading collector retention file %s' % self.collector_retention)
         with open(self.collector_retention, 'r') as f:
-            loaded = json.loads(f.read())
+            loaded = jsoner.loads(f.read())
             collectormgr.load_retention(loaded)
         logger.log('Collectors loaded retention file %s' % self.collector_retention)
     
@@ -503,7 +503,7 @@ class Cluster(object):
             logger_gossip.debug("UDP: received message:", data, 'from', addr)
             # Ok now we should have a json to parse :)
             try:
-                raw = json.loads(data)
+                raw = jsoner.loads(data)
             except ValueError:  # garbage
                 logger_gossip.debug("UDP: received message that is not valid json:", data, 'from', addr)
                 continue
@@ -700,14 +700,14 @@ class Cluster(object):
             value = request.body.getvalue()
             logger.debug("HTTP: configuration update put %s" % value)
             try:
-                update = json.loads(value)
+                update = jsoner.loads(value)
             except ValueError:  # bad json...
                 return abort(400, 'Bad json data')
             local_file = os.path.join(self.configuration_dir, 'local.json')
             j = {}
             with open(local_file, 'r') as f:
                 buf = f.read()
-                j = json.loads(buf)
+                j = jsoner.loads(buf)
             j.update(update)
             # Now save it
             with open(local_file, 'w') as f:
@@ -727,7 +727,7 @@ class Cluster(object):
             
             with open(local_file, 'r') as f:
                 buf = f.read()
-                j = json.loads(buf)
+                j = jsoner.loads(buf)
             return j
         
         
@@ -794,7 +794,7 @@ class Cluster(object):
                     r = httper.get(uri)
                     logger.debug("SYNC kv-changed response from %s " % repl['name'], len(r))
                     try:
-                        to_merge = json.loads(r)
+                        to_merge = jsoner.loads(r)
                     except (ValueError, TypeError) as exp:
                         logger.debug('SYNC : error asking to %s: %s' % (repl['name'], str(exp)))
                         continue
@@ -1072,7 +1072,7 @@ class Cluster(object):
             return
         zj = base64.b64decode(zj64)
         j = zlib.decompress(zj)
-        lst = json.loads(j)
+        lst = jsoner.loads(j)
         logger.debug("WE SHOULD CLEANUP all but not", lst)
         local_files = [os.path.join(dp, f)
                        for dp, dn, filenames in os.walk(os.path.abspath(self.configuration_dir))

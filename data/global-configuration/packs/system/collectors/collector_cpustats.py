@@ -38,7 +38,7 @@ class CpuStats(Collector):
             r[h_name] = {}
             values = [int(v.strip()) for v in elts[1:] if v.strip()]
             columns = (r'%user', r'%nice', r'%system', r'%idle', r'%iowait', r'%irq', r'%softirq', r'%steal', r'%guest', r'%guest_nice')
-            for i in xrange(0, len(columns)):
+            for i in range(0, len(columns)):  # note: beware of python3
                 r[h_name][columns[i]] = values[i]
         # if we have multiple cpus, prepare the all in a percent way
         if nb_cpus >= 2:
@@ -82,7 +82,7 @@ class CpuStats(Collector):
                 cpuStats[_label] = v
             return cpuStats
         
-        if sys.platform == 'linux2':
+        if sys.platform.startswith('linux'):
             # /proc/stat columns:
             # user, nice, system, idle, iowait, irq, softirq, steal, guest, guest_nice
             logger.debug('getCPUStats: linux2')

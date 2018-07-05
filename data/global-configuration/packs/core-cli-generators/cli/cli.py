@@ -108,7 +108,7 @@ def do_generators_wait_compliant(generator_name, timeout=30):
     spinners = itertools.cycle(CHARACTERS.spinners)
     
     current_state = 'UNKNOWN'
-    for i in xrange(timeout):
+    for i in range(timeout):
         uri = '/generators/state'
         try:
             (code, r) = get_opsbro_local(uri)
@@ -129,7 +129,7 @@ def do_generators_wait_compliant(generator_name, timeout=30):
             logger.error("Cannot find the generator '%s'" % generator_name)
             sys.exit(2)
         current_state = generator['state']
-        cprint('\r %s ' % spinners.next(), color='blue', end='')
+        cprint('\r %s ' % next(spinners), color='blue', end='')
         cprint('%s' % generator_name, color='magenta', end='')
         cprint(' is ', end='')
         cprint('%15s ' % current_state, color=GENERATOR_STATE_COLORS.get(current_state, 'cyan'), end='')

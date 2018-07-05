@@ -10,7 +10,6 @@ import uuid as libuuid
 PY3 = sys.version_info >= (3,)
 
 from .log import logger
-from .hostingdrivermanager import get_hostingdrivermgr
 
 
 # Make a directory with recursive creation if need
@@ -32,6 +31,30 @@ def make_dir(path):
     make_dir(parent)
     # so now we can create the son
     os.mkdir(path)
+
+
+def exec_command(cmd):
+    import subprocess
+    if isinstance(cmd, list):
+        cmd = ' '.join(cmd)
+    close_fds = True
+    # windows do not manage close fds
+    if os.name == 'nt':
+        close_fds = False
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=close_fds, preexec_fn=os.setsid, shell=True)
+    stdout, stderr = p.communicate()
+    stdout = bytes_to_unicode(stdout)
+    stderr = bytes_to_unicode(stderr)
+    return p.returncode, stdout, stderr
+
+
+def my_sort(lst, cmp_f):
+    if not PY3:
+        lst = sorted(lst, cmp=cmp_f)
+    else:
+        from functools import cmp_to_key
+        lst = sorted(lst, key=cmp_to_key(cmp_f))
+    return lst
 
 
 def copy_dir(source_item, destination_item):
@@ -70,6 +93,7 @@ def lower_dict(d):
 # * aws:   get instance uuid from url (TODO)
 # * windows: TODO
 def get_server_const_uuid():
+    from .hostingdrivermanager import get_hostingdrivermgr
     # Ask the hosting driver if a unique uuid is available
     # linux:     # First DMI, if there is a UUID, use it
     # BUT not if docker one (have access to DMI but it's a container, so not unique)
@@ -87,8 +111,14 @@ def get_sha1_hash(s):
         s = s.encode('utf8', 'ignore')
     return hashlib.sha1(s).hexdigest()
 
+
 # Bytes to unicode
 def string_decode(s):
+    return bytes_to_unicode(s)
+
+
+# Bytes to unicode
+def bytes_to_unicode(s):
     if isinstance(s, str) and not PY3:  # python3 already is unicode in str
         return s.decode('utf8', 'ignore')
     if PY3 and isinstance(s, bytes):
@@ -98,6 +128,10 @@ def string_decode(s):
 
 # Unicode to bytes
 def string_encode(s):
+    return unicode_to_bytes(s)
+
+
+def unicode_to_bytes(s):
     if isinstance(s, str) and PY3:
         return s.encode('utf8', 'ignore')
     return s

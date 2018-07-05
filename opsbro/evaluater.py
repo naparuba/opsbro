@@ -6,14 +6,19 @@ import json
 import base64
 import inspect
 import types
-import itertools
 import sys
+
+try:  # Python2
+    from itertools import izip as zip
+except ImportError:  # python3 = zip is a buildin
+    pass
 
 PY3 = sys.version_info >= (3,)
 
 from .collectormanager import collectormgr
 from .log import LoggerFactory
 from .httpdaemon import http_export, response, request
+from .util import string_decode
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('evaluater')
@@ -45,9 +50,11 @@ operators = {
 }
 
 functions = {
+    'list': list,
 }
 
 functions_to_groups = {
+    'list': 'basic',
 }
 
 
@@ -186,7 +193,7 @@ class Evaluater(object):
         elif isinstance(node, ast.Dict):  # <dict>
             _keys = [self.eval_(e) for e in node.keys]
             _values = [self.eval_(e) for e in node.values]
-            _dict = dict(itertools.izip(_keys, _values))  # zip it into a new dict
+            _dict = dict(zip(_keys, _values))  # zip it into a new dict
             return _dict
         elif isinstance(node, ast.BinOp):  # <left> <operator> <right>
             return operators[type(node.op)](self.eval_(node.left), self.eval_(node.right))
@@ -223,7 +230,7 @@ class Evaluater(object):
         # None, True, False are nameconstants in python3, but names in 2
         elif PY3 and isinstance(node, ast.NameConstant):
             key = node.value
-            v = names.get(key, None)
+            v = names.get(str(key), None)  # note: valus is alrady the final value, must lookup it to assert only what we want
             return v
         elif isinstance(node, ast.Subscript):  # {}['key'] access
             # NOTE: the 'key' is node.slice.value.s
@@ -362,6 +369,7 @@ class Evaluater(object):
             response.content_type = 'application/json'
             expr64 = request.POST.get('expr')
             expr = base64.b64decode(expr64)
+            expr = string_decode(expr)  # from bytes to string
             v = evaluater.eval_expr(expr)
             return json.dumps(v)
 

@@ -5,6 +5,7 @@ import json
 import time
 
 from .util import make_dir
+from .jsonmgr import jsoner
 
 
 # This class is an abstract for various manager
@@ -63,7 +64,7 @@ class BaseManager(object):
         for history_file in history_files:
             epoch_time = int(os.path.splitext(os.path.basename(history_file))[0])
             with open(history_file, 'r') as f:
-                e = json.loads(f.read())
+                e = jsoner.loads(f.read())
             r.append({'date': epoch_time, 'entries': e})
             
             # If we are now too big, return directly

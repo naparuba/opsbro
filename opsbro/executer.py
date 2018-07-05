@@ -1,10 +1,8 @@
-import json
 import socket
 import uuid as libuuid
 import base64
 import os
 import time
-import subprocess
 
 from .library import libstore
 from .log import LoggerFactory
@@ -13,6 +11,8 @@ from .gossip import gossiper
 from .kv import kvmgr
 from .httpdaemon import http_export, response, abort, request
 from .topic import topiker, TOPIC_CONFIGURATION_AUTOMATION
+from .jsonmgr import jsoner
+from .util import exec_command
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('executer')
@@ -51,7 +51,7 @@ class Executer(object):
         _c = RSA.encrypt(challenge, self.mfkey_pub)  # encrypt 0=dummy param not used
         echallenge = base64.b64encode(_c)
         ping_payload = {'type': '/exec/challenge/proposal', 'fr': gossiper.uuid, 'challenge': echallenge, 'cid': cid}
-        message = json.dumps(ping_payload)
+        message = jsoner.dumps(ping_payload)
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
         enc_message = encrypter.encrypt(message)
         logger.debug('EXEC asking us a challenge, return %s(%s) to %s' % (challenge, echallenge, addr))
@@ -95,12 +95,10 @@ class Executer(object):
     def do_launch_exec(self, cid, exec_id, cmd, addr):
         logger.debug('EXEC launching a command %s' % cmd)
         
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, preexec_fn=os.setsid)
-        output, err = p.communicate()  # Will lock here
-        rc = p.returncode
+        rc, output, err = exec_command(cmd)
         logger.debug("EXEC RETURN for command %s : %s %s %s" % (cmd, rc, output, err))
         o = {'output': output, 'rc': rc, 'err': err, 'cmd': cmd}
-        j = json.dumps(o)
+        j = jsoner.dumps(o)
         # Save the return and put it in the KV space
         key = '__exec/%s' % exec_id
         kvmgr.put_key(key, j, ttl=3600)  # only one hour live is good :)
@@ -108,7 +106,7 @@ class Executer(object):
         # Now send a finish to the asker
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         payload = {'type': '/exec/done', 'exec_id': exec_id, 'cid': cid}
-        packet = json.dumps(payload)
+        packet = jsoner.dumps(payload)
         encrypter = libstore.get_encrypter()
         enc_packet = encrypter.encrypt(packet)
         logger.debug('EXEC: sending a exec done packet to %s:%s' % addr)
@@ -157,7 +155,7 @@ class Executer(object):
             logger.debug('EXEC asking for node %s' % node['name'])
             
             payload = {'type': '/exec/challenge/ask', 'fr': gossiper.uuid, 'exec_id': exec_id}
-            packet = json.dumps(payload)
+            packet = jsoner.dumps(payload)
             encrypter = libstore.get_encrypter()
             enc_packet = encrypter.encrypt(packet)
             logger.debug('EXEC: sending a challenge request to %s' % node['name'])
@@ -178,7 +176,7 @@ class Executer(object):
                 d['state'] = 'error'
                 continue
             try:
-                ret = json.loads(msg)
+                ret = jsoner.loads(msg)
             except ValueError as exp:
                 logger.error('EXEC bad return from node %s : %s' % (node['name'], exp))
                 sock.close()
@@ -213,7 +211,7 @@ class Executer(object):
             payload = {'type': '/exec/challenge/return', 'fr': gossiper.uuid,
                        'cid' : cid, 'response': response64,
                        'cmd' : cmd}
-            packet = json.dumps(payload)
+            packet = jsoner.dumps(payload)
             enc_packet = encrypter.encrypt(packet)
             logger.debug('EXEC: sending a challenge response to %s' % node['name'])
             sock.sendto(enc_packet, (node['addr'], node['port']))
@@ -234,7 +232,7 @@ class Executer(object):
                 d['state'] = 'error'
                 continue
             try:
-                ret = json.loads(msg)
+                ret = jsoner.loads(msg)
             except ValueError as exp:
                 logger.error('EXEC bad return from node %s : %s' % (node['name'], exp))
                 sock.close()
@@ -252,7 +250,7 @@ class Executer(object):
                 continue
             
             try:
-                t = json.loads(v)
+                t = jsoner.loads(v)
             except ValueError as exp:
                 logger.error('EXEC bad json entry return from %s and cid %s: %s' % (node['name'], cid, exp))
                 d['state'] = 'error'

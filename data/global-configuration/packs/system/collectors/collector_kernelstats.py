@@ -1,5 +1,4 @@
 import sys
-import time
 import os
 
 from opsbro.collector import Collector
@@ -38,7 +37,7 @@ class KernelStats(Collector):
                 data[_label] = v
             return data
         
-        if sys.platform == 'linux2':
+        if sys.platform.startswith('linux'):
             logger.debug('getKernelStats: linux2')
             
             try:
@@ -61,7 +60,7 @@ class KernelStats(Collector):
                 if len(elts) != 2:
                     continue
                 try:
-                    data[elts[0]] = long(elts[1])
+                    data[elts[0]] = int(elts[1])
                 except ValueError:  # not an int? skip this value
                     continue
             

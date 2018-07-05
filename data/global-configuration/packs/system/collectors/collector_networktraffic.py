@@ -1,8 +1,11 @@
 import sys
 import re
 import traceback
-import time
 import os
+
+PY3 = sys.version_info >= (3,)
+if PY3:
+    long = int
 
 from opsbro.collector import Collector
 from opsbro.now import NOW
@@ -38,7 +41,7 @@ class NetworkTraffic(Collector):
                 data[_label] = v
             return data
         
-        if sys.platform == 'linux2':
+        if sys.platform.startswith('linux'):
             logger.debug('getNetworkTraffic: linux2')
             
             try:
@@ -55,8 +58,8 @@ class NetworkTraffic(Collector):
             
             columnLine = lines[1]
             _, receiveCols, transmitCols = columnLine.split('|')
-            receiveCols = map(lambda a: 'recv_' + a, receiveCols.split())
-            transmitCols = map(lambda a: 'trans_' + a, transmitCols.split())
+            receiveCols = list(map(lambda a: 'recv_' + a, receiveCols.split()))
+            transmitCols = list(map(lambda a: 'trans_' + a, transmitCols.split()))
             
             cols = receiveCols + transmitCols
             

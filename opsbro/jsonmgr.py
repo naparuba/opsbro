@@ -12,9 +12,13 @@ class JsonMgr(object):
         return json.dumps(byteify(o))
     
     
-    def loads(self, s):
+    def loads(self, s, encoding='utf8'):
         s = string_decode(s)
-        return json.loads(s)
+        try:
+            r = json.loads(s, encoding='utf8')
+        except Exception as exp:  # beware: ValueError in python2, but some freaking exception in python3
+            raise ValueError(str(exp))
+        return r
 
 
 jsoner = JsonMgr()

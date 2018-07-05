@@ -9,7 +9,7 @@ import json
 import time
 import sys
 
-from opsbro.cli import get_opsbro_local, print_info_title, print_2tab
+from opsbro.cli import get_opsbro_local, print_info_title, print_2tab, get_opsbro_json
 from opsbro.cli_display import print_element_breadcumb, print_h1, print_h2
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger
@@ -126,20 +126,14 @@ def do_detect_wait_group(group_name, timeout=30):
     import itertools
     spinners = itertools.cycle(CHARACTERS.spinners)
     
-    for i in xrange(timeout):
+    for i in range(timeout):
         uri = '/agent/detectors/state'
         try:
-            (code, r) = get_opsbro_local(uri)
+            detected_groups = get_opsbro_json(uri)
         except get_request_errors() as exp:
             logger.error(exp)
             return
-        
-        try:
-            detected_groups = json.loads(r)
-        except ValueError as exp:  # bad json
-            logger.error('Bad return from the server %s' % exp)
-            return
-        
+            
         if group_name in detected_groups:
             cprint('\n %s ' % CHARACTERS.arrow_left, color='grey', end='')
             cprint('%s ' % CHARACTERS.check, color='green', end='')
@@ -149,7 +143,7 @@ def do_detect_wait_group(group_name, timeout=30):
             cprint('detected', color='green')
             sys.exit(0)
         # Not detected? increase loop
-        cprint('\r %s ' % spinners.next(), color='blue', end='')
+        cprint('\r %s ' % next(spinners), color='blue', end='')  # next=> python3
         cprint('%s' % group_name, color='magenta', end='')
         cprint(' is ', end='')
         cprint('NOT DETECTED', color='magenta', end='')

@@ -79,7 +79,7 @@ def do_kv_store_wait_value(key_name, expected_value, timeout=30):
     import itertools
     spinners = itertools.cycle(CHARACTERS.spinners)
     
-    for i in xrange(timeout):
+    for i in range(timeout):
         expr_64 = base64.b64encode(expr)
         try:
             r = post_opsbro_json('/agent/evaluator/eval', {'expr': expr_64}, timeout=20)
@@ -96,7 +96,7 @@ def do_kv_store_wait_value(key_name, expected_value, timeout=30):
             cprint('True', color='green')
             sys.exit(0)
         # Not detected? increase loop
-        cprint('\r %s ' % spinners.next(), color='blue', end='')
+        cprint('\r %s ' % next(spinners), color='blue', end='')
         cprint('%s' % expr, color='magenta', end='')
         cprint(' is ', end='')
         cprint('not True', color='magenta', end='')
@@ -112,7 +112,7 @@ def do_kv_store_wait_exists(key_name, timeout=30):
     import itertools
     spinners = itertools.cycle(CHARACTERS.spinners)
     
-    for i in xrange(timeout):
+    for i in range(timeout):
         try:
             (code, value) = get_opsbro_local('/kv/%s' % key_name)
         except get_request_errors() as exp:
@@ -128,7 +128,7 @@ def do_kv_store_wait_exists(key_name, timeout=30):
             cprint('Exists', color='green')
             sys.exit(0)
         # Not detected? increase loop
-        cprint('\r %s ' % spinners.next(), color='blue', end='')
+        cprint('\r %s ' % next(spinners), color='blue', end='')
         cprint('%s' % key_name, color='magenta', end='')
         cprint(' is ', end='')
         cprint('not Existing', color='magenta', end='')

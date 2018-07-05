@@ -1,7 +1,6 @@
-import json
-
 from opsbro.httpclient import get_http_exceptions, httper
 from opsbro.collector import Collector
+from opsbro.jsonmgr import jsoner
 
 
 class Geoloc(Collector):
@@ -24,5 +23,5 @@ class Geoloc(Collector):
             return False
         
         self.logger.debug('RAW geoloc data', data)
-        self.geodata = json.loads(data)
+        self.geodata = jsoner.loads(data)
         return self.geodata

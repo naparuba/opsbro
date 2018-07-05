@@ -379,7 +379,7 @@ class GraphiteModule(ListenerModule):
                         if hour_e and hour_e['hour'] == t:
                             self.logger.debug('HTTP TS RENDER match memory HOUR, take this value instead')
                             raw_values = hour_e['values'][:]  # copy instead of cherrypick, because it can move/append
-                            for i in xrange(60):
+                            for i in range(60):
                                 # Get teh value and the time
                                 e = raw_values[i]
                                 tt = t + 60 * i
@@ -390,7 +390,7 @@ class GraphiteModule(ListenerModule):
                             ukey = '%s::h%d' % (target, t)
                             raw64 = kvmgr.get_key(ukey)
                             if raw64 is None:
-                                for i in xrange(60):
+                                for i in range(60):
                                     # Get the value and the time
                                     tt = t + 60 * i
                                     r.append((None, tt))
@@ -398,7 +398,7 @@ class GraphiteModule(ListenerModule):
                                 raw = base64.b64decode(raw64)
                                 v = pickle.loads(raw)
                                 raw_values = v['values']
-                                for i in xrange(60):
+                                for i in range(60):
                                     # Get teh value and the time
                                     e = raw_values[i]
                                     tt = t + 60 * i

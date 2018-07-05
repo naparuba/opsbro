@@ -237,7 +237,7 @@ def do_info(show_logs):
     # Now collectors part
     cprint('')
     __print_topic_header(TOPIC_METROLOGY)
-    cnames = collectors.keys()
+    cnames = list(collectors.keys())
     cnames.sort()
     collectors_states = {}
     for collector_state in COLLECTORS_STATES:

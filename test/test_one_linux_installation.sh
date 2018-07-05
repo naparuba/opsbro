@@ -263,7 +263,7 @@ if [ "X$SKIP_LEVELDB" == "X" ];then
        echo "ERROR: Cannot install leveldb"
        opsbro compliance state
        opsbro compliance history
-       cat /var/log/opsbro/daemon.log
+       #cat /var/log/opsbro/daemon.log
        exit 2
     fi
 

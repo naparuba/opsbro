@@ -14,6 +14,7 @@ from .topic import topiker, TOPIC_SYSTEM_COMPLIANCE
 from .handlermgr import handlermgr
 from .basemanager import BaseManager
 from .misc.six import add_metaclass
+from .util import bytes_to_unicode, exec_command
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('compliance')
@@ -205,7 +206,6 @@ class Rule(object):
     
     
     def launch_post_commands(self, matching_env):
-        import subprocess
         post_commands = matching_env.get_post_commands()
         _from = 'Environnement %s' % matching_env.get_name()
         
@@ -215,15 +215,20 @@ class Rule(object):
         logger.debug('%s have %d post commands' % (_from, len(post_commands)))
         for command in post_commands:
             logger.info('Launching post command: %s' % command)
-            p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, preexec_fn=os.setsid)
-            stdout, stderr = p.communicate()
-            stdout += stderr
-            if p.returncode != 0:
-                err = 'Post command %s did generate an error: %s' % (command, stdout)
+            try:
+                return_code, stdout, stderr = exec_command(command)
+                stdout += stderr
+                if return_code != 0:
+                    err = 'Post command %s did generate an error: %s' % (command, stdout)
+                    self.add_error(err)
+                    self.set_error()
+                    return False
+                logger.info('Launching post command: %s SUCCESS' % command)
+            except Exception as exp:
+                err = 'Post command %s did generate an error: %s' % (command, exp)
                 self.add_error(err)
                 self.set_error()
                 return False
-            logger.info('Launching post command: %s SUCCESS' % command)
         return True
     
     
@@ -699,6 +704,7 @@ class ComplianceManager(BaseManager):
             response.content_type = 'application/json'
             
             compliance_name = request.body.getvalue()
+            compliance_name = bytes_to_unicode(compliance_name)
             logger.info("HTTP: /compliance/launch launching compliance rule %s" % compliance_name)
             r = self.set_compliance_to_forced(compliance_name)
             return json.dumps(r)

@@ -12,7 +12,7 @@ if PY3:
 from .misc.six import add_metaclass
 from .log import LoggerFactory
 from .parameters import ParameterBasedType
-from .util import string_decode
+from .util import string_decode, exec_command
 
 
 class CollectorMetaclass(type):
@@ -111,25 +111,14 @@ class Collector(ParameterBasedType):
         self.logger.debug('execute_shell:: %s' % cmd)
         output = ''
         try:
-            close_fds = True
-            # windows do not manage close fds
-            if os.name == 'nt':
-                close_fds = False
-            proc = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE, close_fds=close_fds)
-            self.logger.debug('PROC LAUNCHED', proc)
-            output, err = proc.communicate()
+            rc, output, err = exec_command(cmd)
             self.logger.debug('OUTPUT, ERR', output, err)
-            try:
-                proc.kill()
-            except Exception as e:
-                pass
             if err:
                 self.set_error('Error in sub process: %s' % err)
                 return False
         except Exception as exp:
             self.set_error('Collector [%s] execute command [%s] error: %s' % (self.__class__.__name__.lower(), cmd, traceback.format_exc()))
             return False
-        output = string_decode(output)
         return output
 
 
@@ -137,24 +126,10 @@ class Collector(ParameterBasedType):
     def execute_shell_and_state(self, cmd):
         # Get output from a command
         self.logger.debug('execute_shell:: %s' % cmd)
-        output = ''
         try:
-            close_fds = True
-            # windows do not manage close fds
-            if os.name == 'nt':
-                close_fds = False
-            proc = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE, close_fds=close_fds)
-            self.logger.debug('PROC LAUNCHED', proc)
-            output, err = proc.communicate()
-            self.logger.debug('OUTPUT, ERR', output, err)
-            exit_status = proc.returncode
-            try:
-                proc.kill()
-            except Exception as e:
-                pass
+            exit_status, output, err = exec_command(cmd)
         except Exception as exp:
             return 'Cannot execute command %s: %s' % (cmd, 2)
-        output = string_decode(output)
         return exit_status, output
 
 

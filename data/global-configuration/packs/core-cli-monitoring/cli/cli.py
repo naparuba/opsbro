@@ -143,7 +143,7 @@ def do_wait_ok(check_name, timeout=30):
     name = check_name
     
     state_string = 'UNKNOWN'
-    for i in xrange(timeout):
+    for i in range(timeout):
         
         uri = '/monitoring/state'
         try:
@@ -170,7 +170,7 @@ def do_wait_ok(check_name, timeout=30):
         c = STATE_ID_COLORS.get(state_id, 'cyan')
         state_string = STATE_ID_STRINGS.get(state_id, 'UNKNOWN')
         
-        cprint('\r %s ' % spinners.next(), color='blue', end='')
+        cprint('\r %s ' % next(spinners), color='blue', end='')
         cprint('%s' % name, color='magenta', end='')
         cprint(' is ', end='')
         cprint('%s' % state_string.ljust(10), color=c, end='')

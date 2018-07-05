@@ -29,6 +29,7 @@ from .characters import CHARACTERS
 from .misc.lolcat import lolcat
 from .cluster import AGENT_STATE_STOPPED
 from .now import NOW
+from .jsonmgr import jsoner
 
 # Will be populated by the opsbro CLI command
 CONFIG = None
@@ -81,7 +82,7 @@ if os.name != 'nt':
 else:
     def get_opsbro_json(uri, timeout=10):
         r = httper.get('http://127.0.0.1:6770%s' % uri)
-        obj = json.loads(r)
+        obj = jsoner.loads(r)
         return obj
     
     

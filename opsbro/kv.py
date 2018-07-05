@@ -1,5 +1,4 @@
 import os
-import json
 import time
 import threading
 import shutil
@@ -16,6 +15,7 @@ from .gossip import gossiper
 from .library import libstore
 from .stop import stopper
 from .util import get_sha1_hash
+from .jsonmgr import jsoner
 
 REPLICATS = 1
 
@@ -209,7 +209,7 @@ class KVBackend:
         # like modification index
         metakey = '__meta/%s' % key
         try:
-            metavalue = json.loads(self.db.Get(metakey))
+            metavalue = jsoner.loads(self.db.Get(metakey))
         except (ValueError, KeyError):
             metavalue = {'modify_index': 0, 'modify_time': 0}
         
@@ -258,7 +258,7 @@ class KVBackend:
         if v is None:
             return v
         try:
-            return json.loads(v)
+            return jsoner.loads(v)
         except ValueError:
             return None
     
@@ -268,7 +268,7 @@ class KVBackend:
         metakey = '__meta/%s' % key
         metadata = meta
         if isinstance(meta, dict):
-            metadata = json.dumps(meta)
+            metadata = jsoner.dumps(meta)
         self.db.Put(metakey, metadata)
     
     
@@ -279,7 +279,7 @@ class KVBackend:
         
         r = []
         for (mkey, metaraw) in _all:
-            meta = json.loads(metaraw)
+            meta = jsoner.loads(metaraw)
             
             # maybe this key is too old to be interesting
             if meta['modify_time'] <= t:
@@ -323,7 +323,7 @@ class KVBackend:
         for (ukey, v, meta) in to_merge:
             metakey = '__meta/%s' % ukey
             try:
-                lmeta = json.loads(self.db.Get(metakey))
+                lmeta = jsoner.loads(self.db.Get(metakey))
             except KeyError:
                 continue
             # If the other mod_index is higer, we import it :)
@@ -436,7 +436,7 @@ class KVBackend:
             if allow_udp:
                 try:
                     payload = {'type': '/kv/put', 'k': ukey, 'v': value, 'ttl': ttl, 'fw': True}
-                    packet = json.dumps(payload)
+                    packet = jsoner.dumps(payload)
                     encrypter = libstore.get_encrypter()
                     enc_packet = encrypter.encrypt(packet)
                     logger.debug('KV: PUT(udp) asking %s: %s:%s' % (n['name'], n['addr'], n['port']))
@@ -518,7 +518,7 @@ class KVBackend:
                     uri = 'http://%s:%s/kv/%s' % (n['addr'], n['port'], ukey)
                     try:
                         logger.debug('KV: PUT(force) asking %s: %s' % (n['name'], uri))
-                        params = {'force': True, 'meta': json.dumps(bl['meta'])}
+                        params = {'force': True, 'meta': jsoner.dumps(bl['meta'])}
                         r = httper.put(uri, data=value, params=params)
                         logger.debug('KV: PUT(force) return %s' % r)
                     except get_http_exceptions() as exp:
@@ -534,14 +534,14 @@ class KVBackend:
         def list_keys():
             response.content_type = 'application/json'
             l = list(self.db.RangeIter(include_value=False))
-            return json.dumps(l)
+            return jsoner.dumps(l)
         
         
         @http_export('/kv-meta/changed/:t', method='GET')
         def changed_since(t):
             response.content_type = 'application/json'
             t = int(t)
-            return json.dumps(self.changed_since(t))
+            return jsoner.dumps(self.changed_since(t))
         
         
         @http_export('/kv/:ukey#.+#', method='GET')
@@ -569,7 +569,7 @@ class KVBackend:
             force = request.GET.get('force', 'False') == 'True'
             meta = request.GET.get('meta', None)
             if meta:
-                meta = json.loads(meta)
+                meta = jsoner.loads(meta)
             ttl = int(request.GET.get('ttl', '0'))
             self.put_key(ukey, value, force=force, meta=meta, ttl=ttl)
             return

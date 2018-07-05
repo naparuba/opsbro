@@ -10,10 +10,15 @@ import json
 import base64
 import time
 
+PY3 = sys.version_info >= (3,)
+if PY3:
+    basestring = str  # no basestring in python 3
+
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger
 from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_local, print_info_title, post_opsbro_json, print_h1
+from opsbro.util import string_encode
 
 
 def do_evaluator_list(details=False):
@@ -70,12 +75,13 @@ def do_evaluator_list(details=False):
 
 
 def do_evaluator_eval(expr):
+    expr = string_encode(expr)
     expr_64 = base64.b64encode(expr)
     try:
         r = post_opsbro_json('/agent/evaluator/eval', {'expr': expr_64}, timeout=30)
-    except get_request_errors() as exp:
+    except Exception as exp:
         logger.error(exp)
-        return
+        sys.exit(2)
     
     print_info_title('Result')
     cprint(r)
@@ -85,8 +91,8 @@ def do_evaluator_wait_eval_true(expr, timeout=30):
     import itertools
     spinners = itertools.cycle(CHARACTERS.spinners)
     
-    for i in xrange(timeout):
-        expr_64 = base64.b64encode(expr)
+    for i in range(timeout):
+        expr_64 = base64.b64encode(string_encode(expr))
         try:
             r = post_opsbro_json('/agent/evaluator/eval', {'expr': expr_64}, timeout=20)
         except get_request_errors() as exp:
@@ -102,7 +108,7 @@ def do_evaluator_wait_eval_true(expr, timeout=30):
             cprint('True', color='green')
             sys.exit(0)
         # Not detected? increase loop
-        cprint('\r %s ' % spinners.next(), color='blue', end='')
+        cprint('\r %s ' % next(spinners), color='blue', end='')
         cprint('%s' % expr, color='magenta', end='')
         cprint(' is ', end='')
         cprint('not True', color='magenta', end='')

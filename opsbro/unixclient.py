@@ -30,6 +30,7 @@ except ImportError:
 
 from .log import logger
 from .jsonmgr import jsoner
+from .util import string_encode, string_decode
 
 #### For local socket handling
 DEFAULT_SOCKET_TIMEOUT = 5
@@ -100,10 +101,10 @@ def get_local(u, local_socket, params={}, method='GET', timeout=10):
     if method == 'GET' and params:
         u = "%s?%s" % (u, urlencode(params))
     if method == 'POST' and params:
-        data = urlencode(params)
+        data = string_encode(urlencode(params))
     if method == 'PUT' and params:
         special_headers.append(('Content-Type', 'your/contenttype'))
-        data = params
+        data = string_encode(params)
     
     # not the same way to connect
     # * windows: TCP
@@ -116,6 +117,7 @@ def get_local(u, local_socket, params={}, method='GET', timeout=10):
         uri = 'unix:/%s%s' % (local_socket, u)
     
     logger.debug("Connecting to local http/unix socket at: %s with method %s" % (uri, method))
+    
     req = Request(uri, data)
     req.get_method = lambda: method
     for (k, v) in special_headers:
@@ -143,6 +145,9 @@ def get_json(uri, local_socket='', params={}, multi=False, method='GET', timeout
         logger.debug("ERROR local unix get json raw return did raise an exception %s" % exp)
         raise
     
+    # From bytes to string
+    r = string_decode(r)
+    
     if r == '':
         return r
     logger.debug("local unix get json raw return", r)
@@ -152,7 +157,7 @@ def get_json(uri, local_socket='', params={}, multi=False, method='GET', timeout
     
     try:
         d = jsoner.loads(r)
-    except ValueError as exp:  # bad json
+    except Exception as exp:  # bad json
         logger.debug("ERROR local unix get json raw return did raise an exception  in bad json (%s) %s" % (r, exp))
         logger.error('Bad return from the server %s: "%s"' % (exp, r))
         raise

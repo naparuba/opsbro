@@ -3,6 +3,7 @@ import glob
 import imp
 import socket
 import sys
+import subprocess
 
 PY3 = sys.version_info >= (3,)
 if PY3:
@@ -17,6 +18,8 @@ import struct
 from .misc.windows import windowser
 from .log import LoggerFactory
 from .misc.six import add_metaclass
+from .util import string_decode, my_sort, exec_command
+
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('hosting-driver')
@@ -82,10 +85,12 @@ class InterfaceHostingDriver(object):
     
     
     def _get_linux_local_addresses(self):
-        stdin, stdout = os.popen2('hostname -I')
-        buf = stdout.read().strip()
-        stdin.close()
-        stdout.close()
+        try:
+            rc, stdout, stderr = exec_command('hostname -I')
+        except Exception as exp:
+            logger.info('Cannot use the hostname -I call for linux (%s), trying to guess local addresses' % exp)
+            stdout = ''
+        buf = string_decode(stdout).strip()
         res = [s.strip() for s in buf.split(' ') if s.strip()]
         
         # Some system like in alpine linux that don't have hostname -I call
@@ -100,8 +105,7 @@ class InterfaceHostingDriver(object):
                         res.append(addr)
                     except IOError:  # no such interface
                         pass
-        
-        res.sort(self._sort_local_addresses)
+        res = my_sort(res, cmp_f=self._sort_local_addresses)  # beware: python3 have special cmp
         return res
     
     
@@ -113,7 +117,7 @@ class InterfaceHostingDriver(object):
         if addr.startswith('169.254.'):
             return False
         # we can check the address is localy available
-        if sys.platform == 'linux2':
+        if sys.platform.startswith('linux'):  # linux2 for python2, linux for python3
             _laddrs = self._get_linux_local_addresses()
             if addr not in _laddrs:
                 return False
@@ -169,7 +173,7 @@ class InterfaceHostingDriver(object):
         except Exception as exp:
             pass
         
-        if sys.platform == 'linux2':
+        if sys.platform.startswith('linux'):  # linux2 for python2, linux for python3
             addrs = self._get_linux_local_addresses()
             if len(addrs) > 0:
                 return addrs[0]
@@ -253,11 +257,7 @@ class HostingDriverMgr(object):
         hostingctx_clss = InterfaceHostingDriver.get_sub_class()
         
         # Get first cloud > virtualisation > plysical > default > unset
-        if not PY3:
-            hostingctx_clss = sorted(hostingctx_clss, cmp=self.__default_last)
-        else:
-            from functools import cmp_to_key
-            hostingctx_clss = sorted(hostingctx_clss, key=cmp_to_key(self.__default_last))
+        hostingctx_clss = my_sort(hostingctx_clss, cmp_f=self.__default_last)  # beware: python3 have special cmp
         for cls in hostingctx_clss:
             # skip base module Collector
             if cls == InterfaceHostingDriver:

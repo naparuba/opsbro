@@ -367,36 +367,69 @@ if allow_black_magic:
 # Maybe we won't be able to setup with packages, if so, switch to pip :(
 install_from_pip = []
 
-mod_need = {
-    'jinja2': {
-        'packages': {
-            'debian'       : 'python-jinja2',
-            'ubuntu'       : 'python-jinja2',
-            'amazon-linux' : 'python-jinja2',
-            'amazon-linux2': 'python-jinja2',
-            'centos'       : 'python-jinja2',
-            'redhat'       : 'python-jinja2',
-            'oracle-linux' : 'python-jinja2',
-            'fedora'       : 'python-jinja2',
-            'opensuse'     : 'python-Jinja2',
-            'alpine'       : 'py-jinja2',
-        }
-    },
-    'Crypto': {
-        'packages': {
-            'debian'       : 'python-crypto',
-            'ubuntu'       : 'python-crypto',
-            'amazon-linux' : 'python-crypto',
-            'amazon-linux2': 'python-crypto',
-            'centos'       : 'python-crypto',
-            'redhat'       : 'python-crypto',
-            'oracle-linux' : 'python-crypto',
-            'fedora'       : 'python-crypto',
-            'opensuse'     : 'python-pycrypto',
-            'alpine'       : 'py-crypto',
-        }
-    },
-}
+# Python 3 and 2 have differents packages
+if PY3:
+    mod_need = {
+        'jinja2': {
+            'packages': {
+                'debian'       : 'python3-jinja2',
+                'ubuntu'       : 'python3-jinja2',
+                'amazon-linux' : 'python3-jinja2',
+                'amazon-linux2': 'python3-jinja2',
+                'centos'       : 'python3-jinja2',
+                'redhat'       : 'python3-jinja2',
+                'oracle-linux' : 'python3-jinja2',
+                'fedora'       : 'python3-jinja2',
+                'opensuse'     : 'python3-Jinja2',
+                'alpine'       : 'py-jinja2',
+            }
+        },
+        'Crypto': {
+            'packages': {
+                'debian'       : 'python3-crypto',
+                'ubuntu'       : 'python3-crypto',
+                'amazon-linux' : 'python3-crypto',
+                'amazon-linux2': 'python3-crypto',
+                'centos'       : 'python3-crypto',
+                'redhat'       : 'python3-crypto',
+                'oracle-linux' : 'python3-crypto',
+                'fedora'       : 'python3-crypto',
+                'opensuse'     : 'python3-pycrypto',
+                'alpine'       : 'py-crypto',
+            }
+        },
+    }
+else:
+    mod_need = {
+        'jinja2': {
+            'packages': {
+                'debian'       : 'python-jinja2',
+                'ubuntu'       : 'python-jinja2',
+                'amazon-linux' : 'python-jinja2',
+                'amazon-linux2': 'python-jinja2',
+                'centos'       : 'python-jinja2',
+                'redhat'       : 'python-jinja2',
+                'oracle-linux' : 'python-jinja2',
+                'fedora'       : 'python-jinja2',
+                'opensuse'     : 'python-Jinja2',
+                'alpine'       : 'py-jinja2',
+            }
+        },
+        'Crypto': {
+            'packages': {
+                'debian'       : 'python-crypto',
+                'ubuntu'       : 'python-crypto',
+                'amazon-linux' : 'python-crypto',
+                'amazon-linux2': 'python-crypto',
+                'centos'       : 'python-crypto',
+                'redhat'       : 'python-crypto',
+                'oracle-linux' : 'python-crypto',
+                'fedora'       : 'python-crypto',
+                'opensuse'     : 'python-pycrypto',
+                'alpine'       : 'py-crypto',
+            }
+        },
+    }
 
 # Some distro have another name for python-setuptools, so list here only exceptions
 setuptools_package_exceptions = {

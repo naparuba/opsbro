@@ -33,6 +33,9 @@ class TestEvaluater(OpsBroTest):
             {'rule': '(1 == 1) or (2 == 3)', 'expected': True},
             {'rule': '10 | 3', 'expected': 11},
             {'rule': '10 ^ 3', 'expected': 9},
+            {'rule': 'True and False', 'expected': False},
+            {'rule': 'True == False', 'expected': False},
+            {'rule': 'True != False', 'expected': True},
             {'rule': 'True and not False', 'expected': True},
             {'rule': 'not ("a"=="a")', 'expected': False},
             {'rule': '{"k":"v"}', 'expected': {'k': 'v'}},
@@ -43,7 +46,7 @@ class TestEvaluater(OpsBroTest):
             # Dicts
             {'rule': '{"k":"v"}["k"]', 'expected': 'v'},
             {'rule': '"k" in {"k":"v"}', 'expected': True},
-            {'rule': '{"k":"v"}.values()', 'expected': ["v"]},
+            {'rule': 'list({"k":"v"}.values())', 'expected': ["v"]},
             
             # Math functions
             {'rule': 'min([1,2,3])', 'expected': 1},
@@ -61,25 +64,25 @@ class TestEvaluater(OpsBroTest):
             
             # Sets
             {'rule': 'set(["v1", "v2", "v2"])', 'expected': set(['v1', 'v2'])},
-    
+            
             # Do not execute functions at right in And if the first part is False
             {'rule': 'False and missing_function()', 'expected': False},
             # Do not execute functions at right in Or if the first part is True
             {'rule': 'True or missing_function()', 'expected': True},
-
+        
         ]
         for r in rules:
-            print "\n\n" + "#" * 30
+            print("\n\n" + "#" * 30)
             rule = r['rule']
             expected = r['expected']
             try:
                 r = evaluater.eval_expr(rule)
             except Exception as exp:
                 r = traceback.format_exc()
-            print "Rule: %s" % rule
-            print "Expected: %s" % str(expected)
-            print "Result: %s" % str(r)
-            print "Is The same?: %s" % (r == expected)
+            print("Rule: %s" % rule)
+            print("Expected: %s" % str(expected))
+            print("Result: %s" % str(r))
+            print("Is The same?: %s" % (r == expected))
             self.assert_(r == expected)
 
 

@@ -13,7 +13,14 @@ if [ $? != 0 ]; then
 fi
 
 # Also check that the is_in_group call is still working
-RES=$(opsbro evaluator eval "is_in_group('$GROUP')" | tail -n 1)
+RES=$(opsbro evaluator eval "is_in_group('$GROUP')")
+if [ $? != 0 ]; then
+   echo "ERROR: cannot check group: $RES"
+   exit 2
+fi
+
+RES=$(echo "$RES" | tail -n 1)
+
 if [ $RES != "True" ]; then
    echo "Fail: check if group is set: is_in_group('$GROUP') ==> $RES"
    opsbro agent info | grep Groups
