@@ -35,13 +35,13 @@ def make_dir(path):
 
 def exec_command(cmd):
     import subprocess
-    if isinstance(cmd, list):
-        cmd = ' '.join(cmd)
+    # If we have a list, we should not call with a shell
+    shell = False if isinstance(cmd, list) else True
     close_fds = True
     # windows do not manage close fds
     if os.name == 'nt':
         close_fds = False
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=close_fds, preexec_fn=os.setsid, shell=True)
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=close_fds, preexec_fn=os.setsid, shell=shell)
     stdout, stderr = p.communicate()
     stdout = bytes_to_unicode(stdout)
     stderr = bytes_to_unicode(stderr)
