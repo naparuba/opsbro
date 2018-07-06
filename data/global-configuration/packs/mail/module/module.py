@@ -2,6 +2,7 @@ import time
 import os
 import traceback
 import datetime
+import codecs
 
 from opsbro.library import libstore
 from opsbro.module import HandlerModule
@@ -87,8 +88,8 @@ class MailHandlerModule(HandlerModule):
             self.logger.error('Missing template file %s_%s_template: %s' % (for_what, which_template, full_pth))
             return False
         try:
-            with open(full_pth) as f:
-                buf = f.read().decode('utf8', 'ignore')
+            with codecs.open(full_pth, 'r', 'utf8') as f:
+                buf = f.read()
         except Exception as exp:
             self.logger.error('Cannot load template file %s_%s_template (%s) : %s' % (for_what, which_template, full_pth, exp))
             return False
