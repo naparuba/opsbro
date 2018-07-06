@@ -1,7 +1,6 @@
 import glob
 import threading
 import os
-import json
 import time
 
 from .util import make_dir
@@ -43,7 +42,7 @@ class BaseManager(object):
             now = int(time.time())
             pth = os.path.join(self.history_directory, '%d.json' % now)
             self.logger.info('Saving new collector history entry to %s' % pth)
-            buf = json.dumps(self._current_history_entry)
+            buf = jsoner.dumps(self._current_history_entry)
             with open(pth, 'w') as f:
                 f.write(buf)
             # Now we can reset it

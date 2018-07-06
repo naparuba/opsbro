@@ -3,7 +3,6 @@ import glob
 import time
 import shutil
 import hashlib
-import subprocess
 import codecs
 
 from opsbro.module import ConnectorModule
@@ -15,6 +14,7 @@ from opsbro.detectormgr import detecter
 from opsbro.gossip import gossiper
 from opsbro.kv import kvmgr
 from opsbro.jsonmgr import jsoner
+from opsbro.util import exec_command
 
 
 class ShinkenModule(ConnectorModule):
@@ -335,10 +335,9 @@ class ShinkenModule(ConnectorModule):
             # If we need to reload and have a reload commmand, do it
             if self.reload_flag and self.reload_command:
                 self.reload_flag = False
-                p = subprocess.Popen(self.reload_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, preexec_fn=os.setsid)
-                stdout, stderr = p.communicate()
+                rc, stdout, stderr = exec_command(self.reload_command)
                 stdout += stderr
-                if p.returncode != 0:
+                if rc != 0:
                     self.logger.error('Cannot reload monitoring daemon: %s' % stdout)
                     return
                 

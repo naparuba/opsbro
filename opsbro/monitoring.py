@@ -22,6 +22,7 @@ from .handlermgr import handlermgr
 from .topic import topiker, TOPIC_MONITORING
 from .basemanager import BaseManager
 from .jsonmgr import jsoner
+from .util import exec_command
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('monitoring')
@@ -410,9 +411,7 @@ class MonitoringManager(BaseManager):
                 script = script.replace(to_repl, change_to)
             logger.debug("MACRO finally computed", script)
             
-            p = subprocess.Popen(script, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, preexec_fn=os.setsid)
-            output, err = p.communicate()
-            rc = p.returncode
+            rc, output, err = exec_command(script)
             # not found error like (127) should be catch as unknown check
             if rc > 3:
                 rc = 3

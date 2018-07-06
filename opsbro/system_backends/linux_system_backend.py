@@ -1,6 +1,5 @@
-import subprocess
-
 from ..log import LoggerFactory
+from ..util import exec_command
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('system-packages')
@@ -58,9 +57,8 @@ class LinuxBackend(object):
         args = self.__get_user_commands_params(uid, gid, display_name, home_dir, shell)
         args.insert(0, 'useradd')
         args.append(name)
-        proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
-        stdout, stderr = proc.communicate()
-        if proc.returncode != 0:
+        rc, stdout, stderr = exec_command(args)
+        if rc != 0:
             err = 'Cannot create the user %s: %s' % (name, stdout + stderr)
             logger.error(err)
             raise Exception(err)
@@ -72,9 +70,8 @@ class LinuxBackend(object):
         args = self.__get_user_commands_params(uid, gid, display_name, home_dir, shell)
         args.insert(0, 'usermod')
         args.append(name)
-        proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
-        stdout, stderr = proc.communicate()
-        if proc.returncode != 0:
+        rc, stdout, stderr = exec_command(args)
+        if rc != 0:
             err = 'Cannot modify the user %s: %s' % (name, stdout + stderr)
             logger.error(err)
             raise Exception(err)

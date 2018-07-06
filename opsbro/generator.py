@@ -1,7 +1,6 @@
 import os
 import copy
 import traceback
-import subprocess
 import codecs
 import stat
 import shutil
