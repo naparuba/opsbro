@@ -16,6 +16,7 @@ fi
 opsbro collectors wait-ok redis
 if [ $? != 0 ]; then
     echo "ERROR: Redis collector is not responding"
+    opsbro collectors show redis
     exit 2
 fi
 
