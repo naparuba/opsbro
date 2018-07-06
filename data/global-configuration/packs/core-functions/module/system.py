@@ -3,6 +3,7 @@ import json
 
 from opsbro.evaluater import export_evaluater_function
 from opsbro.misc.lolcat import lolcat
+from opsbro.util import PY3
 
 FUNCTION_GROUP = 'system'
 
@@ -21,6 +22,36 @@ def system_get_os():
     """
     import platform
     return platform.system().lower()
+
+
+@export_evaluater_function(function_group=FUNCTION_GROUP)
+def system_is_python_2():
+    """**system_is_python_2()** -> return True if the agent is running on python2, False otherwise
+
+<code>
+    Example:
+        system_is_python_2()
+
+    Returns:
+        True
+</code>
+    """
+    return not PY3
+
+
+@export_evaluater_function(function_group=FUNCTION_GROUP)
+def system_is_python_3():
+    """**system_is_python_3()** -> return True if the agent is running on python3, False otherwise
+
+<code>
+    Example:
+        system_is_python_3()
+
+    Returns:
+        False
+</code>
+    """
+    return PY3
 
 
 #################### USERS

@@ -7,6 +7,12 @@ compliance:
    rule:
       type: package-install
       environments:
+      # Python3 have a special package name of course...
+       - name: linux_python3
+         if:   "system_get_os() == 'linux' and system_is_python_3()"
+         parameters:
+            packages:
+              - python3-numpy
        - name: linux
          if:   "system_get_os() == 'linux'"
          parameters:

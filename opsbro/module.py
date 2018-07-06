@@ -8,8 +8,8 @@ TYPES_DESCRIPTIONS = {'generic'  : 'Generic module', 'functions_export': 'Such m
                       'listener' : 'Such module will listen to external queries',
                       'handler'  : 'Such module will add new handlers'}
 
-MODULE_STATE_COLORS = {'STARTED': 'green', 'DISABLED': 'grey'}
-MODULE_STATES = ['STARTED', 'DISABLED']
+MODULE_STATE_COLORS = {'STARTED': 'green', 'DISABLED': 'grey', 'ERROR': 'red'}
+MODULE_STATES = ['STARTED', 'DISABLED', 'ERROR']
 
 
 class ModulesMetaClass(type):

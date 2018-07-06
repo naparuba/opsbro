@@ -1,0 +1,25 @@
+FROM debian:9
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+
+RUN        /apt_get_install  python
+# All need for debian, so faster test (we are testging feature here, not install)
+RUN        /apt_get_install   python-jinja2
+RUN        /apt_get_install   python-crypto
+RUN        /apt_get_install   python-setuptools
+RUN        /apt_get_install   python-apt
+
+# Net tools because we need netstat in this test
+RUN        /apt_get_install net-tools
+
+
+ADD        . /root/opsbro-oss
+
+
+WORKDIR    /root/opsbro-oss
+
+RUN        python setup.py install
+
+
+ENTRYPOINT     test/test_feature_statsd_module.sh

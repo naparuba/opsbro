@@ -15,13 +15,13 @@ cat /var/log/opsbro/daemon.log
 opsbro compliance wait-compliant "Install numpy if statsd module enabled" --timeout=60
 
 # Look if the socket is open
+echo "Look if the 8125 port is OPEN"
 netstat -laputen | grep '^udp' | grep 8125
 if [ $? != 0 ]; then
     echo "The STATSD module did not open socket"
     opsbro agent info
+    opsbro agent modules state
     exit 2
 fi
-
-opsbro agent info
 
 echo "opsbro Statsd module is OK"
