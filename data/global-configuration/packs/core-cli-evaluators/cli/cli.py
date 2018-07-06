@@ -6,7 +6,6 @@
 
 from __future__ import print_function
 import sys
-import json
 import base64
 import time
 
@@ -19,6 +18,7 @@ from opsbro.log import cprint, logger
 from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_local, print_info_title, post_opsbro_json, print_h1
 from opsbro.util import string_encode
+from opsbro.jsonmgr import jsoner
 
 
 def do_evaluator_list(details=False):
@@ -29,7 +29,7 @@ def do_evaluator_list(details=False):
         return
     
     try:
-        d = json.loads(r)
+        d = jsoner.loads(r)
     except ValueError as exp:  # bad json
         logger.error('Bad return from the server %s' % exp)
         return

@@ -5,7 +5,6 @@
 #    Gabes Jean, naparuba@gmail.com
 
 
-import json
 import time
 import sys
 
@@ -14,6 +13,7 @@ from opsbro.cli_display import print_element_breadcumb, print_h1, print_h2
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger
 from opsbro.unixclient import get_request_errors
+from opsbro.jsonmgr import jsoner
 
 
 def do_detect_list():
@@ -24,7 +24,7 @@ def do_detect_list():
         return
     
     try:
-        d = json.loads(r)
+        d = jsoner.loads(r)
     except ValueError as exp:  # bad json
         logger.error('Bad return from the server %s' % exp)
         return
@@ -57,7 +57,7 @@ def do_detect_run():
         return
     
     try:
-        d = json.loads(r)
+        d = jsoner.loads(r)
     except ValueError as exp:  # bad json
         logger.error('Bad return from the server %s' % exp)
         return
@@ -81,7 +81,7 @@ def do_detect_state():
         return
     
     try:
-        groups = json.loads(r)
+        groups = jsoner.loads(r)
     except ValueError as exp:  # bad json
         logger.error('Bad return from the server %s' % exp)
         return
@@ -102,7 +102,7 @@ def do_detect_history():
         return
     
     try:
-        histories = json.loads(r)
+        histories = jsoner.loads(r)
     except ValueError as exp:  # bad json
         logger.error('Bad return from the server %s' % exp)
         return
@@ -133,7 +133,7 @@ def do_detect_wait_group(group_name, timeout=30):
         except get_request_errors() as exp:
             logger.error(exp)
             return
-            
+        
         if group_name in detected_groups:
             cprint('\n %s ' % CHARACTERS.arrow_left, color='grey', end='')
             cprint('%s ' % CHARACTERS.check, color='green', end='')

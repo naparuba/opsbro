@@ -1,4 +1,3 @@
-import json
 import time
 
 from opsbro.module import ConnectorModule
@@ -7,6 +6,7 @@ from opsbro.threadmgr import threader
 from opsbro.stop import stopper
 from opsbro.gossip import gossiper
 from opsbro.httpclient import get_http_exceptions, httper
+from opsbro.jsonmgr import jsoner
 
 
 class GrafanaModule(ConnectorModule):
@@ -72,7 +72,7 @@ class GrafanaModule(ConnectorModule):
         try:
             api_return = httper.get(uri, headers=self.__get_headers())
             try:
-                all_data_sources = json.loads(api_return)
+                all_data_sources = jsoner.loads(api_return)
             except (ValueError, TypeError) as exp:
                 self.logger.error('Cannot load json from grafana datasources: %s' % exp)
                 return None

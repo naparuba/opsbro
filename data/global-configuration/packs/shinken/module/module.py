@@ -4,7 +4,6 @@ import time
 import shutil
 import hashlib
 import subprocess
-import json
 import codecs
 
 from opsbro.module import ConnectorModule
@@ -15,6 +14,7 @@ from opsbro.stop import stopper
 from opsbro.detectormgr import detecter
 from opsbro.gossip import gossiper
 from opsbro.kv import kvmgr
+from opsbro.jsonmgr import jsoner
 
 
 class ShinkenModule(ConnectorModule):
@@ -112,12 +112,12 @@ class ShinkenModule(ConnectorModule):
             self.logger.error('Cannot access to the checks list for', nuuid)
             return
         
-        lst = json.loads(v)
+        lst = jsoner.loads(v)
         for cname in lst:
             v = kvmgr.get_key('__health/%s/%s' % (nuuid, cname))
             if v is None:  # missing check entry? not a real problem
                 continue
-            check = json.loads(v)
+            check = jsoner.loads(v)
             self.logger.debug('CHECK VALUE %s' % check)
             try:
                 f = codecs.open(p, 'a', encoding="utf-8")

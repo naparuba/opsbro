@@ -6,10 +6,10 @@
 
 from __future__ import print_function
 import time
-import json
+
 
 from opsbro.log import cprint, logger
-
+from opsbro.jsonmgr import jsoner
 from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_local, wait_for_agent_started
 
@@ -35,7 +35,7 @@ def do_exec(group='*', cmd='uname -a'):
     except get_request_errors() as exp:
         logger.error(exp)
         return
-    j = json.loads(r)
+    j = jsoner.loads(r)
     
     res = j['res']
     for (uuid, e) in res.items():

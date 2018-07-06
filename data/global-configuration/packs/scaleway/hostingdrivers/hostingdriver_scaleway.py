@@ -1,9 +1,8 @@
 import os
-import json
 
 from opsbro.httpclient import get_http_exceptions, httper
 from opsbro.hostingdrivermanager import InterfaceHostingDriver, HOSTING_DRIVER_LAYER_CLOUD
-
+from opsbro.jsonmgr import jsoner
 
 class ScalewayHostingDriver(InterfaceHostingDriver):
     name = 'scaleway'
@@ -29,7 +28,7 @@ class ScalewayHostingDriver(InterfaceHostingDriver):
         except get_http_exceptions() as exp:
             self.logger.error('Cannot get pubic IP for your Scaleway instance from %s. Error: %s.Exiting' % (uri, exp))
             raise
-        self.conf = json.loads(s)
+        self.conf = jsoner.loads(s)
         self.logger.info('Get scaleway conf: %s' % self.conf)
         return self.conf
     

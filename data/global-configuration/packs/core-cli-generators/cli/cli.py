@@ -5,7 +5,6 @@
 #    Gabes Jean, naparuba@gmail.com
 
 from __future__ import print_function
-import json
 import time
 import sys
 
@@ -14,7 +13,8 @@ from opsbro.log import cprint, logger
 from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_local
 from opsbro.cli_display import print_h1, print_h2
-from opsbro.generator import GENERATOR_STATE_COLORS, GENERATOR_STATES
+from opsbro.generator import GENERATOR_STATE_COLORS
+from opsbro.jsonmgr import jsoner
 
 
 def __print_generator_entry(generator, show_diff):
@@ -50,7 +50,7 @@ def do_generators_state(show_diff=False):
         return
     
     try:
-        generators = json.loads(r)
+        generators = jsoner.loads(r)
     except ValueError as exp:  # bad json
         logger.error('Bad return from the server %s' % exp)
         return
@@ -87,7 +87,7 @@ def do_generators_history():
         return
     
     try:
-        histories = json.loads(r)
+        histories = jsoner.loads(r)
     except ValueError as exp:  # bad json
         logger.error('Bad return from the server %s' % exp)
         return
@@ -117,7 +117,7 @@ def do_generators_wait_compliant(generator_name, timeout=30):
             return
         
         try:
-            generators = json.loads(r)
+            generators = jsoner.loads(r)
         except ValueError as exp:  # bad json
             logger.error('Bad return from the server %s' % exp)
             return

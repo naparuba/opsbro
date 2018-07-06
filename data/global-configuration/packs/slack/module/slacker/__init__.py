@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
+#import json
 
 from opsbro.library import libstore
+from opsbro.jsonmgr import jsoner
 
 __version__ = '0.9.50-MODIFIED'
 
@@ -42,13 +43,13 @@ class Error(Exception):
 class Response(object):
     def __init__(self, body):
         self.raw = body
-        self.body = json.loads(body)
+        self.body = jsoner.loads(body)
         self.successful = self.body['ok']
         self.error = self.body.get('error')
     
     
     def __str__(self):
-        return json.dumps(self.body)
+        return jsoner.dumps(self.body)
 
 
 class BaseAPI(object):
@@ -368,7 +369,7 @@ class Chat(BaseAPI):
         # Ensure attachments are json encoded
         if attachments:
             if isinstance(attachments, list):
-                attachments = json.dumps(attachments)
+                attachments = jsoner.dumps(attachments)
         
         return self.post('chat.postMessage',
                          data={
@@ -405,7 +406,7 @@ class Chat(BaseAPI):
                link_names=False, as_user=None):
         # Ensure attachments are json encoded
         if attachments is not None and isinstance(attachments, list):
-            attachments = json.dumps(attachments)
+            attachments = jsoner.dumps(attachments)
         return self.post('chat.update',
                          data={
                              'channel'    : channel,

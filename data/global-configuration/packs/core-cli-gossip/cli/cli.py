@@ -6,7 +6,6 @@
 
 from __future__ import print_function
 import sys
-import json
 import time
 import itertools
 
@@ -17,6 +16,7 @@ from opsbro.unixclient import get_request_errors, get_not_critical_request_error
 from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, put_opsbro_json, wait_for_agent_started, post_opsbro_json
 from opsbro.cli_display import print_h1, print_h2
 from opsbro.threadmgr import threader
+from opsbro.jsonmgr import jsoner
 
 NO_ZONE_DEFAULT = '(no zone)'
 
@@ -178,7 +178,7 @@ def do_join(seed=''):
         logger.error(exp)
         return
     try:
-        b = json.loads(r)
+        b = jsoner.loads(r)
     except ValueError as exp:  # bad json
         logger.error('Bad return from the server %s' % exp)
         return

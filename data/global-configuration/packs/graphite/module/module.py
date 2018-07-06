@@ -2,7 +2,6 @@ from __future__ import print_function
 import time
 import socket
 import hashlib
-import json
 import re
 try:
     import cPickle as pickle
@@ -27,6 +26,7 @@ from opsbro.httpclient import get_http_exceptions, httper
 from opsbro.kv import kvmgr
 from opsbro.parameters import BoolParameter, IntParameter
 from opsbro.log import cprint
+from opsbro.jsonmgr import jsoner
 
 
 class GraphiteModule(ListenerModule):
@@ -267,7 +267,7 @@ class GraphiteModule(ListenerModule):
                 # just the key as valid tree
                 if not recursive:
                     cprint("NO RECURSIVE AND EARLY EXIT for KEY", key)
-                    return json.dumps(
+                    return jsoner.dumps(
                         [{"leaf": 0, "context": {}, 'text': key, 'id': key, "expandable": 1, "allowChildren": 1}])
                 
                 if title.startswith('.'):
@@ -289,7 +289,7 @@ class GraphiteModule(ListenerModule):
                     r.append({"leaf": 1, "context": {}, 'text': title, 'id': k, "expandable": 0, "allowChildren": 0})
                     cprint("LIST ADD FILE", title)
             cprint("LIST FINALLY RETURN", r)
-            return json.dumps(r)
+            return jsoner.dumps(r)
         
         
         # really manage the render call, with real return, call by a get and
@@ -413,7 +413,7 @@ class GraphiteModule(ListenerModule):
                         self.logger.debug('TS: (get /render) relaying to %s: %s' % (n['name'], uri))
                         r = httper.get(uri)
                         self.logger.debug('TS: get /render founded (%d)' % len(r))
-                        v = json.loads(r)
+                        v = jsoner.loads(r)
                         self.logger.debug("TS /render relay GOT RETURN", v, "AND RES", res)
                         res.extend(v)
                         self.logger.debug("TS /render res is now", res)
@@ -422,7 +422,7 @@ class GraphiteModule(ListenerModule):
                         continue
             
             self.logger.debug('TS RENDER FINALLY RETURN', res)
-            return json.dumps(res)
+            return jsoner.dumps(res)
         
         
         @http_export('/render')

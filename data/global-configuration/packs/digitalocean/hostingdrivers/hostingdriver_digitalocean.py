@@ -1,9 +1,6 @@
-import os
-import json
-
 from opsbro.httpclient import get_http_exceptions, httper
 from opsbro.hostingdrivermanager import InterfaceHostingDriver, HOSTING_DRIVER_LAYER_CLOUD
-
+from opsbro.jsonmgr import jsoner
 
 class DigitalOceanHostingDriver(InterfaceHostingDriver):
     name = 'digitalocean'
@@ -74,7 +71,7 @@ class DigitalOceanHostingDriver(InterfaceHostingDriver):
         except get_http_exceptions() as exp:
             self.logger.error('Cannot get meta data for your digital ocean instance from %s. Error: %s.Exiting' % (uri, exp))
             raise
-        self.__meta_data = json.loads(s)
+        self.__meta_data = jsoner.loads(s)
         return self.__meta_data
     
     

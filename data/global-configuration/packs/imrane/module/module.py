@@ -1,6 +1,5 @@
 from __future__ import print_function
 import time
-import json
 import random
 import traceback
 import sqlite3
@@ -13,6 +12,7 @@ from opsbro.gossip import gossiper
 from opsbro.parameters import BoolParameter, StringParameter
 from opsbro.collectormanager import collectormgr
 from opsbro.httpclient import get_http_exceptions, httper
+from opsbro.jsonmgr import jsoner
 
 
 class ImraneModule(ListenerModule):
@@ -195,7 +195,7 @@ class ImraneModule(ListenerModule):
             try:
                 data_raw = request.body.getvalue()
                 self.logger.info('POST: get body value: %s' % data_raw)
-                data = json.loads(data_raw)
+                data = jsoner.loads(data_raw)
                 self.logger.info('POST: get results: %s' % data)
                 self._import_data(data)
             except:

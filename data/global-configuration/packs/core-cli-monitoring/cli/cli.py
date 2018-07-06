@@ -6,7 +6,6 @@
 
 
 import time
-import json
 import sys
 
 from opsbro.characters import CHARACTERS
@@ -15,6 +14,7 @@ from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_local
 from opsbro.cli_display import print_h1, print_h2
 from opsbro.monitoring import STATE_ID_COLORS
+from opsbro.jsonmgr import jsoner
 
 NO_ZONE_DEFAULT = '(no zone)'
 
@@ -32,7 +32,7 @@ def do_state(name=''):
         return
     
     try:
-        d = json.loads(r)
+        d = jsoner.loads(r)
     except ValueError as exp:  # bad json
         logger.error('Bad return from the server %s' % exp)
         return
@@ -63,12 +63,12 @@ def do_state(name=''):
         if pack_name not in packs:
             packs[pack_name] = {}
         packs[pack_name][cname] = check
-    pnames = packs.keys()
+    pnames = list(packs.keys())
     pnames.sort()
     for pname in pnames:
         pack_entries = packs[pname]
         cprint('* Pack %s' % pname, color='blue')
-        cnames = pack_entries.keys()
+        cnames = list(pack_entries.keys())
         cnames.sort()
         for cname in cnames:
             check = pack_entries[cname]
@@ -98,7 +98,7 @@ def do_history():
         return
     
     try:
-        history_entries = json.loads(r)
+        history_entries = jsoner.loads(r)
     except ValueError as exp:  # bad json
         logger.error('Bad return from the server %s' % exp)
         return
@@ -153,7 +153,7 @@ def do_wait_ok(check_name, timeout=30):
             return
         
         try:
-            states = json.loads(r)
+            states = jsoner.loads(r)
         except ValueError as exp:  # bad json
             logger.error('Bad return from the server %s' % exp)
             return

@@ -1,9 +1,8 @@
 import os
-import json
 
 from opsbro.httpclient import get_http_exceptions, httper
 from opsbro.hostingdrivermanager import InterfaceHostingDriver, HOSTING_DRIVER_LAYER_CLOUD
-
+from opsbro.jsonmgr import jsoner
 
 class GoogleCloudHostingDriver(InterfaceHostingDriver):
     name = 'google-cloud'
@@ -81,7 +80,7 @@ class GoogleCloudHostingDriver(InterfaceHostingDriver):
         except get_http_exceptions() as exp:
             self.logger.error('Cannot get pubic IP for your Azure instance from %s. Error: %s.Exiting' % (uri, exp))
             raise
-        raw_data = json.loads(s)
+        raw_data = jsoner.loads(s)
         
         # We want to merge the structure into a more flatten one between compute and network
         self.__meta_data = raw_data['instance']
