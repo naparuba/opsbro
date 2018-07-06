@@ -17,7 +17,7 @@ sys.path.insert(0, p)
 import ruamel.yaml as yaml
 
 from .log import LoggerFactory
-from .util import unicode_to_bytes, bytes_to_unicode
+from .util import bytes_to_unicode
 
 logger = LoggerFactory.create_logger('yaml')
 
@@ -35,7 +35,7 @@ class YamlMgr(object):
         if not os.path.exists(parameters_file_path):
             logger.error('The parameters file %s is missing' % parameters_file_path)
             sys.exit(2)
-        with open(parameters_file_path, 'r') as f:
+        with codecs.open(parameters_file_path, 'r', 'utf8') as f:
             buf = f.read()
         # If we want to suffix the file, be sure to only add a line
         # and beware of the void file too

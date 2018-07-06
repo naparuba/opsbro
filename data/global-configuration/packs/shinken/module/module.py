@@ -2,7 +2,6 @@ import os
 import glob
 import time
 import shutil
-import hashlib
 import codecs
 
 from opsbro.module import ConnectorModule
@@ -14,7 +13,7 @@ from opsbro.detectormgr import detecter
 from opsbro.gossip import gossiper
 from opsbro.kv import kvmgr
 from opsbro.jsonmgr import jsoner
-from opsbro.util import exec_command
+from opsbro.util import exec_command, get_sha1_hash, PY3
 
 
 class ShinkenModule(ConnectorModule):
@@ -120,7 +119,8 @@ class ShinkenModule(ConnectorModule):
             check = jsoner.loads(v)
             self.logger.debug('CHECK VALUE %s' % check)
             try:
-                f = codecs.open(p, 'a', encoding="utf-8")
+                mode = 'w' if PY3 else 'a'  # codecs.open got issue with a in python 3
+                f = codecs.open(p, mode, encoding="utf-8")
                 cmd = '[%s] PROCESS_SERVICE_CHECK_RESULT;%s;%s;%d;%s\n' % (int(time.time()), nuuid, self.sanatize_check_name(cname), check['state_id'], check['output'])
                 self.logger.debug('SAVING COMMAND %s' % cmd)
                 f.write(cmd)
@@ -168,7 +168,7 @@ class ShinkenModule(ConnectorModule):
         tpls.insert(0, 'agent,opsbro')
         
         # get checks names and sort them so file il always the same
-        cnames = n.get('checks', {}).keys()
+        cnames = list(n.get('checks', {}).keys())  # list() for python3
         cnames.sort()
         
         # Services must be purely passive, and will only trigger once
@@ -200,7 +200,7 @@ class ShinkenModule(ConnectorModule):
             max_check_attempts              2
         \n}\n
         \n%s\n''' % (n['uuid'], n['name'], n['addr'], use_value, '\n'.join([buf_service % (n['uuid'], self.sanatize_check_name(cname)) for cname in cnames]))
-        buf_sha = hashlib.sha1(buf).hexdigest()
+        buf_sha = get_sha1_hash(buf)
         
         # if it the same as before?
         self.logger.debug('COMPARING OLD SHA/NEWSHA= %s   %s' % (old_sha_value, buf_sha))

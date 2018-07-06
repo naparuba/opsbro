@@ -112,6 +112,14 @@ def get_sha1_hash(s):
     return hashlib.sha1(s).hexdigest()
 
 
+def get_uuid():
+    u = libuuid.uuid1()
+    if PY3:
+        return u.hex
+    else:
+        return u.get_hex()
+
+
 # Bytes to unicode
 def string_decode(s):
     return bytes_to_unicode(s)
@@ -152,7 +160,7 @@ def guess_server_const_uuid():
             logger.info('[SERVER-UUID] OpenVZ: using the hostname & openvz local id as server unique UUID: %s' % servr_uniq_id)
             return hashlib.sha1(servr_uniq_id).hexdigest()
     # No merly fixed stuff? ok, pure randomness
-    return hashlib.sha1(libuuid.uuid1().get_hex()).hexdigest()
+    return hashlib.sha1(get_uuid()).hexdigest()
 
 
 # recursivly change a dict with pure bytes

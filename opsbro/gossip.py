@@ -1,6 +1,5 @@
 import socket
 import json
-import uuid as libuuid
 import time
 import random
 import math
@@ -25,6 +24,7 @@ from .handlermgr import handlermgr
 from .topic import topiker, TOPIC_SERVICE_DISCOVERY
 from .basemanager import BaseManager
 from .jsonmgr import jsoner
+from .util import get_uuid
 
 KGOSSIP = 10
 
@@ -1430,7 +1430,7 @@ class Gossip(BaseManager):
     
     def create_event_msg(self, payload):
         return {'type'   : 'event', 'from': self.uuid, 'payload': payload, 'ctime': int(time.time()),
-                'eventid': libuuid.uuid1().get_hex()}
+                'eventid': get_uuid()}
     
     
     def create_suspect_msg(self, node):

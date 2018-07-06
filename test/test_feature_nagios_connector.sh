@@ -10,6 +10,7 @@ opsbro gossip events wait 'shinken-restart' --timeout 60
 if [ $? != 0 ]; then
     echo "ERROR: the nagios module did not restart nagios"
     cat /var/log/opsbro/module.shinken.log
+    cat /var/log/opsbro/daemon.log
     exit 2
 fi
 

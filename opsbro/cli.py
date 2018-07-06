@@ -542,6 +542,7 @@ class CLICommander(object):
                 sys.exit(2)
             except Exception:
                 logger.error('The call did fail: %s' % (str(traceback.print_exc())))
+                sys.exit(2)
     
     
     def print_completion(self, args):
