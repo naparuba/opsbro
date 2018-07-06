@@ -3,7 +3,7 @@
 echo "Starting to test DNS module"
 
 # Start it
-/etc/init.d/opsbro start
+/etc/init.d/opsbro --debug start
 
 
 # Enable DNS module
@@ -31,6 +31,10 @@ if [ $? != 0 ]; then
     echo "The DNS module do not seems to result"
     printf "$OUT"
     opsbro agent info
+    cat /var/log/opsbro/module.dns.log
+    hostname
+    ip addr show
+    ping -c 1 `hostname`
     exit 2
 fi
 
