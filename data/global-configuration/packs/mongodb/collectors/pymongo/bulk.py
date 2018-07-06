@@ -18,13 +18,23 @@
 """
 
 from bson.objectid import ObjectId
+from bson.raw_bson import RawBSONDocument
 from bson.son import SON
+from pymongo.common import (validate_is_mapping,
+                            validate_is_document_type,
+                            validate_ok_for_replace,
+                            validate_ok_for_update)
+from pymongo.collation import validate_collation_or_none
 from pymongo.errors import (BulkWriteError,
+                            ConfigurationError,
                             DocumentTooLarge,
                             InvalidOperation,
                             OperationFailure)
 from pymongo.message import (_INSERT, _UPDATE, _DELETE,
-                             insert, _do_batched_write_command)
+                             _do_batched_write_command,
+                             _randint,
+                             _BulkWriteContext)
+from pymongo.write_concern import WriteConcern
 
 
 _DELETE_ALL = 0
@@ -36,6 +46,16 @@ _UNKNOWN_ERROR = 8
 _WRITE_CONCERN_ERROR = 64
 
 _COMMANDS = ('insert', 'update', 'delete')
+
+
+# These string literals are used when we create fake server return
+# documents client side. We use unicode literals in python 2.x to
+# match the actual return values from the server.
+_UID = u"_id"
+_UCODE = u"code"
+_UERRMSG = u"errmsg"
+_UINDEX = u"index"
+_UOP = u"op"
 
 
 class _Run(object):
@@ -72,10 +92,10 @@ def _make_error(index, code, errmsg, operation):
     """Create and return an error document.
     """
     return {
-        u"index": index,
-        u"code": code,
-        u"errmsg": errmsg,
-        u"op": operation
+        _UINDEX: index,
+        _UCODE: code,
+        _UERRMSG: errmsg,
+        _UOP: operation
     }
 
 
@@ -98,23 +118,21 @@ def _merge_legacy(run, full_result, result, index):
                 error["errInfo"] = result["errInfo"]
             full_result["writeErrors"].append(error)
             return
-
     if run.op_type == _INSERT:
         full_result['nInserted'] += 1
-
     elif run.op_type == _UPDATE:
         if "upserted" in result:
-            doc = {u"index": run.index(index), u"_id": result["upserted"]}
+            doc = {_UINDEX: run.index(index), _UID: result["upserted"]}
             full_result["upserted"].append(doc)
             full_result['nUpserted'] += affected
         # Versions of MongoDB before 2.6 don't return the _id for an
         # upsert if _id is not an ObjectId.
-        elif result.get("updatedExisting") == False and affected == 1:
+        elif result.get("updatedExisting") is False and affected == 1:
             op = run.ops[index]
             # If _id is in both the update document *and* the query spec
             # the update document _id takes precedence.
             _id = op['u'].get('_id', op['q'].get('_id'))
-            doc = {u"index": run.index(index), u"_id": _id}
+            doc = {_UINDEX: run.index(index), _UID: _id}
             full_result["upserted"].append(doc)
             full_result['nUpserted'] += affected
         else:
@@ -148,7 +166,7 @@ def _merge_command(run, full_result, results):
                 else:
                     n_upserted = 1
                     index = run.index(offset)
-                    doc = {u"index": index, u"_id": upserted}
+                    doc = {_UINDEX: index, _UID: upserted}
                     full_result["upserted"].append(doc)
                 full_result["nUpserted"] += n_upserted
                 full_result["nMatched"] += (affected - n_upserted)
@@ -167,11 +185,13 @@ def _merge_command(run, full_result, results):
         write_errors = result.get("writeErrors")
         if write_errors:
             for doc in write_errors:
+                # Leave the server response intact for APM.
+                replacement = doc.copy()
                 idx = doc["index"] + offset
-                doc["index"] = run.index(idx)
+                replacement["index"] = run.index(idx)
                 # Add the failed operation to the error document.
-                doc[u"op"] = run.ops[idx]
-            full_result["writeErrors"].extend(write_errors)
+                replacement[_UOP] = run.ops[idx]
+                full_result["writeErrors"].append(replacement)
 
         wc_error = result.get("writeConcernError")
         if wc_error:
@@ -181,59 +201,64 @@ def _merge_command(run, full_result, results):
 class _Bulk(object):
     """The private guts of the bulk write API.
     """
-    def __init__(self, collection, ordered):
+    def __init__(self, collection, ordered, bypass_document_validation):
         """Initialize a _Bulk instance.
         """
-        self.collection = collection
+        self.collection = collection.with_options(
+            codec_options=collection.codec_options._replace(
+                unicode_decode_error_handler='replace',
+                document_class=dict))
         self.ordered = ordered
         self.ops = []
         self.name = "%s.%s" % (collection.database.name, collection.name)
         self.namespace = collection.database.name + '.$cmd'
         self.executed = False
+        self.bypass_doc_val = bypass_document_validation
+        self.uses_collation = False
 
     def add_insert(self, document):
         """Add an insert document to the list of ops.
         """
-        if not isinstance(document, dict):
-            raise TypeError('document must be an instance of dict')
+        validate_is_document_type("document", document)
         # Generate ObjectId client side.
-        if '_id' not in document:
+        if not (isinstance(document, RawBSONDocument) or '_id' in document):
             document['_id'] = ObjectId()
         self.ops.append((_INSERT, document))
 
-    def add_update(self, selector, update, multi=False, upsert=False):
+    def add_update(self, selector, update, multi=False, upsert=False,
+                   collation=None):
         """Create an update document and add it to the list of ops.
         """
-        if not isinstance(update, dict):
-            raise TypeError('update must be an instance of dict')
-        # Update can not be {}
-        if not update:
-            raise ValueError('update only works with $ operators')
-        first = iter(update).next()
-        if not first.startswith('$'):
-            raise ValueError('update only works with $ operators')
+        validate_ok_for_update(update)
         cmd = SON([('q', selector), ('u', update),
                    ('multi', multi), ('upsert', upsert)])
+        collation = validate_collation_or_none(collation)
+        if collation is not None:
+            self.uses_collation = True
+            cmd['collation'] = collation
         self.ops.append((_UPDATE, cmd))
 
-    def add_replace(self, selector, replacement, upsert=False):
+    def add_replace(self, selector, replacement, upsert=False,
+                    collation=None):
         """Create a replace document and add it to the list of ops.
         """
-        if not isinstance(replacement, dict):
-            raise TypeError('replacement must be an instance of dict')
-        # Replacement can be {}
-        if replacement:
-            first = iter(replacement).next()
-            if first.startswith('$'):
-                raise ValueError('replacement can not include $ operators')
+        validate_ok_for_replace(replacement)
         cmd = SON([('q', selector), ('u', replacement),
                    ('multi', False), ('upsert', upsert)])
+        collation = validate_collation_or_none(collation)
+        if collation is not None:
+            self.uses_collation = True
+            cmd['collation'] = collation
         self.ops.append((_UPDATE, cmd))
 
-    def add_delete(self, selector, limit):
+    def add_delete(self, selector, limit, collation=None):
         """Create a delete document and add it to the list of ops.
         """
         cmd = SON([('q', selector), ('limit', limit)])
+        collation = validate_collation_or_none(collation)
+        if collation is not None:
+            self.uses_collation = True
+            cmd['collation'] = collation
         self.ops.append((_DELETE, cmd))
 
     def gen_ordered(self):
@@ -262,11 +287,9 @@ class _Bulk(object):
             if run.ops:
                 yield run
 
-    def execute_command(self, generator, write_concern):
+    def execute_command(self, sock_info, generator, write_concern):
         """Execute using write commands.
         """
-        uuid_subtype = self.collection.uuid_subtype
-        client = self.collection.database.connection
         # nModified is only reported for write commands, not legacy ops.
         full_result = {
             "writeErrors": [],
@@ -278,14 +301,22 @@ class _Bulk(object):
             "nRemoved": 0,
             "upserted": [],
         }
+        op_id = _randint()
+        db_name = self.collection.database.name
+        listeners = self.collection.database.client._event_listeners
+
         for run in generator:
             cmd = SON([(_COMMANDS[run.op_type], self.collection.name),
                        ('ordered', self.ordered)])
-            if write_concern:
-                cmd['writeConcern'] = write_concern
+            if write_concern.document:
+                cmd['writeConcern'] = write_concern.document
+            if self.bypass_doc_val and sock_info.max_wire_version >= 4:
+                cmd['bypassDocumentValidation'] = True
 
-            results = _do_batched_write_command(self.namespace,
-                run.op_type, cmd, run.ops, True, uuid_subtype, client)
+            bwc = _BulkWriteContext(db_name, cmd, sock_info, op_id, listeners)
+            results = _do_batched_write_command(
+                self.namespace, run.op_type, cmd,
+                run.ops, True, self.collection.codec_options, bwc)
 
             _merge_command(run, full_result, results)
             # We're supposed to continue if errors are
@@ -300,54 +331,59 @@ class _Bulk(object):
             raise BulkWriteError(full_result)
         return full_result
 
-    def execute_no_results(self, generator):
+    def execute_no_results(self, sock_info, generator):
         """Execute all operations, returning no results (w=0).
         """
+        # Cannot have both unacknowledged write and bypass document validation.
+        if self.bypass_doc_val and sock_info.max_wire_version >= 4:
+            raise OperationFailure("Cannot set bypass_document_validation with"
+                                   " unacknowledged write concern")
         coll = self.collection
-        w_value = 0
         # If ordered is True we have to send GLE or use write
         # commands so we can abort on the first error.
-        if self.ordered:
-            w_value = 1
+        write_concern = WriteConcern(w=int(self.ordered))
+        op_id = _randint()
 
         for run in generator:
             try:
                 if run.op_type == _INSERT:
-                    coll.insert(run.ops,
-                                continue_on_error=not self.ordered,
-                                w=w_value)
+                    coll._insert(
+                        sock_info,
+                        run.ops,
+                        self.ordered,
+                        write_concern=write_concern,
+                        op_id=op_id,
+                        bypass_doc_val=self.bypass_doc_val)
+                elif run.op_type == _UPDATE:
+                    for operation in run.ops:
+                        doc = operation['u']
+                        check_keys = True
+                        if doc and next(iter(doc)).startswith('$'):
+                            check_keys = False
+                        coll._update(
+                            sock_info,
+                            operation['q'],
+                            doc,
+                            operation['upsert'],
+                            check_keys,
+                            operation['multi'],
+                            write_concern=write_concern,
+                            op_id=op_id,
+                            ordered=self.ordered,
+                            bypass_doc_val=self.bypass_doc_val)
                 else:
                     for operation in run.ops:
-                        try:
-                            if run.op_type == _UPDATE:
-                                coll.update(operation['q'],
-                                            operation['u'],
-                                            upsert=operation['upsert'],
-                                            multi=operation['multi'],
-                                            w=w_value)
-                            else:
-                                coll.remove(operation['q'],
-                                            multi=(not operation['limit']),
-                                            w=w_value)
-                        except OperationFailure:
-                            if self.ordered:
-                                return
+                        coll._delete(sock_info,
+                                     operation['q'],
+                                     not operation['limit'],
+                                     write_concern,
+                                     op_id,
+                                     self.ordered)
             except OperationFailure:
                 if self.ordered:
                     break
 
-    def legacy_insert(self, operation, write_concern):
-        """Do a legacy insert and return the result.
-        """
-        # We have to do this here since Collection.insert
-        # throws away results and we need to check for jnote.
-        client = self.collection.database.connection
-        uuid_subtype = self.collection.uuid_subtype
-        return client._send_message(
-            insert(self.name, [operation], True, True,
-                write_concern, False, uuid_subtype), True)
-
-    def execute_legacy(self, generator, write_concern):
+    def execute_legacy(self, sock_info, generator, write_concern):
         """Execute using legacy wire protocol ops.
         """
         coll = self.collection
@@ -360,6 +396,7 @@ class _Bulk(object):
             "nRemoved": 0,
             "upserted": [],
         }
+        op_id = _randint()
         stop = False
         for run in generator:
             for idx, operation in enumerate(run.ops):
@@ -368,19 +405,35 @@ class _Bulk(object):
                     # at a time. That means the performance of bulk insert
                     # will be slower here than calling Collection.insert()
                     if run.op_type == _INSERT:
-                        result = self.legacy_insert(operation, write_concern)
+                        coll._insert(sock_info,
+                                     operation,
+                                     self.ordered,
+                                     write_concern=write_concern,
+                                     op_id=op_id)
+                        result = {}
                     elif run.op_type == _UPDATE:
-                        result = coll.update(operation['q'],
-                                             operation['u'],
-                                             upsert=operation['upsert'],
-                                             multi=operation['multi'],
-                                             **write_concern)
+                        doc = operation['u']
+                        check_keys = True
+                        if doc and next(iter(doc)).startswith('$'):
+                            check_keys = False
+                        result = coll._update(sock_info,
+                                              operation['q'],
+                                              doc,
+                                              operation['upsert'],
+                                              check_keys,
+                                              operation['multi'],
+                                              write_concern=write_concern,
+                                              op_id=op_id,
+                                              ordered=self.ordered)
                     else:
-                        result = coll.remove(operation['q'],
-                                             multi=(not operation['limit']),
-                                             **write_concern)
+                        result = coll._delete(sock_info,
+                                              operation['q'],
+                                              not operation['limit'],
+                                              write_concern,
+                                              op_id,
+                                              self.ordered)
                     _merge_legacy(run, full_result, result, idx)
-                except DocumentTooLarge, exc:
+                except DocumentTooLarge as exc:
                     # MongoDB 2.6 uses error code 2 for "too large".
                     error = _make_error(
                         run.index(idx), _BAD_VALUE, str(exc), operation)
@@ -388,7 +441,7 @@ class _Bulk(object):
                     if self.ordered:
                         stop = True
                         break
-                except OperationFailure, exc:
+                except OperationFailure as exc:
                     if not exc.details:
                         # Some error not related to the write operation
                         # (e.g. kerberos failure). Re-raise immediately.
@@ -418,32 +471,40 @@ class _Bulk(object):
             raise InvalidOperation('Bulk operations can '
                                    'only be executed once.')
         self.executed = True
-        client = self.collection.database.connection
-        client._ensure_connected(sync=True)
-        write_concern = write_concern or self.collection.write_concern
+        write_concern = (WriteConcern(**write_concern) if
+                         write_concern else self.collection.write_concern)
 
         if self.ordered:
             generator = self.gen_ordered()
         else:
             generator = self.gen_unordered()
 
-        if write_concern.get('w') == 0:
-            self.execute_no_results(generator)
-        elif client.max_wire_version > 1:
-            return self.execute_command(generator, write_concern)
-        else:
-            return self.execute_legacy(generator, write_concern)
+        client = self.collection.database.client
+        with client._socket_for_writes() as sock_info:
+            if sock_info.max_wire_version < 5 and self.uses_collation:
+                raise ConfigurationError(
+                    'Must be connected to MongoDB 3.4+ to use a collation.')
+            if not write_concern.acknowledged:
+                if self.uses_collation:
+                    raise ConfigurationError(
+                        'Collation is unsupported for unacknowledged writes.')
+                self.execute_no_results(sock_info, generator)
+            elif sock_info.max_wire_version > 1:
+                return self.execute_command(sock_info, generator, write_concern)
+            else:
+                return self.execute_legacy(sock_info, generator, write_concern)
 
 
 class BulkUpsertOperation(object):
     """An interface for adding upsert operations.
     """
 
-    __slots__ = ('__selector', '__bulk')
+    __slots__ = ('__selector', '__bulk', '__collation')
 
-    def __init__(self, selector, bulk):
+    def __init__(self, selector, bulk, collation):
         self.__selector = selector
         self.__bulk = bulk
+        self.__collation = collation
 
     def update_one(self, update):
         """Update one document matching the selector.
@@ -452,7 +513,8 @@ class BulkUpsertOperation(object):
           - `update` (dict): the update operations to apply
         """
         self.__bulk.add_update(self.__selector,
-                               update, multi=False, upsert=True)
+                               update, multi=False, upsert=True,
+                               collation=self.__collation)
 
     def update(self, update):
         """Update all documents matching the selector.
@@ -461,7 +523,8 @@ class BulkUpsertOperation(object):
           - `update` (dict): the update operations to apply
         """
         self.__bulk.add_update(self.__selector,
-                               update, multi=True, upsert=True)
+                               update, multi=True, upsert=True,
+                               collation=self.__collation)
 
     def replace_one(self, replacement):
         """Replace one entire document matching the selector criteria.
@@ -469,18 +532,20 @@ class BulkUpsertOperation(object):
         :Parameters:
           - `replacement` (dict): the replacement document
         """
-        self.__bulk.add_replace(self.__selector, replacement, upsert=True)
+        self.__bulk.add_replace(self.__selector, replacement, upsert=True,
+                                collation=self.__collation)
 
 
 class BulkWriteOperation(object):
     """An interface for adding update or remove operations.
     """
 
-    __slots__ = ('__selector', '__bulk')
+    __slots__ = ('__selector', '__bulk', '__collation')
 
-    def __init__(self, selector, bulk):
+    def __init__(self, selector, bulk, collation):
         self.__selector = selector
         self.__bulk = bulk
+        self.__collation = collation
 
     def update_one(self, update):
         """Update one document matching the selector criteria.
@@ -488,7 +553,8 @@ class BulkWriteOperation(object):
         :Parameters:
           - `update` (dict): the update operations to apply
         """
-        self.__bulk.add_update(self.__selector, update, multi=False)
+        self.__bulk.add_update(self.__selector, update, multi=False,
+                               collation=self.__collation)
 
     def update(self, update):
         """Update all documents matching the selector criteria.
@@ -496,7 +562,8 @@ class BulkWriteOperation(object):
         :Parameters:
           - `update` (dict): the update operations to apply
         """
-        self.__bulk.add_update(self.__selector, update, multi=True)
+        self.__bulk.add_update(self.__selector, update, multi=True,
+                               collation=self.__collation)
 
     def replace_one(self, replacement):
         """Replace one entire document matching the selector criteria.
@@ -504,17 +571,20 @@ class BulkWriteOperation(object):
         :Parameters:
           - `replacement` (dict): the replacement document
         """
-        self.__bulk.add_replace(self.__selector, replacement)
+        self.__bulk.add_replace(self.__selector, replacement,
+                                collation=self.__collation)
 
     def remove_one(self):
         """Remove a single document matching the selector criteria.
         """
-        self.__bulk.add_delete(self.__selector, _DELETE_ONE)
+        self.__bulk.add_delete(self.__selector, _DELETE_ONE,
+                               collation=self.__collation)
 
     def remove(self):
         """Remove all documents matching the selector criteria.
         """
-        self.__bulk.add_delete(self.__selector, _DELETE_ALL)
+        self.__bulk.add_delete(self.__selector, _DELETE_ALL,
+                               collation=self.__collation)
 
     def upsert(self):
         """Specify that all chained update operations should be
@@ -524,7 +594,8 @@ class BulkWriteOperation(object):
           - A :class:`BulkUpsertOperation` instance, used to add
             update operations to this bulk operation.
         """
-        return BulkUpsertOperation(self.__selector, self.__bulk)
+        return BulkUpsertOperation(self.__selector, self.__bulk,
+                                   self.__collation)
 
 
 class BulkOperationBuilder(object):
@@ -533,7 +604,8 @@ class BulkOperationBuilder(object):
 
     __slots__ = '__bulk'
 
-    def __init__(self, collection, ordered=True):
+    def __init__(self, collection, ordered=True,
+                 bypass_document_validation=False):
         """Initialize a new BulkOperationBuilder instance.
 
         :Parameters:
@@ -544,34 +616,46 @@ class BulkOperationBuilder(object):
             in arbitrary order (possibly in parallel on the server), reporting
             any errors that occurred after attempting all operations. Defaults
             to ``True``.
+          - `bypass_document_validation`: (optional) If ``True``, allows the
+            write to opt-out of document level validation. Default is
+            ``False``.
 
-        .. warning::
-          If you are using a version of MongoDB older than 2.6 you will
-          get much better bulk insert performance using
-          :meth:`~pymongo.collection.Collection.insert`.
+        .. note:: `bypass_document_validation` requires server version
+          **>= 3.2**
+
+        .. versionchanged:: 3.2
+          Added bypass_document_validation support
         """
-        self.__bulk = _Bulk(collection, ordered)
+        self.__bulk = _Bulk(collection, ordered, bypass_document_validation)
 
-    def find(self, selector):
+    def find(self, selector, collation=None):
         """Specify selection criteria for bulk operations.
 
         :Parameters:
           - `selector` (dict): the selection criteria for update
             and remove operations.
+          - `collation` (optional): An instance of
+            :class:`~pymongo.collation.Collation`. This option is only supported
+            on MongoDB 3.4 and above.
 
         :Returns:
           - A :class:`BulkWriteOperation` instance, used to add
             update and remove operations to this bulk operation.
+
+        .. versionchanged:: 3.4
+           Added the `collation` option.
+
         """
-        if not isinstance(selector, dict):
-            raise TypeError('selector must be an instance of dict')
-        return BulkWriteOperation(selector, self.__bulk)
+        validate_is_mapping("selector", selector)
+        return BulkWriteOperation(selector, self.__bulk, collation)
 
     def insert(self, document):
         """Insert a single document.
 
         :Parameters:
           - `document` (dict): the document to insert
+
+        .. seealso:: :ref:`writes-and-ids`
         """
         self.__bulk.add_insert(document)
 
@@ -582,6 +666,6 @@ class BulkOperationBuilder(object):
           - write_concern (optional): the write concern for this bulk
             execution.
         """
-        if write_concern and not isinstance(write_concern, dict):
-            raise TypeError('write_concern must be an instance of dict')
+        if write_concern is not None:
+            validate_is_mapping("write_concern", write_concern)
         return self.__bulk.execute(write_concern)

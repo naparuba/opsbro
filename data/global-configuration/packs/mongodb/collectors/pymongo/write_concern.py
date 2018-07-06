@@ -14,10 +14,11 @@
 
 """Tools for working with write concerns."""
 
+from bson.py3compat import integer_types, string_type
 from pymongo.errors import ConfigurationError
 
 class WriteConcern(object):
-    """WriteConcern backport from PyMongo 3.x
+    """WriteConcern
 
     :Parameters:
         - `w`: (integer or string) Used with replication, write operations
@@ -42,8 +43,6 @@ class WriteConcern(object):
           server is running with journaling, this acts the same as the `j`
           option, blocking until write operations have been committed to the
           journal. Cannot be used in combination with `j`.
-
-    .. versionadded:: 2.9
     """
 
     __slots__ = ("__document", "__acknowledged")
@@ -53,7 +52,7 @@ class WriteConcern(object):
         self.__acknowledged = True
 
         if wtimeout is not None:
-            if not isinstance(wtimeout, (int, long)):
+            if not isinstance(wtimeout, integer_types):
                 raise TypeError("wtimeout must be an integer")
             self.__document["wtimeout"] = wtimeout
 
@@ -74,9 +73,9 @@ class WriteConcern(object):
             raise ConfigurationError("Can not use w value "
                                      "of 0 with other options")
         if w is not None:
-            if isinstance(w, (int, long)):
+            if isinstance(w, integer_types):
                 self.__acknowledged = w > 0
-            elif not isinstance(w, basestring):
+            elif not isinstance(w, string_type):
                 raise TypeError("w must be an integer or string")
             self.__document["w"] = w
 
@@ -107,3 +106,5 @@ class WriteConcern(object):
     def __ne__(self, other):
         return self.document != other.document
 
+    def __bool__(self):
+        return bool(self.document)

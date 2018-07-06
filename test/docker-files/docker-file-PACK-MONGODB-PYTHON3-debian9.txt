@@ -1,0 +1,31 @@
+FROM debian:9
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+
+RUN        /apt_get_install  python3
+# All need for debian, so faster test (we are testging feature here, not install)
+RUN        /apt_get_install   python3-jinja2
+RUN        /apt_get_install   python3-crypto
+RUN        /apt_get_install   python3-setuptools
+RUN        /apt_get_install   python3-apt
+
+# Set python3 as default python
+RUN        update-alternatives --install /usr/bin/python python /usr/bin/python3 1
+
+
+# Install mongodb
+RUN        /apt_get_install  gnupg2
+RUN        apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 9DA31620334BD75D9DCB49F368818C72E52529D4
+RUN        echo "deb http://repo.mongodb.org/apt/debian stretch/mongodb-org/4.0 main" | tee /etc/apt/sources.list.d/mongodb-org-4.0.list
+RUN        /apt_get_install  mongodb-org
+
+
+ADD        . /root/opsbro-oss
+WORKDIR    /root/opsbro-oss
+
+RUN        python setup.py install
+
+ENTRYPOINT     test/test_pack_mongodb.sh
+
+

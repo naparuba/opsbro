@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Start mongodb
-mongod -f /etc/mongod.conf
+nohup mongod -f /etc/mongod.conf &
 
 /etc/init.d/opsbro start
 

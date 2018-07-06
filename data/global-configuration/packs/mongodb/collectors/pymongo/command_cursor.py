@@ -14,26 +14,27 @@
 
 """CommandCursor class to iterate over command results."""
 
+import datetime
+
 from collections import deque
 
-from pymongo import helpers, message
-from pymongo.errors import AutoReconnect, CursorNotFound
+from bson.py3compat import integer_types
+from pymongo import helpers
+from pymongo.errors import AutoReconnect, NotMasterError, OperationFailure
+from pymongo.message import _CursorAddress, _GetMore, _convert_exception
 
 
 class CommandCursor(object):
     """A cursor / iterator over command cursors.
     """
 
-    def __init__(self, collection, cursor_info,
-                 conn_id, compile_re=True, retrieved=0):
+    def __init__(self, collection, cursor_info, address, retrieved=0):
         """Create a new command cursor.
         """
         self.__collection = collection
         self.__id = cursor_info['id']
-        self.__conn_id = conn_id
+        self.__address = address
         self.__data = deque(cursor_info['firstBatch'])
-        self.__codec_options = collection.codec_options
-        self.__compile_re = compile_re
         self.__retrieved = retrieved
         self.__batch_size = 0
         self.__killed = (self.__id == 0)
@@ -51,11 +52,8 @@ class CommandCursor(object):
         """Closes this cursor.
         """
         if self.__id and not self.__killed:
-            client = self.__collection.database.connection
-            if self.__conn_id is not None:
-                client.close_cursor(self.__id, self.__conn_id)
-            else:
-                client.close_cursor(self.__id)
+            self.__collection.database.client.close_cursor(
+                self.__id, _CursorAddress(self.__address, self.__ns))
         self.__killed = True
 
     def close(self):
@@ -81,7 +79,7 @@ class CommandCursor(object):
         :Parameters:
           - `batch_size`: The size of each batch of results requested.
         """
-        if not isinstance(batch_size, (int, long)):
+        if not isinstance(batch_size, integer_types):
             raise TypeError("batch_size must be an integer")
         if batch_size < 0:
             raise ValueError("batch_size must be >= 0")
@@ -89,14 +87,15 @@ class CommandCursor(object):
         self.__batch_size = batch_size == 1 and 2 or batch_size
         return self
 
-    def __send_message(self, msg):
+    def __send_message(self, operation):
         """Send a getmore message and handle the response.
         """
-        client = self.__collection.database.connection
+        client = self.__collection.database.client
+        listeners = client._event_listeners
+        publish = listeners.enabled_for_commands
         try:
-            res = client._send_message_with_response(
-                msg, _connection_to_use=self.__conn_id)
-            self.__conn_id, (response, dummy0, dummy1) = res
+            response = client._send_message_with_response(
+                operation, address=self.__address)
         except AutoReconnect:
             # Don't try to send kill cursors on another socket
             # or to another server. It can cause a _pinValue
@@ -105,29 +104,72 @@ class CommandCursor(object):
             self.__killed = True
             raise
 
+        cmd_duration = response.duration
+        rqst_id = response.request_id
+        from_command = response.from_command
+
+        if publish:
+            start = datetime.datetime.now()
         try:
-            response = helpers._unpack_response(
-                response,
-                self.__id,
-                self.__codec_options.document_class,
-                self.__codec_options.tz_aware,
-                self.__codec_options.uuid_representation,
-                self.__compile_re)
-        except CursorNotFound:
+            doc = helpers._unpack_response(response.data,
+                                           self.__id,
+                                           self.__collection.codec_options)
+            if from_command:
+                helpers._check_command_response(doc['data'][0])
+
+        except OperationFailure as exc:
             self.__killed = True
+
+            if publish:
+                duration = (datetime.datetime.now() - start) + cmd_duration
+                listeners.publish_command_failure(
+                    duration, exc.details, "getMore", rqst_id, self.__address)
+
             raise
-        except AutoReconnect:
+        except NotMasterError as exc:
             # Don't send kill cursors to another server after a "not master"
             # error. It's completely pointless.
             self.__killed = True
-            client._disconnect()
+
+            if publish:
+                duration = (datetime.datetime.now() - start) + cmd_duration
+                listeners.publish_command_failure(
+                    duration, exc.details, "getMore", rqst_id, self.__address)
+
+            client._reset_server_and_request_check(self.address)
             raise
-        self.__id = response["cursor_id"]
+        except Exception as exc:
+            if publish:
+                duration = (datetime.datetime.now() - start) + cmd_duration
+                listeners.publish_command_failure(
+                    duration, _convert_exception(exc), "getMore", rqst_id,
+                    self.__address)
+            raise
+
+        if from_command:
+            cursor = doc['data'][0]['cursor']
+            documents = cursor['nextBatch']
+            self.__id = cursor['id']
+            self.__retrieved += len(documents)
+        else:
+            documents = doc["data"]
+            self.__id = doc["cursor_id"]
+            self.__retrieved += doc["number_returned"]
+
+        if publish:
+            duration = (datetime.datetime.now() - start) + cmd_duration
+            # Must publish in getMore command response format.
+            res = {"cursor": {"id": self.__id,
+                              "ns": self.__collection.full_name,
+                              "nextBatch": documents},
+                   "ok": 1}
+            listeners.publish_command_success(
+                duration, res, "getMore", rqst_id, self.__address)
+
         if self.__id == 0:
             self.__killed = True
+        self.__data = deque(documents)
 
-        self.__retrieved += response["number_returned"]
-        self.__data = deque(response["data"])
 
     def _refresh(self):
         """Refreshes the cursor with more data from the server.
@@ -140,9 +182,13 @@ class CommandCursor(object):
             return len(self.__data)
 
         if self.__id:  # Get More
+            dbname, collname = self.__ns.split('.', 1)
             self.__send_message(
-                message.get_more(self.__ns,
-                                 self.__batch_size, self.__id))
+                _GetMore(dbname,
+                         collname,
+                         self.__batch_size,
+                         self.__id,
+                         self.__collection.codec_options))
 
         else:  # Cursor id is zero nothing else to return
             self.__killed = True
@@ -171,6 +217,14 @@ class CommandCursor(object):
         """Returns the id of the cursor."""
         return self.__id
 
+    @property
+    def address(self):
+        """The (host, port) of the server used, or None.
+
+        .. versionadded:: 3.0
+        """
+        return self.__address
+
     def __iter__(self):
         return self
 
@@ -181,6 +235,8 @@ class CommandCursor(object):
             return coll.database._fix_outgoing(self.__data.popleft(), coll)
         else:
             raise StopIteration
+
+    __next__ = next
 
     def __enter__(self):
         return self

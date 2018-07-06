@@ -14,11 +14,8 @@
 
 """Tools for connecting to MongoDB.
 
-.. seealso:: Module :mod:`~pymongo.master_slave_connection` for
-   connecting to master-slave clusters, and
-   :doc:`/examples/high_availability` for an example of how to connect
-   to a replica set, or specify a list of mongos instances for automatic
-   failover.
+.. seealso:: :doc:`/examples/high_availability` for examples of connecting
+   to replica sets or sets of mongos servers.
 
 To get a :class:`~pymongo.database.Database` instance from a
 :class:`MongoClient` use either dictionary-style or attribute-style
@@ -29,85 +26,72 @@ access:
   >>> from pymongo import MongoClient
   >>> c = MongoClient()
   >>> c.test_database
-  Database(MongoClient('localhost', 27017), u'test_database')
+  Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True), u'test_database')
   >>> c['test-database']
-  Database(MongoClient('localhost', 27017), u'test-database')
+  Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True), u'test-database')
 """
 
+import contextlib
 import datetime
-import random
-import socket
-import struct
 import threading
-import time
 import warnings
+import weakref
 
-from bson.binary import PYTHON_LEGACY
-from bson.codec_options import CodecOptions
-from bson.py3compat import b
-from pymongo import (auth,
-                     common,
+from collections import defaultdict
+
+from bson.codec_options import DEFAULT_CODEC_OPTIONS
+from bson.py3compat import (integer_types,
+                            string_type)
+from bson.son import SON
+from pymongo import (common,
                      database,
                      helpers,
                      message,
-                     pool,
-                     thread_util,
+                     periodic_executor,
                      uri_parser)
-from pymongo.common import HAS_SSL
+from pymongo.client_options import ClientOptions
 from pymongo.cursor_manager import CursorManager
 from pymongo.errors import (AutoReconnect,
                             ConfigurationError,
                             ConnectionFailure,
-                            DocumentTooLarge,
-                            DuplicateKeyError,
+                            InvalidOperation,
                             InvalidURI,
+                            NetworkTimeout,
+                            NotMasterError,
                             OperationFailure)
-from pymongo.member import Member
-from pymongo.read_preferences import ReadPreference, _ServerMode
-
-
-EMPTY = b("")
-
-
-def _partition_node(node):
-    """Split a host:port string returned from mongod/s into
-    a (host, int(port)) pair needed for socket.connect().
-    """
-    host = node
-    port = 27017
-    idx = node.rfind(':')
-    if idx != -1:
-        host, port = node[:idx], int(node[idx + 1:])
-    if host.startswith('['):
-        host = host[1:-1]
-    return host, port
+from pymongo.read_preferences import ReadPreference
+from pymongo.server_selectors import (writable_preferred_server_selector,
+                                      writable_server_selector)
+from pymongo.server_type import SERVER_TYPE
+from pymongo.topology import Topology
+from pymongo.topology_description import TOPOLOGY_TYPE
+from pymongo.settings import TopologySettings
+from pymongo.write_concern import WriteConcern
 
 
 class MongoClient(common.BaseObject):
-    """Connection to MongoDB.
-    """
-
     HOST = "localhost"
     PORT = 27017
-    _rs_client = False
+    # Define order to retrieve options from ClientOptions for __repr__.
+    # No host/port; these are retrieved from TopologySettings.
+    _constructor_args = ('document_class', 'tz_aware', 'connect')
 
-    def __init__(self, host=None, port=None, max_pool_size=100,
-                 document_class=dict, tz_aware=False, **kwargs):
-        """Create a new connection to a single MongoDB instance at *host:port*.
+    def __init__(
+            self,
+            host=None,
+            port=None,
+            document_class=dict,
+            tz_aware=None,
+            connect=None,
+            **kwargs):
+        """Client for a MongoDB instance, a replica set, or a set of mongoses.
 
-        The resultant client object has connection-pooling built
-        in. It also performs auto-reconnection when necessary. If an
-        operation fails because of a connection error,
-        :class:`~pymongo.errors.ConnectionFailure` is raised. If
-        auto-reconnection will be performed,
-        :class:`~pymongo.errors.AutoReconnect` will be
-        raised. Application code should handle this exception
-        (recognizing that the operation failed) and then continue to
+        The client object is thread-safe and has connection-pooling built in.
+        If an operation fails because of a network error,
+        :class:`~pymongo.errors.ConnectionFailure` is raised and the client
+        reconnects in the background. Application code should handle this
+        exception (recognizing that the operation failed) and then continue to
         execute.
-
-        Raises :class:`TypeError` if port is not an instance of
-        ``int``. Raises :class:`~pymongo.errors.ConnectionFailure` if
-        the connection cannot be made.
 
         The `host` parameter can be a full `mongodb URI
         <http://dochub.mongodb.org/core/connections>`_, in addition to
@@ -117,47 +101,114 @@ class MongoClient(common.BaseObject):
         database or auth information are passed, the last database,
         username, and password present will be used.  For username and
         passwords reserved characters like ':', '/', '+' and '@' must be
-        escaped following RFC 2396.
+        percent encoded following RFC 2396::
+
+            try:
+                # Python 3.x
+                from urllib.parse import quote_plus
+            except ImportError:
+                # Python 2.x
+                from urllib import quote_plus
+
+            uri = "mongodb://%s:%s@%s" % (
+                quote_plus(user), quote_plus(password), host)
+            client = MongoClient(uri)
+
+        Unix domain sockets are also supported. The socket path must be percent
+        encoded in the URI::
+
+            uri = "mongodb://%s:%s@%s" % (
+                quote_plus(user), quote_plus(password), quote_plus(socket_path))
+            client = MongoClient(uri)
+
+        But not when passed as a simple hostname::
+
+            client = MongoClient('/tmp/mongodb-27017.sock')
+
+        .. note:: Starting with version 3.0 the :class:`MongoClient`
+          constructor no longer blocks while connecting to the server or
+          servers, and it no longer raises
+          :class:`~pymongo.errors.ConnectionFailure` if they are
+          unavailable, nor :class:`~pymongo.errors.ConfigurationError`
+          if the user's credentials are wrong. Instead, the constructor
+          returns immediately and launches the connection process on
+          background threads. You can check if the server is available
+          like this::
+
+            from pymongo.errors import ConnectionFailure
+            client = MongoClient()
+            try:
+                # The ismaster command is cheap and does not require auth.
+                client.admin.command('ismaster')
+            except ConnectionFailure:
+                print("Server not available")
+
+        .. warning:: When using PyMongo in a multiprocessing context, please
+          read :ref:`multiprocessing` first.
 
         :Parameters:
-          - `host` (optional): hostname or IP address of the
-            instance to connect to, or a mongodb URI, or a list of
-            hostnames / mongodb URIs. If `host` is an IPv6 literal
-            it must be enclosed in '[' and ']' characters following
-            the RFC2732 URL syntax (e.g. '[::1]' for localhost)
+          - `host` (optional): hostname or IP address or Unix domain socket
+            path of a single mongod or mongos instance to connect to, or a
+            mongodb URI, or a list of hostnames / mongodb URIs. If `host` is
+            an IPv6 literal it must be enclosed in '[' and ']' characters
+            following the RFC2732 URL syntax (e.g. '[::1]' for localhost).
+            Multihomed and round robin DNS addresses are **not** supported.
           - `port` (optional): port number on which to connect
-          - `max_pool_size` (optional): The maximum number of connections
-            that the pool will open simultaneously. If this is set, operations
-            will block if there are `max_pool_size` outstanding connections
-            from the pool. Defaults to 100. Cannot be 0.
           - `document_class` (optional): default class to use for
             documents returned from queries on this client
           - `tz_aware` (optional): if ``True``,
             :class:`~datetime.datetime` instances returned as values
             in a document by this :class:`MongoClient` will be timezone
             aware (otherwise they will be naive)
+          - `connect` (optional): if ``True`` (the default), immediately
+            begin connecting to MongoDB in the background. Otherwise connect
+            on the first operation.
 
           | **Other optional parameters can be passed as keyword arguments:**
 
-          - `maxPoolSize` (optional): Alias for max_pool_size. Takes
-            precedence over max_pool_size.
-          - `socketTimeoutMS`: (integer or None) How long (in milliseconds) a
-            send or receive on a socket can take before timing out. Defaults to
-            ``None`` (no timeout).
-          - `connectTimeoutMS`: (integer or None) How long (in milliseconds) a
-            connection can take to be opened before timing out. Defaults to
-            ``20000``.
+          - `maxPoolSize` (optional): The maximum allowable number of
+            concurrent connections to each connected server. Requests to a
+            server will block if there are `maxPoolSize` outstanding
+            connections to the requested server. Defaults to 100. Cannot be 0.
+          - `minPoolSize` (optional): The minimum required number of concurrent
+            connections that the pool will maintain to each connected server.
+            Default is 0.
+          - `maxIdleTimeMS` (optional): The maximum number of milliseconds that
+            a connection can remain idle in the pool before being removed and
+            replaced. Defaults to `None` (no limit).
+          - `socketTimeoutMS`: (integer or None) Controls how long (in
+            milliseconds) the driver will wait for a response after sending an
+            ordinary (non-monitoring) database operation before concluding that
+            a network error has occurred. Defaults to ``None`` (no timeout).
+          - `connectTimeoutMS`: (integer or None) Controls how long (in
+            milliseconds) the driver will wait during server monitoring when
+            connecting a new socket to a server before concluding the server
+            is unavailable. Defaults to ``20000`` (20 seconds).
+          - `serverSelectionTimeoutMS`: (integer) Controls how long (in
+            milliseconds) the driver will wait to find an available,
+            appropriate server to carry out a database operation; while it is
+            waiting, multiple server monitoring operations may be carried out,
+            each controlled by `connectTimeoutMS`. Defaults to ``30000`` (30
+            seconds).
           - `waitQueueTimeoutMS`: (integer or None) How long (in milliseconds)
             a thread will wait for a socket from the pool if the pool has no
             free sockets. Defaults to ``None`` (no timeout).
-          - `waitQueueMultiple`: (integer or None) Multiplied by max_pool_size
+          - `waitQueueMultiple`: (integer or None) Multiplied by maxPoolSize
             to give the number of threads allowed to wait for a socket at one
-            time. Defaults to ``None`` (no waiters).
+            time. Defaults to ``None`` (no limit).
           - `socketKeepAlive`: (boolean) Whether to send periodic keep-alive
             packets on connected sockets. Defaults to ``False`` (do not send
             keep-alive packets).
-          - `connect`: if True (the default), immediately connect to MongoDB in
-            the foreground. Otherwise connect on the first operation.
+          - `heartbeatFrequencyMS`: (optional) The number of milliseconds
+            between periodic server checks, or None to accept the default
+            frequency of 10 seconds.
+          - `appname`: (string or None) The name of the application that
+            created this MongoClient instance. MongoDB 3.4 and newer will
+            print this value in the server log upon establishing each
+            connection. It is also recorded in the slow query log and
+            profile collections.
+          - `event_listeners`: a list or tuple of event listeners. See
+            :mod:`~pymongo.monitoring` for details.
 
           | **Write Concern options:**
           | (Only set if passed. No default values.)
@@ -186,49 +237,63 @@ class MongoClient(common.BaseObject):
 
           | **Replica set keyword arguments for connecting with a replica set
             - either directly or via a mongos:**
-          | (ignored by standalone mongod instances)
 
           - `replicaSet`: (string or None) The name of the replica set to
-            connect to. The driver will verify that the replica set it connects
-            to matches this name. Implies that the hosts specified are a seed
-            list and the driver should attempt to find all members of the set.
-            *Ignored by mongos*. Defaults to ``None``.
-          - `read_preference`: The read preference for this client. If
-            connecting to a secondary then a read preference mode *other* than
-            primary is required - otherwise all queries will throw
-            :class:`~pymongo.errors.AutoReconnect` "not master".
-            See :mod:`~pymongo.read_preferences` for options.
-            Defaults to ``ReadPreference.PRIMARY``.
-          - `localThresholdMS`: (integer) Used with mongos high availability.
-            Any known mongos whose ping time is within localThresholdMS of the
-            nearest member may be chosen during a failover. Default 15
-            milliseconds. Ignored **by** mongos and must be configured on the
-            command line. See the localThreshold_ option for more information.
+            connect to. The driver will verify that all servers it connects to
+            match this name. Implies that the hosts specified are a seed list
+            and the driver should attempt to find all members of the set.
+            Defaults to ``None``.
+
+          | **Read Preference:**
+
+          - `readPreference`: The replica set read preference for this client.
+            One of ``primary``, ``primaryPreferred``, ``secondary``,
+            ``secondaryPreferred``, or ``nearest``. Defaults to ``primary``.
+          - `readPreferenceTags`: Specifies a tag set as a comma-separated list
+            of colon-separated key-value pairs. For example ``dc:ny,rack:1``.
+            Defaults to ``None``.
+          - `maxStalenessSeconds`: (integer) The maximum estimated
+            length of time a replica set secondary can fall behind the primary
+            in replication before it will no longer be selected for operations.
+            Defaults to ``-1``, meaning no maximum. If maxStalenessSeconds
+            is set, it must be a positive integer greater than or equal to
+            90 seconds.
 
           | **SSL configuration:**
 
           - `ssl`: If ``True``, create the connection to the server using SSL.
             Defaults to ``False``.
+          - `ssl_certfile`: The certificate file used to identify the local
+            connection against mongod. Implies ``ssl=True``. Defaults to
+            ``None``.
           - `ssl_keyfile`: The private keyfile used to identify the local
             connection against mongod.  If included with the ``certfile`` then
             only the ``ssl_certfile`` is needed.  Implies ``ssl=True``.
             Defaults to ``None``.
-          - `ssl_certfile`: The certificate file used to identify the local
-            connection against mongod. Implies ``ssl=True``. Defaults to
-            ``None``.
+          - `ssl_pem_passphrase`: The password or passphrase for decrypting
+            the private key in ``ssl_certfile`` or ``ssl_keyfile``. Only
+            necessary if the private key is encrypted. Only supported by python
+            2.7.9+ (pypy 2.5.1+) and 3.3+. Defaults to ``None``.
           - `ssl_cert_reqs`: Specifies whether a certificate is required from
             the other side of the connection, and whether it will be validated
             if provided. It must be one of the three values ``ssl.CERT_NONE``
-            (certificates ignored), ``ssl.CERT_OPTIONAL``
-            (not required, but validated if provided), or ``ssl.CERT_REQUIRED``
-            (required and validated). If the value of this parameter is not
-            ``ssl.CERT_NONE``, then the ``ssl_ca_certs`` parameter must point
-            to a file of CA certificates. Implies ``ssl=True``. Defaults to
-            ``ssl.CERT_NONE``.
+            (certificates ignored), ``ssl.CERT_REQUIRED`` (certificates
+            required and validated), or ``ssl.CERT_OPTIONAL`` (the same as
+            CERT_REQUIRED, unless the server was configured to use anonymous
+            ciphers). If the value of this parameter is not ``ssl.CERT_NONE``
+            and a value is not provided for ``ssl_ca_certs`` PyMongo will
+            attempt to load system provided CA certificates. If the python
+            version in use does not support loading system CA certificates
+            then the ``ssl_ca_certs`` parameter must point to a file of CA
+            certificates. Implies ``ssl=True``. Defaults to
+            ``ssl.CERT_REQUIRED`` if not provided and ``ssl=True``.
           - `ssl_ca_certs`: The ca_certs file contains a set of concatenated
             "certification authority" certificates, which are used to validate
             certificates passed from the other end of the connection.
             Implies ``ssl=True``. Defaults to ``None``.
+          - `ssl_crlfile`: The path to a PEM or DER formatted certificate
+            revocation list. Only supported by python 2.7.9+ (pypy 2.5.1+)
+            and 3.4+. Defaults to ``None``.
           - `ssl_match_hostname`: If ``True`` (the default), and
             `ssl_cert_reqs` is not ``ssl.CERT_NONE``, enables hostname
             verification using the :func:`~ssl.match_hostname` function from
@@ -236,17 +301,79 @@ class MongoClient(common.BaseObject):
             this to ``False`` as that could make your application vulnerable to
             man-in-the-middle attacks.
 
-        .. seealso:: :meth:`end_request`
+          | **Read Concern options:**
+          | (If not set explicitly, this will use the server default)
+
+          - `readConcernLevel`: (string) The read concern level specifies the
+            level of isolation for read operations.  For example, a read
+            operation using a read concern level of ``majority`` will only
+            return data that has been written to a majority of nodes. If the
+            level is left unspecified, the server default will be used.
 
         .. mongodoc:: connections
 
-        .. versionchanged:: 2.5
-           Added additional ssl options
-        .. versionadded:: 2.4
+        .. versionchanged:: 3.0
+           :class:`~pymongo.mongo_client.MongoClient` is now the one and only
+           client class for a standalone server, mongos, or replica set.
+           It includes the functionality that had been split into
+           :class:`~pymongo.mongo_client.MongoReplicaSetClient`: it can connect
+           to a replica set, discover all its members, and monitor the set for
+           stepdowns, elections, and reconfigs.
+
+           The :class:`~pymongo.mongo_client.MongoClient` constructor no
+           longer blocks while connecting to the server or servers, and it no
+           longer raises :class:`~pymongo.errors.ConnectionFailure` if they
+           are unavailable, nor :class:`~pymongo.errors.ConfigurationError`
+           if the user's credentials are wrong. Instead, the constructor
+           returns immediately and launches the connection process on
+           background threads.
+
+           Therefore the ``alive`` method is removed since it no longer
+           provides meaningful information; even if the client is disconnected,
+           it may discover a server in time to fulfill the next operation.
+
+           In PyMongo 2.x, :class:`~pymongo.MongoClient` accepted a list of
+           standalone MongoDB servers and used the first it could connect to::
+
+               MongoClient(['host1.com:27017', 'host2.com:27017'])
+
+           A list of multiple standalones is no longer supported; if multiple
+           servers are listed they must be members of the same replica set, or
+           mongoses in the same sharded cluster.
+
+           The behavior for a list of mongoses is changed from "high
+           availability" to "load balancing". Before, the client connected to
+           the lowest-latency mongos in the list, and used it until a network
+           error prompted it to re-evaluate all mongoses' latencies and
+           reconnect to one of them. In PyMongo 3, the client monitors its
+           network latency to all the mongoses continuously, and distributes
+           operations evenly among those with the lowest latency. See
+           :ref:`mongos-load-balancing` for more information.
+
+           The ``connect`` option is added.
+
+           The ``start_request``, ``in_request``, and ``end_request`` methods
+           are removed, as well as the ``auto_start_request`` option.
+
+           The ``copy_database`` method is removed, see the
+           :doc:`copy_database examples </examples/copydb>` for alternatives.
+
+           The :meth:`MongoClient.disconnect` method is removed; it was a
+           synonym for :meth:`~pymongo.MongoClient.close`.
+
+           :class:`~pymongo.mongo_client.MongoClient` no longer returns an
+           instance of :class:`~pymongo.database.Database` for attribute names
+           with leading underscores. You must use dict-style lookups instead::
+
+               client['__my_database__']
+
+           Not::
+
+               client.__my_database__
         """
         if host is None:
             host = self.HOST
-        if isinstance(host, basestring):
+        if isinstance(host, string_type):
             host = [host]
         if port is None:
             port = self.PORT
@@ -256,18 +383,16 @@ class MongoClient(common.BaseObject):
         seeds = set()
         username = None
         password = None
-        self.__default_database_name = None
+        dbase = None
         opts = {}
         for entity in host:
             if "://" in entity:
                 if entity.startswith("mongodb://"):
-                    res = uri_parser.parse_uri(entity, port)
+                    res = uri_parser.parse_uri(entity, port, warn=True)
                     seeds.update(res["nodelist"])
                     username = res["username"] or username
                     password = res["password"] or password
-                    self.__default_database_name = (
-                        res["database"] or self.__default_database_name)
-
+                    dbase = res["database"] or dbase
                     opts = res["options"]
                 else:
                     idx = entity.find("://")
@@ -278,196 +403,141 @@ class MongoClient(common.BaseObject):
         if not seeds:
             raise ConfigurationError("need to specify at least one host")
 
-        # Seeds are only used before first connection attempt; nodes are then
-        # used for any reconnects. Nodes are set to all replica set members
-        # if connecting to a replica set (besides arbiters), or to all
-        # available mongoses from the seed list, or to the one standalone
-        # mongod.
-        self.__seeds = frozenset(seeds)
-        self.__nodes = frozenset()
-        self.__member = None  # TODO: Rename to __server.
+        # _pool_class, _monitor_class, and _condition_class are for deep
+        # customization of PyMongo, e.g. Motor.
+        pool_class = kwargs.pop('_pool_class', None)
+        monitor_class = kwargs.pop('_monitor_class', None)
+        condition_class = kwargs.pop('_condition_class', None)
 
-        # _pool_class and _event_class are for deep customization of PyMongo,
-        # e.g. Motor. SHOULD NOT BE USED BY THIRD-PARTY DEVELOPERS.
-        pool_class = kwargs.pop('_pool_class', pool.Pool)
-        event_class = kwargs.pop('_event_class', None)
+        keyword_opts = kwargs
+        keyword_opts['document_class'] = document_class
+        if tz_aware is None:
+            tz_aware = opts.get('tz_aware', False)
+        if connect is None:
+            connect = opts.get('connect', True)
+        keyword_opts['tz_aware'] = tz_aware
+        keyword_opts['connect'] = connect
+        # Validate all keyword options.
+        keyword_opts = dict(common.validate(k, v)
+                            for k, v in keyword_opts.items())
+        opts.update(keyword_opts)
+        self.__options = options = ClientOptions(
+            username, password, dbase, opts)
 
-        # tag_sets is only supported through kwargs since it must be a list.
-        if "tag_sets" in kwargs:
-            warnings.warn("tag_sets is deprecated in this version of PyMongo "
-                          "and removed in PyMongo 3. Pass a read preference "
-                          "object as read_preference instead",
-                          DeprecationWarning, stacklevel=2)
+        self.__default_database_name = dbase
+        self.__lock = threading.Lock()
+        self.__cursor_manager = None
+        self.__kill_cursors_queue = []
 
-        # Support _ServerMode through kwargs
-        pref = kwargs.get("read_preference")
-        if isinstance(pref, _ServerMode):
-            kwargs["read_preference"] = pref.mode
-            kwargs["tag_sets"] = pref.tag_sets
+        self._event_listeners = options.pool_options.event_listeners
 
-        # URI overrides kwargs.
-        options = {}
-        for option, value in kwargs.iteritems():
-            option, value = common.validate(option, value)
-            options[option] = value
-        options.update(opts)
-
-        # Both of these work in kwargs and URI...
-        if ("secondary_acceptable_latency_ms" in options or
-                "secondaryacceptablelatencyms" in options):
-            warnings.warn("secondary_acceptable_latency_ms and "
-                          "secondaryAcceptableLatencyMS are deprecated. Use "
-                          "localThresholdMS instead",
-                          DeprecationWarning, stacklevel=2)
-
-        # localthresholdms takes precedence over secondaryacceptablelatencyms.
-        if "localthresholdms" in options:
-            options.pop("secondaryacceptablelatencyms", None)
-            options.pop("secondary_acceptable_latency_ms", None)
-            options["secondaryacceptablelatencyms"] = (
-                options["localthresholdms"])
-
-        common.validate_boolean('tz_aware', tz_aware)
-        uuid_representation = options.pop('uuidrepresentation', PYTHON_LEGACY)
-        options['codec_options'] = CodecOptions(
-            document_class, tz_aware, uuid_representation)
-
-        self.__max_pool_size = options.get(
-            'maxpoolsize',
-            common.validate_positive_integer_or_none(
-                'max_pool_size', max_pool_size))
-
-        self.__cursor_manager = CursorManager(self)
-
-        self.__repl = options.get('replicaset')
-        self.__direct = len(seeds) == 1 and not self.__repl
-
-        self.__net_timeout = options.get('sockettimeoutms')
-        self.__conn_timeout = options.get('connecttimeoutms', 20.0)
-        self.__wait_queue_timeout = options.get('waitqueuetimeoutms')
-        self.__wait_queue_multiple = options.get('waitqueuemultiple')
-        self.__socket_keepalive = options.get('socketkeepalive', False)
-
-        self.__use_ssl = options.get('ssl')
-        self.__ssl_keyfile = options.get('ssl_keyfile')
-        self.__ssl_certfile = options.get('ssl_certfile')
-        self.__ssl_cert_reqs = options.get('ssl_cert_reqs')
-        self.__ssl_ca_certs = options.get('ssl_ca_certs')
-        self.__ssl_match_hostname = options.get('ssl_match_hostname', True)
-
-        ssl_kwarg_keys = [k for k in kwargs.keys()
-                          if k.startswith('ssl_') and kwargs[k]]
-        if self.__use_ssl == False and ssl_kwarg_keys:
-            raise ConfigurationError("ssl has not been enabled but the "
-                                     "following ssl parameters have been set: "
-                                     "%s. Please set `ssl=True` or remove."
-                                     % ', '.join(ssl_kwarg_keys))
-
-        if self.__ssl_cert_reqs and not self.__ssl_ca_certs:
-            raise ConfigurationError("If `ssl_cert_reqs` is not "
-                                     "`ssl.CERT_NONE` then you must "
-                                     "include `ssl_ca_certs` to be able "
-                                     "to validate the server.")
-
-        if ssl_kwarg_keys and self.__use_ssl is None:
-            # ssl options imply ssl = True
-            self.__use_ssl = True
-
-        if self.__use_ssl and not HAS_SSL:
-            raise ConfigurationError("The ssl module is not available. If you "
-                                     "are using a python version previous to "
-                                     "2.6 you must install the ssl package "
-                                     "from PyPI.")
-
-        self.__use_greenlets = options.get('use_greenlets', False)
-        self.__pool_class = pool_class
-
-        self.__connecting = False
-        if self.__use_greenlets:
-            warnings.warn("use_greenlets is deprecated in this version of "
-                          "PyMongo and removed in PyMongo 3. Use Gevent's "
-                          "monkey.patch_all() instead.",
-                          DeprecationWarning, stacklevel=2)
-            # Greenlets don't need to lock around access to the Member;
-            # they're only interrupted when they do I/O.
-            self.__connecting_lock = thread_util.DummyLock()
-        else:
-            self.__connecting_lock = threading.Lock()
-
-        if event_class:
-            self.__event_class = event_class
-        else:
-            # Prevent a cycle; this lambda shouldn't refer to self.
-            g = self.__use_greenlets
-            event_class = lambda: thread_util.create_event(g)
-            self.__event_class = event_class
-
-        self.__future_member = None
-        self.__auto_start_request = options.get('auto_start_request', False)
-
-        # cache of existing indexes used by ensure_index ops
+        # Cache of existing indexes used by ensure_index ops.
         self.__index_cache = {}
-        self.__auth_credentials = {}
+        self.__index_cache_lock = threading.Lock()
 
-        super(MongoClient, self).__init__(**options)
-        if self.slave_okay:
-            warnings.warn("slave_okay is deprecated in this version of "
-                          "PyMongo and removed in PyMongo 3. Use "
-                          "secondaryPreferred read preference instead.",
-                          DeprecationWarning, stacklevel=2)
+        super(MongoClient, self).__init__(options.codec_options,
+                                          options.read_preference,
+                                          options.write_concern,
+                                          options.read_concern)
 
-        _connect = options.get('_connect', options.get('connect', True))
-        if _connect:
-            try:
-                self._ensure_connected(True)
-            except AutoReconnect, e:
-                # ConnectionFailure makes more sense here than AutoReconnect
-                raise ConnectionFailure(str(e))
+        self.__all_credentials = {}
+        creds = options.credentials
+        if creds:
+            self._cache_credentials(creds.source, creds)
 
-        if username:
-            mechanism = options.get('authmechanism', 'DEFAULT')
-            source = (
-                options.get('authsource')
-                or self.__default_database_name
-                or 'admin')
+        self._topology_settings = TopologySettings(
+            seeds=seeds,
+            replica_set_name=options.replica_set_name,
+            pool_class=pool_class,
+            pool_options=options.pool_options,
+            monitor_class=monitor_class,
+            condition_class=condition_class,
+            local_threshold_ms=options.local_threshold_ms,
+            server_selection_timeout=options.server_selection_timeout,
+            heartbeat_frequency=options.heartbeat_frequency)
 
-            credentials = auth._build_credentials_tuple(mechanism,
-                                                        source,
-                                                        username,
-                                                        password,
-                                                        options)
-            try:
-                self._cache_credentials(source, credentials, _connect)
-            except OperationFailure, exc:
-                raise ConfigurationError(str(exc))
+        self._topology = Topology(self._topology_settings)
+        if connect:
+            self._topology.open()
+
+        def target():
+            client = self_ref()
+            if client is None:
+                return False  # Stop the executor.
+            MongoClient._process_periodic_tasks(client)
+            return True
+
+        executor = periodic_executor.PeriodicExecutor(
+            interval=common.KILL_CURSOR_FREQUENCY,
+            min_interval=0.5,
+            target=target,
+            name="pymongo_kill_cursors_thread")
+
+        # We strongly reference the executor and it weakly references us via
+        # this closure. When the client is freed, stop the executor soon.
+        self_ref = weakref.ref(self, executor.close)
+        self._kill_cursors_executor = executor
+        executor.open()
+
+    def _cache_credentials(self, source, credentials, connect=False):
+        """Save a set of authentication credentials.
+
+        The credentials are used to login a socket whenever one is created.
+        If `connect` is True, verify the credentials on the server first.
+        """
+        # Don't let other threads affect this call's data.
+        all_credentials = self.__all_credentials.copy()
+
+        if source in all_credentials:
+            # Nothing to do if we already have these credentials.
+            if credentials == all_credentials[source]:
+                return
+            raise OperationFailure('Another user is already authenticated '
+                                   'to this database. You must logout first.')
+
+        if connect:
+            server = self._get_topology().select_server(
+                writable_preferred_server_selector)
+
+            # get_socket() logs out of the database if logged in with old
+            # credentials, and logs in with new ones.
+            with server.get_socket(all_credentials) as sock_info:
+                sock_info.authenticate(credentials)
+
+        # If several threads run _cache_credentials at once, last one wins.
+        self.__all_credentials[source] = credentials
+
+    def _purge_credentials(self, source):
+        """Purge credentials from the authentication cache."""
+        self.__all_credentials.pop(source, None)
 
     def _cached(self, dbname, coll, index):
-        """Test if `index` is cached.
-        """
+        """Test if `index` is cached."""
         cache = self.__index_cache
         now = datetime.datetime.utcnow()
-        return (dbname in cache and
-                coll in cache[dbname] and
-                index in cache[dbname][coll] and
-                now < cache[dbname][coll][index])
+        with self.__index_cache_lock:
+            return (dbname in cache and
+                    coll in cache[dbname] and
+                    index in cache[dbname][coll] and
+                    now < cache[dbname][coll][index])
 
-    def _cache_index(self, database, collection, index, cache_for):
-        """Add an index to the index cache for ensure_index operations.
-        """
+    def _cache_index(self, dbname, collection, index, cache_for):
+        """Add an index to the index cache for ensure_index operations."""
         now = datetime.datetime.utcnow()
         expire = datetime.timedelta(seconds=cache_for) + now
 
-        if database not in self.__index_cache:
-            self.__index_cache[database] = {}
-            self.__index_cache[database][collection] = {}
-            self.__index_cache[database][collection][index] = expire
+        with self.__index_cache_lock:
+            if database not in self.__index_cache:
+                self.__index_cache[dbname] = {}
+                self.__index_cache[dbname][collection] = {}
+                self.__index_cache[dbname][collection][index] = expire
 
-        elif collection not in self.__index_cache[database]:
-            self.__index_cache[database][collection] = {}
-            self.__index_cache[database][collection][index] = expire
+            elif collection not in self.__index_cache[dbname]:
+                self.__index_cache[dbname][collection] = {}
+                self.__index_cache[dbname][collection][index] = expire
 
-        else:
-            self.__index_cache[database][collection][index] = expire
+            else:
+                self.__index_cache[dbname][collection][index] = expire
 
     def _purge_index(self, database_name,
                      collection_name=None, index_name=None):
@@ -477,685 +547,241 @@ class MongoClient(common.BaseObject):
 
         If `collection_name` is None purge an entire database.
         """
-        if not database_name in self.__index_cache:
-            return
-
-        if collection_name is None:
-            del self.__index_cache[database_name]
-            return
-
-        if not collection_name in self.__index_cache[database_name]:
-            return
-
-        if index_name is None:
-            del self.__index_cache[database_name][collection_name]
-            return
-
-        if index_name in self.__index_cache[database_name][collection_name]:
-            del self.__index_cache[database_name][collection_name][index_name]
-
-    def _cache_credentials(self, source, credentials, connect=True):
-        """Add credentials to the database authentication cache
-        for automatic login when a socket is created. If `connect` is True,
-        verify the credentials on the server first.
-        """
-        if source in self.__auth_credentials:
-            # Nothing to do if we already have these credentials.
-            if credentials == self.__auth_credentials[source]:
+        with self.__index_cache_lock:
+            if not database_name in self.__index_cache:
                 return
-            raise OperationFailure('Another user is already authenticated '
-                                   'to this database. You must logout first.')
 
-        if connect:
-            member = self.__ensure_member()
-            sock_info = self.__socket(member)
-            try:
-                # Since __check_auth was called in __socket
-                # there is no need to call it here.
-                auth.authenticate(credentials, sock_info, self.__simple_command)
-                sock_info.authset.add(credentials)
-            finally:
-                member.maybe_return_socket(sock_info)
+            if collection_name is None:
+                del self.__index_cache[database_name]
+                return
 
-        self.__auth_credentials[source] = credentials
+            if not collection_name in self.__index_cache[database_name]:
+                return
 
-    def _purge_credentials(self, source):
-        """Purge credentials from the database authentication cache.
+            if index_name is None:
+                del self.__index_cache[database_name][collection_name]
+                return
+
+            if index_name in self.__index_cache[database_name][collection_name]:
+                del self.__index_cache[database_name][collection_name][index_name]
+
+    def _server_property(self, attr_name):
+        """An attribute of the current server's description.
+
+        If the client is not connected, this will block until a connection is
+        established or raise ServerSelectionTimeoutError if no server is
+        available.
+
+        Not threadsafe if used multiple times in a single method, since
+        the server may change. In such cases, store a local reference to a
+        ServerDescription first, then use its properties.
         """
-        if source in self.__auth_credentials:
-            del self.__auth_credentials[source]
+        server = self._topology.select_server(
+            writable_server_selector)
 
-    def __create_pool(self, pair):
-        return self.__pool_class(
-            pair,
-            self.__max_pool_size,
-            self.__net_timeout,
-            self.__conn_timeout,
-            self.__use_ssl,
-            use_greenlets=self.__use_greenlets,
-            ssl_keyfile=self.__ssl_keyfile,
-            ssl_certfile=self.__ssl_certfile,
-            ssl_cert_reqs=self.__ssl_cert_reqs,
-            ssl_ca_certs=self.__ssl_ca_certs,
-            ssl_match_hostname=self.__ssl_match_hostname,
-            wait_queue_timeout=self.__wait_queue_timeout,
-            wait_queue_multiple=self.__wait_queue_multiple,
-            socket_keepalive=self.__socket_keepalive)
-
-    def __check_auth(self, sock_info):
-        """Authenticate using cached database credentials.
-        """
-        if self.__auth_credentials or sock_info.authset:
-            cached = set(self.__auth_credentials.itervalues())
-
-            authset = sock_info.authset.copy()
-
-            # Logout any credentials that no longer exist in the cache.
-            for credentials in authset - cached:
-                self.__simple_command(sock_info, credentials[1], {'logout': 1})
-                sock_info.authset.discard(credentials)
-
-            for credentials in cached - authset:
-                auth.authenticate(credentials,
-                                  sock_info, self.__simple_command)
-                sock_info.authset.add(credentials)
-
-    def __member_property(self, attr_name, default=None):
-        member = self.__member
-        if member:
-            return getattr(member, attr_name)
-
-        return default
+        return getattr(server.description, attr_name)
 
     @property
-    def host(self):
-        """**DEPRECATED** Current connected host.
+    def event_listeners(self):
+        """The event listeners registered for this client.
 
-        .. warning:: :attr:`host` is deprecated in this version of PyMongo and
-          removed in PyMongo 3.0. Use :attr:`address` instead.
-
-        .. versionchanged:: 2.9
-           Deprecated :attr:`host`.
-        .. versionchanged:: 1.3
-           ``host`` is now a property rather than a method.
+        See :mod:`~pymongo.monitoring` for details.
         """
-        warnings.warn("host is deprecated in this version of PyMongo and "
-                      "removed in PyMongo 3. Use address instead.",
-                      DeprecationWarning, stacklevel=2)
-        member = self.__member
-        if member:
-            return member.host[0]
-
-        return None
-
-    @property
-    def port(self):
-        """**DEPRECATED** Current connected port.
-
-        .. warning:: :attr:`port` is deprecated in this version of PyMongo and
-          removed in PyMongo 3.0. Use :attr:`address` instead.
-
-        .. versionchanged:: 2.9
-           Deprecated :attr:`port`.
-        .. versionchanged:: 1.3
-           ``port`` is now a property rather than a method.
-        """
-        warnings.warn("port is deprecated in this version of PyMongo and "
-                      "removed in PyMongo 3. Use address instead.",
-                      DeprecationWarning, stacklevel=2)
-        member = self.__member
-        if member:
-            return member.host[1]
+        return self._event_listeners.event_listeners
 
     @property
     def address(self):
         """(host, port) of the current standalone, primary, or mongos, or None.
 
-        .. versionadded:: 2.9
+        Accessing :attr:`address` raises :exc:`~.errors.InvalidOperation` if
+        the client is load-balancing among mongoses, since there is no single
+        address. Use :attr:`nodes` instead.
+
+        If the client is not connected, this will block until a connection is
+        established or raise ServerSelectionTimeoutError if no server is
+        available.
+
+        .. versionadded:: 3.0
         """
-        member = self.__member
-        if member:
-            return member.host
-        return None
+        topology_type = self._topology._description.topology_type
+        if topology_type == TOPOLOGY_TYPE.Sharded:
+            raise InvalidOperation(
+                'Cannot use "address" property when load balancing among'
+                ' mongoses, use "nodes" instead.')
+        if topology_type not in (TOPOLOGY_TYPE.ReplicaSetWithPrimary,
+                                 TOPOLOGY_TYPE.Single):
+            return None
+        return self._server_property('address')
+
+    @property
+    def primary(self):
+        """The (host, port) of the current primary of the replica set.
+
+        Returns ``None`` if this client is not connected to a replica set,
+        there is no primary, or this client was created without the
+        `replicaSet` option.
+
+        .. versionadded:: 3.0
+           MongoClient gained this property in version 3.0 when
+           MongoReplicaSetClient's functionality was merged in.
+        """
+        return self._topology.get_primary()
+
+    @property
+    def secondaries(self):
+        """The secondary members known to this client.
+
+        A sequence of (host, port) pairs. Empty if this client is not
+        connected to a replica set, there are no visible secondaries, or this
+        client was created without the `replicaSet` option.
+
+        .. versionadded:: 3.0
+           MongoClient gained this property in version 3.0 when
+           MongoReplicaSetClient's functionality was merged in.
+        """
+        return self._topology.get_secondaries()
+
+    @property
+    def arbiters(self):
+        """Arbiters in the replica set.
+
+        A sequence of (host, port) pairs. Empty if this client is not
+        connected to a replica set, there are no arbiters, or this client was
+        created without the `replicaSet` option.
+        """
+        return self._topology.get_arbiters()
 
     @property
     def is_primary(self):
-        """If this instance is connected to a standalone, a replica set
-        primary, or the master of a master-slave set.
+        """If this client is connected to a server that can accept writes.
 
-        .. versionadded:: 2.3
+        True if the current server is a standalone, mongos, or the primary of
+        a replica set. If the client is not connected, this will block until a
+        connection is established or raise ServerSelectionTimeoutError if no
+        server is available.
         """
-        return self.__member_property('is_primary', False)
+        return self._server_property('is_writable')
 
     @property
     def is_mongos(self):
-        """If this instance is connected to mongos.
-
-        .. versionadded:: 2.3
+        """If this client is connected to mongos. If the client is not
+        connected, this will block until a connection is established or raise
+        ServerSelectionTimeoutError if no server is available..
         """
-        return self.__member_property('is_mongos', False)
+        return self._server_property('server_type') == SERVER_TYPE.Mongos
 
     @property
     def max_pool_size(self):
-        """The maximum number of sockets the pool will open concurrently.
+        """The maximum allowable number of concurrent connections to each
+        connected server. Requests to a server will block if there are
+        `maxPoolSize` outstanding connections to the requested server.
+        Defaults to 100. Cannot be 0.
 
-        When the pool has reached `max_pool_size`, operations block waiting for
-        a socket to be returned to the pool. If ``waitQueueTimeoutMS`` is set,
-        a blocked operation will raise :exc:`~pymongo.errors.ConnectionFailure`
-        after a timeout. By default ``waitQueueTimeoutMS`` is not set.
-
-        .. warning:: SIGNIFICANT BEHAVIOR CHANGE in 2.6. Previously, this
-          parameter would limit only the idle sockets the pool would hold
-          onto, not the number of open sockets. The default has also changed
-          to 100.
-
-        .. versionchanged:: 2.6
-        .. versionadded:: 1.11
+        When a server's pool has reached `max_pool_size`, operations for that
+        server block waiting for a socket to be returned to the pool. If
+        ``waitQueueTimeoutMS`` is set, a blocked operation will raise
+        :exc:`~pymongo.errors.ConnectionFailure` after a timeout.
+        By default ``waitQueueTimeoutMS`` is not set.
         """
-        return self.__max_pool_size
+        return self.__options.pool_options.max_pool_size
 
     @property
-    def use_greenlets(self):
-        """**DEPRECATED** Whether calling :meth:`start_request` assigns
-        greenlet-local, rather than thread-local, sockets.
-
-        .. warning:: :attr:`use_greenlets` is deprecated in this version of
-          PyMongo and removed in PyMongo 3. Use Gevent's monkey.patch_all()
-          instead.
-
-        .. versionchanged:: 2.9
-          Deprecated use_greenlets.
-        .. versionadded:: 2.4.2
+    def min_pool_size(self):
+        """The minimum required number of concurrent connections that the pool
+        will maintain to each connected server. Default is 0.
         """
-        warnings.warn("use_greenlets is deprecated in this version of PyMongo "
-                      "and removed in PyMongo 3. Use Gevent's "
-                      "monkey.patch_all() instead.",
-                      DeprecationWarning, stacklevel=2)
-        return self.__use_greenlets
+        return self.__options.pool_options.min_pool_size
+
+    @property
+    def max_idle_time_ms(self):
+        """The maximum number of milliseconds that a connection can remain
+        idle in the pool before being removed and replaced. Defaults to
+        `None` (no limit).
+        """
+        return self.__options.pool_options.max_idle_time_ms
 
     @property
     def nodes(self):
-        """List of all known nodes.
+        """Set of all currently connected servers.
 
-        Nodes are either specified when this instance was created,
-        or discovered through the replica set discovery mechanism.
-
-        .. versionadded:: 1.8
+        .. warning:: When connected to a replica set the value of :attr:`nodes`
+          can change over time as :class:`MongoClient`'s view of the replica
+          set changes. :attr:`nodes` can also be an empty set when
+          :class:`MongoClient` is first instantiated and hasn't yet connected
+          to any servers, or a network partition causes it to lose connection
+          to all servers.
         """
-        return self.__nodes
-
-    @property
-    def auto_start_request(self):
-        """**DEPRECATED** Is auto_start_request enabled?
-
-        .. versionchanged:: 2.8
-          Deprecated auto_start_request.
-        """
-        warnings.warn("auto_start_request is deprecated in this version of "
-                      "PyMongo and removed in PyMongo 3.",
-                      DeprecationWarning, stacklevel=2)
-        return self.__auto_start_request
-
-    def get_document_class(self):
-        """**DEPRECATED** Default class to use for documents returned from this
-        client.
-
-        .. warning:: :attr:`document_class` is deprecated in this version of
-          PyMongo and removed in PyMongo 3. Use
-          :class:`~bson.codec_options.CodecOptions` with
-          :meth:`~pymongo.mongo_client.MongoClient.get_database`,
-          :meth:`~pymongo.database.Database.get_collection`,
-          or :meth:`~pymongo.collection.Collection.with_options` instead.
-          See the :doc:`/migrate-to-pymongo3` for examples.
-
-        .. versionchanged:: 2.9
-          Deprecated document_class.
-        .. versionadded:: 1.7
-        """
-        warnings.warn("document_class is deprecated in this version of "
-                      "PyMongo and removed in PyMongo 3. See the "
-                      "document_class docstring for more information.",
-                      DeprecationWarning, stacklevel=2)
-        return self._codec_options.document_class
-
-    def set_document_class(self, klass):
-        """document_class setter"""
-        warnings.warn("document_class is deprecated in this version of "
-                      "PyMongo and removed in PyMongo 3. See the "
-                      "document_class docstring for more information.",
-                      DeprecationWarning, stacklevel=2)
-        tz_aware = self._codec_options.tz_aware
-        uuid_rep = self._codec_options.uuid_representation
-        self._codec_options = CodecOptions(klass, tz_aware, uuid_rep)
-
-    document_class = property(get_document_class, set_document_class)
-
-    @property
-    def tz_aware(self):
-        """**DEPRECATED** Does this client return timezone-aware datetimes?
-
-        .. warning:: :attr:`tz_aware` is deprecated in this version of PyMongo
-          and removed in PyMongo 3. Use :attr:`codec_options` instead.
-
-        .. versionchanged:: 2.9
-          Deprecated tz_aware.
-        .. versionadded:: 1.8
-        """
-        warnings.warn("tz_aware is deprecated in this version of PyMongo and "
-                      "removed in PyMongo 3. Use codec_options instead.",
-                      DeprecationWarning, stacklevel=2)
-        return self._codec_options.tz_aware
+        description = self._topology.description
+        return frozenset(s.address for s in description.known_servers)
 
     @property
     def max_bson_size(self):
-        """Return the maximum size BSON object the connected server
-        accepts in bytes. Defaults to 16MB if not connected to a
-        server.
+        """The largest BSON object the connected server accepts in bytes.
 
-        .. versionadded:: 1.10
+        If the client is not connected, this will block until a connection is
+        established or raise ServerSelectionTimeoutError if no server is
+        available.
         """
-        return self.__member_property('max_bson_size', common.MAX_BSON_SIZE)
+        return self._server_property('max_bson_size')
 
     @property
     def max_message_size(self):
-        """Return the maximum message size the connected server
-        accepts in bytes. Defaults to 32MB if not connected to a
-        server.
+        """The largest message the connected server accepts in bytes.
 
-        .. versionadded:: 2.6
+        If the client is not connected, this will block until a connection is
+        established or raise ServerSelectionTimeoutError if no server is
+        available.
         """
-        return self.__member_property(
-            'max_message_size', common.MAX_MESSAGE_SIZE)
-
-    @property
-    def min_wire_version(self):
-        """The minWireVersion reported by the server.
-
-        Returns ``0`` when connected to server versions prior to MongoDB 2.6.
-
-        .. versionadded:: 2.7
-        """
-        return self.__member_property(
-            'min_wire_version', common.MIN_WIRE_VERSION)
-
-    @property
-    def max_wire_version(self):
-        """The maxWireVersion reported by the server.
-
-        Returns ``0`` when connected to server versions prior to MongoDB 2.6.
-
-        .. versionadded:: 2.7
-        """
-        return self.__member_property(
-            'max_wire_version', common.MAX_WIRE_VERSION)
+        return self._server_property('max_message_size')
 
     @property
     def max_write_batch_size(self):
         """The maxWriteBatchSize reported by the server.
 
+        If the client is not connected, this will block until a connection is
+        established or raise ServerSelectionTimeoutError if no server is
+        available.
+
         Returns a default value when connected to server versions prior to
         MongoDB 2.6.
-
-        .. versionadded:: 2.7
         """
-        return self.__member_property(
-            'max_write_batch_size', common.MAX_WRITE_BATCH_SIZE)
+        return self._server_property('max_write_batch_size')
 
     @property
     def local_threshold_ms(self):
-        """Any replica set member whose ping time is within
-        :attr:`local_threshold_ms` of the nearest member may accept reads.
-        Defaults to 15 milliseconds.
+        """The local threshold for this instance."""
+        return self.__options.local_threshold_ms
 
-        .. versionadded:: 2.9
-        """
-        return self._secondary_acceptable_latency_ms
+    @property
+    def server_selection_timeout(self):
+        """The server selection timeout for this instance in seconds."""
+        return self.__options.server_selection_timeout
 
-    def __simple_command(self, sock_info, dbname, spec):
-        """Send a command to the server. May raise AutoReconnect.
+    def _is_writable(self):
+        """Attempt to connect to a writable server, or return False.
         """
-        ns = dbname + '.$cmd'
-        rqst_id, msg, _ = message.query(0, ns, 0, -1, spec)
-        start = time.time()
+        topology = self._get_topology()  # Starts monitors if necessary.
         try:
-            sock_info.sock.sendall(msg)
-            response = self.__receive_message_on_socket(1, rqst_id, sock_info)
-        except socket.error, e:
-            sock_info.close()
-            raise AutoReconnect(e)
-        except:
-            sock_info.close()
-            raise
+            svr = topology.select_server(writable_server_selector)
 
-        end = time.time()
-        response = helpers._unpack_response(response)['data'][0]
-        msg = "command %s on namespace %s failed: %%s" % (
-            repr(spec).replace("%", "%%"), ns)
-        helpers._check_command_response(response, None, msg)
-        return response, end - start
-
-    def __try_node(self, node):
-        """Try to connect to this node and see if it works for our connection
-        type. Returns a Member and set of hosts (including this one). Doesn't
-        modify state.
-
-        :Parameters:
-         - `node`: The (host, port) pair to try.
-        """
-        # Call 'ismaster' directly so we can get a response time.
-        connection_pool = self.__create_pool(node)
-        sock_info = connection_pool.get_socket()
-        try:
-            response, res_time = self.__simple_command(sock_info,
-                                                       'admin',
-                                                       {'ismaster': 1})
-        finally:
-            connection_pool.maybe_return_socket(sock_info)
-
-        member = Member(
-            node,
-            connection_pool,
-            response,
-            res_time)
-
-        nodes = frozenset([node])
-
-        # Replica Set?
-        if not self.__direct:
-            # Check that this host is part of the given replica set.
-            if self.__repl and member.set_name != self.__repl:
-                raise ConfigurationError("%s:%d is not a member of "
-                                         "replica set %s"
-                                         % (node[0], node[1], self.__repl))
-
-            if "hosts" in response:
-                nodes = frozenset([
-                    _partition_node(h) for h in response["hosts"]])
-
-            if member.is_primary:
-                return member, nodes
-
-            elif "primary" in response:
-                # Shortcut: a secondary usually tells us who the primary is.
-                candidate = _partition_node(response["primary"])
-                return self.__try_node(candidate)
-
-            # Explain why we aren't using this connection.
-            raise AutoReconnect('%s:%d is not primary or master' % node)
-
-        # Direct connection
-        if member.is_arbiter and not self.__direct:
-            raise ConfigurationError("%s:%d is an arbiter" % node)
-
-        return member, nodes
-
-    def __pick_nearest(self, candidates):
-        """Return the 'nearest' Member instance based on response time.
-
-        Doesn't modify state.
-        """
-        latency = self.secondary_acceptable_latency_ms
-        # Only used for mongos high availability, ping_time is in seconds.
-        fastest = min([
-            member.ping_time for member in candidates])
-
-        near_candidates = [
-            member for member in candidates
-            if member.ping_time - fastest <= latency / 1000.0]
-
-        return random.choice(near_candidates)
-
-    def __ensure_member(self):
-        """Connect and return a Member instance, or raise AutoReconnect."""
-        # If `connecting` is False, no thread is in __find_node(),
-        # and `future_member` is resolved. `member` may be None if the
-        # last __find_node() attempt failed, otherwise it is in `nodes`.
-        #
-        # If `connecting` is True, a thread is in __find_node(),
-        # `member` is None, and `future_member` is pending.
-        #
-        # To violate these invariants temporarily, acquire the lock.
-        # Note that close() interacts with this method.
-        self.__connecting_lock.acquire()
-        if self.__member:
-            member = self.__member
-            self.__connecting_lock.release()
-            return member
-
-        elif self.__connecting:
-            # A thread is in __find_node(). Wait.
-            future = self.__future_member
-            self.__connecting_lock.release()
-            return future.result()
-
-        else:
-            self.__connecting = True
-            future = self.__future_member = thread_util.Future(
-                self.__event_class)
-
-            self.__connecting_lock.release()
-
-            member = None
-            nodes = None
-            exc = None
-
-            try:
-                try:
-                    member, nodes = self.__find_node()
-                    return member
-                except Exception, e:
-                    exc = e
-                    raise
-            finally:
-                # We're either returning a Member or raising an error.
-                # Propagate either outcome to waiting threads.
-                self.__connecting_lock.acquire()
-                self.__member = member
-                self.__connecting = False
-
-                # If we discovered a set of nodes, use them from now on;
-                # otherwise we're raising an error. Stick with the last
-                # known good set of nodes.
-                if nodes:
-                    self.__nodes = nodes
-
-                if member:
-                    # Unblock waiting threads.
-                    future.set_result(member)
-                else:
-                    # Raise exception in waiting threads.
-                    future.set_exception(exc)
-
-                self.__connecting_lock.release()
-
-    def __find_node(self):
-        """Find a server suitable for our connection type.
-
-        Returns a Member and a set of nodes. Doesn't modify state.
-
-        If only one host was supplied to __init__ see if we can connect
-        to it. Don't check if the host is a master/primary so we can make
-        a direct connection to read from a secondary or send commands to
-        an arbiter.
-
-        If more than one host was supplied treat them as a seed list for
-        connecting to a replica set or to support high availability for
-        mongos. If connecting to a replica set try to find the primary,
-        and set `nodes` to list of all members.
-
-        If a mongos seed list was provided find the "nearest" mongos and
-        return it, setting `nodes` to all mongoses in the seed list that
-        are up.
-
-        Otherwise we iterate through the list trying to find a host we can
-        send write operations to.
-        """
-        assert not self.__member, \
-            "__find_node unexpectedly running with a non-null Member"
-
-        errors = []
-        mongos_candidates = []
-        candidates = self.__nodes or self.__seeds
-        chosen_member = None
-        discovered_nodes = None
-
-        for candidate in candidates:
-            try:
-                member, nodes = self.__try_node(candidate)
-                if member.is_mongos and not self.__direct:
-                    mongos_candidates.append(member)
-
-                    # We intend to find all the mongoses; keep trying nodes.
-                    continue
-                elif len(mongos_candidates):
-                    raise ConfigurationError("Seed list cannot contain a mix "
-                                             "of mongod and mongos instances.")
-
-                # We've found a suitable node.
-                chosen_member = member
-                discovered_nodes = nodes
-                break
-            except (OperationFailure, ConfigurationError, ValueError):
-                # The server is available but something failed, e.g. auth,
-                # wrong replica set name, or incompatible wire protocol.
-                raise
-            except Exception, why:
-                errors.append(str(why))
-
-        if len(mongos_candidates):
-            # If we have a mongos seed list, pick the "nearest" member.
-            chosen_member = self.__pick_nearest(mongos_candidates)
-            mongoses = frozenset(m.host for m in mongos_candidates)
-
-            # The first time, __nodes is empty and mongoses becomes nodes.
-            return chosen_member, self.__nodes or mongoses
-
-        if not chosen_member:
-            # Couldn't find a suitable host.
-            raise AutoReconnect(', '.join(errors))
-
-        return chosen_member, discovered_nodes
-
-    def __socket(self, member):
-        """Get a SocketInfo.
-
-        Calls close() on error.
-        """
-        try:
-            if self.__auto_start_request and not member.in_request():
-                member.start_request()
-
-            sock_info = member.get_socket()
-        except socket.error, why:
-            self.close()
-
-            # Check if a unix domain socket
-            host, port = member.host
-            if host.endswith('.sock'):
-                host_details = "%s:" % host
-            else:
-                host_details = "%s:%d:" % (host, port)
-            raise AutoReconnect("could not connect to "
-                                "%s %s" % (host_details, str(why)))
-        try:
-            self.__check_auth(sock_info)
-        except:
-            member.maybe_return_socket(sock_info)
-            raise
-        return sock_info
-
-    def _ensure_connected(self, sync=False):
-        """Ensure this client instance is connected to a mongod/s.
-        """
-        self.__ensure_member()
-
-    def disconnect(self):
-        """**DEPRECATED** Disconnect from MongoDB.
-
-        Disconnecting will close all underlying sockets in the connection
-        pool. If this instance is used again it will be automatically
-        re-opened. Care should be taken to make sure that :meth:`disconnect`
-        is not called in the middle of a sequence of operations in which
-        ordering is important. This could lead to unexpected results.
-
-        .. warning:: :meth:`disconnect` is deprecated in this version of
-          PyMongo and removed in PyMongo 3. Use :meth:`close` instead.
-
-        .. seealso:: :meth:`end_request`
-        .. versionchanged:: 2.9
-          Deprecated.
-        .. versionadded:: 1.3
-        """
-        warnings.warn("disconnect is deprecated in this version of PyMongo "
-                      "and removed in PyMongo 3. Use close() instead.",
-                      DeprecationWarning, stacklevel=2)
-        self._disconnect()
+            # When directly connected to a secondary, arbiter, etc.,
+            # select_server returns it, whatever the selector. Check
+            # again if the server is writable.
+            return svr.description.is_writable
+        except ConnectionFailure:
+            return False
 
     def close(self):
         """Disconnect from MongoDB.
 
-        Disconnecting will close all underlying sockets in the connection
-        pool. If this instance is used again it will be automatically
-        re-opened. Care should be taken to make sure that :meth:`close`
-        is not called in the middle of a sequence of operations in which
-        ordering is important. This could lead to unexpected results.
-
-        .. seealso:: :meth:`end_request`
-        .. versionadded:: 2.1
+        Close all sockets in the connection pools and stop the monitor threads.
+        If this instance is used again it will be automatically re-opened and
+        the threads restarted.
         """
-        self._disconnect()
-
-    def _disconnect(self):
-        """Internal disconnect helper."""
-        self.__connecting_lock.acquire()
-        member, self.__member = self.__member, None
-        self.__connecting_lock.release()
-
-        # Close sockets promptly.
-        if member:
-            member.reset()
-
-    def alive(self):
-        """**DEPRECATED** Return ``False`` if there has been an error
-        communicating with the server, else ``True``.
-
-        This method attempts to check the status of the server with minimal I/O.
-        The current thread / greenlet retrieves a socket from the pool (its
-        request socket if it's in a request, or a random idle socket if it's not
-        in a request) and checks whether calling `select`_ on it raises an
-        error. If there are currently no idle sockets, :meth:`alive` will
-        attempt to actually connect to the server.
-
-        A more certain way to determine server availability is::
-
-            client.admin.command('ping')
-
-        .. _select: http://docs.python.org/2/library/select.html#select.select
-        """
-        warnings.warn("alive is deprecated in this version of PyMongo and "
-                      "removed in PyMongo 3.",
-                      DeprecationWarning, stacklevel=2)
-        # In the common case, a socket is available and was used recently, so
-        # calling select() on it is a reasonable attempt to see if the OS has
-        # reported an error.
-        self.__connecting_lock.acquire()
-        member = self.__member
-        self.__connecting_lock.release()
-        if not member:
-            return False
-        else:
-            sock_info = None
-            try:
-                try:
-                    sock_info = member.get_socket()
-                    return not pool._closed(sock_info.sock)
-                except (socket.error, ConnectionFailure):
-                    return False
-            finally:
-                member.maybe_return_socket(sock_info)
+        self._topology.close()
 
     def set_cursor_manager(self, manager_class):
-        """Set this client's cursor manager.
+        """DEPRECATED - Set this client's cursor manager.
 
         Raises :class:`TypeError` if `manager_class` is not a subclass of
         :class:`~pymongo.cursor_manager.CursorManager`. A cursor manager
@@ -1166,11 +792,16 @@ class MongoClient(common.BaseObject):
         :Parameters:
           - `manager_class`: cursor manager to use
 
-        .. versionchanged:: 2.9
-           Unedprecated.
-        .. versionchanged:: 2.1+
-           Deprecated support for external cursor managers.
+        .. versionchanged:: 3.3
+           Deprecated, for real this time.
+
+        .. versionchanged:: 3.0
+           Undeprecated.
         """
+        warnings.warn(
+            "set_cursor_manager is Deprecated",
+            DeprecationWarning,
+            stacklevel=2)
         manager = manager_class(self)
         if not isinstance(manager, CursorManager):
             raise TypeError("manager_class must be a subclass of "
@@ -1178,281 +809,125 @@ class MongoClient(common.BaseObject):
 
         self.__cursor_manager = manager
 
-    def __check_response_to_last_error(self, response, is_command):
-        """Check a response to a lastError message for errors.
+    def _get_topology(self):
+        """Get the internal :class:`~pymongo.topology.Topology` object.
 
-        `response` is a byte string representing a response to the message.
-        If it represents an error response we raise OperationFailure.
-
-        Return the response as a document.
+        If this client was created with "connect=False", calling _get_topology
+        launches the connection process in the background.
         """
-        response = helpers._unpack_response(response)
+        self._topology.open()
+        return self._topology
 
-        assert response["number_returned"] == 1
-        result = response["data"][0]
+    @contextlib.contextmanager
+    def _get_socket(self, selector):
+        server = self._get_topology().select_server(selector)
+        try:
+            with server.get_socket(self.__all_credentials) as sock_info:
+                yield sock_info
+        except NetworkTimeout:
+            # The socket has been closed. Don't reset the server.
+            # Server Discovery And Monitoring Spec: "When an application
+            # operation fails because of any network error besides a socket
+            # timeout...."
+            raise
+        except NotMasterError:
+            # "When the client sees a "not master" error it MUST replace the
+            # server's description with type Unknown. It MUST request an
+            # immediate check of the server."
+            self._reset_server_and_request_check(server.description.address)
+            raise
+        except ConnectionFailure:
+            # "Client MUST replace the server's description with type Unknown
+            # ... MUST NOT request an immediate check of the server."
+            self.__reset_server(server.description.address)
+            raise
 
-        helpers._check_command_response(result, self.close)
+    def _socket_for_writes(self):
+        return self._get_socket(writable_server_selector)
 
-        # write commands - skip getLastError checking
-        if is_command:
-            return result
+    @contextlib.contextmanager
+    def _socket_for_reads(self, read_preference):
+        preference = read_preference or ReadPreference.PRIMARY
+        # Get a socket for a server matching the read preference, and yield
+        # sock_info, slave_ok. Server Selection Spec: "slaveOK must be sent to
+        # mongods with topology type Single. If the server type is Mongos,
+        # follow the rules for passing read preference to mongos, even for
+        # topology type Single."
+        # Thread safe: if the type is single it cannot change.
+        topology = self._get_topology()
+        single = topology.description.topology_type == TOPOLOGY_TYPE.Single
+        with self._get_socket(read_preference) as sock_info:
+            slave_ok = (single and not sock_info.is_mongos) or (
+                preference != ReadPreference.PRIMARY)
+            yield sock_info, slave_ok
 
-        # getLastError
-        error_msg = result.get("err", "")
-        if error_msg is None:
-            return result
-        if error_msg.startswith("not master"):
-            self.close()
-            raise AutoReconnect(error_msg)
-
-        details = result
-        # mongos returns the error code in an error object
-        # for some errors.
-        if "errObjects" in result:
-            for errobj in result["errObjects"]:
-                if errobj.get("err") == error_msg:
-                    details = errobj
-                    break
-
-        code = details.get("code")
-        if code in (11000, 11001, 12582):
-            raise DuplicateKeyError(details["err"], code, result)
-        raise OperationFailure(details["err"], code, result)
-
-    def __check_bson_size(self, message):
-        """Make sure the message doesn't include BSON documents larger
-        than the connected server will accept.
+    def _send_message_with_response(self, operation, read_preference=None,
+                                    exhaust=False, address=None):
+        """Send a message to MongoDB and return a Response.
 
         :Parameters:
-          - `message`: message to check
+          - `operation`: a _Query or _GetMore object.
+          - `read_preference` (optional): A ReadPreference.
+          - `exhaust` (optional): If True, the socket used stays checked out.
+            It is returned along with its Pool in the Response.
+          - `address` (optional): Optional address when sending a message
+            to a specific server, used for getMore.
         """
-        if len(message) == 3:
-            (request_id, data, max_doc_size) = message
-            if max_doc_size > self.max_bson_size:
-                raise DocumentTooLarge("BSON document too large (%d bytes)"
-                                       " - the connected server supports"
-                                       " BSON document sizes up to %d"
-                                       " bytes." %
-                                       (max_doc_size, self.max_bson_size))
-            return (request_id, data)
+        with self.__lock:
+            # If needed, restart kill-cursors thread after a fork.
+            self._kill_cursors_executor.open()
+
+        topology = self._get_topology()
+        if address:
+            server = topology.select_server_by_address(address)
+            if not server:
+                raise AutoReconnect('server %s:%d no longer available'
+                                    % address)
         else:
-            # get_more and kill_cursors messages
-            # don't include BSON documents.
-            return message
+            selector = read_preference or writable_server_selector
+            server = topology.select_server(selector)
 
-    def _send_message(self, message,
-                      with_last_error=False, command=False):
-        """Say something to Mongo.
+        # A _Query's slaveOk bit is already set for queries with non-primary
+        # read preference. If this is a direct connection to a mongod, override
+        # and *always* set the slaveOk bit. See bullet point 2 in
+        # server-selection.rst#topology-type-single.
+        set_slave_ok = (
+            topology.description.topology_type == TOPOLOGY_TYPE.Single
+            and server.description.server_type != SERVER_TYPE.Mongos)
 
-        Raises ConnectionFailure if the message cannot be sent. Raises
-        OperationFailure if `with_last_error` is ``True`` and the
-        response to the getLastError call returns an error. Return the
-        response from lastError, or ``None`` if `with_last_error`
-        is ``False``.
+        return self._reset_on_error(
+            server,
+            server.send_message_with_response,
+            operation,
+            set_slave_ok,
+            self.__all_credentials,
+            self._event_listeners,
+            exhaust)
 
-        :Parameters:
-          - `message`: message to send
-          - `with_last_error`: check getLastError status after sending the
-            message
+    def _reset_on_error(self, server, func, *args, **kwargs):
+        """Execute an operation. Reset the server on network error.
+
+        Returns fn()'s return value on success. On error, clears the server's
+        pool and marks the server Unknown.
+
+        Re-raises any exception thrown by fn().
         """
-        member = self.__ensure_member()
-        if not with_last_error and not self.is_primary:
-            # The write won't succeed, bail as if we'd done a getLastError
-            raise AutoReconnect("not master")
-
-        sock_info = self.__socket(member)
         try:
-            try:
-                (request_id, data) = self.__check_bson_size(message)
-                sock_info.sock.sendall(data)
-                # Safe mode. We pack the message together with a lastError
-                # message and send both. We then get the response (to the
-                # lastError) and raise OperationFailure if it is an error
-                # response.
-                rv = None
-                if with_last_error:
-                    response = self.__receive_message_on_socket(1, request_id,
-                                                                sock_info)
-                    rv = self.__check_response_to_last_error(response, command)
-
-                return rv
-            except OperationFailure:
-                raise
-            except (ConnectionFailure, socket.error), e:
-                self.close()
-                raise AutoReconnect(str(e))
-            except:
-                sock_info.close()
-                raise
-        finally:
-            member.maybe_return_socket(sock_info)
-
-    def __receive_data_on_socket(self, length, sock_info):
-        """Lowest level receive operation.
-
-        Takes length to receive and repeatedly calls recv until able to
-        return a buffer of that length, raising ConnectionFailure on error.
-        """
-        message = EMPTY
-        while length:
-            chunk = sock_info.sock.recv(length)
-            if chunk == EMPTY:
-                raise ConnectionFailure("connection closed")
-            length -= len(chunk)
-            message += chunk
-        return message
-
-    def __receive_message_on_socket(self, operation, rqst_id, sock_info):
-        """Receive a message in response to `rqst_id` on `sock`.
-
-        Returns the response data with the header removed.
-        """
-        header = self.__receive_data_on_socket(16, sock_info)
-        length = struct.unpack("<i", header[:4])[0]
-
-        actual_op = struct.unpack("<i", header[12:])[0]
-        assert actual_op == operation, (
-            "wire protocol error: unknown opcode %r" % (actual_op,))
-
-        # No rqst_id for exhaust cursor "getMore".
-        if rqst_id is not None:
-            resp_id = struct.unpack("<i", header[8:12])[0]
-            assert rqst_id == resp_id, (
-                "wire protocol error: got response id %r but expected %r"
-                % (resp_id, rqst_id))
-
-        assert length > 16, ("wire protocol error: message length is shorter"
-                             " than standard message header: %r" % (length,))
-
-        return self.__receive_data_on_socket(length - 16, sock_info)
-
-    def __send_and_receive(self, message, sock_info):
-        """Send a message on the given socket and return the response data.
-        """
-        (request_id, data) = self.__check_bson_size(message)
-        try:
-            sock_info.sock.sendall(data)
-            return self.__receive_message_on_socket(1, request_id, sock_info)
-        except:
-            sock_info.close()
+            return func(*args, **kwargs)
+        except NetworkTimeout:
+            # The socket has been closed. Don't reset the server.
+            raise
+        except ConnectionFailure:
+            self.__reset_server(server.description.address)
             raise
 
-    # we just ignore _must_use_master here: it's only relevant for
-    # MasterSlaveConnection instances.
-    def _send_message_with_response(self, message,
-                                    _must_use_master=False, **kwargs):
-        """Send a message to Mongo and return the response.
+    def __reset_server(self, address):
+        """Clear our connection pool for a server and mark it Unknown."""
+        self._topology.reset_server(address)
 
-        Sends the given message and returns the response.
-
-        :Parameters:
-          - `message`: (request_id, data) pair making up the message to send
-        """
-        member = self.__ensure_member()
-        sock_info = self.__socket(member)
-        exhaust = kwargs.get('exhaust')
-        try:
-            if not exhaust and "network_timeout" in kwargs:
-                sock_info.sock.settimeout(kwargs["network_timeout"])
-
-            response = self.__send_and_receive(message, sock_info)
-
-            if not exhaust:
-                if "network_timeout" in kwargs:
-                    sock_info.sock.settimeout(self.__net_timeout)
-
-                member.maybe_return_socket(sock_info)
-
-            return (None, (response, sock_info, member.pool))
-        except (ConnectionFailure, socket.error), e:
-            self.close()
-            member.maybe_return_socket(sock_info)
-            raise AutoReconnect(str(e))
-        except:
-            member.maybe_return_socket(sock_info)
-            raise
-
-    def _exhaust_next(self, sock_info):
-        """Used with exhaust cursors to get the next batch off the socket.
-
-        Can raise AutoReconnect.
-        """
-        try:
-            return self.__receive_message_on_socket(1, None, sock_info)
-        except socket.error, e:
-            raise AutoReconnect(str(e))
-
-    def start_request(self):
-        """**DEPRECATED**: start_request is removed in PyMongo 3.0.
-
-        When doing w=0 writes to MongoDB 2.4 or earlier, :meth:`start_request`
-        was sometimes useful to ensure the current thread always used the same
-        socket until it called :meth:`end_request`. This made consistent reads
-        more likely after an unacknowledged write. Requests are no longer
-        useful in modern MongoDB applications, see
-        `PYTHON-785 <https://jira.mongodb.org/browse/PYTHON-785>`_.
-
-        .. warning:: :meth:`start_request`, :meth:`in_request`,
-          and :meth:`end_request` are deprecated, and removed in PyMongo 3.
-          See the :doc:`/migrate-to-pymongo3` for more information.
-
-        .. versionchanged:: 2.8
-           Deprecated start_request.
-
-        .. versionchanged:: 2.4
-           Now counts the number of calls to start_request and doesn't end
-           request until an equal number of calls to end_request.
-
-        .. versionadded:: 2.2
-           The :class:`~pymongo.pool.Request` return value.
-           :meth:`start_request` previously returned None
-        """
-        member = self.__ensure_member()
-        member.start_request()
-        return pool.Request(self)
-
-    def in_request(self):
-        """**DEPRECATED**: True if this thread is in a request, meaning it has
-        a socket reserved for its exclusive use.
-
-        .. warning:: :meth:`start_request`, :meth:`in_request`,
-          and :meth:`end_request` are deprecated in this version of PyMongo and
-          removed in PyMongo 3. See the :doc:`/migrate-to-pymongo3` for more
-          information.
-
-        .. versionchanged:: 2.8
-          Deprecated in_request.
-        """
-        member = self.__member  # Don't try to connect if disconnected.
-        return member and member.in_request()
-
-    def end_request(self):
-        """**DEPRECATED**: Undo :meth:`start_request`. If :meth:`end_request`
-        is called as many times as :meth:`start_request`, the request is over
-        and this thread's connection returns to the pool. Extra calls to
-        :meth:`end_request` have no effect.
-
-        Ending a request allows the :class:`~socket.socket` that has
-        been reserved for this thread by :meth:`start_request` to be returned to
-        the pool. Other threads will then be able to re-use that
-        :class:`~socket.socket`. If your application uses many threads, or has
-        long-running threads that infrequently perform MongoDB operations, then
-        judicious use of this method can lead to performance gains. Care should
-        be taken, however, to make sure that :meth:`end_request` is not called
-        in the middle of a sequence of operations in which ordering is
-        important. This could lead to unexpected results.
-
-        .. warning:: :meth:`start_request`, :meth:`in_request`,
-          and :meth:`end_request` are deprecated in this version of PyMongo and
-          removed in PyMongo 3. See the :doc:`/migrate-to-pymongo3` for more
-          information.
-
-        .. versionchanged:: 2.8
-          Deprecated end_request.
-        """
-        member = self.__member  # Don't try to connect if disconnected.
-        if member:
-            member.end_request()
+    def _reset_server_and_request_check(self, address):
+        """Clear our pool for a server, mark it Unknown, and check it soon."""
+        self._topology.reset_server_and_request_check(address)
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -1462,11 +937,37 @@ class MongoClient(common.BaseObject):
     def __ne__(self, other):
         return not self == other
 
+    def _repr_helper(self):
+        def option_repr(option, value):
+            """Fix options whose __repr__ isn't usable in a constructor."""
+            if option == 'document_class':
+                if value is dict:
+                    return 'document_class=dict'
+                else:
+                    return 'document_class=%s.%s' % (value.__module__,
+                                                     value.__name__)
+            if option in common.TIMEOUT_VALIDATORS and value is not None:
+                return "%s=%s" % (option, int(value * 1000))
+
+            return '%s=%r' % (option, value)
+
+        # Host first...
+        options = ['host=%r' % [
+            '%s:%d' % (host, port) if port is not None else host
+            for host, port in self._topology_settings.seeds]]
+        # ... then everything in self._constructor_args...
+        options.extend(
+            option_repr(key, self.__options._options[key])
+            for key in self._constructor_args)
+        # ... then everything else.
+        options.extend(
+            option_repr(key, self.__options._options[key])
+            for key in self.__options._options
+            if key not in set(self._constructor_args))
+        return ', '.join(options)
+
     def __repr__(self):
-        if len(self.__nodes) == 1:
-            return "MongoClient(%r, %r)" % self.address
-        else:
-            return "MongoClient(%r)" % ["%s:%d" % n for n in self.__nodes]
+        return ("MongoClient(%s)" % (self._repr_helper(),))
 
     def __getattr__(self, name):
         """Get a database by name.
@@ -1477,7 +978,11 @@ class MongoClient(common.BaseObject):
         :Parameters:
           - `name`: the name of the database to get
         """
-        return database.Database(self, name)
+        if name.startswith('_'):
+            raise AttributeError(
+                "MongoClient has no attribute %r. To access the %s"
+                " database, use client[%r]." % (name, name, name))
+        return self.__getitem__(name)
 
     def __getitem__(self, name):
         """Get a database by name.
@@ -1488,145 +993,200 @@ class MongoClient(common.BaseObject):
         :Parameters:
           - `name`: the name of the database to get
         """
-        return self.__getattr__(name)
+        return database.Database(self, name)
 
-    def close_cursor(self, cursor_id):
-        """Close a single database cursor.
+    def close_cursor(self, cursor_id, address=None):
+        """Send a kill cursors message soon with the given id.
 
         Raises :class:`TypeError` if `cursor_id` is not an instance of
         ``(int, long)``. What closing the cursor actually means
         depends on this client's cursor manager.
 
+        This method may be called from a :class:`~pymongo.cursor.Cursor`
+        destructor during garbage collection, so it isn't safe to take a
+        lock or do network I/O. Instead, we schedule the cursor to be closed
+        soon on a background thread.
+
         :Parameters:
           - `cursor_id`: id of cursor to close
+          - `address` (optional): (host, port) pair of the cursor's server.
+            If it is not provided, the client attempts to close the cursor on
+            the primary or standalone, or a mongos server.
+
+        .. versionchanged:: 3.0
+           Added ``address`` parameter.
         """
-        if not isinstance(cursor_id, (int, long)):
+        if not isinstance(cursor_id, integer_types):
             raise TypeError("cursor_id must be an instance of (int, long)")
 
-        self.__cursor_manager.close(cursor_id)
+        if self.__cursor_manager is not None:
+            self.__cursor_manager.close(cursor_id, address)
+        else:
+            self.__kill_cursors_queue.append((address, [cursor_id]))
 
-    def kill_cursors(self, cursor_ids):
-        """Send a kill cursors message with the given ids.
+    def kill_cursors(self, cursor_ids, address=None):
+        """DEPRECATED - Send a kill cursors message soon with the given ids.
 
         Raises :class:`TypeError` if `cursor_ids` is not an instance of
         ``list``.
 
         :Parameters:
           - `cursor_ids`: list of cursor ids to kill
+          - `address` (optional): (host, port) pair of the cursor's server.
+            If it is not provided, the client attempts to close the cursor on
+            the primary or standalone, or a mongos server.
+
+        .. versionchanged:: 3.3
+           Deprecated.
+
+        .. versionchanged:: 3.0
+           Now accepts an `address` argument. Schedules the cursors to be
+           closed on a background thread instead of sending the message
+           immediately.
         """
+        warnings.warn(
+            "kill_cursors is deprecated.",
+            DeprecationWarning,
+            stacklevel=2)
+
         if not isinstance(cursor_ids, list):
             raise TypeError("cursor_ids must be a list")
 
-        member = self.__member
+        # "Atomic", needs no lock.
+        self.__kill_cursors_queue.append((address, cursor_ids))
 
-        # We can't risk taking the lock to reconnect if we're being called
-        # from Cursor.__del__, see PYTHON-799.
-        if not member:
-            warnings.warn("not connected, couldn't close cursor")
-            return
+    # This method is run periodically by a background thread.
+    def _process_periodic_tasks(self):
+        """Process any pending kill cursors requests and
+        maintain connection pool parameters."""
+        address_to_cursor_ids = defaultdict(list)
 
-        _, kill_cursors_msg = message.kill_cursors(cursor_ids)
-        sock_info = self.__socket(member)
-        try:
+        # Other threads or the GC may append to the queue concurrently.
+        while True:
             try:
-                sock_info.sock.sendall(kill_cursors_msg)
-            except:
-                sock_info.close()
-                raise
-        finally:
-            member.maybe_return_socket(sock_info)
+                address, cursor_ids = self.__kill_cursors_queue.pop()
+            except IndexError:
+                break
+
+            address_to_cursor_ids[address].extend(cursor_ids)
+
+        # Don't re-open topology if it's closed and there's no pending cursors.
+        if address_to_cursor_ids:
+            listeners = self._event_listeners
+            publish = listeners.enabled_for_commands
+            topology = self._get_topology()
+            for address, cursor_ids in address_to_cursor_ids.items():
+                try:
+                    if address:
+                        # address could be a tuple or _CursorAddress, but
+                        # select_server_by_address needs (host, port).
+                        server = topology.select_server_by_address(
+                            tuple(address))
+                    else:
+                        # Application called close_cursor() with no address.
+                        server = topology.select_server(
+                            writable_server_selector)
+
+                    try:
+                        namespace = address.namespace
+                        db, coll = namespace.split('.', 1)
+                    except AttributeError:
+                        namespace = None
+                        db = coll = "OP_KILL_CURSORS"
+
+                    spec = SON([('killCursors', coll),
+                                ('cursors', cursor_ids)])
+                    with server.get_socket(self.__all_credentials) as sock_info:
+                        if (sock_info.max_wire_version >= 4 and
+                                namespace is not None):
+                            sock_info.command(db, spec)
+                        else:
+                            if publish:
+                                start = datetime.datetime.now()
+                            request_id, msg = message.kill_cursors(cursor_ids)
+                            if publish:
+                                duration = datetime.datetime.now() - start
+                                listeners.publish_command_start(
+                                    spec, db, request_id, address)
+                                start = datetime.datetime.now()
+
+                            try:
+                                sock_info.send_message(msg, 0)
+                            except Exception as exc:
+                                if publish:
+                                    dur = ((datetime.datetime.now() - start)
+                                           + duration)
+                                    listeners.publish_command_failure(
+                                        dur, message._convert_exception(exc),
+                                        'killCursors', request_id, address)
+                                raise
+
+                            if publish:
+                                duration = ((datetime.datetime.now() - start)
+                                            + duration)
+                                # OP_KILL_CURSORS returns no reply, fake one.
+                                reply = {'cursorsUnknown': cursor_ids, 'ok': 1}
+                                listeners.publish_command_success(
+                                    duration, reply, 'killCursors', request_id,
+                                    address)
+
+                except Exception:
+                    helpers._handle_exception()
+        try:
+            self._topology.update_pool()
+        except Exception:
+            helpers._handle_exception()
 
     def server_info(self):
-        """Get information about the MongoDB server we're connected to.
-        """
+        """Get information about the MongoDB server we're connected to."""
         return self.admin.command("buildinfo",
                                   read_preference=ReadPreference.PRIMARY)
 
     def database_names(self):
-        """Get a list of the names of all databases on the connected server.
-        """
-        # SERVER-15994 changed listDatabases to require slaveOk when run
-        # against a secondary / slave. Passing slave_okay=True makes things
-        # consistent across server versions.
+        """Get a list of the names of all databases on the connected server."""
         return [db["name"] for db in
-                self.admin.command(
-                    "listDatabases",
-                    read_preference=ReadPreference.PRIMARY,
-                    slave_okay=not self.is_mongos)["databases"]]
+                self._database_default_options('admin').command(
+                    "listDatabases")["databases"]]
 
     def drop_database(self, name_or_database):
         """Drop a database.
 
         Raises :class:`TypeError` if `name_or_database` is not an instance of
-        :class:`basestring` (:class:`str` in python 3) or Database.
+        :class:`basestring` (:class:`str` in python 3) or
+        :class:`~pymongo.database.Database`.
 
         :Parameters:
           - `name_or_database`: the name of a database to drop, or a
             :class:`~pymongo.database.Database` instance representing the
             database to drop
+
+        .. note:: The :attr:`~pymongo.mongo_client.MongoClient.write_concern` of
+           this client is automatically applied to this operation when using
+           MongoDB >= 3.4.
+
+        .. versionchanged:: 3.4
+           Apply this client's write concern automatically to this operation
+           when connected to MongoDB >= 3.4.
+
         """
         name = name_or_database
         if isinstance(name, database.Database):
             name = name.name
 
-        if not isinstance(name, basestring):
-            raise TypeError("name_or_database must be an instance of "
-                            "%s or Database" % (basestring.__name__,))
+        if not isinstance(name, string_type):
+            raise TypeError("name_or_database must be an instance "
+                            "of %s or a Database" % (string_type.__name__,))
 
         self._purge_index(name)
-        self[name].command("dropDatabase",
-                           read_preference=ReadPreference.PRIMARY)
-
-    def copy_database(self, from_name, to_name,
-                      from_host=None, username=None, password=None,
-                      mechanism='DEFAULT'):
-        """**DEPRECATED**: Copy a database, potentially from another host.
-
-        Raises :class:`TypeError` if `from_name` or `to_name` is not
-        an instance of :class:`basestring` (:class:`str` in python 3).
-        Raises :class:`~pymongo.errors.InvalidName` if `to_name` is
-        not a valid database name.
-
-        If `from_host` is ``None`` the current host is used as the
-        source. Otherwise the database is copied from `from_host`.
-
-        If the source database requires authentication, `username` and
-        `password` must be specified. By default, use SCRAM-SHA-1 with
-        MongoDB 3.0 and later, MONGODB-CR (MongoDB Challenge Response
-        protocol) for older servers.
-
-        .. note:: mongos does not support copying a database from a server
-           with authentication, see
-           `SERVER-6427 <https://jira.mongodb.org/browse/SERVER-6427>`_.
-
-        .. warning:: :meth:`copy_database` is removed in PyMongo 3.0. See the
-          :doc:`copy_database examples </examples/copydb>` for alternatives.
-
-        :Parameters:
-          - `from_name`: the name of the source database
-          - `to_name`: the name of the target database
-          - `from_host` (optional): host name to copy from
-          - `username` (optional): username for source database
-          - `password` (optional): password for source database
-          - `mechanism` (optional): auth method, 'MONGODB-CR' or 'SCRAM-SHA-1'
-
-        .. versionchanged:: 2.8
-           Deprecated copy_database, and added SCRAM-SHA-1 support.
-        """
-        member = self.__ensure_member()
-        sock_info = self.__socket(member)
-        try:
-            helpers._copy_database(
-                fromdb=from_name,
-                todb=to_name,
-                fromhost=from_host,
-                mechanism=mechanism,
-                username=username,
-                password=password,
-                sock_info=sock_info,
-                cmd_func=self.__simple_command)
-        finally:
-            member.pool.maybe_return_socket(sock_info)
+        with self._socket_for_reads(
+                ReadPreference.PRIMARY) as (sock_info, slave_ok):
+            self[name]._command(
+                sock_info,
+                "dropDatabase",
+                slave_ok=slave_ok,
+                read_preference=ReadPreference.PRIMARY,
+                write_concern=self.write_concern,
+                parse_write_concern_error=True)
 
     def get_default_database(self):
         """Get the database named in the MongoDB connection URI.
@@ -1644,8 +1204,8 @@ class MongoClient(common.BaseObject):
 
         return self[self.__default_database_name]
 
-    def get_database(self, name, codec_options=None,
-                     read_preference=None, write_concern=None):
+    def get_database(self, name, codec_options=None, read_preference=None,
+                     write_concern=None, read_concern=None):
         """Get a :class:`~pymongo.database.Database` with the given name and
         options.
 
@@ -1653,16 +1213,16 @@ class MongoClient(common.BaseObject):
         different codec options, read preference, and/or write concern from
         this :class:`MongoClient`.
 
-          >>> from pymongo import ReadPreference
-          >>> client.read_preference == ReadPreference.PRIMARY
-          True
+          >>> client.read_preference
+          Primary()
           >>> db1 = client.test
-          >>> db1.read_preference == ReadPreference.PRIMARY
-          True
+          >>> db1.read_preference
+          Primary()
+          >>> from pymongo import ReadPreference
           >>> db2 = client.get_database(
           ...     'test', read_preference=ReadPreference.SECONDARY)
-          >>> db2.read_preference == ReadPreference.SECONDARY
-          True
+          >>> db2.read_preference
+          Secondary(tag_sets=None)
 
         :Parameters:
           - `name`: The name of the database - a string.
@@ -1678,21 +1238,29 @@ class MongoClient(common.BaseObject):
             :class:`~pymongo.write_concern.WriteConcern`. If ``None`` (the
             default) the :attr:`write_concern` of this :class:`MongoClient` is
             used.
-
-        .. versionadded:: 2.9
+          - `read_concern` (optional): An instance of
+            :class:`~pymongo.read_concern.ReadConcern`. If ``None`` (the
+            default) the :attr:`read_concern` of this :class:`MongoClient` is
+            used.
         """
         return database.Database(
-            self, name, codec_options, read_preference, write_concern)
+            self, name, codec_options, read_preference,
+            write_concern, read_concern)
+
+    def _database_default_options(self, name):
+        """Get a Database instance with the default settings."""
+        return self.get_database(
+            name, codec_options=DEFAULT_CODEC_OPTIONS,
+            read_preference=ReadPreference.PRIMARY,
+            write_concern=WriteConcern())
 
     @property
     def is_locked(self):
         """Is this server locked? While locked, all write operations
         are blocked, although read operations may still be allowed.
         Use :meth:`unlock` to unlock.
-
-        .. versionadded:: 2.0
         """
-        ops = self.admin.current_op()
+        ops = self._database_default_options('admin').current_op()
         return bool(ops.get('fsyncLock', 0))
 
     def fsync(self, **kwargs):
@@ -1710,18 +1278,26 @@ class MongoClient(common.BaseObject):
             .. warning:: MongoDB does not support the `async` option
                          on Windows and will raise an exception on that
                          platform.
-
-        .. versionadded:: 2.0
         """
         self.admin.command("fsync",
                            read_preference=ReadPreference.PRIMARY, **kwargs)
 
     def unlock(self):
         """Unlock a previously locked server.
-
-        .. versionadded:: 2.0
         """
-        self.admin['$cmd'].sys.unlock.find_one()
+        cmd = {"fsyncUnlock": 1}
+        with self._socket_for_writes() as sock_info:
+            if sock_info.max_wire_version >= 4:
+                try:
+                    sock_info.command("admin", cmd)
+                except OperationFailure as exc:
+                    # Ignore "DB not locked" to replicate old behavior
+                    if exc.code != 125:
+                        raise
+            else:
+                helpers._first_batch(sock_info, "admin", "$cmd.sys.unlock",
+                    {}, -1, True, self.codec_options,
+                    ReadPreference.PRIMARY, cmd, self._event_listeners)
 
     def __enter__(self):
         return self
@@ -1732,5 +1308,7 @@ class MongoClient(common.BaseObject):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         raise TypeError("'MongoClient' object is not iterable")
+
+    next = __next__

@@ -18,8 +18,12 @@ Regular dictionaries can be used instead of SON objects, but not when the order
 of keys is important. A SON object can be used just like a normal Python
 dictionary."""
 
+import collections
 import copy
 import re
+
+from bson.py3compat import iteritems
+
 
 # This sort of sucks, but seems to be as good as it gets...
 # This is essentially the same as re._pattern_type
@@ -41,14 +45,16 @@ class SON(dict):
     None                                     null           both
     bool                                     boolean        both
     int [#int]_                              int32 / int64  py -> bson
-    long                                     int64          both
+    long                                     int64          py -> bson
+    `bson.int64.Int64`                       int64          both
     float                                    number (real)  both
     string                                   string         py -> bson
     unicode                                  string         both
     list                                     array          both
     dict / `SON`                             object         both
     datetime.datetime [#dt]_ [#dt2]_         date           both
-    `bson.regex.Regex` / compiled re [#re]_  regex          both
+    `bson.regex.Regex`                       regex          both
+    compiled re [#re]_                       regex          py -> bson
     `bson.binary.Binary`                     binary         both
     `bson.objectid.ObjectId`                 oid            both
     `bson.dbref.DBRef`                       dbref          both
@@ -64,18 +70,16 @@ class SON(dict):
     and retrieved as unicode.
 
     .. [#int] A Python int will be saved as a BSON int32 or BSON int64 depending
-       on its size. A BSON int32 will always decode to a Python int. In Python 2.x
-       a BSON int64 will always decode to a Python long. In Python 3.x a BSON
-       int64 will decode to a Python int since there is no longer a long type.
+       on its size. A BSON int32 will always decode to a Python int. A BSON
+       int64 will always decode to a :class:`~bson.int64.Int64`.
     .. [#dt] datetime.datetime instances will be rounded to the nearest
        millisecond when saved
     .. [#dt2] all datetime.datetime instances are treated as *naive*. clients
        should always use UTC.
     .. [#re] :class:`~bson.regex.Regex` instances and regular expression
        objects from ``re.compile()`` are both saved as BSON regular expressions.
-       BSON regular expressions are decoded as Python regular expressions by
-       default, or as :class:`~bson.regex.Regex` instances if the ``compile_re``
-       option is set to ``False``.
+       BSON regular expressions are decoded as :class:`~bson.regex.Regex`
+       instances.
     .. [#bytes] The bytes type from Python 3.x is encoded as BSON binary with
        subtype 0. In Python 3.x it will be decoded back to bytes. In Python 2.x
        it will be decoded to an instance of :class:`~bson.binary.Binary` with
@@ -171,7 +175,7 @@ class SON(dict):
 
     def popitem(self):
         try:
-            k, v = self.iteritems().next()
+            k, v = next(self.iteritems())
         except StopIteration:
             raise KeyError('container is empty')
         del self[k]
@@ -223,10 +227,10 @@ class SON(dict):
         def transform_value(value):
             if isinstance(value, list):
                 return [transform_value(v) for v in value]
-            elif isinstance(value, dict):
+            elif isinstance(value, collections.Mapping):
                 return dict([
                     (k, transform_value(v))
-                    for k, v in value.iteritems()])
+                    for k, v in iteritems(value)])
             else:
                 return value
 

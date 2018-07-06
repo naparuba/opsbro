@@ -20,31 +20,48 @@ PY3 = sys.version_info[0] == 3
 
 if PY3:
     import codecs
-
+    import _thread as thread
     from io import BytesIO as StringIO
+    MAXSIZE = sys.maxsize
+
+    imap = map
 
     def b(s):
         # BSON and socket operations deal in binary data. In
         # python 3 that means instances of `bytes`. In python
         # 2.6 and 2.7 you can create an alias for `bytes` using
-        # the b prefix (e.g. b'foo'). Python 2.4 and 2.5 don't
-        # provide this marker so we provide this compat function.
-        # In python 3.x b('foo') results in b'foo'.
+        # the b prefix (e.g. b'foo').
         # See http://python3porting.com/problems.html#nicer-solutions
         return codecs.latin_1_encode(s)[0]
 
     def bytes_from_hex(h):
         return bytes.fromhex(h)
 
-    binary_type = bytes
-    text_type   = str
-    next_item   = "__next__"
+    def iteritems(d):
+        return iter(d.items())
 
+    def itervalues(d):
+        return iter(d.values())
+
+    def reraise(exctype, value, trace=None):
+        raise exctype(str(value)).with_traceback(trace)
+
+    def _unicode(s):
+        return s
+
+    text_type = str
+    string_type = str
+    integer_types = int
 else:
+    import thread
+
+    from itertools import imap
     try:
         from cStringIO import StringIO
     except ImportError:
         from StringIO import StringIO
+
+    MAXSIZE = sys.maxint
 
     def b(s):
         # See comments above. In python 2.x b('foo') is just 'foo'.
@@ -53,10 +70,19 @@ else:
     def bytes_from_hex(h):
         return h.decode('hex')
 
-    binary_type = str
-    # 2to3 will convert this to "str". That's okay
-    # since we won't ever get here under python3.
-    text_type   = unicode
-    next_item   = "next"
+    def iteritems(d):
+        return d.iteritems()
 
-string_types = (binary_type, text_type)
+    def itervalues(d):
+        return d.itervalues()
+
+    # "raise x, y, z" raises SyntaxError in Python 3
+    exec("""def reraise(exctype, value, trace=None):
+    raise exctype, str(value), trace
+""")
+
+    _unicode = unicode
+
+    string_type = basestring
+    text_type = unicode
+    integer_types = (int, long)

@@ -16,31 +16,44 @@
 
 import warnings
 
-from bson.binary import OLD_UUID_SUBTYPE
 from bson.code import Code
-from bson.codec_options import CodecOptions as _CodecOptions
+from bson.codec_options import CodecOptions, DEFAULT_CODEC_OPTIONS
 from bson.dbref import DBRef
+from bson.objectid import ObjectId
+from bson.py3compat import iteritems, string_type, _unicode
 from bson.son import SON
 from pymongo import auth, common, helpers
 from pymongo.collection import Collection
 from pymongo.command_cursor import CommandCursor
 from pymongo.errors import (CollectionInvalid,
                             ConfigurationError,
+                            InvalidName,
                             OperationFailure)
-from pymongo.read_preferences import (modes,
-                                      secondary_ok_commands,
-                                      ReadPreference,
-                                      _ServerMode)
+from pymongo.helpers import _first_batch
+from pymongo.read_preferences import ReadPreference
 from pymongo.son_manipulator import SONManipulator
+from pymongo.write_concern import WriteConcern
+
+
+def _check_name(name):
+    """Check if a database name is valid.
+    """
+    if not name:
+        raise InvalidName("database name cannot be the empty string")
+
+    for invalid_char in [' ', '.', '$', '/', '\\', '\x00', '"']:
+        if invalid_char in name:
+            raise InvalidName("database names cannot contain the "
+                              "character %r" % invalid_char)
 
 
 class Database(common.BaseObject):
     """A Mongo database.
     """
 
-    def __init__(self, connection, name, codec_options=None,
-                 read_preference=None, write_concern=None):
-        """Get a database by connection and name.
+    def __init__(self, client, name, codec_options=None, read_preference=None,
+                 write_concern=None, read_concern=None):
+        """Get a database by client and name.
 
         Raises :class:`TypeError` if `name` is not an instance of
         :class:`basestring` (:class:`str` in python 3). Raises
@@ -48,44 +61,52 @@ class Database(common.BaseObject):
         database name.
 
         :Parameters:
-          - `connection`: a client instance
-          - `name`: database name
+          - `client`: A :class:`~pymongo.mongo_client.MongoClient` instance.
+          - `name`: The database name.
           - `codec_options` (optional): An instance of
             :class:`~bson.codec_options.CodecOptions`. If ``None`` (the
-            default) connection.codec_options is used.
+            default) client.codec_options is used.
           - `read_preference` (optional): The read preference to use. If
-            ``None`` (the default) connection.read_preference is used.
+            ``None`` (the default) client.read_preference is used.
           - `write_concern` (optional): An instance of
             :class:`~pymongo.write_concern.WriteConcern`. If ``None`` (the
-            default) connection.write_concern is used.
+            default) client.write_concern is used.
+          - `read_concern` (optional): An instance of
+            :class:`~pymongo.read_concern.ReadConcern`. If ``None`` (the
+            default) client.read_concern is used.
 
         .. mongodoc:: databases
 
-        .. versionchanged:: 2.9
+        .. versionchanged:: 3.2
+           Added the read_concern option.
+
+        .. versionchanged:: 3.0
            Added the codec_options, read_preference, and write_concern options.
+           :class:`~pymongo.database.Database` no longer returns an instance
+           of :class:`~pymongo.collection.Collection` for attribute names
+           with leading underscores. You must use dict-style lookups instead::
+
+               db['__my_collection__']
+
+           Not:
+
+               db.__my_collection__
         """
-        opts, mode, tags, wc_doc = helpers._get_common_options(
-            connection, codec_options, read_preference, write_concern)
-        salms = connection.secondary_acceptable_latency_ms
-
         super(Database, self).__init__(
-            codec_options=opts,
-            read_preference=mode,
-            tag_sets=tags,
-            secondary_acceptable_latency_ms=salms,
-            slave_okay=connection.slave_okay,
-            safe=connection.safe,
-            **wc_doc)
+            codec_options or client.codec_options,
+            read_preference or client.read_preference,
+            write_concern or client.write_concern,
+            read_concern or client.read_concern)
 
-        if not isinstance(name, basestring):
+        if not isinstance(name, string_type):
             raise TypeError("name must be an instance "
-                            "of %s" % (basestring.__name__,))
+                            "of %s" % (string_type.__name__,))
 
         if name != '$external':
-            helpers._check_database_name(name)
+            _check_name(name)
 
-        self.__name = unicode(name)
-        self.__connection = connection
+        self.__name = _unicode(name)
+        self.__client = client
 
         self.__incoming_manipulators = []
         self.__incoming_copying_manipulators = []
@@ -95,15 +116,18 @@ class Database(common.BaseObject):
     def add_son_manipulator(self, manipulator):
         """Add a new son manipulator to this database.
 
-        Newly added manipulators will be applied before existing ones.
+        **DEPRECATED** - `add_son_manipulator` is deprecated.
 
-        :Parameters:
-          - `manipulator`: the manipulator to add
+        .. versionchanged:: 3.0
+          Deprecated add_son_manipulator.
         """
+        warnings.warn("add_son_manipulator is deprecated",
+                      DeprecationWarning, stacklevel=2)
         base = SONManipulator()
         def method_overwritten(instance, method):
+            """Test if this method has been overridden."""
             return (getattr(
-                instance, method).im_func != getattr(base, method).im_func)
+                instance, method).__func__ != getattr(base, method).__func__)
 
         if manipulator.will_copy():
             if method_overwritten(manipulator, "transform_incoming"):
@@ -121,42 +145,22 @@ class Database(common.BaseObject):
         """A :class:`SystemJS` helper for this :class:`Database`.
 
         See the documentation for :class:`SystemJS` for more details.
-
-        .. versionadded:: 1.5
         """
         return SystemJS(self)
 
     @property
-    def connection(self):
-        """The client instance for this :class:`Database`.
-
-        .. versionchanged:: 1.3
-           :attr:`connection` is now a property rather than a method.
-        """
-        return self.__connection
-
-    @property
     def client(self):
-        """The client instance for this :class:`Database`.
-
-        .. versionadded:: 2.9
-           :attr:`client` is an alias for :attr:`connection`.
-        """
-        return self.__connection
+        """The client instance for this :class:`Database`."""
+        return self.__client
 
     @property
     def name(self):
-        """The name of this :class:`Database`.
-
-        .. versionchanged:: 1.3
-           ``name`` is now a property rather than a method.
-        """
+        """The name of this :class:`Database`."""
         return self.__name
 
     @property
     def incoming_manipulators(self):
-        """List all incoming SON manipulators
-        installed on this instance.
+        """All incoming SON manipulators installed on this instance.
 
         .. versionadded:: 2.0
         """
@@ -165,8 +169,7 @@ class Database(common.BaseObject):
 
     @property
     def incoming_copying_manipulators(self):
-        """List all incoming SON copying manipulators
-        installed on this instance.
+        """All incoming SON copying manipulators installed on this instance.
 
         .. versionadded:: 2.0
         """
@@ -195,16 +198,15 @@ class Database(common.BaseObject):
 
     def __eq__(self, other):
         if isinstance(other, Database):
-            us = (self.__connection, self.__name)
-            them = (other.__connection, other.__name)
-            return us == them
+            return (self.__client == other.client and
+                    self.__name == other.name)
         return NotImplemented
 
     def __ne__(self, other):
         return not self == other
 
     def __repr__(self):
-        return "Database(%r, %r)" % (self.__connection, self.__name)
+        return "Database(%r, %r)" % (self.__client, self.__name)
 
     def __getattr__(self, name):
         """Get a collection of this database by name.
@@ -214,7 +216,11 @@ class Database(common.BaseObject):
         :Parameters:
           - `name`: the name of the collection to get
         """
-        return Collection(self, name)
+        if name.startswith('_'):
+            raise AttributeError(
+                "Database has no attribute %r. To access the %s"
+                " collection, use database[%r]." % (name, name, name))
+        return self.__getitem__(name)
 
     def __getitem__(self, name):
         """Get a collection of this database by name.
@@ -224,10 +230,10 @@ class Database(common.BaseObject):
         :Parameters:
           - `name`: the name of the collection to get
         """
-        return self.__getattr__(name)
+        return Collection(self, name)
 
-    def get_collection(self, name, codec_options=None,
-                       read_preference=None, write_concern=None):
+    def get_collection(self, name, codec_options=None, read_preference=None,
+                       write_concern=None, read_concern=None):
         """Get a :class:`~pymongo.collection.Collection` with the given name
         and options.
 
@@ -235,16 +241,16 @@ class Database(common.BaseObject):
         different codec options, read preference, and/or write concern from
         this :class:`Database`.
 
-          >>> from pymongo import ReadPreference
-          >>> db.read_preference == ReadPreference.PRIMARY
-          True
+          >>> db.read_preference
+          Primary()
           >>> coll1 = db.test
-          >>> coll1.read_preference == ReadPreference.PRIMARY
-          True
+          >>> coll1.read_preference
+          Primary()
+          >>> from pymongo import ReadPreference
           >>> coll2 = db.get_collection(
           ...     'test', read_preference=ReadPreference.SECONDARY)
-          >>> coll2.read_preference == SECONDARY
-          True
+          >>> coll2.read_preference
+          Secondary(tag_sets=None)
 
         :Parameters:
           - `name`: The name of the collection - a string.
@@ -260,14 +266,27 @@ class Database(common.BaseObject):
             :class:`~pymongo.write_concern.WriteConcern`. If ``None`` (the
             default) the :attr:`write_concern` of this :class:`Database` is
             used.
-
-        .. versionadded:: 2.9
+          - `read_concern` (optional): An instance of
+            :class:`~pymongo.read_concern.ReadConcern`. If ``None`` (the
+            default) the :attr:`read_concern` of this :class:`Database` is
+            used.
         """
         return Collection(
-            self, name, False, codec_options, read_preference, write_concern)
+            self, name, False, codec_options, read_preference,
+            write_concern, read_concern)
+
+    def _collection_default_options(self, name, **kargs):
+        """Get a Collection instance with the default settings."""
+        wc = (self.write_concern
+              if self.write_concern.acknowledged else WriteConcern())
+        return self.get_collection(
+            name, codec_options=DEFAULT_CODEC_OPTIONS,
+            read_preference=ReadPreference.PRIMARY,
+            write_concern=wc)
 
     def create_collection(self, name, codec_options=None,
-                          read_preference=None, write_concern=None, **kwargs):
+                          read_preference=None, write_concern=None,
+                          read_concern=None, **kwargs):
         """Create a new :class:`~pymongo.collection.Collection` in this
         database.
 
@@ -301,30 +320,39 @@ class Database(common.BaseObject):
             :class:`~pymongo.write_concern.WriteConcern`. If ``None`` (the
             default) the :attr:`write_concern` of this :class:`Database` is
             used.
+          - `read_concern` (optional): An instance of
+            :class:`~pymongo.read_concern.ReadConcern`. If ``None`` (the
+            default) the :attr:`read_concern` of this :class:`Database` is
+            used.
+          - `collation` (optional): An instance of
+            :class:`~pymongo.collation.Collation`.
           - `**kwargs` (optional): additional keyword arguments will
             be passed as options for the create collection command
 
-        .. versionchanged:: 2.9
+        .. versionchanged:: 3.4
+           Added the collation option.
+
+        .. versionchanged:: 3.0
            Added the codec_options, read_preference, and write_concern options.
 
         .. versionchanged:: 2.2
            Removed deprecated argument: options
-
-        .. versionchanged:: 1.5
-           deprecating `options` in favor of kwargs
         """
         if name in self.collection_names():
             raise CollectionInvalid("collection %s already exists" % name)
 
         return Collection(self, name, True, codec_options,
-                          read_preference, write_concern, **kwargs)
+                          read_preference, write_concern,
+                          read_concern, **kwargs)
 
     def _apply_incoming_manipulators(self, son, collection):
+        """Apply incoming manipulators to `son`."""
         for manipulator in self.__incoming_manipulators:
             son = manipulator.transform_incoming(son, collection)
         return son
 
     def _apply_incoming_copying_manipulators(self, son, collection):
+        """Apply incoming copying manipulators to `son`."""
         for manipulator in self.__incoming_copying_manipulators:
             son = manipulator.transform_incoming(son, collection)
         return son
@@ -353,98 +381,33 @@ class Database(common.BaseObject):
             son = manipulator.transform_outgoing(son, collection)
         return son
 
-    def _command(self, command, value=1,
-                 check=True, allowable_errors=None,
-                 uuid_subtype=OLD_UUID_SUBTYPE, compile_re=True,
-                 read_preference=None, codec_options=None, **kwargs):
-        """Internal command helper.
-        """
-
-        if isinstance(command, basestring):
+    def _command(self, sock_info, command, slave_ok=False, value=1, check=True,
+                 allowable_errors=None, read_preference=ReadPreference.PRIMARY,
+                 codec_options=DEFAULT_CODEC_OPTIONS,
+                 write_concern=None,
+                 parse_write_concern_error=False, **kwargs):
+        """Internal command helper."""
+        if isinstance(command, string_type):
             command = SON([(command, value)])
 
-        command_name = command.keys()[0].lower()
-        must_use_master = kwargs.pop('_use_master', False)
-        if command_name not in secondary_ok_commands:
-            must_use_master = True
-
-        # Special-case: mapreduce can go to secondaries only if inline
-        if command_name == 'mapreduce':
-            out = command.get('out') or kwargs.get('out')
-            if not isinstance(out, dict) or not out.get('inline'):
-                must_use_master = True
-
-        # Special-case: aggregate with $out cannot go to secondaries.
-        if command_name == 'aggregate':
-            for stage in kwargs.get('pipeline', []):
-                if '$out' in stage:
-                    must_use_master = True
-                    break
-
-        if codec_options is None or 'as_class' in kwargs:
-            opts = {}
-            if 'as_class' in kwargs:
-                opts['document_class'] = kwargs.pop('as_class')
-            # 'as_class' must be in kwargs so don't use document_class
-            if codec_options:
-                opts['tz_aware'] = codec_options.tz_aware
-                opts['uuid_representation'] = codec_options.uuid_representation
-            else:
-                opts['uuid_representation'] = uuid_subtype
-            codec_options = _CodecOptions(**opts)
-
-        extra_opts = {
-            'slave_okay': kwargs.pop('slave_okay', self.slave_okay),
-            '_codec_options': codec_options,
-            '_must_use_master': must_use_master,
-        }
-
-        if isinstance(read_preference, _ServerMode):
-            extra_opts['read_preference'] = read_preference.mode
-            extra_opts['tag_sets'] = read_preference.tag_sets
-        else:
-            if read_preference is None:
-                read_preference = self.read_preference
-            extra_opts['read_preference'] = read_preference
-            extra_opts['tag_sets'] = kwargs.pop(
-                'tag_sets',
-                self.tag_sets)
-        extra_opts['secondary_acceptable_latency_ms'] = kwargs.pop(
-            'secondary_acceptable_latency_ms',
-            self.secondary_acceptable_latency_ms)
-        extra_opts['compile_re'] = compile_re
-
-        fields = kwargs.get('fields')
-        if fields is not None and not isinstance(fields, dict):
-            kwargs['fields'] = helpers._fields_list_to_dict(fields)
+        if sock_info.max_wire_version >= 5 and write_concern:
+            command['writeConcern'] = write_concern.document
 
         command.update(kwargs)
 
-        # Warn if must_use_master will override read_preference.
-        if (extra_opts['read_preference'] != ReadPreference.PRIMARY and
-                extra_opts['_must_use_master'] and self.connection._rs_client):
-            warnings.warn("%s does not support %s read preference "
-                          "and will be routed to the primary instead." %
-                          (command_name,
-                           modes[extra_opts['read_preference']]),
-                          UserWarning, stacklevel=3)
+        return sock_info.command(
+            self.__name,
+            command,
+            slave_ok,
+            read_preference,
+            codec_options,
+            check,
+            allowable_errors,
+            parse_write_concern_error=parse_write_concern_error)
 
-        cursor = self["$cmd"].find(command, **extra_opts).limit(-1)
-        for doc in cursor:
-            result = doc
-
-        if check:
-            msg = "command %s on namespace %s failed: %%s" % (
-                repr(command).replace("%", "%%"), self.name + '.$cmd')
-            helpers._check_command_response(
-                result, self.connection._disconnect, msg, allowable_errors)
-
-        return result, cursor.conn_id
-
-    def command(self, command, value=1,
-                check=True, allowable_errors=[],
-                uuid_subtype=OLD_UUID_SUBTYPE, compile_re=True,
-                read_preference=None, codec_options=None, **kwargs):
+    def command(self, command, value=1, check=True,
+                allowable_errors=None, read_preference=ReadPreference.PRIMARY,
+                codec_options=DEFAULT_CODEC_OPTIONS, **kwargs):
         """Issue a MongoDB command.
 
         Send command `command` to the database and return the
@@ -487,52 +450,74 @@ class Database(common.BaseObject):
             :class:`~pymongo.errors.OperationFailure` if there are any
           - `allowable_errors`: if `check` is ``True``, error messages
             in this list will be ignored by error-checking
-          - `uuid_subtype` (optional): The BSON binary subtype to use
-            for a UUID used in this command.
-          - `compile_re` (optional): if ``False``, don't attempt to compile
-            BSON regular expressions into Python regular expressions. Return
-            instances of :class:`~bson.regex.Regex` instead. Can avoid
-            :exc:`~bson.errors.InvalidBSON` errors when receiving
-            Python-incompatible regular expressions, for example from
-            ``currentOp``
-          - `read_preference`: The read preference for this connection.
-            See :class:`~pymongo.read_preferences.ReadPreference` for available
-            options.
-          - `tag_sets`: Read from replica-set members with these tags.
-            To specify a priority-order for tag sets, provide a list of
-            tag sets: ``[{'dc': 'ny'}, {'dc': 'la'}, {}]``. A final, empty tag
-            set, ``{}``, means "read from any member that matches the mode,
-            ignoring tags." ReplicaSetConnection tries each set of tags in turn
-            until it finds a set of tags with at least one matching member.
-          - `secondary_acceptable_latency_ms`: Any replica-set member whose
-            ping time is within secondary_acceptable_latency_ms of the nearest
-            member may accept reads. Default 15 milliseconds.
-            **Ignored by mongos** and must be configured on the command line.
-            See the localThreshold_ option for more information.
+          - `read_preference`: The read preference for this operation.
+            See :mod:`~pymongo.read_preferences` for options.
+          - `codec_options`: A :class:`~bson.codec_options.CodecOptions`
+            instance.
           - `**kwargs` (optional): additional keyword arguments will
             be added to the command document before it is sent
 
-        .. note:: ``command`` ignores the ``network_timeout`` parameter.
+        .. note:: :meth:`command` does **not** obey :attr:`read_preference`
+           or :attr:`codec_options`. You must use the `read_preference` and
+           `codec_options` parameters instead.
+
+        .. versionchanged:: 3.0
+           Removed the `as_class`, `fields`, `uuid_subtype`, `tag_sets`,
+           and `secondary_acceptable_latency_ms` option.
+           Removed `compile_re` option: PyMongo now always represents BSON
+           regular expressions as :class:`~bson.regex.Regex` objects. Use
+           :meth:`~bson.regex.Regex.try_compile` to attempt to convert from a
+           BSON regular expression to a Python regular expression object.
+           Added the `codec_options` parameter.
 
         .. versionchanged:: 2.7
-           Added ``compile_re`` option.
+           Added `compile_re` option. If set to False, PyMongo represented BSON
+           regular expressions as :class:`~bson.regex.Regex` objects instead of
+           attempting to compile BSON regular expressions as Python native
+           regular expressions, thus preventing errors for some incompatible
+           patterns, see `PYTHON-500`_.
+
         .. versionchanged:: 2.3
            Added `tag_sets` and `secondary_acceptable_latency_ms` options.
         .. versionchanged:: 2.2
            Added support for `as_class` - the class you want to use for
            the resulting documents
-        .. versionchanged:: 1.6
-           Added the `value` argument for string commands, and keyword
-           arguments for additional command options.
-        .. versionchanged:: 1.5
-           `command` can be a string in addition to a full document.
-        .. versionadded:: 1.4
+
+        .. _PYTHON-500: https://jira.mongodb.org/browse/PYTHON-500
 
         .. mongodoc:: commands
         """
-        return self._command(command, value, check, allowable_errors,
-                             uuid_subtype, compile_re, read_preference,
-                             codec_options, **kwargs)[0]
+        client = self.__client
+        with client._socket_for_reads(read_preference) as (sock_info, slave_ok):
+            return self._command(sock_info, command, slave_ok, value,
+                                 check, allowable_errors, read_preference,
+                                 codec_options, **kwargs)
+
+    def _list_collections(self, sock_info, slave_okay, criteria=None):
+        """Internal listCollections helper."""
+        criteria = criteria or {}
+        cmd = SON([("listCollections", 1), ("cursor", {})])
+        if criteria:
+            cmd["filter"] = criteria
+
+        if sock_info.max_wire_version > 2:
+            coll = self["$cmd"]
+            cursor = self._command(sock_info, cmd, slave_okay)["cursor"]
+            return CommandCursor(coll, cursor, sock_info.address)
+        else:
+            coll = self["system.namespaces"]
+            res = _first_batch(sock_info, coll.database.name, coll.name,
+                               criteria, 0, slave_okay,
+                               CodecOptions(), ReadPreference.PRIMARY, cmd,
+                               self.client._event_listeners)
+            data = res["data"]
+            cursor = {
+                "id": res["cursor_id"],
+                "firstBatch": data,
+                "ns": coll.full_name,
+            }
+            # Need to tell the cursor how many docs were in the first batch.
+            return CommandCursor(coll, cursor, sock_info.address, len(data))
 
     def collection_names(self, include_system_collections=True):
         """Get a list of all the collection names in this database.
@@ -541,32 +526,24 @@ class Database(common.BaseObject):
           - `include_system_collections` (optional): if ``False`` list
             will not include system collections (e.g ``system.indexes``)
         """
-        client = self.connection
-        client._ensure_connected(True)
+        with self.__client._socket_for_reads(
+                ReadPreference.PRIMARY) as (sock_info, slave_okay):
 
-        slave_okay = not client._rs_client and not client.is_mongos
-        if client.max_wire_version > 2:
-            res, addr = self._command("listCollections",
-                                      cursor={},
-                                      read_preference=ReadPreference.PRIMARY,
-                                      slave_okay=slave_okay)
-            # MongoDB 2.8rc2
-            if "collections" in res:
-                results = res["collections"]
-            # >= MongoDB 2.8rc3
-            else:
-                results = CommandCursor(self["$cmd"], res["cursor"], addr)
-            names = [result["name"] for result in results]
-        else:
-            names = [result["name"] for result
-                     in self["system.namespaces"].find(
-                         slave_okay=slave_okay,
-                         _must_use_master=True)]
+            wire_version = sock_info.max_wire_version
+            results = self._list_collections(sock_info, slave_okay)
+
+        # Iterating the cursor to completion may require a socket for getmore.
+        # Ensure we do that outside the "with" block so we don't require more
+        # than one socket at a time.
+        names = [result["name"] for result in results]
+        if wire_version <= 2:
+            # MongoDB 2.4 and older return index namespaces and collection
+            # namespaces prefixed with the database name.
             names = [n[len(self.__name) + 1:] for n in names
                      if n.startswith(self.__name + ".") and "$" not in n]
 
         if not include_system_collections:
-            names = [n for n in names if not n.startswith("system.")]
+            names = [name for name in names if not name.startswith("system.")]
         return names
 
     def drop_collection(self, name_or_collection):
@@ -575,19 +552,33 @@ class Database(common.BaseObject):
         :Parameters:
           - `name_or_collection`: the name of a collection to drop or the
             collection object itself
+
+        .. note:: The :attr:`~pymongo.database.Database.write_concern` of
+           this database is automatically applied to this operation when using
+           MongoDB >= 3.4.
+
+        .. versionchanged:: 3.4
+           Apply this database's write concern automatically to this operation
+           when connected to MongoDB >= 3.4.
+
         """
         name = name_or_collection
         if isinstance(name, Collection):
             name = name.name
 
-        if not isinstance(name, basestring):
-            raise TypeError("name_or_collection must be an instance of "
-                            "%s or Collection" % (basestring.__name__,))
+        if not isinstance(name, string_type):
+            raise TypeError("name_or_collection must be an "
+                            "instance of %s" % (string_type.__name__,))
 
-        self.__connection._purge_index(self.__name, name)
+        self.__client._purge_index(self.__name, name)
 
-        self.command("drop", unicode(name), allowable_errors=["ns not found"],
-                     read_preference=ReadPreference.PRIMARY)
+        with self.__client._socket_for_reads(
+                ReadPreference.PRIMARY) as (sock_info, slave_ok):
+            return self._command(
+                sock_info, 'drop', slave_ok, _unicode(name),
+                allowable_errors=['ns not found'],
+                write_concern=self.write_concern,
+                parse_write_concern_error=True)
 
     def validate_collection(self, name_or_collection,
                             scandata=False, full=False):
@@ -595,11 +586,6 @@ class Database(common.BaseObject):
 
         Returns a dict of validation info. Raises CollectionInvalid if
         validation fails.
-
-        With MongoDB < 1.9 the result dict will include a `result` key
-        with a string value that represents the validation results. With
-        MongoDB >= 1.9 the `result` key no longer exists and the results
-        are split into individual fields in the result dict.
 
         :Parameters:
           - `name_or_collection`: A Collection object or the name of a
@@ -609,24 +595,18 @@ class Database(common.BaseObject):
           - `full`: Have the server do a more thorough scan of the
             collection. Use with `scandata` for a thorough scan
             of the structure of the collection and the individual
-            documents. Ignored in MongoDB versions before 1.9.
-
-        .. versionchanged:: 1.11
-           validate_collection previously returned a string.
-        .. versionadded:: 1.11
-           Added `scandata` and `full` options.
+            documents.
         """
         name = name_or_collection
         if isinstance(name, Collection):
             name = name.name
 
-        if not isinstance(name, basestring):
+        if not isinstance(name, string_type):
             raise TypeError("name_or_collection must be an instance of "
-                            "%s or Collection" % (basestring.__name__,))
+                            "%s or Collection" % (string_type.__name__,))
 
-        result = self.command("validate", unicode(name),
-                              scandata=scandata, full=full,
-                              read_preference=ReadPreference.PRIMARY)
+        result = self.command("validate", _unicode(name),
+                              scandata=scandata, full=full)
 
         valid = True
         # Pre 1.9 results
@@ -636,11 +616,11 @@ class Database(common.BaseObject):
                 raise CollectionInvalid("%s invalid: %s" % (name, info))
         # Sharded results
         elif "raw" in result:
-            for _, res in result["raw"].iteritems():
+            for _, res in iteritems(result["raw"]):
                 if "result" in res:
                     info = res["result"]
                     if (info.find("exception") != -1 or
-                        info.find("corrupt") != -1):
+                            info.find("corrupt") != -1):
                         raise CollectionInvalid("%s invalid: "
                                                 "%s" % (name, info))
                 elif not res.get("valid", False):
@@ -661,11 +641,17 @@ class Database(common.BaseObject):
         :Parameters:
           - `include_all` (optional): if ``True`` also list currently
             idle operations in the result
-         """
-        if include_all:
-            return self['$cmd.sys.inprog'].find_one({"$all": True})
-        else:
-            return self['$cmd.sys.inprog'].find_one()
+        """
+        cmd = SON([("currentOp", 1), ("$all", include_all)])
+        with self.__client._socket_for_writes() as sock_info:
+            if sock_info.max_wire_version >= 4:
+                return sock_info.command("admin", cmd)
+            else:
+                spec = {"$all": True} if include_all else {}
+                x = helpers._first_batch(sock_info, "admin", "$cmd.sys.inprog",
+                    spec, -1, True, self.codec_options,
+                    ReadPreference.PRIMARY, cmd, self.client._event_listeners)
+                return x.get('data', [None])[0]
 
     def profiling_level(self):
         """Get the database's current profiling level.
@@ -675,8 +661,7 @@ class Database(common.BaseObject):
 
         .. mongodoc:: profiling
         """
-        result = self.command("profile", -1,
-                              read_preference=ReadPreference.PRIMARY)
+        result = self.command("profile", -1)
 
         assert result["was"] >= 0 and result["was"] <= 2
         return result["was"]
@@ -716,11 +701,9 @@ class Database(common.BaseObject):
             raise TypeError("slow_ms must be an integer")
 
         if slow_ms is not None:
-            self.command("profile", level, slowms=slow_ms,
-                         read_preference=ReadPreference.PRIMARY)
+            self.command("profile", level, slowms=slow_ms)
         else:
-            self.command("profile", level,
-                         read_preference=ReadPreference.PRIMARY)
+            self.command("profile", level)
 
     def profiling_info(self):
         """Returns a list containing current profiling information.
@@ -736,27 +719,22 @@ class Database(common.BaseObject):
         remove, and so on) use the write concern ``w=1`` and report their
         errors by default.
 
-        This method must be called in the same
-        :doc:`request </examples/requests>` as the preceding operation,
-        otherwise it is unreliable. Requests are deprecated and will be removed
-        in PyMongo 3.0.
-
-        Return None if the last operation was error-free. Otherwise return the
-        error that occurred.
-
         .. versionchanged:: 2.8
            Deprecated.
         """
         warnings.warn("Database.error() is deprecated",
                       DeprecationWarning, stacklevel=2)
 
-        error = self.command("getlasterror",
-                             read_preference=ReadPreference.PRIMARY)
+        error = self.command("getlasterror")
         error_msg = error.get("err", "")
         if error_msg is None:
             return None
         if error_msg.startswith("not master"):
-            self.__connection._disconnect()
+            # Reset primary server and request check, if another thread isn't
+            # doing so already.
+            primary = self.__client.primary
+            if primary:
+                self.__client._reset_server_and_request_check(primary)
         return error
 
     def last_status(self):
@@ -766,11 +744,6 @@ class Database(common.BaseObject):
         remove, and so on) use the write concern ``w=1`` and report their
         errors by default.
 
-        This method must be called in the same
-        :doc:`request </examples/requests>` as the preceding operation,
-        otherwise it is unreliable. Requests are deprecated and will be removed
-        in PyMongo 3.0.
-
         Returns a SON object with status information.
 
         .. versionchanged:: 2.8
@@ -779,8 +752,7 @@ class Database(common.BaseObject):
         warnings.warn("last_status() is deprecated",
                       DeprecationWarning, stacklevel=2)
 
-        return self.command("getlasterror",
-                            read_preference=ReadPreference.PRIMARY)
+        return self.command("getlasterror")
 
     def previous_error(self):
         """**DEPRECATED**: Get the most recent error on this database.
@@ -788,12 +760,6 @@ class Database(common.BaseObject):
         This method is obsolete: all MongoDB write operations (insert, update,
         remove, and so on) use the write concern ``w=1`` and report their
         errors by default.
-
-        This method must be called in the same
-        :doc:`request </examples/requests>` as the preceding operation,
-        otherwise it is unreliable. Requests are deprecated and will be removed
-        in PyMongo 3.0. Furthermore, the underlying database command
-        ``getpreverror`` will be removed in a future MongoDB release.
 
         Only returns errors that have occurred since the last call to
         :meth:`reset_error_history`. Returns None if no such errors have
@@ -805,8 +771,7 @@ class Database(common.BaseObject):
         warnings.warn("previous_error() is deprecated",
                       DeprecationWarning, stacklevel=2)
 
-        error = self.command("getpreverror",
-                             read_preference=ReadPreference.PRIMARY)
+        error = self.command("getpreverror")
         if error.get("err", 0) is None:
             return None
         return error
@@ -818,12 +783,6 @@ class Database(common.BaseObject):
         remove, and so on) use the write concern ``w=1`` and report their
         errors by default.
 
-        This method must be called in the same
-        :doc:`request </examples/requests>` as the preceding operation,
-        otherwise it is unreliable. Requests are deprecated and will be removed
-        in PyMongo 3.0. Furthermore, the underlying database command
-        ``reseterror`` will be removed in a future MongoDB release.
-
         Calls to :meth:`previous_error` will only return errors that have
         occurred since the most recent call to this method.
 
@@ -833,16 +792,18 @@ class Database(common.BaseObject):
         warnings.warn("reset_error_history() is deprecated",
                       DeprecationWarning, stacklevel=2)
 
-        self.command("reseterror",
-                     read_preference=ReadPreference.PRIMARY)
+        self.command("reseterror")
 
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         raise TypeError("'Database' object is not iterable")
 
+    next = __next__
+
     def _default_role(self, read_only):
+        """Return the default user role for this database."""
         if self.name == "admin":
             if read_only:
                 return "readAnyDatabase"
@@ -880,7 +841,9 @@ class Database(common.BaseObject):
             opts["pwd"] = auth._password_digest(name, password)
             opts["digestPassword"] = False
 
-        opts["writeConcern"] = self._get_wc_override() or self.write_concern
+        # Don't send {} as writeConcern.
+        if self.write_concern.acknowledged and self.write_concern.document:
+            opts["writeConcern"] = self.write_concern.document
         opts.update(kwargs)
 
         if create:
@@ -888,22 +851,26 @@ class Database(common.BaseObject):
         else:
             command_name = "updateUser"
 
-        self.command(command_name, name,
-                     read_preference=ReadPreference.PRIMARY, **opts)
+        self.command(command_name, name, **opts)
 
     def _legacy_add_user(self, name, password, read_only, **kwargs):
         """Uses v1 system to add users, i.e. saving to system.users.
         """
-        user = self.system.users.find_one({"user": name}) or {"user": name}
+        # Use a Collection with the default codec_options.
+        system_users = self._collection_default_options('system.users')
+        user = system_users.find_one({"user": name}) or {"user": name}
         if password is not None:
             user["pwd"] = auth._password_digest(name, password)
         if read_only is not None:
             user["readOnly"] = read_only
         user.update(kwargs)
 
+        # We don't care what the _id is, only that it has one
+        # for the replace_one call below.
+        user.setdefault("_id", ObjectId())
         try:
-            self.system.users.save(user, **self._get_wc_override())
-        except OperationFailure, exc:
+            system_users.replace_one({"_id": user["_id"]}, user, True)
+        except OperationFailure as exc:
             # First admin user add fails gle in MongoDB >= 2.1.2
             # See SERVER-4225 for more information.
             if 'login' in str(exc):
@@ -911,7 +878,7 @@ class Database(common.BaseObject):
             # First admin user add fails gle from mongos 2.0.x
             # and 2.2.x.
             elif (exc.details and
-                    'getlasterror' in exc.details.get('note', '')):
+                  'getlasterror' in exc.details.get('note', '')):
                 pass
             else:
                 raise
@@ -941,16 +908,14 @@ class Database(common.BaseObject):
 
         .. versionchanged:: 2.2
            Added support for read only users
-
-        .. versionadded:: 1.4
         """
-        if not isinstance(name, basestring):
-            raise TypeError("name must be an instance "
-                            "of %s" % (basestring.__name__,))
+        if not isinstance(name, string_type):
+            raise TypeError("name must be an "
+                            "instance of %s" % (string_type.__name__,))
         if password is not None:
-            if not isinstance(password, basestring):
-                raise TypeError("password must be an instance "
-                                "of %s or None" % (basestring.__name__,))
+            if not isinstance(password, string_type):
+                raise TypeError("password must be an "
+                                "instance of %s" % (string_type.__name__,))
             if len(password) == 0:
                 raise ValueError("password can't be empty")
         if read_only is not None:
@@ -960,17 +925,18 @@ class Database(common.BaseObject):
                                          "read_only and roles together")
 
         try:
-            uinfo = self.command("usersInfo", name,
-                                 read_preference=ReadPreference.PRIMARY)
+            uinfo = self.command("usersInfo", name)
+            # Create the user if not found in uinfo, otherwise update one.
             self._create_or_update_user(
                 (not uinfo["users"]), name, password, read_only, **kwargs)
-        except OperationFailure, exc:
+        except OperationFailure as exc:
             # MongoDB >= 2.5.3 requires the use of commands to manage
             # users.
             if exc.code in common.COMMAND_NOT_FOUND_CODES:
                 self._legacy_add_user(name, password, read_only, **kwargs)
-            # Unauthorized. MongoDB >= 2.7.1 has a narrow localhost exception,
-            # and we must add a user before sending commands.
+                return
+            # Unauthorized. Attempt to create the user in case of
+            # localhost exception.
             elif exc.code == 13:
                 self._create_or_update_user(
                     True, name, password, read_only, **kwargs)
@@ -985,24 +951,22 @@ class Database(common.BaseObject):
 
         :Parameters:
           - `name`: the name of the user to remove
-
-        .. versionadded:: 1.4
         """
-
         try:
-            write_concern = self._get_wc_override() or self.write_concern
-            self.command("dropUser", name,
-                         read_preference=ReadPreference.PRIMARY,
-                         writeConcern=write_concern)
-        except OperationFailure, exc:
+            cmd = SON([("dropUser", name)])
+            # Don't send {} as writeConcern.
+            if self.write_concern.acknowledged and self.write_concern.document:
+                cmd["writeConcern"] = self.write_concern.document
+            self.command(cmd)
+        except OperationFailure as exc:
             # See comment in add_user try / except above.
             if exc.code in common.COMMAND_NOT_FOUND_CODES:
-                self.system.users.remove({"user": name},
-                                         **self._get_wc_override())
+                coll = self._collection_default_options('system.users')
+                coll.delete_one({"user": name})
                 return
             raise
 
-    def authenticate(self, name, password=None,
+    def authenticate(self, name=None, password=None,
                      source=None, mechanism='DEFAULT', **kwargs):
         """Authenticate to use this database.
 
@@ -1027,12 +991,10 @@ class Database(common.BaseObject):
             authentication profiles for different purposes you must use
             distinct client instances.
 
-          - To get authentication to apply immediately to all
-            existing sockets you may need to reset this client instance's
-            sockets using :meth:`~pymongo.mongo_client.MongoClient.disconnect`.
-
         :Parameters:
-          - `name`: the name of the user to authenticate.
+          - `name`: the name of the user to authenticate. Optional when
+            `mechanism` is MONGODB-X509 and the MongoDB server version is
+            >= 3.4.
           - `password` (optional): the password of the user to authenticate.
             Not used with GSSAPI or MONGODB-X509 authentication.
           - `source` (optional): the database to authenticate on. If not
@@ -1041,9 +1003,10 @@ class Database(common.BaseObject):
             :data:`~pymongo.auth.MECHANISMS` for options.
             By default, use SCRAM-SHA-1 with MongoDB 3.0 and later,
             MONGODB-CR (MongoDB Challenge Response protocol) for older servers.
-          - `gssapiServiceName` (optional): Used with the GSSAPI mechanism
-            to specify the service name portion of the service principal name.
-            Defaults to 'mongodb'.
+          - `authMechanismProperties` (optional): Used to specify
+            authentication mechanism specific options. To specify the service
+            name for GSSAPI authentication pass
+            authMechanismProperties='SERVICE_NAME:<service name>'
 
         .. versionadded:: 2.8
            Use SCRAM-SHA-1 with MongoDB 3.0 and later.
@@ -1056,38 +1019,40 @@ class Database(common.BaseObject):
 
         .. mongodoc:: authenticate
         """
-        if not isinstance(name, basestring):
-            raise TypeError("name must be an instance "
-                            "of %s" % (basestring.__name__,))
-        if password is not None and not isinstance(password, basestring):
-            raise TypeError("password must be an instance "
-                            "of %s" % (basestring.__name__,))
-        if source is not None and not isinstance(source, basestring):
-            raise TypeError("source must be an instance "
-                            "of %s" % (basestring.__name__,))
+        if name is not None and not isinstance(name, string_type):
+            raise TypeError("name must be an "
+                            "instance of %s" % (string_type.__name__,))
+        if password is not None and not isinstance(password, string_type):
+            raise TypeError("password must be an "
+                            "instance of %s" % (string_type.__name__,))
+        if source is not None and not isinstance(source, string_type):
+            raise TypeError("source must be an "
+                            "instance of %s" % (string_type.__name__,))
         common.validate_auth_mechanism('mechanism', mechanism)
 
         validated_options = {}
-        for option, value in kwargs.iteritems():
+        for option, value in iteritems(kwargs):
             normalized, val = common.validate_auth_option(option, value)
             validated_options[normalized] = val
 
-        credentials = auth._build_credentials_tuple(mechanism,
-                                source or self.name, name,
-                                password, validated_options)
-        self.connection._cache_credentials(self.name, credentials)
+        credentials = auth._build_credentials_tuple(
+            mechanism,
+            source or self.name,
+            name,
+            password,
+            validated_options)
+
+        self.client._cache_credentials(
+            self.name,
+            credentials,
+            connect=True)
+
         return True
 
     def logout(self):
-        """Deauthorize use of this database for this client instance.
-
-        .. note:: Other databases may still be authenticated, and other
-           existing :class:`~socket.socket` connections may remain
-           authenticated for this database unless you reset all sockets
-           with :meth:`~pymongo.mongo_client.MongoClient.disconnect`.
-        """
+        """Deauthorize use of this database for this client instance."""
         # Sockets will be deauthenticated as they are used.
-        self.connection._purge_credentials(self.name)
+        self.client._purge_credentials(self.name)
 
     def dereference(self, dbref, **kwargs):
         """Dereference a :class:`~bson.dbref.DBRef`, getting the
@@ -1139,9 +1104,7 @@ class Database(common.BaseObject):
         if not isinstance(code, Code):
             code = Code(code)
 
-        result = self.command("$eval", code,
-                              read_preference=ReadPreference.PRIMARY,
-                              args=args)
+        result = self.command("$eval", code, args=args)
         return result.get("retval", None)
 
     def __call__(self, *args, **kwargs):
@@ -1150,7 +1113,7 @@ class Database(common.BaseObject):
         raise TypeError("'Database' object is not callable. If you meant to "
                         "call the '%s' method on a '%s' object it is "
                         "failing because no such method exists." % (
-                            self.__name, self.__connection.__class__.__name__))
+                            self.__name, self.__client.__class__.__name__))
 
 
 class SystemJS(object):
@@ -1177,23 +1140,22 @@ class SystemJS(object):
           >>> del db.system_js.add1
           >>> db.system.js.find({"_id": "add1"}).count()
           0
-
-        .. note:: Requires server version **>= 1.1.1**
-
-        .. versionadded:: 1.5
         """
+        if not database.write_concern.acknowledged:
+            database = database.client.get_database(
+                database.name, write_concern=WriteConcern())
         # can't just assign it since we've overridden __setattr__
         object.__setattr__(self, "_db", database)
 
     def __setattr__(self, name, code):
-        self._db.system.js.save({"_id": name, "value": Code(code)},
-                                **self._db._get_wc_override())
+        self._db.system.js.replace_one(
+            {"_id": name}, {"_id": name, "value": Code(code)}, True)
 
     def __setitem__(self, name, code):
         self.__setattr__(name, code)
 
     def __delattr__(self, name):
-        self._db.system.js.remove({"_id": name}, **self._db._get_wc_override())
+        self._db.system.js.delete_one({"_id": name})
 
     def __delitem__(self, name):
         self.__delattr__(name)
@@ -1208,8 +1170,5 @@ class SystemJS(object):
         return self.__getattr__(name)
 
     def list(self):
-        """Get a list of the names of the functions stored in this database.
-
-        .. versionadded:: 1.9
-        """
-        return [x["_id"] for x in self._db.system.js.find(fields=["_id"])]
+        """Get a list of the names of the functions stored in this database."""
+        return [x["_id"] for x in self._db.system.js.find(projection=["_id"])]

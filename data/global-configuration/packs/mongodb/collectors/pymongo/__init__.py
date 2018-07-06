@@ -14,7 +14,6 @@
 
 """Python driver for MongoDB."""
 
-
 ASCENDING = 1
 """Ascending sort order."""
 DESCENDING = -1
@@ -23,10 +22,6 @@ DESCENDING = -1
 GEO2D = "2d"
 """Index specifier for a 2-dimensional `geospatial index`_.
 
-.. versionadded:: 1.5.1
-
-.. note:: Geo-spatial indexing requires server version **>= 1.3.3**.
-
 .. _geospatial index: http://docs.mongodb.org/manual/core/2d/
 """
 
@@ -34,8 +29,6 @@ GEOHAYSTACK = "geoHaystack"
 """Index specifier for a 2-dimensional `haystack index`_.
 
 .. versionadded:: 2.1
-
-.. note:: Geo-spatial indexing requires server version **>= 1.5.6**.
 
 .. _haystack index: http://docs.mongodb.org/manual/core/geohaystack/
 """
@@ -77,10 +70,10 @@ SLOW_ONLY = 1
 ALL = 2
 """Profile all operations."""
 
-version_tuple = (2, 9, 2)
+version_tuple = (3, 4, 0)
 
 def get_version_string():
-    if isinstance(version_tuple[-1], basestring):
+    if isinstance(version_tuple[-1], str):
         return '.'.join(map(str, version_tuple[:-1])) + version_tuple[-1]
     return '.'.join(map(str, version_tuple))
 
@@ -90,25 +83,21 @@ __version__ = version = get_version_string()
 from pymongo.collection import ReturnDocument
 from pymongo.common import (MIN_SUPPORTED_WIRE_VERSION,
                             MAX_SUPPORTED_WIRE_VERSION)
-from pymongo.connection import Connection
 from pymongo.cursor import CursorType
 from pymongo.mongo_client import MongoClient
 from pymongo.mongo_replica_set_client import MongoReplicaSetClient
-from pymongo.operations import (InsertOne,
+from pymongo.operations import (IndexModel,
+                                InsertOne,
                                 DeleteOne,
                                 DeleteMany,
                                 UpdateOne,
                                 UpdateMany,
                                 ReplaceOne)
-from pymongo.replica_set_connection import ReplicaSetConnection
 from pymongo.read_preferences import ReadPreference
 from pymongo.write_concern import WriteConcern
 
 def has_c():
-    """Is the C extension installed?
-
-    .. versionadded:: 1.5
-    """
+    """Is the C extension installed?"""
     try:
         from pymongo import _cmessage
         return True

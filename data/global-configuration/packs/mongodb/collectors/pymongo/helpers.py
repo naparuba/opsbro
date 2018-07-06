@@ -14,55 +14,39 @@
 
 """Bits and pieces used by the driver that don't really fit elsewhere."""
 
-import random
+import collections
+import datetime
 import struct
-import warnings
+import sys
+import traceback
 
 import bson
-import pymongo
-
-from bson.binary import OLD_UUID_SUBTYPE
+from bson.codec_options import CodecOptions
+from bson.py3compat import itervalues, string_type, iteritems
 from bson.son import SON
-from pymongo import auth
-from pymongo.errors import (AutoReconnect,
-                            CursorNotFound,
+from pymongo import ASCENDING
+from pymongo.errors import (CursorNotFound,
                             DuplicateKeyError,
-                            InvalidName,
-                            InvalidOperation,
-                            OperationFailure,
                             ExecutionTimeout,
+                            NotMasterError,
+                            OperationFailure,
+                            ProtocolError,
+                            WriteError,
+                            WriteConcernError,
                             WTimeoutError)
-from pymongo.read_preferences import _ServerMode
-from pymongo.write_concern import WriteConcern as _WriteConcern
+from pymongo.message import _Query, _convert_exception
+from pymongo.read_concern import DEFAULT_READ_CONCERN
 
 
-def _get_common_options(obj, codec_options, read_preference, write_concern):
-    """Get the codec options, read preference mode and tags, and write concern
-    necessary to create a new Database of Collection instance.
-    """
-    if codec_options is None:
-        codec_options = obj.codec_options
+_UUNDER = u"_"
 
-    if read_preference is None:
-        rp_mode = obj.read_preference
-        rp_tags = obj.tag_sets
-    else:
-        if isinstance(read_preference, _ServerMode):
-            rp_mode = read_preference.mode
-            rp_tags = read_preference.tag_sets
-        else:
-            rp_mode = read_preference
-            rp_tags = [{}]
+_UNICODE_REPLACE_CODEC_OPTIONS = CodecOptions(
+    unicode_decode_error_handler='replace')
 
-    if write_concern is None:
-        wc_document = obj.write_concern
-    else:
-        if not isinstance(write_concern, _WriteConcern):
-            raise TypeError("write_concern must be an instance of "
-                            "pymongo.write_concern.WriteConcern")
-        wc_document = write_concern.document
 
-    return codec_options, rp_mode, rp_tags, wc_document
+def _gen_index_name(keys):
+    """Generate an index name from the set of fields it is over."""
+    return _UUNDER.join(["%s_%s" % item for item in keys])
 
 
 def _index_list(key_or_list, direction=None):
@@ -73,8 +57,8 @@ def _index_list(key_or_list, direction=None):
     if direction is not None:
         return [(key_or_list, direction)]
     else:
-        if isinstance(key_or_list, basestring):
-            return [(key_or_list, pymongo.ASCENDING)]
+        if isinstance(key_or_list, string_type):
+            return [(key_or_list, ASCENDING)]
         elif not isinstance(key_or_list, (list, tuple)):
             raise TypeError("if no direction is specified, "
                             "key_or_list must be an instance of list")
@@ -86,10 +70,10 @@ def _index_document(index_list):
 
     Takes a list of (key, direction) pairs.
     """
-    if isinstance(index_list, dict):
+    if isinstance(index_list, collections.Mapping):
         raise TypeError("passing a dict to sort/create_index/hint is not "
                         "allowed - use a list of tuples instead. did you "
-                        "mean %r?" % list(index_list.iteritems()))
+                        "mean %r?" % list(iteritems(index_list)))
     elif not isinstance(index_list, (list, tuple)):
         raise TypeError("must use a list of (key, direction) pairs, "
                         "not: " + repr(index_list))
@@ -98,9 +82,9 @@ def _index_document(index_list):
 
     index = SON()
     for (key, value) in index_list:
-        if not isinstance(key, basestring):
+        if not isinstance(key, string_type):
             raise TypeError("first item in each key pair must be a string")
-        if not isinstance(value, (basestring, int, dict)):
+        if not isinstance(value, (string_type, int, collections.Mapping)):
             raise TypeError("second item in each key pair must be 1, -1, "
                             "'2d', 'geoHaystack', or another valid MongoDB "
                             "index specifier.")
@@ -108,32 +92,41 @@ def _index_document(index_list):
     return index
 
 
-def _unpack_response(response, cursor_id=None, as_class=dict,
-                     tz_aware=False, uuid_subtype=OLD_UUID_SUBTYPE,
-                     compile_re=True):
+def _unpack_response(response,
+                     cursor_id=None,
+                     codec_options=_UNICODE_REPLACE_CODEC_OPTIONS):
     """Unpack a response from the database.
 
     Check the response for errors and unpack, returning a dictionary
     containing the response data.
+
+    Can raise CursorNotFound, NotMasterError, ExecutionTimeout, or
+    OperationFailure.
 
     :Parameters:
       - `response`: byte string as returned from the database
       - `cursor_id` (optional): cursor_id we sent to get this response -
         used for raising an informative exception when we get cursor id not
         valid at server response
-      - `as_class` (optional): class to use for resulting documents
+      - `codec_options` (optional): an instance of
+        :class:`~bson.codec_options.CodecOptions`
     """
     response_flag = struct.unpack("<i", response[:4])[0]
     if response_flag & 1:
         # Shouldn't get this response if we aren't doing a getMore
-        assert cursor_id is not None
+        if cursor_id is None:
+            raise ProtocolError("No cursor id for getMore operation")
 
-        raise CursorNotFound("cursor id '%s' not valid at server" %
-                             cursor_id)
+        # Fake a getMore command response. OP_GET_MORE provides no document.
+        msg = "Cursor not found, cursor id: %d" % (cursor_id,)
+        errobj = {"ok": 0, "errmsg": msg, "code": 43}
+        raise CursorNotFound(msg, 43, errobj)
     elif response_flag & 2:
         error_object = bson.BSON(response[20:]).decode()
+        # Fake the ok field if it doesn't exist.
+        error_object.setdefault("ok", 0)
         if error_object["$err"].startswith("not master"):
-            raise AutoReconnect(error_object["$err"])
+            raise NotMasterError(error_object["$err"], error_object)
         elif error_object.get("code") == 50:
             raise ExecutionTimeout(error_object.get("$err"),
                                    error_object.get("code"),
@@ -143,18 +136,17 @@ def _unpack_response(response, cursor_id=None, as_class=dict,
                                error_object.get("code"),
                                error_object)
 
-    result = {}
-    result["cursor_id"] = struct.unpack("<q", response[4:12])[0]
-    result["starting_from"] = struct.unpack("<i", response[12:16])[0]
-    result["number_returned"] = struct.unpack("<i", response[16:20])[0]
-    result["data"] = bson.decode_all(response[20:],
-                                     as_class, tz_aware, uuid_subtype,
-                                     compile_re)
+    result = {"cursor_id": struct.unpack("<q", response[4:12])[0],
+              "starting_from": struct.unpack("<i", response[12:16])[0],
+              "number_returned": struct.unpack("<i", response[16:20])[0],
+              "data": bson.decode_all(response[20:], codec_options)}
+
     assert len(result["data"]) == result["number_returned"]
     return result
 
 
-def _check_command_response(response, reset, msg=None, allowable_errors=None):
+def _check_command_response(response, msg=None, allowable_errors=None,
+                            parse_write_concern_error=False):
     """Check the response to a command for errors.
     """
     if "ok" not in response:
@@ -163,6 +155,7 @@ def _check_command_response(response, reset, msg=None, allowable_errors=None):
                                response.get("code"),
                                response)
 
+    # TODO: remove, this is moving to _check_gle_response
     if response.get("wtimeout", False):
         # MongoDB versions before 1.8.0 return the error message in an "errmsg"
         # field. If "errmsg" exists "err" will also exist set to None, so we
@@ -171,13 +164,17 @@ def _check_command_response(response, reset, msg=None, allowable_errors=None):
                             response.get("code"),
                             response)
 
+    if parse_write_concern_error and 'writeConcernError' in response:
+        wce = response['writeConcernError']
+        raise WriteConcernError(wce['errmsg'], wce['code'], wce)
+
     if not response["ok"]:
 
         details = response
         # Mongos returns the error details in a 'raw' object
         # for some errors.
         if "raw" in response:
-            for shard in response["raw"].itervalues():
+            for shard in itervalues(response["raw"]):
                 # Grab the first non-empty raw error from a shard.
                 if shard.get("errmsg") and not shard.get("ok"):
                     details = shard
@@ -188,10 +185,8 @@ def _check_command_response(response, reset, msg=None, allowable_errors=None):
 
             # Server is "not master" or "recovering"
             if (errmsg.startswith("not master")
-                or errmsg.startswith("node is recovering")):
-                if reset is not None:
-                    reset()
-                raise AutoReconnect(errmsg)
+                    or errmsg.startswith("node is recovering")):
+                raise NotMasterError(errmsg, response)
 
             # Server assertion failures
             if errmsg == "db assertion failure":
@@ -208,9 +203,95 @@ def _check_command_response(response, reset, msg=None, allowable_errors=None):
                 raise DuplicateKeyError(errmsg, code, response)
             elif code == 50:
                 raise ExecutionTimeout(errmsg, code, response)
+            elif code == 43:
+                raise CursorNotFound(errmsg, code, response)
 
             msg = msg or "%s"
             raise OperationFailure(msg % errmsg, code, response)
+
+
+def _check_gle_response(response):
+    """Return getlasterror response as a dict, or raise OperationFailure."""
+    response = _unpack_response(response)
+
+    assert response["number_returned"] == 1
+    result = response["data"][0]
+
+    # Did getlasterror itself fail?
+    _check_command_response(result)
+
+    if result.get("wtimeout", False):
+        # MongoDB versions before 1.8.0 return the error message in an "errmsg"
+        # field. If "errmsg" exists "err" will also exist set to None, so we
+        # have to check for "errmsg" first.
+        raise WTimeoutError(result.get("errmsg", result.get("err")),
+                            result.get("code"),
+                            result)
+
+    error_msg = result.get("err", "")
+    if error_msg is None:
+        return result
+
+    if error_msg.startswith("not master"):
+        raise NotMasterError(error_msg, result)
+
+    details = result
+
+    # mongos returns the error code in an error object for some errors.
+    if "errObjects" in result:
+        for errobj in result["errObjects"]:
+            if errobj.get("err") == error_msg:
+                details = errobj
+                break
+
+    code = details.get("code")
+    if code in (11000, 11001, 12582):
+        raise DuplicateKeyError(details["err"], code, result)
+    raise OperationFailure(details["err"], code, result)
+
+
+def _first_batch(sock_info, db, coll, query, ntoreturn,
+                 slave_ok, codec_options, read_preference, cmd, listeners):
+    """Simple query helper for retrieving a first (and possibly only) batch."""
+    query = _Query(
+        0, db, coll, 0, query, None, codec_options,
+        read_preference, ntoreturn, 0, DEFAULT_READ_CONCERN, None)
+
+    name = next(iter(cmd))
+    duration = None
+    publish = listeners.enabled_for_commands
+    if publish:
+        start = datetime.datetime.now()
+
+    request_id, msg, max_doc_size = query.get_message(slave_ok,
+                                                      sock_info.is_mongos)
+
+    if publish:
+        encoding_duration = datetime.datetime.now() - start
+        listeners.publish_command_start(
+            cmd, db, request_id, sock_info.address)
+        start = datetime.datetime.now()
+
+    sock_info.send_message(msg, max_doc_size)
+    response = sock_info.receive_message(1, request_id)
+    try:
+        result = _unpack_response(response, None, codec_options)
+    except Exception as exc:
+        if publish:
+            duration = (datetime.datetime.now() - start) + encoding_duration
+            if isinstance(exc, (NotMasterError, OperationFailure)):
+                failure = exc.details
+            else:
+                failure = _convert_exception(exc)
+            listeners.publish_command_failure(
+                duration, failure, name, request_id, sock_info.address)
+        raise
+    if publish:
+        duration = (datetime.datetime.now() - start) + encoding_duration
+        listeners.publish_command_success(
+            duration, result, name, request_id, sock_info.address)
+
+    return result
 
 
 def _check_write_command_response(results):
@@ -231,17 +312,19 @@ def _check_write_command_response(results):
             error["index"] += offset
             if error.get("code") == 11000:
                 raise DuplicateKeyError(error.get("errmsg"), 11000, error)
+            raise WriteError(error.get("errmsg"), error.get("code"), error)
         else:
             error = result["writeConcernError"]
             if "errInfo" in error and error["errInfo"].get('wtimeout'):
                 # Make sure we raise WTimeoutError
-                raise WTimeoutError(error.get("errmsg"),
-                                    error.get("code"), error)
-        raise OperationFailure(error.get("errmsg"), error.get("code"), error)
+                raise WTimeoutError(
+                    error.get("errmsg"), error.get("code"), error)
+            raise WriteConcernError(
+                error.get("errmsg"), error.get("code"), error)
 
 
-def _fields_list_to_dict(fields):
-    """Takes a list of field names and returns a matching dictionary.
+def _fields_list_to_dict(fields, option_name):
+    """Takes a sequence of field names and returns a matching dictionary.
 
     ["a", "b"] becomes {"a": 1, "b": 1}
 
@@ -249,134 +332,32 @@ def _fields_list_to_dict(fields):
 
     ["a.b.c", "d", "a.c"] becomes {"a.b.c": 1, "d": 1, "a.c": 1}
     """
-    as_dict = {}
-    for field in fields:
-        if not isinstance(field, basestring):
-            raise TypeError("fields must be a list of key names, "
-                            "each an instance of %s" % (basestring.__name__,))
-        as_dict[field] = 1
-    return as_dict
+    if isinstance(fields, collections.Mapping):
+        return fields
+
+    if isinstance(fields, collections.Sequence):
+        if not all(isinstance(field, string_type) for field in fields):
+            raise TypeError("%s must be a list of key names, each an "
+                            "instance of %s" % (option_name,
+                                                string_type.__name__))
+        return dict.fromkeys(fields, 1)
+
+    raise TypeError("%s must be a mapping or "
+                    "list of key names" % (option_name,))
 
 
-def _check_database_name(name):
-    """Check if a database name is valid."""
-    if not name:
-        raise InvalidName("database name cannot be the empty string")
+def _handle_exception():
+    """Print exceptions raised by subscribers to stderr."""
+    # Heavily influenced by logging.Handler.handleError.
 
-    for invalid_char in [" ", ".", "$", "/", "\\", "\x00"]:
-        if invalid_char in name:
-            raise InvalidName("database names cannot contain the "
-                              "character %r" % invalid_char)
-
-
-def _copy_database(
-        fromdb,
-        todb,
-        fromhost,
-        mechanism,
-        username,
-        password,
-        sock_info,
-        cmd_func):
-    """Copy a database, perhaps from a remote host.
-
-    :Parameters:
-      - `fromdb`: Source database.
-      - `todb`: Target database.
-      - `fromhost`: Source host like 'foo.com', 'foo.com:27017', or None.
-      - `mechanism`: An authentication mechanism.
-      - `username`: A str or unicode, or None.
-      - `password`: A str or unicode, or None.
-      - `sock_info`: A SocketInfo instance.
-      - `cmd_func`: A callback taking args sock_info, database, command doc.
-    """
-    if not isinstance(fromdb, basestring):
-        raise TypeError('from_name must be an instance '
-                        'of %s' % (basestring.__name__,))
-    if not isinstance(todb, basestring):
-        raise TypeError('to_name must be an instance '
-                        'of %s' % (basestring.__name__,))
-
-    _check_database_name(todb)
-
-    warnings.warn("copy_database is deprecated. Use the raw 'copydb' command"
-                  " or db.copyDatabase() in the mongo shell. See"
-                  " doc/examples/copydb.",
-                  DeprecationWarning, stacklevel=2)
-
-    # It would be better if the user told us what mechanism to use, but for
-    # backwards compatibility with earlier PyMongos we don't require the
-    # mechanism. Hope 'fromhost' runs the same version as the target.
-    if mechanism == 'DEFAULT':
-        if sock_info.max_wire_version >= 3:
-            mechanism = 'SCRAM-SHA-1'
-        else:
-            mechanism = 'MONGODB-CR'
-
-    if username is not None:
-        if mechanism == 'SCRAM-SHA-1':
-            credentials = auth._build_credentials_tuple(mech=mechanism,
-                                                        source='admin',
-                                                        user=username,
-                                                        passwd=password,
-                                                        extra=None)
-
-            try:
-                auth._copydb_scram_sha1(credentials=credentials,
-                                        sock_info=sock_info,
-                                        cmd_func=cmd_func,
-                                        fromdb=fromdb,
-                                        todb=todb,
-                                        fromhost=fromhost)
-            except OperationFailure, exc:
-                errmsg = exc.details and exc.details.get('errmsg') or ''
-                if 'no such cmd: saslStart' in errmsg:
-                    explanation = (
-                        "%s doesn't support SCRAM-SHA-1, pass"
-                        " mechanism='MONGODB-CR' to copy_database" % fromhost)
-
-                    raise OperationFailure(explanation,
-                                           exc.code,
-                                           exc.details)
-                else:
-                    raise
-
-        elif mechanism == 'MONGODB-CR':
-            get_nonce_cmd = SON([('copydbgetnonce', 1),
-                                 ('fromhost', fromhost)])
-
-            get_nonce_response, _ = cmd_func(sock_info, 'admin', get_nonce_cmd)
-            nonce = get_nonce_response['nonce']
-            copydb_cmd = SON([('copydb', 1),
-                              ('fromdb', fromdb),
-                              ('todb', todb)])
-
-            copydb_cmd['username'] = username
-            copydb_cmd['nonce'] = nonce
-            copydb_cmd['key'] = auth._auth_key(nonce, username, password)
-            if fromhost is not None:
-                copydb_cmd['fromhost'] = fromhost
-
-            cmd_func(sock_info, 'admin', copydb_cmd)
-        else:
-            raise InvalidOperation('Authentication mechanism %r not supported'
-                                   ' for copy_database' % mechanism)
-    else:
-        # No username.
-        copydb_cmd = SON([('copydb', 1),
-                          ('fromdb', fromdb),
-                          ('todb', todb)])
-
-        if fromhost:
-            copydb_cmd['fromhost'] = fromhost
-
-        cmd_func(sock_info, 'admin', copydb_cmd)
-
-
-def shuffled(sequence):
-    """Returns a copy of the sequence (as a :class:`list`) which has been
-    shuffled by :func:`random.shuffle`.
-    """
-    out = list(sequence)
-    random.shuffle(out)
-    return out
+    # See note here:
+    # https://docs.python.org/3.4/library/sys.html#sys.__stderr__
+    if sys.stderr:
+        einfo = sys.exc_info()
+        try:
+            traceback.print_exception(einfo[0], einfo[1], einfo[2],
+                                      None, sys.stderr)
+        except IOError:
+            pass
+        finally:
+            del einfo

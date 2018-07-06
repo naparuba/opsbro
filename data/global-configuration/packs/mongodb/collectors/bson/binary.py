@@ -12,13 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-try:
-    from uuid import UUID
-except ImportError:
-    # Python2.4 doesn't have a uuid module.
-    pass
+from uuid import UUID
 
-from bson.py3compat import PY3, binary_type
+from bson.py3compat import PY3
 
 """Tools for representing BSON binary data.
 """
@@ -27,14 +23,10 @@ BINARY_SUBTYPE = 0
 """BSON binary subtype for binary data.
 
 This is the default subtype for binary data.
-
-.. versionadded:: 1.5
 """
 
 FUNCTION_SUBTYPE = 1
 """BSON binary subtype for functions.
-
-.. versionadded:: 1.5
 """
 
 OLD_BINARY_SUBTYPE = 2
@@ -42,8 +34,6 @@ OLD_BINARY_SUBTYPE = 2
 
 This is the old default subtype, the current
 default is :data:`BINARY_SUBTYPE`.
-
-.. versionadded:: 1.7
 """
 
 OLD_UUID_SUBTYPE = 3
@@ -64,7 +54,6 @@ change to this in a future release.
 
 .. versionchanged:: 2.1
    Changed to subtype 4.
-.. versionadded:: 1.5
 """
 
 STANDARD = UUID_SUBTYPE
@@ -74,7 +63,7 @@ STANDARD = UUID_SUBTYPE
 and decoded from BSON binary, using RFC-4122 byte order with
 binary subtype :data:`UUID_SUBTYPE`.
 
-.. versionadded:: 2.9
+.. versionadded:: 3.0
 """
 
 PYTHON_LEGACY = OLD_UUID_SUBTYPE
@@ -84,7 +73,7 @@ PYTHON_LEGACY = OLD_UUID_SUBTYPE
 and decoded from BSON binary, using RFC-4122 byte order with
 binary subtype :data:`OLD_UUID_SUBTYPE`.
 
-.. versionadded:: 2.9
+.. versionadded:: 3.0
 """
 
 JAVA_LEGACY = 5
@@ -107,7 +96,7 @@ byte order and binary subtype :data:`OLD_UUID_SUBTYPE`.
 .. versionadded:: 2.3
 """
 
-ALL_UUID_SUBTYPES = (OLD_UUID_SUBTYPE, UUID_SUBTYPE, JAVA_LEGACY, CSHARP_LEGACY)
+ALL_UUID_SUBTYPES = (OLD_UUID_SUBTYPE, UUID_SUBTYPE)
 ALL_UUID_REPRESENTATIONS = (STANDARD, PYTHON_LEGACY, JAVA_LEGACY, CSHARP_LEGACY)
 UUID_REPRESENTATION_NAMES = {
     PYTHON_LEGACY: 'PYTHON_LEGACY',
@@ -117,18 +106,14 @@ UUID_REPRESENTATION_NAMES = {
 
 MD5_SUBTYPE = 5
 """BSON binary subtype for an MD5 hash.
-
-.. versionadded:: 1.5
 """
 
 USER_DEFINED_SUBTYPE = 128
 """BSON binary subtype for any user defined structure.
-
-.. versionadded:: 1.5
 """
 
 
-class Binary(binary_type):
+class Binary(bytes):
     """Representation of BSON binary data.
 
     This is necessary because we want to represent Python strings as
@@ -154,14 +139,13 @@ class Binary(binary_type):
     _type_marker = 5
 
     def __new__(cls, data, subtype=BINARY_SUBTYPE):
-        if not isinstance(data, binary_type):
-            raise TypeError("data must be an "
-                            "instance of %s" % (binary_type.__name__,))
+        if not isinstance(data, bytes):
+            raise TypeError("data must be an instance of bytes")
         if not isinstance(subtype, int):
             raise TypeError("subtype must be an instance of int")
         if subtype >= 256 or subtype < 0:
             raise ValueError("subtype must be contained in [0, 256)")
-        self = binary_type.__new__(cls, data)
+        self = bytes.__new__(cls, data)
         self.__subtype = subtype
         return self
 
@@ -174,14 +158,14 @@ class Binary(binary_type):
     def __getnewargs__(self):
         # Work around http://bugs.python.org/issue7382
         data = super(Binary, self).__getnewargs__()[0]
-        if PY3 and not isinstance(data, binary_type):
+        if PY3 and not isinstance(data, bytes):
             data = data.encode('latin-1')
         return data, self.__subtype
 
     def __eq__(self, other):
         if isinstance(other, Binary):
-            return ((self.__subtype, binary_type(self)) ==
-                    (other.subtype, binary_type(other)))
+            return ((self.__subtype, bytes(self)) ==
+                    (other.subtype, bytes(other)))
         # We don't return NotImplemented here because if we did then
         # Binary("foo") == "foo" would return True, since Binary is a
         # subclass of str...
@@ -194,21 +178,21 @@ class Binary(binary_type):
         return not self == other
 
     def __repr__(self):
-        return "Binary(%s, %s)" % (binary_type.__repr__(self), self.__subtype)
+        return "Binary(%s, %s)" % (bytes.__repr__(self), self.__subtype)
 
 
 class UUIDLegacy(Binary):
-    """UUID wrapper to support working with UUIDs stored as legacy
-    BSON binary subtype 3.
+    """UUID wrapper to support working with UUIDs stored as PYTHON_LEGACY.
 
     .. doctest::
 
       >>> import uuid
-      >>> from bson.binary import Binary, UUIDLegacy, UUID_SUBTYPE
+      >>> from bson.binary import Binary, UUIDLegacy, STANDARD
+      >>> from bson.codec_options import CodecOptions
       >>> my_uuid = uuid.uuid4()
-      >>> coll = db.test
-      >>> coll.uuid_subtype = UUID_SUBTYPE
-      >>> coll.insert({'uuid': Binary(my_uuid.bytes, 3)})
+      >>> coll = db.get_collection('test',
+      ...                          CodecOptions(uuid_representation=STANDARD))
+      >>> coll.insert_one({'uuid': Binary(my_uuid.bytes, 3)}).inserted_id
       ObjectId('...')
       >>> coll.find({'uuid': my_uuid}).count()
       0
@@ -219,8 +203,8 @@ class UUIDLegacy(Binary):
       >>>
       >>> # Convert from subtype 3 to subtype 4
       >>> doc = coll.find_one({'uuid': UUIDLegacy(my_uuid)})
-      >>> coll.save(doc)
-      ObjectId('...')
+      >>> coll.replace_one({"_id": doc["_id"]}, doc).matched_count
+      1
       >>> coll.find({'uuid': UUIDLegacy(my_uuid)}).count()
       0
       >>> coll.find({'uuid': {'$in': [UUIDLegacy(my_uuid), my_uuid]}}).count()
@@ -237,10 +221,7 @@ class UUIDLegacy(Binary):
     def __new__(cls, obj):
         if not isinstance(obj, UUID):
             raise TypeError("obj must be an instance of uuid.UUID")
-        # Python 3.0(.1) returns a bytearray instance for bytes (3.1 and
-        # newer just return a bytes instance). Convert that to binary_type
-        # for compatibility.
-        self = Binary.__new__(cls, binary_type(obj.bytes), OLD_UUID_SUBTYPE)
+        self = Binary.__new__(cls, obj.bytes, OLD_UUID_SUBTYPE)
         self.__uuid = obj
         return self
 
