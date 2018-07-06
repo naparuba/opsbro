@@ -1,4 +1,3 @@
-import json
 import urllib
 import ssl
 
@@ -15,6 +14,9 @@ except ImportError:
     from urllib.error import URLError, HTTPError
 
 _HTTP_EXCEPTIONS = None
+
+from .jsonmgr import jsoner
+from .util import unicode_to_bytes
 
 
 def get_http_exceptions():
@@ -102,7 +104,7 @@ class Httper(object):
         if params:
             # TODO: sure it's json and not urlencode?
             # data = urllib.urlencode(params)
-            data = json.dumps(params)
+            data = unicode_to_bytes(jsoner.dumps(params))
         
         url_opener = build_opener(HTTPHandler)
         

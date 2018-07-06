@@ -61,6 +61,8 @@ echo "Checking if the data source is created, with NAME--opsbro--NODE_UUID as na
 
 curl -s -H "Authorization: Bearer eyJrIjoibmhIR0FuRnB0MTN6dFBMTlNMZDZKWjJXakFuR0I2Wk4iLCJuIjoiT3BzQnJvIiwiaWQiOjF9" http://localhost:3000/api/datasources | grep --color opsbro
 if [ $? != 0 ]; then
+    curl -s -H "Authorization: Bearer eyJrIjoibmhIR0FuRnB0MTN6dFBMTlNMZDZKWjJXakFuR0I2Wk4iLCJuIjoiT3BzQnJvIiwiaWQiOjF9" http://localhost:3000/api/datasources
+    cat /var/log/opsbro/module.grafana.log
     echo "ERROR: the grafana connector is not OK on data source insert"
     exit 2
 fi
