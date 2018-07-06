@@ -45,6 +45,14 @@ class DNSQuery:
         return unicode_to_bytes(s)
     
     
+    @staticmethod
+    def _int_to_byte(n):
+        if PY3:
+            return bytes([int(n)])
+        else:
+            return chr(int(n))
+    
+    
     # We look in the nodes for the good group
     def lookup_for_nodes(self, dom):
         # TODO: copy nodes can be huge, maybe ask gossip to have a static list?
@@ -122,7 +130,12 @@ class DNSQuery:
             for ip in r:
                 packet += b'\xc0\x0c'  # Pointer to domain name
                 packet += b'\x00\x01\x00\x01\x00\x00\x00\x3c\x00\x04'  # Response type, ttl (60s) and resource data length -> 4 bytes
-                packet += unicode_to_bytes(str.join('', map(lambda x: chr(int(x)), ip.split('.'))))  # 4bytes of IP
+                for n in ip.split('.'):
+                    packet += self._int_to_byte(n)
         
         self.logger.debug("Returning size: %s for nb ips:%s" % (len(packet), len(r)))
+        # if not PY3:
+        #    self.logger.debug(":".join("{:02x}".format(ord(c)) for c in packet))
+        # else:
+        #    self.logger.debug(":".join("{:02x}".format(c) for c in packet))
         return packet
