@@ -3,7 +3,10 @@
 
 
 # Start rabbit mq
-rabbitmq-plugins enable rabbitmq_management
+rabbitmq-plugins enable rabbitmq_management --offline
+if [ $? != 0 ];then  # centos do not manage --offline
+   rabbitmq-plugins enable rabbitmq_management
+fi
 rabbitmq-server &
 
 /etc/init.d/opsbro start

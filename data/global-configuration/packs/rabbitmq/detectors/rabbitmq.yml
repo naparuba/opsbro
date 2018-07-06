@@ -1,5 +1,6 @@
 detector:
     add_groups:
         - rabbitmq
-    apply_if: "file_exists('/etc/rabbitmq/rabbitmq.config')"
+    #          centos                                          debian
+    apply_if: "file_exists('/etc/rabbitmq/rabbitmq.config') or file_exists('/etc/rabbitmq/rabbitmq-env.conf')"
     interval: 10s

@@ -1,9 +1,9 @@
 import traceback
-import json
 
 from opsbro.httpclient import get_http_exceptions, httper
 from opsbro.collector import Collector
 from opsbro.parameters import StringParameter
+from opsbro.jsonmgr import jsoner
 
 
 # TODO: look at all available at to learn how rabbitmq is working https://github.com/nagios-plugins-rabbitmq/nagios-plugins-rabbitmq
@@ -25,28 +25,7 @@ class RabbitMQ(Collector):
             self.set_not_eligible('Please add the rabbitmq group to enable this collector.')
             return
         
-        # uri = 'http://localhost:15672/api/overview'
-        # user = 'guest'
-        # password = 'guest'
-        
         try:
-            '''
-            logger.debug('getRabbitMQStatus: attempting authentication setup')
-            
-            manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
-            manager.add_password(None, uri, user, password)
-            handler = urllib2.HTTPBasicAuthHandler(manager)
-            opener = urllib2.build_opener(handler)
-            urllib2.install_opener(opener)
-            
-            logger.debug('getRabbitMQStatus: attempting urlopen')
-            req = urllib2.Request(uri, None, {})
-            
-            # Do the request, log any errors
-            request = urllib2.urlopen(req)
-            response = request.read()
-            '''
-            
             uri = self.get_parameter('uri')
             user = self.get_parameter('user')
             password = self.get_parameter('password')
@@ -61,7 +40,7 @@ class RabbitMQ(Collector):
             return False
         
         try:
-            status = json.loads(response)
+            status = jsoner.loads(response)
         except Exception as exp:
             self.set_error("Rabbitmq: parsing json: %s" % exp)
             return False
