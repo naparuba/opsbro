@@ -1,16 +1,25 @@
 #!/usr/bin/env bash
 
 
+# Fix: centos do not have mysqld on the PATH
+export PATH=/usr/libexec/:$PATH
+
 # Start mysql
-/usr/libexec/mysqld --basedir=/usr --datadir=/var/lib/mysql --plugin-dir=/usr/lib64/mysql/plugin --log-error=/var/log/mariadb/mariadb.log --pid-file=/var/run/mariadb/mariadb.pid --socket=/var/lib/mysql/mysql.sock --user=mysql&
+# NOTE: /tmp because we are launched for debian & centos, so cannot have the same directories
+mysqld --basedir=/usr --datadir=/var/lib/mysql --plugin-dir=/usr/lib64/mysql/plugin --log-error=/tmp/mariadb.log --pid-file=/tmp/mariadb.pid --socket=/var/lib/mysql/mysql.sock --user=mysql&
 sleep 10
-# Set root account available
-/usr/bin/mysqladmin -u root password 'secret'
+# Set root account available (set socket because debian try network)
+/usr/bin/mysqladmin --socket=/var/lib/mysql/mysql.sock  -u root password 'secret'
 
 
 # We will modify a pack, so overload it first
 opsbro  packs overload global.mysql
 opsbro  packs parameters set local.mysql.password        secret
+
+if [ $? != 0 ]; then
+    echo "ERROR: cannot set parameter"
+    exit 2
+fi
 
 /etc/init.d/opsbro start
 

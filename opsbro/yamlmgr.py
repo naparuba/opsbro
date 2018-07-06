@@ -3,6 +3,9 @@ import sys
 import shutil
 import datetime
 import time
+import codecs
+
+PY3 = sys.version_info >= (3,)
 
 from .characters import CHARACTERS
 import opsbro.misc
@@ -14,6 +17,7 @@ sys.path.insert(0, p)
 import ruamel.yaml as yaml
 
 from .log import LoggerFactory
+from .util import unicode_to_bytes, bytes_to_unicode
 
 logger = LoggerFactory.create_logger('yaml')
 
@@ -63,8 +67,10 @@ class YamlMgr(object):
         
         result_str = yamler.dumps(o)
         tmp_file = '%s.tmp' % parameters_file_path
-        f = open(tmp_file, 'w')
-        f.write(result_str)
+        f = codecs.open(tmp_file, 'wb', 'utf8')
+        # always save as unicode, because f.write() will launch an error if not
+        s = bytes_to_unicode(result_str)
+        f.write(s)
         f.close()
         shutil.move(tmp_file, parameters_file_path)
     

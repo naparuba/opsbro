@@ -1,5 +1,6 @@
 import os
 import sys
+import codecs
 
 PY3 = sys.version_info >= (3,)
 if PY3:
@@ -160,7 +161,7 @@ class ConfigurationManager(object):
     
     def __get_object_from_cfg_file(self, fp, force_document_comment_to_first_entry=False):
         is_yaml = fp.endswith('.yml')
-        with open(fp, 'r') as f:
+        with codecs.open(fp, 'r', 'utf8') as f:
             buf = f.read()
             try:
                 if is_yaml:
