@@ -15,7 +15,13 @@ sleep 15
 
 
 # Look which addr we dhould match
-ADDR=$(opsbro agent info| grep 'Addr' | awk '{print $3}')
+ADDR=$(opsbro agent info| grep 'Local addr' | awk '{print $3}')
+
+if [ "X$ADDR" == "X" ];then
+   echo "ERROR: cannot look Address"
+   opsbro agent info
+   exit 2
+fi
 
 # linux is detected, so should return
 echo "Looking for my own entry $ADDR"

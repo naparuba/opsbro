@@ -399,7 +399,7 @@ def do_modules_state():
             modules_types[module_type] = {}
         modules_types[module_type][module_name] = module
     
-    modules_type_names = modules_types.keys()
+    modules_type_names = list(modules_types.keys())
     modules_type_names.sort()
     
     for (module_type, _modules) in modules_types.items():
@@ -408,7 +408,7 @@ def do_modules_state():
         cprint(' ]: ', end='')
         cprint(TYPES_DESCRIPTIONS.get(module_type, 'unknown module type'), color='grey')
         
-        module_names = _modules.keys()
+        module_names = list(_modules.keys())
         module_names.sort()
         for module_name in module_names:
             module = _modules[module_name]
@@ -637,7 +637,7 @@ def do_agent_parameters_show():
     parameters_from_local_configuration = configmgr.get_parameters_for_cluster_from_configuration()
     # print "Local parameters", parameters_from_local_configuration
     print_h1('Local agent parameters')
-    key_names = parameters_from_local_configuration.keys()
+    key_names = list(parameters_from_local_configuration.keys())
     key_names.sort()
     for k in key_names:
         v = parameters_from_local_configuration[k]

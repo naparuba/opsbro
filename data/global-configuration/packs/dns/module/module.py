@@ -51,7 +51,6 @@ class DNSModule(ListenerModule):
         state = 'STARTED' if self.enabled else 'DISABLED'
         log = ''
         return {'configuration': self.get_config(), 'state': state, 'log': log}
-
     
     
     def launch(self):
