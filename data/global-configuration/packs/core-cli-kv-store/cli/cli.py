@@ -13,6 +13,7 @@ from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger
 from opsbro.unixclient import get_request_errors
 from opsbro.cli import print_info_title, post_opsbro_json, get_opsbro_local, put_opsbro_json, delete_opsbro_json
+from opsbro.util import bytes_to_unicode
 
 
 def do_kv_store_get(key_name):
@@ -24,6 +25,7 @@ def do_kv_store_get(key_name):
     if code == 404:
         cprint('ERROR: the key %s does not exist' % key_name, color='red')
         sys.exit(2)
+    value = bytes_to_unicode(value)
     cprint("%s::%s" % (key_name, value))
 
 

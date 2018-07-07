@@ -18,6 +18,7 @@ if [ $? != 0 ];then
    exit 2
 fi
 
+echo $VALUE
 
 echo "$VALUE" | grep pack_name
 if [ $? != 0 ];then
