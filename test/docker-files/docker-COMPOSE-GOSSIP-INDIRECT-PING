@@ -3,7 +3,7 @@ services:
   node1:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DUO6-debian9-test-indirect-ping-node1.txt
+       dockerfile: test/docker-files/docker-file-DUO6-indirect-ping-node1.txt
     networks:
        - gossip-indirect-ping
     cap_add:
@@ -13,7 +13,7 @@ services:
   node2:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DUO6-debian9-test-indirect-ping-node2.txt
+       dockerfile: test/docker-files/docker-file-DUO6-indirect-ping-node2.txt
     networks:
        - gossip-indirect-ping
     cap_add:
@@ -23,7 +23,7 @@ services:
   node3:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DUO6-debian9-test-indirect-ping-node3.txt
+       dockerfile: test/docker-files/docker-file-DUO6-indirect-ping-node3.txt
     networks:
        - gossip-indirect-ping
     cap_add:

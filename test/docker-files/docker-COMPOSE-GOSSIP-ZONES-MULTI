@@ -3,7 +3,7 @@ services:
   node1:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DUO4-debian9-test-gossip-zones-multi-1.txt
+       dockerfile: test/docker-files/docker-file-DUO4-gossip-zones-multi-1.txt
     networks:
        - gossip-zones-multi
     cap_add:
@@ -12,7 +12,7 @@ services:
   node2:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DUO4-debian9-test-gossip-zones-multi-2.txt
+       dockerfile: test/docker-files/docker-file-DUO4-gossip-zones-multi-2.txt
     networks:
        - gossip-zones-multi
     cap_add:
@@ -21,7 +21,7 @@ services:
   node3:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DUO4-debian9-test-gossip-zones-multi-3.txt
+       dockerfile: test/docker-files/docker-file-DUO4-gossip-zones-multi-3.txt
     networks:
        - gossip-zones-multi
     cap_add:
@@ -30,7 +30,7 @@ services:
   node4:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DUO4-debian9-test-gossip-zones-multi-4.txt
+       dockerfile: test/docker-files/docker-file-DUO4-gossip-zones-multi-4.txt
     networks:
        - gossip-zones-multi
     cap_add:

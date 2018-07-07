@@ -3,7 +3,7 @@ services:
   node1:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DUO5-debian9-test-join-sync-events-node1.txt
+       dockerfile: test/docker-files/docker-file-DUO5-join-sync-events-node1.txt
     networks:
        - gossip-join-sync
     cap_add:
@@ -12,7 +12,7 @@ services:
   node2:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DUO5-debian9-test-join-sync-events-node2.txt
+       dockerfile: test/docker-files/docker-file-DUO5-join-sync-events-node2.txt
     networks:
        - gossip-join-sync
     cap_add:
