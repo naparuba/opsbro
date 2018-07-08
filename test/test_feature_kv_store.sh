@@ -4,17 +4,17 @@
 
 NODE_UUID=$(opsbro agent print uuid)
 
-CPU_KEY="__health/$NODE_UUID//var/lib/opsbro/global-configuration/packs/linux/monitoring/cpu"
+DISK_KEY="__health/$NODE_UUID//var/lib/opsbro/global-configuration/packs/linux/monitoring/disks"
 
-opsbro kv-store wait-exists "$CPU_KEY"
+opsbro kv-store wait-exists "$DISK_KEY"
 if [ $? != 0 ];then
-   echo "ERROR: the CPU key do not exists after 30s"
+   echo "ERROR: the DISK key do not exists after 30s"
    exit 2
 fi
 
-VALUE=$(opsbro kv-store get "$CPU_KEY")
+VALUE=$(opsbro kv-store get "$DISK_KEY")
 if [ $? != 0 ];then
-   echo "ERROR: the CPU key cannot be GET"
+   echo "ERROR: the DISK key cannot be GET"
    exit 2
 fi
 
