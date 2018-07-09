@@ -1,0 +1,22 @@
+FROM debian:9
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+
+RUN        /apt_get_install  python3
+# All need for debian, so faster test (we are testging feature here, not install)
+RUN        /apt_get_install   python3-jinja2
+RUN        /apt_get_install   python3-crypto
+RUN        /apt_get_install   python3-setuptools
+RUN        /apt_get_install   python3-apt
+
+# Set python3 as default python
+RUN        update-alternatives --install /usr/bin/python python /usr/bin/python3 1
+
+
+ADD        . /root/opsbro-oss
+WORKDIR       /root/opsbro-oss
+
+RUN       python setup.py install
+
+ENTRYPOINT    test/test_feature_play_tutorials.sh

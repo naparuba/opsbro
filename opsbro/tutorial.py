@@ -1,4 +1,5 @@
 import os
+import codecs
 
 from .log import LoggerFactory
 from .jsonmgr import jsoner
@@ -18,7 +19,7 @@ class Tutorial(object):
     
     
     def get_tutorial_data(self):
-        with open(self.tutorial_data_path, 'r') as f:
+        with codecs.open(self.tutorial_data_path, 'r', 'utf8') as f:
             buf = f.read()
             
             data = jsoner.loads(buf, encoding='utf8')

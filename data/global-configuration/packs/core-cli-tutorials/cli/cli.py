@@ -58,11 +58,11 @@ def do_tutorials_list():
         if pack_name not in packs:
             packs[pack_name] = {}
         packs[pack_name][tutorial_name] = tutorial
-    pnames = packs.keys()
+    pnames = list(packs.keys())
     pnames.sort()
     for pname in pnames:
         pack_entries = packs[pname]
-        tnames = pack_entries.keys()
+        tnames = list(pack_entries.keys())
         tnames.sort()
         for tname in tnames:
             tutorial = pack_entries[tname]
