@@ -5,6 +5,9 @@ from opsbro.evaluater import export_evaluater_function
 from opsbro.misc.lolcat import lolcat
 from opsbro.util import PY3
 
+if PY3:
+    basestring = str
+
 FUNCTION_GROUP = 'system'
 
 

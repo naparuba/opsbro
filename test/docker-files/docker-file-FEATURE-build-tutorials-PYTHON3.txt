@@ -1,0 +1,32 @@
+FROM debian:9
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+
+RUN        /apt_get_install  python3
+# All need for debian, so faster test (we are testging feature here, not install)
+RUN        /apt_get_install   python3-jinja2
+RUN        /apt_get_install   python3-crypto
+RUN        /apt_get_install   python3-setuptools
+RUN        /apt_get_install   python3-apt
+
+# Set python3 as default python
+RUN        update-alternatives --install /usr/bin/python python /usr/bin/python3 1
+
+RUN        /apt_get_install   locales
+RUN        /apt_get_install   python3-pkg-resources
+RUN        /apt_get_install   asciinema
+
+# Locales
+RUN        cp /etc/locale.gen /etc/locale.gen.old
+RUN        sed -i "s/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g" /etc/locale.gen
+RUN        /usr/sbin/locale-gen
+
+ENV        LANG=en_US.UTF8
+
+
+ADD        . /root/opsbro-oss
+WORKDIR       /root/opsbro-oss
+
+
+ENTRYPOINT     /bin/bash test/feature_build_tutorials.sh

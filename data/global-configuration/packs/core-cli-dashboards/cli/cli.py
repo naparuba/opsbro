@@ -14,6 +14,7 @@ from opsbro.cli_display import print_h1
 from opsbro.packer import packer
 from opsbro.misc.lolcat import lolcat
 from opsbro.topic import topiker
+from opsbro.util import bytes_to_unicode, unicode_to_bytes
 
 from dashing import HSplit, HBrailleFilledChart, HGauge, VSplit, VDonut, Text
 
@@ -42,14 +43,13 @@ def __get_pack_breadcumb(pack_name, pack_level, end='', topic_picto='large'):
 
 
 def _get_expr_evaluator(expr):
-    if isinstance(expr, str):
-        expr = expr.decode('utf8', 'ignore')
+    expr = bytes_to_unicode(expr)
     this_expr = expr
     
     
     def _get_value_from_expression():
         logger.debug('\n\n\n\n\n\n\n\n\n\nEVAL EXPR %s\n\n' % this_expr)
-        expr_64 = base64.b64encode(this_expr)
+        expr_64 = base64.b64encode(unicode_to_bytes(this_expr))
         try:
             r = post_opsbro_json('/agent/evaluator/eval', {'expr': expr_64})
         except Exception as exp:
@@ -69,10 +69,10 @@ def _get_tree(root):
     if not isinstance(root, dict):
         raise Exception('Bad dashboard value definition, should be a dict/hash key. %s found ' % type(root))
     
-    if len(root.keys()) != 1:
+    if len(list(root.keys())) != 1:
         raise Exception('Your dashboard object is invalid. Must have ony one key. %s' % root)
     
-    root_type = root.keys()[0]
+    root_type = list(root.keys())[0]
     root_value = root[root_type]
     
     res = None
@@ -172,12 +172,12 @@ def do_dashboards_list():
         if pack_name not in packs:
             packs[pack_name] = {}
         packs[pack_name][dname] = dashboard
-    pnames = packs.keys()
+    pnames = list(packs.keys())
     pnames.sort()
     for pname in pnames:
         pack_entries = packs[pname]
         cprint('* Pack %s' % pname, color='blue')
-        dnames = pack_entries.keys()
+        dnames = list(pack_entries.keys())
         dnames.sort()
         for dname in dnames:
             dashboard = pack_entries[dname]
