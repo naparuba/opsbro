@@ -233,7 +233,7 @@ class Gossip(BaseManager):
     
     # Each seconds we try to save a history entry (about add/remove groups, or new nodes)
     def do_history_save_loop(self):
-        while not stopper.interrupted:
+        while not stopper.is_stop():
             self.write_history_entry()
             time.sleep(1)
     
@@ -640,7 +640,7 @@ class Gossip(BaseManager):
                     time.sleep(10)
                     logger.info('Exiting from a self leave message')
                     # Will set self.interrupted = True to every thread that loop
-                    pubsub.pub('interrupt')
+                    stopper.do_stop('Exiting from a leave massage')
                 
                 
                 threader.create_and_launch(bailout_after_leave, args=(self,), name='Exiting agent after set to leave', part='agent')
@@ -780,7 +780,7 @@ class Gossip(BaseManager):
     # We will choose a random guy in our nodes that is alive, and
     # sync with it
     def launch_full_sync_loop(self):
-        while not stopper.interrupted:
+        while not stopper.is_stop():
             # Only sync if we are allowed to do service discovery
             if topiker.is_topic_enabled(TOPIC_SERVICE_DISCOVERY):
                 self.launch_full_sync()
@@ -809,7 +809,7 @@ class Gossip(BaseManager):
     # NOTE/SECURITY: we DON'T send messages to bottom zones, because they don't need to know about the internal
     #       data/state of the upper zone, they only need to know about the public states, so the proxy nodes
     def do_launch_gossip_loop(self):
-        while not stopper.interrupted:
+        while not stopper.is_stop():
             if topiker.is_topic_enabled(TOPIC_SERVICE_DISCOVERY):
                 self.launch_gossip()
             self.__clean_old_events()
@@ -898,7 +898,7 @@ class Gossip(BaseManager):
     
     # THREAD: every second send a Gossip UDP ping to another node, random choice
     def ping_another_nodes(self):
-        while not stopper.interrupted:
+        while not stopper.is_stop():
             if topiker.is_topic_enabled(TOPIC_SERVICE_DISCOVERY):
                 self.ping_another()
             time.sleep(1)
@@ -1262,7 +1262,7 @@ class Gossip(BaseManager):
                 port = int(elts[1])
             others.append((addr, port))
         random.shuffle(others)
-        while not stopper.interrupted:
+        while not stopper.is_stop():
             logger.log('JOINING myself %s is joining %s nodes' % (self.name, others))
             nb = 0
             for other in others:
@@ -1273,7 +1273,7 @@ class Gossip(BaseManager):
                 if nb > KGOSSIP:
                     continue
             # If we got enough nodes, we exit
-            if len(self.nodes) != 1 or stopper.interrupted or self.bootstrap:
+            if len(self.nodes) != 1 or stopper.is_stop() or self.bootstrap:
                 return
             # Do not hummer the cpu....
             time.sleep(0.1)

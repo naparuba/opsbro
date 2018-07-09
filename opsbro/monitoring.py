@@ -386,19 +386,33 @@ class MonitoringManager(BaseManager):
                 rc = 2
                 computed_variables = {}
             if critical_if:
-                b = evaluater.eval_expr(critical_if, check=check, variables=computed_variables)
+                try:
+                    b = evaluater.eval_expr(critical_if, check=check, variables=computed_variables)
+                except Exception as exp:
+                    output = "ERROR: the critical_if expression fail: %s : %s" % (critical_if, exp)
+                    b = False
+                    rc = 2
                 if b:
                     output = evaluater.eval_expr(check.get('critical_output', ''), variables=computed_variables)
                     rc = 2
             if not b and warning_if:
-                b = evaluater.eval_expr(warning_if, check=check, variables=computed_variables)
+                try:
+                    b = evaluater.eval_expr(warning_if, check=check, variables=computed_variables)
+                except Exception as exp:
+                    output = "ERROR: the warning_if expression fail: %s : %s" % (warning_if, exp)
+                    b = False
+                    rc = 2
                 if b:
                     output = evaluater.eval_expr(check.get('warning_output', ''), variables=computed_variables)
                     rc = 1
             # if unset, we are in OK
             if rc == 3:
                 rc = 0
-                output = evaluater.eval_expr(check.get('ok_output', ''), variables=computed_variables)
+                try:
+                    output = evaluater.eval_expr(check.get('ok_output', ''), variables=computed_variables)
+                except Exception as exp:
+                    output = "ERROR: the ok_output expression fail: %s : %s" % (check.get('ok_output', ''), exp)
+                    rc = 2
         else:
             script = check['script']
             logger.debug("CHECK start: MACRO launching %s" % script)
@@ -539,7 +553,7 @@ class MonitoringManager(BaseManager):
         
         logger.log('CHECK thread launched')
         cur_launchs = {}
-        while not stopper.interrupted:
+        while not stopper.is_stop():
             # If we are not allowed to do monitoring stuff, do nothing
             if not topiker.is_topic_enabled(TOPIC_MONITORING):
                 time.sleep(1)

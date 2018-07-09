@@ -179,7 +179,7 @@ except ImportError as exp:  # great, first install so
 my_dir = os.path.dirname(os.path.abspath(__file__))
 opsbro = imp.load_module('opsbro', *imp.find_module('opsbro', [os.path.realpath(my_dir)]))
 from opsbro.info import VERSION, BANNER, TXT_BANNER
-from opsbro.log import cprint, is_tty, sprintf, logger
+from opsbro.log import cprint, is_tty, sprintf, core_logger
 from opsbro.misc.bro_quotes import get_quote
 from opsbro.systempacketmanager import get_systepacketmgr
 from opsbro.cli_display import print_h1
@@ -193,12 +193,12 @@ if os.getuid() != 0:
     sys.exit(2)
 
 # By default logger should not print anything
-logger.setLevel('ERROR')
+core_logger.setLevel('ERROR')
 # By maybe we are in verbose more?
 if '-v' in sys.argv or os.environ.get('DEBUG_INSTALL', '0') == '1':
-    logger.setLevel('DEBUG')
+    core_logger.setLevel('DEBUG')
 
-logger.debug('SCRIPT: install/update script was call with arguments: %s' % orig_sys_argv)
+core_logger.debug('SCRIPT: install/update script was call with arguments: %s' % orig_sys_argv)
 
 what = 'Installing' if not is_update else 'Updating'
 title = sprintf('%s' % what, color='magenta', end='') + sprintf(' OpsBro to version ', end='') + sprintf('%s' % VERSION, color='magenta', end='')
@@ -685,12 +685,12 @@ def __do_install_files(lst):
         # Be sute the directory do exist
         if not os.path.exists(dir):
             # ==> mkdir -p
-            logger.debug('The directory %s is missing, creating it' % dir)
+            core_logger.debug('The directory %s is missing, creating it' % dir)
             os.makedirs(dir)
         for lfile in lfiles:
             lfile_name = os.path.basename(lfile)
             destination = os.path.join(dir, lfile_name)
-            logger.debug("Copying local file %s into %s" % (lfile, destination))
+            core_logger.debug("Copying local file %s into %s" % (lfile, destination))
             shutil.copy2(lfile, destination)
 
 

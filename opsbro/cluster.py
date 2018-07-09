@@ -18,7 +18,7 @@ import copy
 
 
 from .log import LoggerFactory
-from .log import logger as raw_logger
+from .log import core_logger as raw_logger
 from .util import copy_dir, get_server_const_uuid, guess_server_const_uuid, get_cpu_consumption, get_memory_consumption
 from .threadmgr import threader
 from .now import NOW
@@ -50,7 +50,7 @@ from .hostingdrivermanager import get_hostingdrivermgr
 from .topic import topiker, TOPIC_SERVICE_DISCOVERY, TOPIC_AUTOMATIC_DECTECTION, TOPIC_MONITORING, TOPIC_METROLOGY, TOPIC_CONFIGURATION_AUTOMATION, TOPIC_SYSTEM_COMPLIANCE
 
 # Global logger for this part
-logger = LoggerFactory.create_logger('agent')
+logger = LoggerFactory.create_logger('daemon')
 logger_gossip = LoggerFactory.create_logger('gossip')
 
 AGENT_STATE_INITIALIZING = 'initializing'
@@ -236,7 +236,7 @@ class Cluster(object):
             if self.hostname == last_hostname and os.path.exists(self.server_key_file):
                 with open(self.server_key_file, 'r') as f:
                     self.uuid = f.read()
-                logger.log("KEY: %s loaded from previous key file %s" % (self.uuid, self.server_key_file))
+                logger.info("KEY: %s loaded from previous key file %s" % (self.uuid, self.server_key_file))
             else:
                 # Ok no way to get from past, so try to guess the more stable possible, and if not ok, give me random stuff
                 self.uuid = guess_server_const_uuid()
@@ -244,7 +244,7 @@ class Cluster(object):
         # now save the key
         with open(self.server_key_file, 'w') as f:
             f.write(self.uuid)
-        logger.log("KEY: %s saved to the key file %s" % (self.uuid, self.server_key_file))
+        logger.info("KEY: %s saved to the key file %s" % (self.uuid, self.server_key_file))
         
         # we can save the current hostname
         with open(self.hostname_file, 'w') as f:
@@ -382,35 +382,25 @@ class Cluster(object):
         if not os.path.exists(self.collector_retention):
             return
         
-        logger.log('Collectors loading collector retention file %s' % self.collector_retention)
+        logger.info('Collectors loading collector retention file %s' % self.collector_retention)
         with open(self.collector_retention, 'r') as f:
             loaded = jsoner.loads(f.read())
             collectormgr.load_retention(loaded)
-        logger.log('Collectors loaded retention file %s' % self.collector_retention)
+        logger.info('Collectors loaded retention file %s' % self.collector_retention)
     
     
     # What to do when we receive a signal from the system
     def manage_signal(self, sig, frame):
-        logger.log("I'm process %d and I received signal %s" % (os.getpid(), str(sig)))
+        logger.info("I'm process %d and I received signal %s" % (os.getpid(), str(sig)))
         if sig == signal.SIGUSR1:  # if USR1, ask a memory dump
-            logger.log('MANAGE USR1')
+            logger.info('MANAGE USR1')
         elif sig == signal.SIGUSR2:  # if USR2, ask objects dump
-            logger.log('MANAGE USR2')
+            logger.info('MANAGE USR2')
         else:  # Ok, really ask us to die :)
-            self.set_interrupted()
-    
-    
-    # Callback for objects that want us to stop in a clean way
-    def set_interrupted(self):
-        # and the global object too
-        stopper.interrupted = True
+            stopper.do_stop('Stop from signal %s received' % sig)
     
     
     def set_exit_handler(self):
-        # First register the self.interrupted in the pubsub call
-        # interrupt
-        pubsub.sub('interrupt', self.set_interrupted)
-        
         func = self.manage_signal
         if os.name == "nt":
             try:
@@ -481,8 +471,8 @@ class Cluster(object):
         self.udp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)  # Allow Broadcast (useful for node discovery)
         logger.info("OPENING UDP", self.addr)
         self.udp_sock.bind((self.listening_addr, self.port))
-        logger.log("UDP port open", self.port)
-        while not stopper.interrupted:
+        logger.info("UDP port open", self.port)
+        while not stopper.is_stop():
             try:
                 data, addr = self.udp_sock.recvfrom(65535)  # buffer size is 1024 bytes
             except socket.timeout:
@@ -745,7 +735,7 @@ class Cluster(object):
         
         @http_export('/stop', protected=True)
         def do_stop():
-            pubsub.pub('interrupt')
+            stopper.do_stop('stop call from the CLI/API')
             return 'OK'
         
         
@@ -775,9 +765,9 @@ class Cluster(object):
     # and we will get the key/value from it
     def do_replication_first_sync_thread(self):
         if 'kv' not in gossiper.groups:
-            logger.log('SYNC no need, I am not a KV node')
+            logger.info('SYNC no need, I am not a KV node')
             return
-        logger.log('SYNC thread launched')
+        logger.info('SYNC thread launched')
         # We will look until we found a repl that answer us :)
         while True:
             repls = kvmgr.get_my_replicats()
@@ -788,7 +778,7 @@ class Cluster(object):
                     continue
                 addr = repl['addr']
                 port = repl['port']
-                logger.log('SYNC try to sync from %s since the time %s' % (repl['name'], self.last_alive))
+                logger.info('SYNC try to sync from %s since the time %s' % (repl['name'], self.last_alive))
                 uri = 'http://%s:%s/kv-meta/changed/%d' % (addr, port, self.last_alive)
                 try:
                     r = httper.get(uri)
@@ -810,7 +800,7 @@ class Cluster(object):
     # Thread that will look for libexec/configuration change events,
     # will get the newest value in the KV and dump the files
     def do_update_libexec_cfg_thread(self):
-        while not stopper.interrupted:
+        while not stopper.is_stop():
             # work on a clean list
             libexec_to_update = self.libexec_to_update
             self.libexec_to_update = []
@@ -821,7 +811,7 @@ class Cluster(object):
                 # check if we are still in the libexec dir and not higer, somewhere
                 # like in a ~/.ssh or an /etc...
                 if not fname.startswith(self.libexec_dir):
-                    logger.log('WARNING (SECURITY): trying to update the path %s that is not in libexec dir, bailing out' % fname)
+                    logger.info('WARNING (SECURITY): trying to update the path %s that is not in libexec dir, bailing out' % fname)
                     continue
                 # If it exists, try to look at the _hash so maybe we don't have to load it again
                 if os.path.exists(fname):
@@ -830,7 +820,7 @@ class Cluster(object):
                         _lhash = hashlib.sha1(f.read()).hexdigest()
                         f.close()
                     except Exception as exp:
-                        logger.log('do_update_libexec_cfg_thread:: error in opening the %s file: %s' % (fname, exp))
+                        logger.info('do_update_libexec_cfg_thread:: error in opening the %s file: %s' % (fname, exp))
                         _lhash = ''
                     if _lhash == _hash:
                         logger.debug('LIBEXEC update, not need for the local file %s, hash are the same' % fname)
@@ -838,7 +828,7 @@ class Cluster(object):
                 # ok here we need to load the KV value (a base64 tarfile)
                 v64 = kvmgr.get_key('__libexec/%s' % p)
                 if v64 is None:
-                    logger.log('WARNING: cannot load the libexec script from kv %s' % p)
+                    logger.info('WARNING: cannot load the libexec script from kv %s' % p)
                     continue
                 vtar = base64.b64decode(v64)
                 StringIO = libstore.get_StringIO()
@@ -846,12 +836,12 @@ class Cluster(object):
                 with tarfile.open(fileobj=f, mode="r:gz") as tar:
                     files = tar.getmembers()
                     if len(files) != 1:
-                        logger.log('WARNING: too much files in a libexec KV entry %d' % len(files))
+                        logger.info('WARNING: too much files in a libexec KV entry %d' % len(files))
                         continue
                     _f = files[0]
                     _fname = os.path.normpath(_f.name)
                     if not _f.isfile() or os.path.isabs(_fname):
-                        logger.log(
+                        logger.info(
                             'WARNING: (security) invalid libexec KV entry (not a file or absolute path) for %s' % _fname)
                         continue
                     
@@ -878,7 +868,7 @@ class Cluster(object):
                 # check if we are still in the configuration dir and not higer, somewhere
                 # like in a ~/.ssh or an /etc...
                 if not fname.startswith(self.configuration_dir):
-                    logger.log(
+                    logger.info(
                         'WARNING (SECURITY): trying to update the path %s that is not in configuration dir, bailing out' % fname)
                     continue
                 # If it exists, try to look at the _hash so maybe we don't have to load it again
@@ -888,7 +878,7 @@ class Cluster(object):
                         _lhash = hashlib.sha1(f.read()).hexdigest()
                         f.close()
                     except Exception as exp:
-                        logger.log(
+                        logger.info(
                             'do_update_configuration_cfg_thread:: error in opening the %s file: %s' % (fname, exp))
                         _lhash = ''
                     if _lhash == _hash:
@@ -898,7 +888,7 @@ class Cluster(object):
                 # ok here we need to load the KV value (a base64 tarfile)
                 v64 = kvmgr.get_key('__configuration/%s' % p)
                 if v64 is None:
-                    logger.log('WARNING: cannot load the configuration script from kv %s' % p)
+                    logger.info('WARNING: cannot load the configuration script from kv %s' % p)
                     continue
                 vtar = base64.b64decode(v64)
                 StringIO = libstore.get_StringIO()
@@ -906,12 +896,12 @@ class Cluster(object):
                 with tarfile.open(fileobj=f, mode="r:gz") as tar:
                     files = tar.getmembers()
                     if len(files) != 1:
-                        logger.log('WARNING: too much files in a configuration KV entry %d' % len(files))
+                        logger.info('WARNING: too much files in a configuration KV entry %d' % len(files))
                         continue
                     _f = files[0]
                     _fname = os.path.normpath(_f.name)
                     if not _f.isfile() or os.path.isabs(_fname):
-                        logger.log(
+                        logger.info(
                             'WARNING: (security) invalid configuration KV entry (not a file or absolute path) for %s' % _fname)
                         continue
                     # ok the file is good, we can extract it
@@ -1068,7 +1058,7 @@ class Cluster(object):
     def do_configuration_cleanup(self):
         zj64 = kvmgr.get_key('__configuration')
         if zj64 is None:
-            logger.log('WARNING cannot grok kv/__configuration entry')
+            logger.info('WARNING cannot grok kv/__configuration entry')
             return
         zj = base64.b64decode(zj64)
         j = zlib.decompress(zj)
@@ -1088,7 +1078,7 @@ class Cluster(object):
                 try:
                     os.remove(full_path)
                 except OSError as exp:
-                    logger.log('WARNING: cannot cleanup the configuration file %s (%s)' % (full_path, exp))
+                    logger.info('WARNING: cannot cleanup the configuration file %s (%s)' % (full_path, exp))
     
     
     # We are joining the seed members and lock until we reach at least one
@@ -1106,7 +1096,7 @@ class Cluster(object):
             ctypes = None
         
         if ctypes is None:  # nop
-            while not stopper.interrupted:
+            while not stopper.is_stop():
                 time.sleep(10)
             return
         
@@ -1122,7 +1112,7 @@ class Cluster(object):
         gc.disable()
         gen = 0
         _i = 0
-        while not stopper.interrupted:
+        while not stopper.is_stop():
             _i += 1
             gen += 1
             gen %= 2
@@ -1163,9 +1153,9 @@ class Cluster(object):
         # Ok all did launched, we can quit
         
         # Ok let's know the whole system we are going to stop
-        stopper.interrupted = True
-        
-        logger.info('One shot execution did finish to look at jobs, exiting')
+        msg = 'One shot execution did finish to look at jobs, exiting'
+        stopper.do_stop(msg)
+        logger.info(msg)
     
     
     def __exit_path(self):
@@ -1245,7 +1235,7 @@ class Cluster(object):
         
         logger.info('Go go run!')
         i = -1
-        while not stopper.interrupted:
+        while not stopper.is_stop():
             i += 1
             if i % 10 == 0:
                 logger.debug('KNOWN NODES: %d, alive:%d, suspect:%d, dead:%d, leave:%d' % (

@@ -4,9 +4,9 @@ import locale
 import win32event
 import sys
 
-from opsbro.pubsub import pubsub
 from opsbro.launcher import Launcher
 from opsbro.threadmgr import threader
+from opsbro.stop import stopper
 
 
 class Service(win32serviceutil.ServiceFramework):
@@ -30,7 +30,7 @@ class Service(win32serviceutil.ServiceFramework):
                 # block for 100ms and listen for a stop event
                 rc = win32event.WaitForSingleObject(self.hWaitStop, 100)
             # ok here we stop, warn the other parts about it
-            pubsub.pub('interrupt')
+            stopper.do_stop('Stop from windows service')
     
     
     def destroy_stdout_stderr(self):

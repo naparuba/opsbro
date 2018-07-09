@@ -98,7 +98,7 @@ class GraphiteModule(ListenerModule):
     
     # Thread for listening to the graphite port in UDP (2003)
     def launch_graphite_udp_listener(self):
-        while not stopper.interrupted:
+        while not stopper.is_stop():
             if not self.enabled:
                 time.sleep(1)
                 continue
@@ -114,7 +114,7 @@ class GraphiteModule(ListenerModule):
     # Same but for the TCP connections
     # TODO: use a real daemon part for this, this is not ok for fast receive
     def launch_graphite_tcp_listener(self):
-        while not stopper.interrupted:
+        while not stopper.is_stop():
             if not self.enabled:
                 time.sleep(1)
                 continue
@@ -150,7 +150,7 @@ class GraphiteModule(ListenerModule):
     # Main graphite reaper thread, that will get data from both tcp and udp flow
     # and dispatch it to the others daemons if need
     def graphite_reaper(self):
-        while not stopper.interrupted:
+        while not stopper.is_stop():
             graphite_queue = self.graphite_queue
             self.graphite_queue = []
             if len(graphite_queue) > 0:

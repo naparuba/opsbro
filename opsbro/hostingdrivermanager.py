@@ -20,7 +20,6 @@ from .log import LoggerFactory
 from .misc.six import add_metaclass
 from .util import string_decode, my_sort, exec_command
 
-
 # Global logger for this part
 logger = LoggerFactory.create_logger('hosting-driver')
 

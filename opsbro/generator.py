@@ -10,7 +10,7 @@ from .log import LoggerFactory
 from .gossip import gossiper
 from .library import libstore
 from .evaluater import evaluater
-from .util import unified_diff, exec_command
+from .util import unified_diff, exec_command, PY3
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('generator')
@@ -133,8 +133,8 @@ class Generator(object):
             self.set_error('Generator: Error, no jinja2 librairy defined, please install it')
             return
         try:
-            f = open(self.g['template'], 'r')
-            self.buf = f.read().decode('utf8', 'ignore')
+            f = codecs.open(self.g['template'], 'r', 'utf8')
+            self.buf = f.read()
             f.close()
         except IOError as exp:
             self.set_error('Cannot open template file %s : %s' % (self.g['template'], exp))

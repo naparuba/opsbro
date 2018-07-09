@@ -10,8 +10,6 @@ import time
 import traceback
 import json
 from .httpdaemon import http_export, response
-from .log import logger
-from .pubsub import pubsub
 from .library import libstore
 
 # this part is doomed for windows portability, will be fun to manage :)
@@ -145,13 +143,15 @@ elif sys.platform.startswith("linux"):
 def w(d, f, name, is_essential, args):
     import traceback
     import time
-    from opsbro.log import logger
-    from opsbro.pubsub import pubsub
+    from opsbro.log import LoggerFactory
+    from opsbro.stop import stopper
+    
+    daemon_logger = LoggerFactory.create_logger('daemon')
     
     tid = 0
     if libc:
         tid = libc.syscall(186)  # get the threadid when you are in it :)
-    logger.debug('THREAD launch (%s) with thread id (%d)' % (name, tid))
+    daemon_logger.debug('THREAD launch (%s) with thread id (%d)' % (name, tid))
     # Set in our entry object
     d['tid'] = tid
     # Change the system name of the thread, if possible
@@ -159,18 +159,22 @@ def w(d, f, name, is_essential, args):
     try:
         f(*args)
     except Exception:
+        logger_crash = LoggerFactory.create_logger('crash')
         StringIO = libstore.get_StringIO()
         output = StringIO()
         traceback.print_exc(file=output)
-        logger.error("Thread %s is exiting on error. Back trace of this error: %s" % (name, output.getvalue()))
+        err = "Thread %s is exiting on error. Back trace of this error: %s" % (name, output.getvalue())
+        daemon_logger.error(err)
         output.close()
         
         if is_essential:
             # Maybe the thread WAS an essential one (like http thread or something like this), if so
             # catch it and close the whole daemon
-            logger.error('The thread %s was an essential one, we are stopping the daemon do not be in an invalid state' % name)
-            pubsub.pub('interrupt')
-            # Create a daemon thread with our wrapper function that will manage initial logging
+            logger_crash.error(err)
+            err = 'The thread %s was an essential one, we are stopping the daemon do not be in an invalid state' % name
+            logger_crash.error(err)
+            daemon_logger.error(err)
+            stopper.do_stop(err)
 
 
 class ThreadMgr(object):

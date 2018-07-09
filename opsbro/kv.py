@@ -121,7 +121,7 @@ class TTLDatabase(object):
     
     # Thread that will manage the delete of the ttld-die key
     def ttl_cleaning_thread(self):
-        while not stopper.interrupted:
+        while not stopper.is_stop():
             time.sleep(5)
             self.clean_old()
 
@@ -301,7 +301,7 @@ class KVBackend:
     # put from udp should be clean quick from the thread so it can listen to udp again and
     # not lost any udp message
     def put_key_reaper(self):
-        while not stopper.interrupted:
+        while not stopper.is_stop():
             put_key_buffer = self.put_key_buffer
             self.put_key_buffer = []
             _t = time.time()
@@ -495,7 +495,7 @@ class KVBackend:
     
     def do_replication_backlog_thread(self):
         logger.log('REPLICATION thread launched')
-        while not stopper.interrupted:
+        while not stopper.is_stop():
             # Standard switch
             replication_backlog = self.replication_backlog
             self.replication_backlog = {}

@@ -122,7 +122,7 @@ class GrafanaModule(ConnectorModule):
     
     
     def do_launch(self):
-        while not stopper.interrupted:
+        while not stopper.is_stop():
             self.logger.debug('Grafana loop')
             
             # We go in enabled when, and only when our group is matching what we do expect

@@ -641,7 +641,7 @@ class ComplianceManager(BaseManager):
         # if the collector manager did not run, our evaluation can be invalid, so wait for all collectors to run at least once
         while collectormgr.did_run == False:
             time.sleep(0.25)
-        while not stopper.interrupted:
+        while not stopper.is_stop():
             if topiker.is_topic_enabled(TOPIC_SYSTEM_COMPLIANCE):
                 self.__launch_compliances()
             self.did_run = True

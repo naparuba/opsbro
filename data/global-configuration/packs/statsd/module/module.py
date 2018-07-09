@@ -105,7 +105,7 @@ class StatsdModule(ListenerModule):
     # The compute stats thread compute the STATSD values each X
     # seconds and push them into the classic TS part
     def launch_compute_stats_thread(self):
-        while not stopper.interrupted:
+        while not stopper.is_stop():
             now = time.time()
             if now > self.last_write + self.stats_interval:
                 self.compute_stats()
@@ -206,7 +206,7 @@ class StatsdModule(ListenerModule):
     # This is ht main STATSD UDP listener thread. Should not block and
     # be as fast as possible
     def launch_statsd_udp_listener(self):
-        while not stopper.interrupted:
+        while not stopper.is_stop():
             
             if_group = self.get_parameter('enabled_if_group')
             self.enabled = gossiper.is_in_group(if_group)

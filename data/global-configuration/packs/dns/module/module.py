@@ -87,7 +87,7 @@ class DNSModule(ListenerModule):
         while not detecter.did_run:
             time.sleep(1)
         
-        while not stopper.interrupted:
+        while not stopper.is_stop():
             # Note: domain is dynamic in analysis, don't need to look at differences
             was_enabled, prev_port = self.enabled, self.port
             self.enabled, self.port, self.domain = self.get_my_parameters()

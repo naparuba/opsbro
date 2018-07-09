@@ -120,8 +120,8 @@ class Collector(ParameterBasedType):
             self.set_error('Collector [%s] execute command [%s] error: %s' % (self.__class__.__name__.lower(), cmd, traceback.format_exc()))
             return False
         return output
-
-
+    
+    
     # Execute a shell command and return the result or '' if there is an error
     def execute_shell_and_state(self, cmd):
         # Get output from a command
@@ -131,8 +131,8 @@ class Collector(ParameterBasedType):
         except Exception as exp:
             return 'Cannot execute command %s: %s' % (cmd, 2)
         return exit_status, output
-
-
+    
+    
     # from a dict recursivly build a ts
     # 'bla':{'foo':bar, 'titi': toto} => bla.foo.bar bla.titi.toto
     def create_ts_from_data(self, d, l, s):

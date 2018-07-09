@@ -295,7 +295,7 @@ class ShinkenModule(ConnectorModule):
                     continue
                 self.generate_node_file(n)
         
-        while not stopper.interrupted:
+        while not stopper.is_stop():
             self.logger.debug('Shinken loop, regenerate [%s]' % self.regenerate_flag)
             
             # If we can, export all states into the nagios/shinken daemon as passive checks

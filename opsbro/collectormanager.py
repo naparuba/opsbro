@@ -210,7 +210,7 @@ class CollectorManager(BaseManager):
         cur_launchs = {}
         # Before run, be sure we have a history directory ready
         self.prepare_history_directory()
-        while not stopper.interrupted:
+        while not stopper.is_stop():
             now = int(time.time())
             for (colname, e) in self.collectors.items():
                 colname = e['name']

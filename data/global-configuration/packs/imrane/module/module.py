@@ -78,7 +78,7 @@ class ImraneModule(ListenerModule):
     # Same but for the TCP connections
     # TODO: use a real daemon part for this, this is not ok for fast receive
     def launch_database_thread(self):
-        while not stopper.interrupted:
+        while not stopper.is_stop():
             agregator_group = self.get_parameter('agregator-group')
             database_enabled = gossiper.is_in_group(agregator_group)
             
@@ -122,7 +122,7 @@ class ImraneModule(ListenerModule):
     # TODO: use a real daemon part for this, this is not ok for fast receive
     def launch_collector_thread(self):
         last_collector_check = 0
-        while not stopper.interrupted:
+        while not stopper.is_stop():
             collector_group = self.get_parameter('collector-group')
             collector_enabled = gossiper.is_in_group(collector_group)
             

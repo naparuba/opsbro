@@ -61,12 +61,12 @@ def do_generators_state(show_diff=False):
         if pack_name not in packs:
             packs[pack_name] = {}
         packs[pack_name][cname] = generator
-    pnames = packs.keys()
+    pnames = list(packs.keys())
     pnames.sort()
     for pname in pnames:
         pack_entries = packs[pname]
         cprint('* Pack %s' % pname, color='blue')
-        cnames = pack_entries.keys()
+        cnames = list(pack_entries.keys())
         cnames.sort()
         for cname in cnames:
             cprint('  - %s' % pname, color='blue', end='')

@@ -8,8 +8,12 @@ import time
 import uuid as libuuid
 
 PY3 = sys.version_info >= (3,)
+if PY3:
+    basestring = str
 
-from .log import logger
+from .log import LoggerFactory
+
+logger = LoggerFactory.create_logger('daemon')
 
 
 # Make a directory with recursive creation if need

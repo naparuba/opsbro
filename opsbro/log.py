@@ -259,7 +259,7 @@ class Logger(object):
             return json.dumps(loggers.keys())
 
 
-logger = Logger()
+core_logger = Logger()
 
 
 class PartLogger(object):
@@ -273,9 +273,9 @@ class PartLogger(object):
         if os.path.exists(self.listener_path):
             kwargs['listener'] = self.listener_path
             kwargs['level'] = 'DEBUG  '
-            logger.log(*args, color='magenta', **kwargs)
+            core_logger.log(*args, color='magenta', **kwargs)
             return
-        logger.debug(*args, **kwargs)
+        core_logger.debug(*args, **kwargs)
     
     
     def info(self, *args, **kwargs):
@@ -283,9 +283,9 @@ class PartLogger(object):
         if os.path.exists(self.listener_path):
             kwargs['listener'] = self.listener_path
             kwargs['level'] = 'INFO   '
-            logger.log(*args, color='blue', **kwargs)
+            core_logger.log(*args, color='blue', **kwargs)
             return
-        logger.info(*args, **kwargs)
+        core_logger.info(*args, **kwargs)
     
     
     def warning(self, *args, **kwargs):
@@ -293,9 +293,9 @@ class PartLogger(object):
         if os.path.exists(self.listener_path):
             kwargs['listener'] = self.listener_path
             kwargs['level'] = 'WARNING'
-            logger.log(*args, color='yellow', **kwargs)
+            core_logger.log(*args, color='yellow', **kwargs)
             return
-        logger.warning(*args, **kwargs)
+        core_logger.warning(*args, **kwargs)
     
     
     def error(self, *args, **kwargs):
@@ -303,18 +303,26 @@ class PartLogger(object):
         if os.path.exists(self.listener_path):
             kwargs['listener'] = self.listener_path
             kwargs['level'] = 'ERROR  '
-            logger.log(*args, color='red', **kwargs)
+            core_logger.log(*args, color='red', **kwargs)
             return
-        logger.error(*args, **kwargs)
+        core_logger.error(*args, **kwargs)
     
     
     def log(self, *args, **kwargs):
         kwargs['part'] = kwargs.get('part', self.part)
         if os.path.exists(self.listener_path):
             kwargs['listener'] = self.listener_path
-            logger.log(*args, **kwargs)
+            core_logger.log(*args, **kwargs)
             return
-        logger.log(*args, **kwargs)
+        core_logger.log(*args, **kwargs)
+    
+    
+    def setLevel(self, s, force=False):
+        core_logger.setLevel(s, force=force)
+    
+    
+    def load(self, data_dir, name):
+        core_logger.load(data_dir, name)
 
 
 # Create logger for a specific part if not already exists
@@ -325,3 +333,6 @@ class LoggerFactory(object):
             return loggers[part]
         loggers[part] = PartLogger(part)
         return loggers[part]
+
+
+logger = LoggerFactory.create_logger('daemon')

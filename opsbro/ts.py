@@ -273,7 +273,7 @@ class TSBackend(object):
     
     
     def do_reaper_thread(self):
-        while not stopper.interrupted:
+        while not stopper.is_stop():
             now = NOW.now
             
             with self.data_lock:

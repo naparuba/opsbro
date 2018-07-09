@@ -60,7 +60,7 @@ class DetectorMgr(object):
             time.sleep(0.25)
         # Ok we can use collector data :)
         logger.log('DETECTOR thread launched')
-        while not stopper.interrupted:
+        while not stopper.is_stop():
             matching_groups = set()
             for (gname, gen) in self.detectors.items():
                 interval = int(gen['interval'].split('s')[0])  # todo manage like it should

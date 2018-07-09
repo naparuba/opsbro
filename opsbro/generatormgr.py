@@ -70,7 +70,7 @@ class GeneratorMgr(BaseManager):
         self.prepare_history_directory()
         
         logger.log('GENERATOR thread launched')
-        while not stopper.interrupted:
+        while not stopper.is_stop():
             logger.debug('Looking for %d generators' % len(self.generators))
             for (gname, g) in self.generators.items():
                 logger.debug('LOOK AT GENERATOR', g, 'to be apply if', g.generate_if)
