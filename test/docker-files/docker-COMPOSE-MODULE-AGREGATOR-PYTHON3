@@ -1,0 +1,25 @@
+version: '2'
+services:
+  node1:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO7-collect-agregate-PYTHON3-node1.txt
+    networks:
+       - module-agregate
+    cap_add:
+       - ALL
+
+  node2:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO7-collect-agregate-PYTHON3-node2.txt
+    networks:
+       - module-agregate
+    cap_add:
+       - ALL
+
+
+networks:
+  module-agregate:
+      driver: bridge
+
