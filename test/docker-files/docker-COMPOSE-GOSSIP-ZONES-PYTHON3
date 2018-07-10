@@ -1,0 +1,42 @@
+version: '2'
+services:
+  node1:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO3-gossip-zones-PYTHON3-1.txt
+    networks:
+       - gossip-zones
+    cap_add:
+       - ALL
+
+  node2:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO3-gossip-zones-PYTHON3-2.txt
+    networks:
+       - gossip-zones
+    cap_add:
+       - ALL
+
+  node3:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO3-gossip-zones-PYTHON3-3.txt
+    networks:
+       - gossip-zones
+    cap_add:
+       - ALL
+
+  node4:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO3-gossip-zones-PYTHON3-4.txt
+    networks:
+       - gossip-zones
+    cap_add:
+       - ALL
+
+networks:
+  gossip-zones:
+      driver: bridge
+

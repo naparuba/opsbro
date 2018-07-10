@@ -32,6 +32,7 @@ env:
 - TEST_SUITE=COMPOSE-GOSSIP-UDP-DETECT-PYTHON3
 # This one is with 4 containers, in 2 zones, one is sub level of another
 - TEST_SUITE=COMPOSE-GOSSIP-ZONES
+- TEST_SUITE=COMPOSE-GOSSIP-ZONES-PYTHON3
 # This one is with 4 containers, in 3 zones, one is sub level of another
 - TEST_SUITE=COMPOSE-GOSSIP-ZONES-MULTI
 # This one is with 2 containers, a node with events, joining another, and sync its events
@@ -43,6 +44,7 @@ env:
 - TEST_SUITE=COMPOSE-DEMO-HTTP
 # This one is with 3 containers, trying to join together
 - TEST_SUITE=COMPOSE-GOSSIP-JOIN
+- TEST_SUITE=COMPOSE-GOSSIP-JOIN-PYTHON3
 # This one block communication between 1 & 3, and 2 will be the ping relay between both
 - TEST_SUITE=COMPOSE-GOSSIP-INDIRECT-PING
 # This one is with 2 nodes: one collector, and the other a data agregator that save data send by the first to sqlite
