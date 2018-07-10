@@ -17,6 +17,7 @@ from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, put_
 from opsbro.cli_display import print_h1, print_h2
 from opsbro.threadmgr import threader
 from opsbro.jsonmgr import jsoner
+from opsbro.util import my_sort, my_cmp
 
 NO_ZONE_DEFAULT = '(no zone)'
 
@@ -33,7 +34,7 @@ def __sorted_members(m1, m2):
     n2 = m2.get('display_name', '')
     if not n2:
         n2 = m2.get('name')
-    return cmp(n1, n2)
+    return my_cmp(n1, n2)
 
 
 def do_members(detail=False):
@@ -45,7 +46,7 @@ def do_members(detail=False):
     except get_request_errors() as exp:
         logger.error('Cannot join opsbro agent to list members: %s' % exp)
         sys.exit(1)
-    members = sorted(members, cmp=__sorted_members)
+    members = my_sort(members, cmp_f=__sorted_members)
     pprint = libstore.get_pprint()
     logger.debug('Raw members: %s' % (pprint.pformat(members)))
     # If there is a display_name, use it

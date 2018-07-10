@@ -33,6 +33,7 @@ from opsbro.topic import TOPICS, TOPICS_LABELS, TOPICS_LABEL_BANNER, MAX_TOPICS_
 from opsbro.monitoring import CHECK_STATES, STATE_ID_COLORS, STATE_COLORS
 from opsbro.compliancemgr import ALL_COMPLIANCE_STATES, COMPLIANCE_STATE_COLORS
 from opsbro.generator import GENERATOR_STATES, GENERATOR_STATE_COLORS
+from opsbro.util import my_cmp
 
 NO_ZONE_DEFAULT = '(no zone)'
 
@@ -475,9 +476,9 @@ def _sort_threads(t1, t2):
     t1_name = t1['name']
     t2_name = t2['name']
     if t1_cpu == t2_cpu:
-        return cmp(t1_name, t2_name)
+        return my_cmp(t1_name, t2_name)
     else:  # bigger first
-        return -cmp(t1_cpu, t2_cpu)
+        return -my_cmp(t1_cpu, t2_cpu)
 
 
 def __get_cpu_time_percent_display(t, age):

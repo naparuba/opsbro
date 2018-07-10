@@ -61,6 +61,12 @@ def my_sort(lst, cmp_f):
     return lst
 
 
+def my_cmp(a, b):
+    if PY3:
+        return ((a > b) - (a < b))
+    return cmp(a, b)
+
+
 def copy_dir(source_item, destination_item):
     if os.path.isdir(source_item):
         make_dir(destination_item)

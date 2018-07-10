@@ -13,6 +13,11 @@ except ImportError:
     from urllib.request import Request, build_opener, HTTPHandler, HTTPPasswordMgrWithDefaultRealm, HTTPBasicAuthHandler, HTTPSHandler
     from urllib.error import URLError, HTTPError
 
+try:
+    from urllib import urlencode
+except ImportError:
+    from urllib.parse import urlencode
+
 _HTTP_EXCEPTIONS = None
 
 from .jsonmgr import jsoner
@@ -46,7 +51,7 @@ class Httper(object):
         data = None  # always none in GET
         
         if params:
-            uri = "%s?%s" % (uri, urllib.urlencode(params))
+            uri = "%s?%s" % (uri, urlencode(params))
         
         # SSL, user/password and basic
         # NOTE: currently don't manage ssl & user/password
@@ -83,7 +88,7 @@ class Httper(object):
         data = None  # always none in GET
         
         if params:
-            uri = "%s?%s" % (uri, urllib.urlencode(params))
+            uri = "%s?%s" % (uri, urlencode(params))
         
         url_opener = build_opener(HTTPHandler)
         
@@ -103,7 +108,7 @@ class Httper(object):
         
         if params:
             # TODO: sure it's json and not urlencode?
-            # data = urllib.urlencode(params)
+            # data = urlencode(params)
             data = unicode_to_bytes(jsoner.dumps(params))
         
         url_opener = build_opener(HTTPHandler)
@@ -126,8 +131,8 @@ class Httper(object):
         
         if params:
             # TODO: sure it's json and not urlencode?
-            # data = urllib.urlencode(params)
-            uri = "%s?%s" % (uri, urllib.urlencode(params))
+            # data = urlencode(params)
+            uri = "%s?%s" % (uri, urlencode(params))
             headers['Content-Type'] = 'your/contenttype'
         
         url_opener = build_opener(HTTPHandler)

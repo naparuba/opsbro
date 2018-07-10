@@ -1,0 +1,27 @@
+version: '2'
+services:
+  node1:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO1-udp-detect-auto-join-PYTHON3-node1.txt
+    networks:
+       - gossip-udp-detect
+    cap_add:
+       - ALL
+
+  node2:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO1-udp-detect-auto-join-PYTHON3-node2.txt
+    networks:
+       - gossip-udp-detect
+    cap_add:
+       - ALL
+
+
+
+
+networks:
+  gossip-udp-detect:
+      driver: bridge
+

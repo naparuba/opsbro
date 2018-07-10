@@ -1,4 +1,5 @@
-import json
+import traceback
+
 from .misc.bottle import run, request, abort, error, redirect, response, gserver
 from .misc.bottle import route as bottle_route
 import opsbro.misc.bottle as bottle
@@ -6,6 +7,7 @@ import opsbro.misc.bottle as bottle
 bottle.debug(True)
 
 from .log import logger
+from .jsonmgr import jsoner
 
 exported_functions = {}
 
@@ -82,7 +84,7 @@ class ExternalHttpProtectionLookup(object):
 # part of the code, mainly by adding new route to bottle
 class HttpDaemon(object):
     def __init__(self):
-        pass
+        self.__hook_errors()
     
     
     def run(self, addr, port, socket_path):
@@ -103,16 +105,38 @@ class HttpDaemon(object):
             bapp.run(host=addr, port=port, server='cherrypy', numthreads=64)  # 256?
     
     
-    # Some default URI
-    @error(404)
-    def err404(error):
-        return ''
-    
-    
-    # Some default URI    
-    @error(401)
-    def err401(error):
-        return ''
+    def __hook_errors(self):
+        # Some default URI
+        @error(404)
+        def err404(error):
+            return ''
+        
+        
+        # Some default URI
+        @error(401)
+        def err401(error):
+            return ''
+        
+        
+        @error(500)
+        def err500(error):
+            return_value = None
+            error_msg = getattr(error, 'text', error._status_line)
+            request_url = repr(request.url)
+            logger.error("ERROR at [%s] msg : %s" % (request_url, error_msg))
+            logger.error("FULL Error: %s" % traceback.format_exc())
+            if error.traceback:
+                first_line = True
+                for line_stack in error.traceback.splitlines():
+                    if first_line:
+                        logger.error("ERROR stack : %s" % line_stack)
+                        first_line = False
+                    else:
+                        logger.error("%s" % line_stack)
+            # is it a json?
+            if response and response.content_type == 'application/json':
+                return_value = jsoner.dumps(error_msg)
+            return return_value
     
     
     @http_export('/')
@@ -124,7 +148,7 @@ class HttpDaemon(object):
     @http_export('/api/')
     def list_api():
         response.content_type = 'application/json'
-        return json.dumps(exported_functions.values())
+        return jsoner.dumps(exported_functions.values())
 
 
 httpdaemon = HttpDaemon()

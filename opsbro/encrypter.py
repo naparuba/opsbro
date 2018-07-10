@@ -2,6 +2,7 @@ import sys
 import os
 
 from .log import LoggerFactory
+from .util import bytes_to_unicode
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('security')
@@ -50,7 +51,7 @@ class Encrypter(object):
     
     
     def load(self, encryption_key):
-        self.encryption_key = encryption_key
+        self.encryption_key = bytes_to_unicode(encryption_key)
     
     
     # We received data from UDP, if we are set to encrypt, decrypt it

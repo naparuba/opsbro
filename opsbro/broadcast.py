@@ -1,5 +1,7 @@
 import threading
 
+from .util import my_sort, my_cmp
+
 
 # TODO: use the lock for every call
 # TODO: when stacking a message for a specific group, first check if there is a node which such a group
@@ -20,7 +22,7 @@ class Broadcaster(object):
         if b2.get('prioritary', False) and b2_send <= 2:
             return 1
         # Less send first
-        return cmp(b1_send, b2_send)
+        return my_cmp(b1_send, b2_send)
     
     
     def append(self, msg):
@@ -30,7 +32,7 @@ class Broadcaster(object):
     
     def sort(self):
         with self.broadcasts_lock:
-            self.broadcasts.sort(cmp=self.__sort_function)
+            self.broadcasts = my_sort(self.broadcasts, cmp_f=self.__sort_function)
 
 
 broadcaster = Broadcaster()

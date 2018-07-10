@@ -3,12 +3,7 @@ import glob
 import imp
 import socket
 import sys
-import subprocess
 
-PY3 = sys.version_info >= (3,)
-if PY3:
-    def cmp(a, b):
-        return ((a > b) - (a < b))
 try:
     import fcntl
 except ImportError:
@@ -18,7 +13,7 @@ import struct
 from .misc.windows import windowser
 from .log import LoggerFactory
 from .misc.six import add_metaclass
-from .util import string_decode, my_sort, exec_command
+from .util import string_decode, my_sort, exec_command, my_cmp
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('hosting-driver')
@@ -247,8 +242,8 @@ class HostingDriverMgr(object):
     
     def __default_last(self, cls1, cls2):
         if cls1.layer == cls2.layer:
-            return cmp(cls1.name, cls2.name)
-        return cmp(cls1.layer, cls2.layer)
+            return my_cmp(cls1.name, cls2.name)
+        return my_cmp(cls1.layer, cls2.layer)
     
     
     def detect(self):

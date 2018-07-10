@@ -20,6 +20,9 @@ if [ $CASE == "NODE2" ]; then
     opsbro gossip wait-members --display-name "NODE1" --timeout 60
     if [ $? != 0 ]; then
        echo "ERROR: NODE1 is not present after 60s"
+       cat /var/log/opsbro/daemon.log
+       cat /var/log/opsbro/gossip.log
+       cat /var/log/opsbro/crash.log 2>/dev/null
        exit 2
     fi
     printf "Node2 gossip view\n"
@@ -32,7 +35,9 @@ if [ $CASE == "NODE2" ]; then
     opsbro gossip events wait 'NODE1-END' --timeout=10
     if [ $? != 0 ]; then
        echo "ERROR: NODE1 did not end after after 60s"
+       cat /var/log/opsbro/daemon.log
        cat /var/log/opsbro/gossip.log
+       cat /var/log/opsbro/crash.log 2>/dev/null
        exit 2
     fi
 
@@ -51,7 +56,9 @@ opsbro gossip wait-members --display-name "NODE2" --timeout 60
 if [ $? != 0 ]; then
    echo "ERROR: cannot find NODE2"
    opsbro gossip members
+   cat /var/log/opsbro/daemon.log
    cat /var/log/opsbro/gossip.log
+   cat /var/log/opsbro/crash.log 2>/dev/null
    exit 2
 fi
 
@@ -63,7 +70,9 @@ sleep 2
 opsbro gossip events wait 'NODE2-END' --timeout=10
 if [ $? != 0 ]; then
    echo "ERROR: NODE2 did not end after after 60s"
+   cat /var/log/opsbro/daemon.log
    cat /var/log/opsbro/gossip.log
+   cat /var/log/opsbro/crash.log 2>/dev/null
    exit 2
 fi
 
