@@ -8,6 +8,7 @@ from multiprocessing import Process, Value, Array
 
 from opsbro_test import *
 from opsbro.raft import RaftNode
+from opsbro.log import cprint
 
 
 class RaftQueue():
@@ -49,7 +50,7 @@ class TestRaftMultiProcess(OpsBroTest):
             for (k, v) in states_values_base.iteritems():
                 states_values[v] = k
             s = states_values.get(n.export_state.value)
-            print "NODE EXPORT STATE: %s => %s(%s)" % (n.i, n.export_state.value, s)
+            cprint("NODE EXPORT STATE: %s => %s(%s)" % (n.i, n.export_state.value, s))
             
             if s not in self.stats:
                 self.stats[s] = 0
@@ -83,7 +84,7 @@ class TestRaftMultiProcess(OpsBroTest):
         offset = 0
         nb_nodes = len(self.nodes)
         shard_size = nb_nodes / NB_PROC
-        print "Test repartition: [nb process=%d]  [number of threads/process=%d] " % (NB_PROC, shard_size)
+        cprint("Test repartition: [nb process=%d]  [number of threads/process=%d] " % (NB_PROC, shard_size))
         for i in xrange(NB_PROC):
             t = multiprocessing.Process(None, target=self.thread_multi_loop, name='thread launcher', args=(offset, shard_size, wait))
             t.daemon = True
@@ -101,12 +102,12 @@ class TestRaftMultiProcess(OpsBroTest):
         for d in self.nodes[shard_offset:shard_offset + shard_size]:
             n = d['node']
             q = d['queue']
-            print "[PID:%d] starting node thread: %s" % (os.getpid(), n.i)
+            cprint("[PID:%d] starting node thread: %s" % (os.getpid(), n.i))
             t = threading.Thread(None, target=n.main, name='node-%d' % n.i, args=(q, self.nodes))
             t.daemon = True
             t.start()
             self.threads.append(t)
-        print "[PID:%d] Stopping %d threads" % (os.getpid(), shard_size)
+        cprint("[PID:%d] Stopping %d threads" % (os.getpid(), shard_size))
         time.sleep(wait)
         self.stop_threads()
         return
@@ -162,31 +163,31 @@ class TestRaftMultiProcess(OpsBroTest):
     ############################### TESTS
     # Try with far more nodes
     def test_raft_large_leader_election(self):
-        print "TEST: test_raft_large_leader_election"
+        cprint("TEST: test_raft_large_leader_election")
         # The thread switching context is killing message propagation time because we don't have so much CPU available. So
         # we try to achieve 75 threads/CPU (it is still a lot), top should be 150/cpu, still work to do! TODO
         N = 75 * multiprocessing.cpu_count()
         W = 30  # for very slow computing like travis?
         self.create_and_wait(N=N, wait=W)
         
-        print "test_raft_large_leader_election:: Looking if we really got a leader, and only one"
-        print "test_raft_large_leader_election:: Number of leaders: %d" % self.count('leader')
+        cprint("test_raft_large_leader_election:: Looking if we really got a leader, and only one")
+        cprint("test_raft_large_leader_election:: Number of leaders: %d" % self.count('leader'))
         self.compute_stats()
         
         print "\n" * 20
         
         for d in self.nodes:
             n = d['node']
-            print "== %4d %s turn=%d => candidate=%d leader=%s" % (n.i, n.state, n.election_turn, getattr(n, 'candidate_id', -1), n.leader)
+            cprint("== %4d %s turn=%d => candidate=%d leader=%s" % (n.i, n.state, n.election_turn, getattr(n, 'candidate_id', -1), n.leader))
         
-        print >> sys.stderr, "\nSTATS: %s" % self.stats
+        cprint("\nSTATS: %s" % self.stats)
         
         self.assert_(self.count('leader') == 1)
         
         # and N-1 followers
         nb_followers = self.count('follower')
-        print "NB followers", nb_followers
-        print self.stats
+        cprint("NB followers", nb_followers)
+        cprint('%s' % self.stats)
         self.assert_(nb_followers == N - 1)
 
 

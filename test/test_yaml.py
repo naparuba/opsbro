@@ -8,6 +8,7 @@ from opsbro_test import *
 import os
 import sys
 from opsbro.yamlmgr import yamler
+from opsbro.log import cprint
 
 '''
 import opsbro.misc
@@ -44,7 +45,7 @@ class TestYaml(OpsBroTest):
         self.assert_(data[1]['k2'] == 36.00)
         
         buf = yamler.dumps(data)
-        print "BUF", buf
+        cprint("BUF", buf)
     
     
     def test_yaml_comments(self):
@@ -64,31 +65,31 @@ key4: 36
 # ending comment bis
         '''
         data = yamler.loads(s)
-        print "DATA", data, type(data), dir(data)
+        cprint("DATA", data, type(data), dir(data))
         
-        print "CA", data.ca
-        print "CA internals", data.ca.__dict__
-        print "CA dir", dir(data.ca)
-        print "CA.attrib", data.ca.attrib
-        print "CA comment", data.ca.comment
+        cprint("CA", data.ca)
+        cprint("CA internals", data.ca.__dict__)
+        cprint("CA dir", dir(data.ca))
+        cprint("CA.attrib", data.ca.attrib)
+        cprint("CA comment", data.ca.comment)
         
-        print "CA items", data.ca.items
+        cprint("CA items", data.ca.items)
         
         whole_data_comment = yamler.get_document_comment(data)
-        print "Whole data comment", whole_data_comment
+        cprint("Whole data comment", whole_data_comment)
         whole_data_comment_OK = '''# document comment line1
 # document comment line2'''
         self.assert_(whole_data_comment == whole_data_comment_OK)
         
         # Now check key1 comment
         key1_comment = yamler.get_key_comment(data, 'key1')
-        print "KEY1 comment:", key1_comment
+        cprint("KEY1 comment:", key1_comment)
         key1_comment_OK = '# key1 comment'
         self.assertEqual(key1_comment, key1_comment_OK)
         
         # Key2 is a bit harder: got both lines before and same line comments
         key2_comment = yamler.get_key_comment(data, 'key2')
-        print "KEY2 comment:", key2_comment
+        cprint("KEY2 comment:", key2_comment)
         key2_comment_OK = '''# Key2 line before comment, part1
 # Key2 line before comment, part2
 # key2 same line comment'''
@@ -96,11 +97,11 @@ key4: 36
         
         # Key4: nothing, should be None
         key4_comment = yamler.get_key_comment(data, 'key4')
-        print "KEY4 comment:", key4_comment
+        cprint("KEY4 comment:", key4_comment)
         self.assertEqual(key4_comment, None)
         
         ending_comments = yamler.get_document_ending_comment(data)
-        print "Ending comments", ending_comments
+        cprint("Ending comments", ending_comments)
         ending_comments_OK = '''# ending comment
 # ending comment bis'''
         self.assertEqual(ending_comments, ending_comments_OK)
@@ -120,21 +121,20 @@ key3: 45
 
 #___ENDING___'''
         data = yamler.loads(s)
-        print "DATA", data, type(data), dir(data)
+        cprint("DATA", data, type(data), dir(data))
         
-        print "CA", data.ca
-        print "CA internals", data.ca.__dict__
-        print "CA dir", dir(data.ca)
-        print "CA.attrib", data.ca.attrib
-        print "CA comment", data.ca.comment, type(data.ca.comment)
-        print "END", data.ca.end, type(data.ca.end)
+        cprint("CA", data.ca)
+        cprint("CA internals", data.ca.__dict__)
+        cprint("CA dir", dir(data.ca))
+        cprint("CA.attrib", data.ca.attrib)
+        cprint("CA comment", data.ca.comment, type(data.ca.comment))
+        cprint("END", data.ca.end, type(data.ca.end))
         yamler.add_document_ending_comment(data, "# mon cul \n# c'est du poulet", '#___ENDING___')
         
-        print dir(data.ca)
+        cprint(dir(data.ca))
         final = yamler.dumps(data)
-        print "FINAL"
-        print final
-
+        cprint("FINAL")
+        cprint(final)
 
 
 if __name__ == '__main__':

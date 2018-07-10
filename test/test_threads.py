@@ -5,13 +5,14 @@
 from opsbro_test import *
 
 from opsbro.threadmgr import ThreadMgr
+from opsbro.log import cprint
 
 i = 0
 
 
 def f():
     global i
-    print "I am a thread"
+    cprint("I am a thread")
     i += 1
     time.sleep(0.5)
 

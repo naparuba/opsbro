@@ -35,6 +35,7 @@ env:
 - TEST_SUITE=COMPOSE-GOSSIP-ZONES-PYTHON3
 # This one is with 4 containers, in 3 zones, one is sub level of another
 - TEST_SUITE=COMPOSE-GOSSIP-ZONES-MULTI
+- TEST_SUITE=COMPOSE-GOSSIP-ZONES-MULTI-PYTHON3
 # This one is with 2 containers, a node with events, joining another, and sync its events
 - TEST_SUITE=COMPOSE-GOSSIP-JOIN-SYNC-EVENTS
 # This is a full DEMO with 4 containers, for a distributed HTTP with

@@ -6,16 +6,19 @@ import threading
 
 from opsbro_test import *
 from opsbro.raft import RaftNode
+from opsbro.log import cprint
 
 
 class RaftQueue():
     def __init__(self):
         self.queue = []
         self.lock = threading.RLock()
-        
+    
+    
     def put(self, m):
         with self.lock:
             self.queue.append(m)
+    
     
     def get(self):
         with self.lock:
@@ -24,8 +27,7 @@ class RaftQueue():
             except:
                 m = {}
         return m
-        
-        
+
 
 class TestRaft(OpsBroTest):
     def tearDown(self):
@@ -133,31 +135,30 @@ class TestRaft(OpsBroTest):
     
     # Try with far more nodes
     def test_raft_large_leader_election(self):
-        print "TEST: test_raft_large_leader_election"
+        cprint("TEST: test_raft_large_leader_election")
         N = 150
         W = 30  # for very slow computing like travis?
         self.create_and_wait(N=N, wait=W)
         
-        print "test_raft_large_leader_election:: Looking if we really got a leader, and only one"
-        print "test_raft_large_leader_election:: Number of leaders: %d" % self.count('leader')
+        cprint("test_raft_large_leader_election:: Looking if we really got a leader, and only one")
+        cprint("test_raft_large_leader_election:: Number of leaders: %d" % self.count('leader'))
         self.compute_stats()
         
-        print "\n" * 20
+        cprint("\n" * 20)
         
         for d in self.nodes:
             n = d['node']
-            print "== %4d %s turn=%d => candidate=%d leader=%s" % (n.i, n.state, n.election_turn, getattr(n, 'candidate_id', -1), n.leader)
+        cprint("== %4d %s turn=%d => candidate=%d leader=%s" % (n.i, n.state, n.election_turn, getattr(n, 'candidate_id', -1), n.leader))
         
-        print >> sys.stderr, "\nSTATS: %s" % self.stats
+        cprint("\nSTATS: %s" % self.stats)
         
         self.assert_(self.count('leader') == 1)
         
         # and N-1 followers
         nb_followers = self.count('follower')
-        print "NB followers", nb_followers
-        print self.stats
+        cprint("NB followers: %s" % nb_followers)
+        cprint(self.stats)
         self.assert_(nb_followers == N - 1)
-        
 
 
 if __name__ == '__main__':
