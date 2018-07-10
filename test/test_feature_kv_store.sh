@@ -15,14 +15,21 @@ fi
 VALUE=$(opsbro kv-store get "$DISK_KEY")
 if [ $? != 0 ];then
    echo "ERROR: the DISK key cannot be GET"
+   echo $VALUE
    exit 2
 fi
 
+echo "*********** VALUE IS ********"
 echo $VALUE
+echo "*****************************"
 
-echo "$VALUE" | grep state
-if [ $? != 0 ];then
-   echo "ERROR: the VALUE seems void"
+echo "GREP::"
+echo $VALUE | grep -v ERROR
+RES=$?
+echo "::"
+
+if [ $RES != 0 ];then
+   echo "ERROR: the VALUE seems void (res=$RES)"
    echo $VALUE
    exit 2
 fi
