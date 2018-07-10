@@ -174,7 +174,7 @@ class TestRaftMultiProcess(OpsBroTest):
         cprint("test_raft_large_leader_election:: Number of leaders: %d" % self.count('leader'))
         self.compute_stats()
         
-        print "\n" * 20
+        cprint("\n" * 20)
         
         for d in self.nodes:
             n = d['node']

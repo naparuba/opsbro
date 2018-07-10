@@ -22,7 +22,6 @@ class TestEncrypter(OpsBroTest):
         cprint("ENCRYPTER: %s" % encrypter)
         orig_test = 'Hi I am Alice'
         bobread = encrypter.encrypt(orig_test)
-        cprint("BOREAD: %s" % bobread)
         clear = encrypter.decrypt(bobread)
         cprint('CLEAN: %s' % clear)
         self.assert_(clear == orig_test)
