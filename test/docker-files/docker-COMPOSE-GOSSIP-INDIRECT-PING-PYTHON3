@@ -1,0 +1,36 @@
+version: '2'
+services:
+  node1:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO6-indirect-ping-PYTHON3-node1.txt
+    networks:
+       - gossip-indirect-ping
+    cap_add:
+       - ALL
+
+
+  node2:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO6-indirect-ping-PYTHON3-node2.txt
+    networks:
+       - gossip-indirect-ping
+    cap_add:
+       - ALL
+
+
+  node3:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO6-indirect-ping-PYTHON3-node3.txt
+    networks:
+       - gossip-indirect-ping
+    cap_add:
+       - ALL
+
+
+networks:
+  gossip-indirect-ping:
+      driver: bridge
+
