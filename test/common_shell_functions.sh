@@ -23,6 +23,7 @@ function assert_state_count {
          echo "ERROR: the daemon cannot answer to gossip member listing"
          cat /var/log/opsbro/gossip.log
          cat /var/log/opsbro/daemon.log
+         cat /var/log/opsbro/crash.log 2>/dev/null
          exit 2
       fi
       NB=$(echo "$STATS" | grep 'docker-container' | grep "$1" | wc -l)
@@ -40,6 +41,7 @@ function assert_state_count {
    echo "$STATS"
    cat /var/log/opsbro/gossip.log
    cat /var/log/opsbro/daemon.log
+   cat /var/log/opsbro/crash.log 2>/dev/null
    opsbro gossip history
    exit 2
 }
@@ -51,6 +53,7 @@ function wait_member_display_name_with_timeout {
        echo "ERROR: `date` the node with the display name $1 is not present after $2s"
        opsbro gossip members --detail
        cat /var/log/opsbro/daemon.log
+       cat /var/log/opsbro/crash.log 2>/dev/null
        exit 2
     fi
 }
@@ -63,6 +66,7 @@ function wait_event_with_timeout {
          echo "FAIL `date` on event $1. Logs:"
          cat /var/log/opsbro/daemon.log
          cat /var/log/opsbro/gossip.log
+         cat /var/log/opsbro/crash.log 2>/dev/null
          echo "ERROR: `date` I do not have the event $1 after $2 seconds"
          exit 2
     fi

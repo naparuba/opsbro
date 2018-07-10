@@ -1,5 +1,4 @@
 import socket
-import json
 import time
 import random
 import math
@@ -937,7 +936,7 @@ class Gossip(BaseManager):
     def __do_ping(self, other):
         ping_payload = {'type': 'ping', 'seqno': 0, 'node': other['uuid'], 'from': self.uuid}
         # print "PREPARE PING", ping_payload, other
-        message = json.dumps(ping_payload)
+        message = jsoner.dumps(ping_payload)
         encrypter = libstore.get_encrypter()
         enc_message = encrypter.encrypt(message)
         addr = other['addr']
@@ -979,7 +978,7 @@ class Gossip(BaseManager):
             relays = random.sample(possible_relays, min(len(possible_relays), 3))
             logger.info('POSSIBLE RELAYS', relays)
             ping_relay_payload = {'type': 'ping-relay', 'seqno': 0, 'tgt': other['uuid'], 'from': self.uuid}
-            message = json.dumps(ping_relay_payload)
+            message = jsoner.dumps(ping_relay_payload)
             enc_message = encrypter.encrypt(message)
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
             for r in relays:
@@ -1027,7 +1026,7 @@ class Gossip(BaseManager):
         my_self = self.nodes.get(self.uuid)
         my_node_data = self.create_alive_msg(my_self)
         ack = {'type': 'ack', 'seqno': m['seqno'], 'node': my_node_data}
-        ret_msg = json.dumps(ack)
+        ret_msg = jsoner.dumps(ack)
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
         encrypter = libstore.get_encrypter()
         enc_ret_msg = encrypter.encrypt(ret_msg)
@@ -1055,7 +1054,7 @@ class Gossip(BaseManager):
             return
         # Now do the real ping
         ping_payload = {'type': 'ping', 'seqno': 0, 'node': ntgt['uuid'], 'from': self.uuid}
-        message = json.dumps(ping_payload)
+        message = jsoner.dumps(ping_payload)
         encrypter = libstore.get_encrypter()
         enc_message = encrypter.encrypt(message)
         tgtaddr = ntgt['addr']
@@ -1072,7 +1071,7 @@ class Gossip(BaseManager):
             logger.info('PING (relay) got a return from %s' % ntgt['name'], j_ret)
             # An aswer? great it is alive! Let it know our _from node
             ack = {'type': 'ack', 'seqno': 0, 'node': j_ret['node']}
-            ret_msg = json.dumps(ack)
+            ret_msg = jsoner.dumps(ack)
             enc_ret_msg = encrypter.encrypt(ret_msg)
             # sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
             sock.sendto(enc_ret_msg, addr)
@@ -1101,7 +1100,7 @@ class Gossip(BaseManager):
         my_node_data = self.create_alive_msg(my_self)
         
         r = {'type': 'detect-pong', 'node': my_node_data}
-        ret_msg = json.dumps(r)
+        ret_msg = jsoner.dumps(r)
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
         encrypter = libstore.get_encrypter()
         enc_ret_msg = encrypter.encrypt(ret_msg)
@@ -1198,7 +1197,7 @@ class Gossip(BaseManager):
                 # if so we will get back to the old version and create a new stack
                 bmsg = b['msg']
                 stack.append(bmsg)
-                message = json.dumps(stack)
+                message = jsoner.dumps(stack)
                 # Maybe we are now too large and we do not have just one
                 # fucking big message, so we fail back to the old_message that was
                 # in the good size and send it now
@@ -1207,7 +1206,7 @@ class Gossip(BaseManager):
                     messages.append(old_message)
                     # reset with just the new packet
                     stack = [bmsg]
-                    message = json.dumps(stack)
+                    message = jsoner.dumps(stack)
         # always stack the last one if we did create more than 1
         # or just the first if it was small
         if message != '':
@@ -1304,7 +1303,7 @@ class Gossip(BaseManager):
         
         logger.debug('do_push_pull:: giving %s informations about nodes: %s' % (other[0], [n['name'] for n in nodes_to_send.values()]))
         m = {'type': 'push-pull-msg', 'ask-from-zone': self.zone, 'nodes': nodes_to_send, 'events': events}
-        message = json.dumps(m)
+        message = jsoner.dumps(m)
         
         (addr, port) = other
         
@@ -1525,12 +1524,12 @@ class Gossip(BaseManager):
         
         @http_export('/agent/name')
         def get_name():
-            return self.nodes[self.uuid]['name']
+            return jsoner.dumps(self.nodes[self.uuid]['name'])
         
         
         @http_export('/agent/uuid')
         def get_name():
-            return self.uuid
+            return jsoner.dumps(self.uuid)
         
         
         @http_export('/agent/leave/:nuuid', protected=True)
@@ -1538,6 +1537,7 @@ class Gossip(BaseManager):
             with self.nodes_lock:
                 node = self.nodes.get(nuuid, None)
             if node is None:
+                logger.error('Asking us to set as leave the node %s but we cannot find it' % (nuuid))
                 return abort(404, 'This node is not found')
             self.set_leave(node, force=True)
             return
@@ -1555,7 +1555,7 @@ class Gossip(BaseManager):
         def agent_members_history():
             response.content_type = 'application/json'
             r = gossiper.get_history()
-            return json.dumps(r)
+            return jsoner.dumps(r)
         
         
         @http_export('/agent/join/:other', protected=True)
@@ -1569,7 +1569,7 @@ class Gossip(BaseManager):
                 port = int(parts[1])
             tgt = (addr, port)
             r = self.do_push_pull(tgt)
-            return json.dumps(r)
+            return jsoner.dumps(r)
         
         
         @http_export('/agent/push-pull')
@@ -1594,7 +1594,7 @@ class Gossip(BaseManager):
                 events = copy.deepcopy(self.events)
             m = {'type': 'push-pull-msg', 'nodes': nodes, 'events': events}
             
-            return json.dumps(m)
+            return jsoner.dumps(m)
         
         
         @http_export('/agent/detect', protected=True)
@@ -1602,7 +1602,7 @@ class Gossip(BaseManager):
             response.content_type = 'application/json'
             timeout = int(request.GET.get('timeout', '5'))
             nodes = self.launch_gossip_detect_ping(timeout)
-            return json.dumps(nodes)
+            return jsoner.dumps(nodes)
         
         
         # Add a group should only be allowed by unix socket (local)
@@ -1610,7 +1610,7 @@ class Gossip(BaseManager):
         def agent_add_group(gname):
             response.content_type = 'application/json'
             r = self.add_group(gname)
-            return json.dumps(r)
+            return jsoner.dumps(r)
         
         
         # Add a group should only be allowed by unix socket (local)
@@ -1618,13 +1618,13 @@ class Gossip(BaseManager):
         def agent_remove_group(gname):
             response.content_type = 'application/json'
             r = self.remove_group(gname)
-            return json.dumps(r)
+            return jsoner.dumps(r)
         
         
         @http_export('/agent/zones', method='GET', protected=True)
         def get_zones():
             response.content_type = 'application/json'
-            return json.dumps(zonemgr.get_zones())
+            return jsoner.dumps(zonemgr.get_zones())
         
         
         @http_export('/agent/event/:event_type', method='GET', protected=True)
@@ -1636,7 +1636,7 @@ class Gossip(BaseManager):
                     e_type = e.get('payload', {}).get('type', None)
                     if e_type == event_type:
                         evt = e
-            return json.dumps(evt)
+            return jsoner.dumps(evt)
         
         
         @http_export('/agent/event', method='POST', protected=True)
@@ -1647,7 +1647,7 @@ class Gossip(BaseManager):
                 return abort(400, 'Missing event_type parameter')
             payload = {'type': event_type}
             self.stack_event_broadcast(payload, prioritary=True)
-            return json.dumps(True)
+            return jsoner.dumps(True)
 
 
 gossiper = Gossip()

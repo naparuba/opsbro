@@ -277,7 +277,7 @@ class TSBackend(object):
             now = NOW.now
             
             with self.data_lock:
-                all_names = self.data.keys()
+                all_names = list(self.data.keys())  # python3: be sure to have a copy
             logger.debug("DOING reaper thread on %d elements" % len(all_names))
             for name in all_names:
                 # Grok all minute entries

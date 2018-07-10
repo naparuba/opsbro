@@ -1,0 +1,36 @@
+version: '2'
+services:
+  node1:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO2-gossip-connect-PYTHON3-1.txt
+    networks:
+       - gossip-join
+    cap_add:
+       - ALL
+
+
+  node2:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO2-gossip-connect-PYTHON3-2.txt
+    networks:
+       - gossip-join
+    cap_add:
+       - ALL
+
+
+  node3:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO2-gossip-connect-PYTHON3-3.txt
+    networks:
+       - gossip-join
+    cap_add:
+       - ALL
+
+
+networks:
+  gossip-join:
+      driver: bridge
+

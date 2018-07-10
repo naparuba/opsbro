@@ -147,20 +147,19 @@ def do_leave(nuuid=''):
     # Lookup at the localhost name first
     if not nuuid:
         try:
-            (code, r) = get_opsbro_local('/agent/uuid')
+            nuuid = get_opsbro_json('/agent/uuid')
         except get_request_errors() as exp:
-            logger.error(exp)
-            return
-        nuuid = r
+            logger.error('Cannot join opsbro agent to get our uuid: %s' % exp)
+            sys.exit(2)
+    uri = '/agent/leave/%s' % nuuid
     try:
-        (code, r) = get_opsbro_local('/agent/leave/%s' % nuuid)
+        (code, r) = get_opsbro_local(uri)
     except get_request_errors() as exp:
         logger.error(exp)
         return
     
     if code != 200:
-        logger.error('Node %s is missing' % nuuid)
-        print(r)
+        logger.error('Node %s is missing (return=%s)' % (nuuid, r))
         return
     cprint('Node %s is set to leave state' % nuuid, end='')
     cprint(': OK', color='green')
