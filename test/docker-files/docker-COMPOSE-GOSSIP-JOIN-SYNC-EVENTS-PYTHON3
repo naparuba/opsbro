@@ -1,0 +1,27 @@
+version: '2'
+services:
+  node1:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO5-join-sync-events-PYTHON3-node1.txt
+    networks:
+       - gossip-join-sync
+    cap_add:
+       - ALL
+
+  node2:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO5-join-sync-events-PYTHON3-node2.txt
+    networks:
+       - gossip-join-sync
+    cap_add:
+       - ALL
+
+
+
+
+networks:
+  gossip-join-sync:
+      driver: bridge
+
