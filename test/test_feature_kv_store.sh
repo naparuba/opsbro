@@ -20,7 +20,7 @@ fi
 
 echo $VALUE
 
-echo "$VALUE" | grep pack_name
+echo "$VALUE" | grep state
 if [ $? != 0 ];then
    echo "ERROR: the VALUE seems void"
    echo $VALUE
