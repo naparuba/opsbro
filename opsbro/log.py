@@ -77,12 +77,15 @@ else:
         if PY3:
             s = string_decode(s)
             raw_bytes, consumed = stdout_utf8.encode(s, 'strict')
+            # We have 2 cases:
+            # * (default) sys.stdout is a real tty we did hook
+            # * (on test case by nose) was changed by a io.Stdout that do not have .buffer
+            write_into = sys.stdout.buffer if hasattr(sys.stdout, 'buffer') else sys.stdout
             if end == '':
-                sys.stdout.buffer.write(raw_bytes)
-                # stdout_utf8.write(s)
+                write_into.write(raw_bytes)
             else:
-                sys.stdout.buffer.write(raw_bytes)
-                sys.stdout.buffer.write(b'\n')
+                write_into.write(raw_bytes)
+                write_into.write(b'\n')
         else:  # PY2
             if end == '':
                 stdout_utf8.write(s)
