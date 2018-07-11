@@ -1,8 +1,0 @@
-generator:
-    generate_if:   'is_in_static_group("ssh-key-example")'
-    path:       /root/authorized_keys.txt
-    template:   ssh_keys.txt
-    partial_start: ###### SSH Key deploy start
-    partial_end:   ###### SSH Key deploy end
-    if_partial_missing: append
-

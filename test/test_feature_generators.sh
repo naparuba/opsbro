@@ -2,9 +2,15 @@
 
 /etc/init.d/opsbro start
 
+
+
 opsbro generators wait-compliant sshkeys
 if [ $? != 0 ];then
    echo "ERROR: cannot have the sshkey generator as compliant"
+   opsbro generators state
+   opsbro generators history
+   cat /var/log/opsbro/generator.log
+   cat /var/log/opsbro/crash.log 2>/dev/null
    exit 2
 fi
 

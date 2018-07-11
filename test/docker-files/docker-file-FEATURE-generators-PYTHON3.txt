@@ -23,6 +23,7 @@ RUN        python setup.py install
 # Copy the generator
 ADD        test/test-files/test-generators/   /var/lib/opsbro/global-configuration/packs/
 RUN        ls -R /var/lib/opsbro/global-configuration/packs/test-generators/
+
 RUN        cp   /var/lib/opsbro/global-configuration/packs/test-generators/generators/templates/authorized_keys.txt  /tmp/
 
 RUN        opsbro agent parameters add groups ssh-key-sample

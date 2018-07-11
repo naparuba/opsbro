@@ -152,7 +152,7 @@ def do_packs_show():
         s1 = sprintf('Packs at level ', color='yellow', end='')
         s2 = sprintf(level, color='blue', end='')
         print_h1(s1 + s2, raw_title=True)
-        pack_names = packs[level].keys()
+        pack_names = list(packs[level].keys())
         pack_names.sort()
         if len(pack_names) == 0:
             cprint('  No packs are available at the level %s' % level, color='grey')
