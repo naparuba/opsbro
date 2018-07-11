@@ -81,7 +81,7 @@ else:
             # We have 2 cases:
             # * (default) sys.stdout is a real tty we did hook
             # * (on test case by nose) was changed by a io.Stdout that do not have .buffer
-            if hasattr(sys.stdout, 'buffer')
+            if hasattr(sys.stdout, 'buffer'):
                 write_into = sys.stdout.buffer
             else:
                 write_into = sys.stdout
