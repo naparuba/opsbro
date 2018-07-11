@@ -81,16 +81,18 @@ else:
             # We have 2 cases:
             # * (default) sys.stdout is a real tty we did hook
             # * (on test case by nose) was changed by a io.Stdout that do not have .buffer
+            end_line = b'\n'
             if hasattr(sys.stdout, 'buffer'):
                 write_into = sys.stdout.buffer
             else:
                 write_into = sys.stdout
                 raw_bytes = bytes_to_unicode(raw_bytes)  # ioString do not like bytes
+                end_line = '\n'
             if end == '':
                 write_into.write(raw_bytes)
             else:
                 write_into.write(raw_bytes)
-                write_into.write(b'\n')
+                write_into.write(end_line)
         else:  # PY2
             if end == '':
                 stdout_utf8.write(s)
