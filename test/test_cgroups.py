@@ -6,6 +6,7 @@ import copy
 import time
 import threading
 from opsbro_test import *
+from opsbro.log import cprint
 
 try:
     from docker import Client
@@ -28,12 +29,12 @@ class TestCGroup(OpsBroTest):
         if self.con is None:
             return
         
-        print self.conts
+        cprint(self.conts)
         cids = [c['Id'] for c in self.conts]
-        print 'CIDS', cids
+        print('CIDS: %s' % cids)
         
         metrics = cgroupmgr.get_containers_metrics(cids)
-        print "METRICS", metrics
+        cprint("METRICS: %s" % metrics)
 
 
 if __name__ == '__main__':
