@@ -18,7 +18,7 @@ from .misc.colorama import init as init_colorama
 
 # Lasy load to avoid recursive import
 string_decode = None
-
+bytes_to_unicode = None
 
 def is_tty():
     # TODO: what about windows? how to have beautiful & Windows?
@@ -65,10 +65,12 @@ else:
     # stdout_utf8.errors = 'ignore'
     
     def cprint(s, color='', on_color='', end='\n'):
-        global string_decode
+        global string_decode, bytes_to_unicode
         if string_decode is None:
-            from .util import string_decode, bytes_to_unicode
+            from .util import string_decode
             string_decode = string_decode
+        if bytes_to_unicode is None:
+            from .util import bytes_to_unicode
             bytes_to_unicode = bytes_to_unicode
         if not isinstance(s, basestring):
             s = str(s)
