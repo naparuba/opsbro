@@ -4,9 +4,9 @@
 
 
 
-opsbro generators wait-compliant sshkeys
+opsbro generators wait-compliant authorized_keys
 if [ $? != 0 ];then
-   echo "ERROR: cannot have the sshkey generator as compliant"
+   echo "ERROR: cannot have the authorized_keys generator as compliant"
    opsbro generators state
    opsbro generators history
    cat /var/log/opsbro/generator.log
@@ -48,9 +48,9 @@ fi
 
 HISTORY=$(opsbro generators history)
 
-echo "$HISTORY" | grep 'Generator sshkeys did generate a new file at'
+echo "$HISTORY" | grep 'Generator authorized_keys did generate a new file at'
 if [ $? != 0 ];then
-   echo "ERROR: history should have the Generator sshkeys did generate a new file at entry"
+   echo "ERROR: history should have the Generator authorized_keys did generate a new file at entry"
    echo "$HISTORY"
    exit 2
 fi
