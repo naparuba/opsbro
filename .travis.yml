@@ -44,6 +44,7 @@ env:
 # 1 haproxy (generators to the 2 http)
 # 1 customer, with DNS module
 - TEST_SUITE=COMPOSE-DEMO-HTTP
+- TEST_SUITE=COMPOSE-DEMO-HTTP-PYTHON3
 # This one is with 3 containers, trying to join together
 - TEST_SUITE=COMPOSE-GOSSIP-JOIN
 - TEST_SUITE=COMPOSE-GOSSIP-JOIN-PYTHON3
