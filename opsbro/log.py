@@ -67,8 +67,9 @@ else:
     def cprint(s, color='', on_color='', end='\n'):
         global string_decode
         if string_decode is None:
-            from .util import string_decode
+            from .util import string_decode, bytes_to_unicode
             string_decode = string_decode
+            bytes_to_unicode = bytes_to_unicode
         if not isinstance(s, basestring):
             s = str(s)
         # Python 2 and 3: good luck for unicode in a terminal.
@@ -80,7 +81,11 @@ else:
             # We have 2 cases:
             # * (default) sys.stdout is a real tty we did hook
             # * (on test case by nose) was changed by a io.Stdout that do not have .buffer
-            write_into = sys.stdout.buffer if hasattr(sys.stdout, 'buffer') else sys.stdout
+            if hasattr(sys.stdout, 'buffer')
+                write_into = sys.stdout.buffer
+            else:
+                write_into = sys.stdout
+                raw_bytes = bytes_to_unicode(raw_bytes)  # ioString do not like bytes
             if end == '':
                 write_into.write(raw_bytes)
             else:
