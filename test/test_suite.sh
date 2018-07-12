@@ -8,7 +8,8 @@ echo "##################### Launching TEST $TEST_SUITE"
 if [ "$TEST_SUITE" == "PYTHON" ]; then
    echo "Installing opsbro for TESTING (so have libs)"
    cd ..
-   python setup.py install
+   # NOTE: sudo because travis is under ubuntu
+   sudo python setup.py install
 
    # NOTE: nosetests are hooking stdout and sys.paths, and so are not in real execution, this make too much troubles
    # with tests, so switching to a real world test
