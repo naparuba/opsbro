@@ -3,6 +3,9 @@
 #    Gabes Jean, naparuba@gmail.com
 
 import threading
+from multiprocessing import cpu_count
+
+NB_CPUS = cpu_count()
 
 from opsbro_test import *
 from opsbro.raft import RaftNode
@@ -136,7 +139,8 @@ class TestRaft(OpsBroTest):
     # Try with far more nodes
     def test_raft_large_leader_election(self):
         cprint("TEST: test_raft_large_leader_election")
-        N = 150
+        
+        N = 75 * NB_CPUS
         W = 30  # for very slow computing like travis?
         self.create_and_wait(N=N, wait=W)
         
@@ -157,7 +161,7 @@ class TestRaft(OpsBroTest):
         # and N-1 followers
         nb_followers = self.count('follower')
         cprint("NB followers: %s" % nb_followers)
-        cprint(self.stats)
+        cprint(str(self.stats))
         self.assert_(nb_followers == N - 1)
 
 

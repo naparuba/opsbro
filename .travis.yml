@@ -1,6 +1,6 @@
 language: python
 
-# NOTE: 2.6 will be add to the build matrix explictly only for the interesting cases
+# NOTE: 2.6 & python 3 versions will be add to the build matrix explictly only for the interesting cases
 python:
   - "2.7"
 
@@ -70,8 +70,6 @@ env:
 matrix:
   include:
     - python: "2.6"
-      env:     TEST_SUITE=PYTHON
-    - python: "3.3"
       env:     TEST_SUITE=PYTHON
     - python: "3.4"
       env:     TEST_SUITE=PYTHON

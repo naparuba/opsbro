@@ -5,36 +5,12 @@ ADD        test/docker-helper/  /
 
 RUN        /apt_get_install  python
 
-# Setup test env, "standard" installation is test with other tests ^^
-RUN        /apt_get_install   python-pip
-RUN        pip install jinja2
-RUN        pip install leveldb
-RUN        pip install pyOpenSSL
-RUN        pip install pycrypto
-RUN        pip install requests
-RUN        pip install Crypto
-RUN        pip install pygments
-RUN        pip install coveralls
-RUN        pip install nose-cov
-RUN        pip install unittest2
-RUN        apt-get install -y python-cherrypy3
-RUN        pip install rsa
-# The internal yaml seems to not be used, thanks nose
-RUN        pip install ruamel.yaml==0.11.15
-
 
 ADD        . /root/opsbro-oss
 WORKDIR       /root/opsbro-oss
 
 RUN       python setup.py install
 
-ENTRYPOINT    nosetests -xv --processes=1 --process-timeout=300 --process-restartworker --with-cov --cov=opsbro --exe
-
-
-
 
 # Specific test, manual launch
-#ENTRYPOINT    cd test; python  test_raft_multiprocess.py  TestRaftMultiProcess.test_raft_large_leader_election
-#ENTRYPOINT    cd test; python  test_raft.py
-#ENTRYPOINT     cd test;python test_yaml.py
-#ENTRYPOINT      opsbro agent start
+ENTRYPOINT     test/launch_python_tests.sh

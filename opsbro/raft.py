@@ -5,6 +5,11 @@ import random
 import math
 import sys
 
+
+from .util import PY3
+if PY3:
+    xrange = range
+
 # ELECTION_TIMEOUT_LIMITS = (150, 300)
 
 HEARTHBEAT_INTERVAL = 150

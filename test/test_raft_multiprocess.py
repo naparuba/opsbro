@@ -9,6 +9,9 @@ from multiprocessing import Process, Value, Array
 from opsbro_test import *
 from opsbro.raft import RaftNode
 from opsbro.log import cprint
+from opsbro.util import PY3
+if PY3:
+    xrange = range
 
 
 class RaftQueue():
@@ -47,7 +50,7 @@ class TestRaftMultiProcess(OpsBroTest):
             # s = n.state
             states_values_base = {'did-vote': 1, 'leader': 2, 'follower': 3, 'candidate': 4, 'wait_for_candidate': 5, 'leaved': 6}
             states_values = {}
-            for (k, v) in states_values_base.iteritems():
+            for (k, v) in states_values_base.items():
                 states_values[v] = k
             s = states_values.get(n.export_state.value)
             cprint("NODE EXPORT STATE: %s => %s(%s)" % (n.i, n.export_state.value, s))
@@ -83,7 +86,7 @@ class TestRaftMultiProcess(OpsBroTest):
         NB_PROC = multiprocessing.cpu_count()
         offset = 0
         nb_nodes = len(self.nodes)
-        shard_size = nb_nodes / NB_PROC
+        shard_size = int(nb_nodes / NB_PROC)
         cprint("Test repartition: [nb process=%d]  [number of threads/process=%d] " % (NB_PROC, shard_size))
         for i in xrange(NB_PROC):
             t = multiprocessing.Process(None, target=self.thread_multi_loop, name='thread launcher', args=(offset, shard_size, wait))
@@ -99,6 +102,7 @@ class TestRaftMultiProcess(OpsBroTest):
     
     def thread_multi_loop(self, shard_offset, shard_size, wait):
         self.threads = []
+        cprint("%s %s " % (shard_offset, shard_size))
         for d in self.nodes[shard_offset:shard_offset + shard_size]:
             n = d['node']
             q = d['queue']
@@ -186,7 +190,7 @@ class TestRaftMultiProcess(OpsBroTest):
         
         # and N-1 followers
         nb_followers = self.count('follower')
-        cprint("NB followers", nb_followers)
+        cprint("NB followers: %s" % nb_followers)
         cprint('%s' % self.stats)
         self.assert_(nb_followers == N - 1)
 

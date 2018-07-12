@@ -6,29 +6,13 @@ echo "##################### Launching TEST $TEST_SUITE"
 
 # Travis: only need to run the installation once, it it not link to a specific python version. They don't need to use CPU for nothing ;)
 if [ "$TEST_SUITE" == "PYTHON" ]; then
-   echo "Installing dependencies for TESTING"
-   pip install jinja2
-   pip install leveldb
-   pip install pycrypto
-   pip install requests
-   pip install Crypto
-   pip install pygments
-   pip install pyOpenSSL
-   pip install coveralls
-   pip install nose-cov
-   pip install unittest2
+   echo "Installing opsbro for TESTING (so have libs)"
+   cd ..
+   python setup.py install
 
-   echo "Test launch for Python"
-   if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install ordereddict; fi
-   # notice: the nose-cov is used because it is compatible with --processes, but produce a .coverage by process
-   # so we must combine them in the end
-   # * -x : stop at first error
-   # * --exe : allow to launch test py that are executable
-   # * --process : use 1 sub process
-   # * --process-timeout: at max 5min for a test to run
-   # * --process-resttartworker: one sub process by test, to avoid mix between libs
-   # NOTE: I don't kow why, byt process options are failing, with endless run
-   nosetests -xv --processes=1 --process-timeout=300 --process-restartworker --with-cov --cov=opsbro --exe
+   # NOTE: nosetests are hooking stdout and sys.paths, and so are not in real execution, this make too much troubles
+   # with tests, so switching to a real world test
+   test/launch_python_tests.sh
    exit $?
 fi
 

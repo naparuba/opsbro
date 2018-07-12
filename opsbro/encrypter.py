@@ -66,10 +66,10 @@ class Encrypter(object):
         try:
             cyph = AES.new(self.encryption_key, AES.MODE_ECB)
             ndata = cyph.decrypt(data).strip()
-            return ndata
+            return bytes_to_unicode(ndata)
         except Exception as exp:
             logger.error('Decryption fail:', exp)
-            return ''
+            return u''
     
     
     def encrypt(self, data):
@@ -86,7 +86,7 @@ class Encrypter(object):
             return ndata
         except Exception as exp:
             logger.error('Encryption fail:', exp)
-            return ''
+            return u''
 
 
 encrypter = None
