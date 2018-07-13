@@ -47,4 +47,5 @@ compliance:
          # Look for nameserver, but beware, for docker container: cannot update the resolv.conf directly
          # NOTE: yes there is a timerace issue :(
          - cp -p /etc/resolv.conf /etc/resolv.conf.tmp
-         - awk '/nameserver 127.0.0.1/ && NR < 2' /etc/resolv.conf && sed -i '1 s/^/nameserver 127.0.0.1\n/;' /etc/resolv.conf.tmp && cp -p /etc/resolv.conf.tmp /etc/resolv.conf
+         # note: no cp on the last step, because cp can have an issue on alpine
+         - awk '/nameserver 127.0.0.1/ && NR < 2' /etc/resolv.conf && sed -i '1 s/^/nameserver 127.0.0.1\n/;' /etc/resolv.conf.tmp && cat /etc/resolv.conf.tmp > /etc/resolv.conf

@@ -1,0 +1,25 @@
+FROM alpine:3.7
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+RUN        /apk_add bash
+RUN        /apk_add python
+RUN        /apk_add less
+RUN        /apk_add py-jinja2
+RUN        /apk_add py-crypto
+RUN        /apk_add musl-dev
+RUN        /apk_add py-setuptools
+
+
+# DNS: need dig
+RUN        /apk_add bind-tools
+
+ADD        . /root/opsbro-oss
+
+
+WORKDIR    /root/opsbro-oss
+
+RUN        python setup.py install
+
+
+ENTRYPOINT     test/test_feature_dns_module.sh
