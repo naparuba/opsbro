@@ -6,7 +6,7 @@ echo "##################### Launching TEST $TEST_SUITE"
 
 # Travis: only need to run the installation once, it it not link to a specific python version. They don't need to use CPU for nothing ;)
 if [ "$TEST_SUITE" == "PYTHON" ]; then
-   # No more virtual env
+   # No more virtual env on Travis
    sudo rm -fr ~/virtualenv
    echo "Installing opsbro for TESTING (so have libs)"
    cd ..
