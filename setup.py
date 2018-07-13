@@ -9,6 +9,7 @@ import stat
 import optparse
 import shutil
 import imp
+import codecs
 
 try:
     from cStringIO import StringIO
@@ -69,7 +70,7 @@ orig_sys_argv = sys.argv[:]
 ##################################       Utility functions for files
 # helper function to read the README file
 def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+    return codecs.open(os.path.join(os.path.dirname(__file__), fname), 'r', 'utf8').read()
 
 
 # Do a chmod -R +x
