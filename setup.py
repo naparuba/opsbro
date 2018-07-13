@@ -96,7 +96,7 @@ def _chmodplusx(d):
 stdout_orig = sys.stdout
 stderr_orig = sys.stderr
 stdout_catched = StringIO()
-stderr_redirect_path = '/tmp/stderr.opsbro.tmp'
+stderr_redirect_path = '/tmp/stderr.opsbro.tmp' if os.name !='nt' else r'c:\stderr.opsbro.tmp'
 stderr_redirect = None
 stderr_orig_bkp = None
 
@@ -189,7 +189,7 @@ from opsbro.characters import CHARACTERS
 systepacketmgr = get_systepacketmgr()
 
 ##################################       Only root as it's a global system tool.
-if os.getuid() != 0:
+if os.name != 'nt' and os.getuid() != 0:
     cprint('Setup must be launched as root.', color='red')
     sys.exit(2)
 
@@ -659,7 +659,7 @@ unhook_stdout()
 if allow_black_magic:
     cprint('  %s' % CHARACTERS.check, color='green')
 
-installation_log = '/tmp/opsbro.setup.log'
+installation_log = '/tmp/opsbro.setup.log' if os.name !='nt' else r'c:\opsbro.setup.log'
 with open(installation_log, 'w') as f:
     f.write(stdout_catched.getvalue())
     if allow_black_magic:
