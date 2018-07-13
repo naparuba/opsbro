@@ -1,9 +1,10 @@
 import os
-import json
+import codecs
 
 from opsbro.evaluater import export_evaluater_function
 from opsbro.misc.lolcat import lolcat
 from opsbro.util import PY3
+from opsbro.jsonmgr import jsoner
 
 if PY3:
     basestring = str
@@ -284,8 +285,8 @@ def parse_json_file(path):
         {'key':'value'}
 </code>
     """
-    with open(path, 'r') as f:
-        o = json.load(f)
+    with codecs.open(path, 'r', 'utf8') as f:
+        o = jsoner.load(f)
     return o
 
 

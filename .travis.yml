@@ -71,6 +71,7 @@ matrix:
   include:
     - python: "2.6"
       env:     TEST_SUITE=PYTHON
+    # NOTE: no 3.3 as it's just too old and not use
     - python: "3.4"
       env:     TEST_SUITE=PYTHON
     - python: "3.5"
@@ -85,8 +86,3 @@ script:
   - chmod a+x test/docker-helper/*
   - cd test
   - ./test_suite.sh
-
-
-# specific call to launch coverage data into coveralls.io
-#after_success:
-#  coveralls

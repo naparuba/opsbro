@@ -17,7 +17,7 @@ All the configuration / deployment is model based (aka into **packs**)
 #### Prerequites
 You will need:
 
-  * python (2.6 or 2.7)
+  * python (2.6, 2.7 or 3.4+ versions)
 
 
 #### Installation
@@ -31,7 +31,17 @@ Example of the installation at:
 <a target="blank" href="https://asciinema.org/a/IQYFa6xv4NBTGjbcKLH8uFLtR"><img src="https://asciinema.org/a/IQYFa6xv4NBTGjbcKLH8uFLtR.png" height="300" width="200" /></a>
 
 
-Note: On the main linux distributions (debian, centos, redhat & ubuntu), it will automatically install its dependencies from the package manager (apt/yum). On the others distributions (OpenSuse, Alpine, etc), depedencies will be take from pypi.
+Note: main linux distributions are managed and will automatically install dependencies from the package manager (apt/yum/apk/zypper):
+ * Alpine 3.1→3.7
+ * Amazonlinux 2016 & 2017
+ * Centos 6 & 7
+ * Debian 6→9
+ * Fedora 24→28
+ * OpenSuse 42
+ * Ubuntu 12.04→18.10
+
+
+On others distributions depedencies will be take from pypi.
 
 
 ## Start OpsBro daemon
@@ -355,8 +365,4 @@ It list all available node with the "group" linux.
 
 ## Is there an UI available?
 
-To see your metrology data, look at the grafana module.
-
-To see the nodes & metrology states, an UI is currently in progress. Will be not Open source but will be free of use at the opsbro.io website.
-Please contact me (naparuba _AT_ gmail.com is you are interested to test it in Beta phase).
-
+Soon :)

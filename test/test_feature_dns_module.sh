@@ -15,7 +15,7 @@ sleep 15
 
 
 # Look which addr we dhould match
-ADDR=$(opsbro agent info| grep 'Public addr' | awk '{print $3}')
+ADDR=$(opsbro agent print public-addr)
 
 if [ "X$ADDR" == "X" ];then
    echo "ERROR: cannot look Address"
