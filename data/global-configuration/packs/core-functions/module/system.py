@@ -286,7 +286,7 @@ def parse_json_file(path):
 </code>
     """
     with codecs.open(path, 'r', 'utf8') as f:
-        o = jsoner.load(f.read())
+        o = jsoner.loads(f.read())
     return o
 
 
