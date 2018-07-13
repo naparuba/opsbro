@@ -12,6 +12,8 @@ RUN        /apt_get_install   python-apt
 
 # DNS: need dig
 RUN        /apt_get_install  dnsutils
+RUN        /apt_get_install  procps
+RUN        /apt_get_install  net-tools
 
 ADD        . /root/opsbro-oss
 

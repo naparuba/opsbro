@@ -1,0 +1,50 @@
+compliance:
+   name: Install local dns relay
+   verify_if:   "is_in_group('dns-listener')"
+   mode: enforcing
+   interval: 1s
+   note: If you enable the DNS module with the dns-listener group, then it will install and configure the local DNS relay
+   rule:
+      type: package-install
+      # You can set variables in order to not repeat yourself in the if rules
+      variables:
+         is_debian: "{{collector.system.os.linux.distribution}} == 'debian'"
+         is_centos: "{{collector.system.os.linux.distribution}} == 'centos'"
+         is_fedora: "{{collector.system.os.linux.distribution}} == 'fedora'"
+      environments:
+         - name: debian
+           if: "{{variables.is_debian}}"
+           parameters:
+              packages:
+                 - dnsmasq
+
+         - name: centos
+           if:   "{{variables.is_centos}}"
+           parameters:
+             packages:
+                - dnsmasq
+
+         - name: fedora
+           if: "{{variables.is_fedora}}"
+           parameters:
+             packages:
+                - dnsmasq
+
+         - name: alpine
+           if: "{{collector.system.os.linux.distribution}} == 'alpine'"
+           parameters:
+              packages:
+                 - dnsmasq
+
+
+      # Same post commands for every env
+      post_commands:
+         # Some old OS do not have the /etc/dnsmasq.d created
+         - mkdir /etc/dnsmasq.d || /bin/true
+         - printf 'server=/opsbro/127.0.0.1#6766\ninterface=lo\n' > /etc/dnsmasq.d/opsbro.conf
+         - dnsmasq -7 /etc/dnsmasq.d
+         # Check that the nameserver 127.0.01 is set as the FIRST line of resolv.conf
+         # Look for nameserver, but beware, for docker container: cannot update the resolv.conf directly
+         # NOTE: yes there is a timerace issue :(
+         - cp -p /etc/resolv.conf /etc/resolv.conf.tmp
+         - awk '/nameserver 127.0.0.1/ && NR < 2' /etc/resolv.conf && sed -i '1 s/^/nameserver 127.0.0.1\n/;' /etc/resolv.conf.tmp && cp -p /etc/resolv.conf.tmp /etc/resolv.conf
