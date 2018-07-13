@@ -113,20 +113,20 @@ install:
 
   - "python setup.py install"
 
-build_script:
+#build_script:
   # Build the compiled extension
-  - "%CMD_IN_ENV% python setup.py build"
+#  - "%CMD_IN_ENV% python setup.py build"
 
 test_script:
   # Run the project tests
-  - "%CMD_IN_ENV% python setup.py nosetests"
+  - "%CMD_IN_ENV% python bin/opsbro"
 
 after_test:
   # If tests are successful, create binary packages for the project.
-  - "%CMD_IN_ENV% python setup.py bdist_wheel"
-  - "%CMD_IN_ENV% python setup.py bdist_wininst"
-  - "%CMD_IN_ENV% python setup.py bdist_msi"
-  - ps: "ls dist"
+#  - "%CMD_IN_ENV% python setup.py bdist_wheel"
+#  - "%CMD_IN_ENV% python setup.py bdist_wininst"
+#  - "%CMD_IN_ENV% python setup.py bdist_msi"
+  - ps: "ls"
 
 #artifacts:
 #  # Archive the generated packages in the ci.appveyor.com build report.
