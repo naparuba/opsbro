@@ -570,7 +570,6 @@ if os.name == 'nt':
 
         python_exe = sys.executable
         pip_install_command = '%s -m pip install --only-binary pypiwin32 pypiwin32' % python_exe
-        cprint(pip_install_command)
         try:
             rc, stdout, stderr = exec_command(pip_install_command)
         except Exception as exp:
