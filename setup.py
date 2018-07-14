@@ -432,6 +432,13 @@ else:
         },
     }
 
+if os.name == 'nt':
+    mod_need['pypiwin32'] = {
+        'packages': {
+            'windows': 'pypiwin32'
+        }
+    }
+
 # Some distro have another name for python-setuptools, so list here only exceptions
 setuptools_package_exceptions = {
     'alpine'       : 'py-setuptools',

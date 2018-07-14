@@ -107,12 +107,7 @@ install:
   # about it being out of date.
   - "python -m pip install --upgrade pip"
 
-  # Install the build dependencies of the project. If some dependencies contain
-  # compiled extensions and are not provided as pre-built wheel packages,
-  # pip will build them from source using the MSVC compiler matching the
-  # target Python version and architecture
-  #- "%CMD_IN_ENV% pip install -r dev-requirements.txt"
-  - "python -m pip install --only-binary pypiwin32 pypiwin32"
+  #- "python -m pip install --only-binary pypiwin32 pypiwin32"
   - "python setup.py install"
 
 build_script:
