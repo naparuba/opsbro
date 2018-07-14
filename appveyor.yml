@@ -1,3 +1,5 @@
+build: false
+
 environment:
   global:
     # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
@@ -110,7 +112,7 @@ install:
   # pip will build them from source using the MSVC compiler matching the
   # target Python version and architecture
   #- "%CMD_IN_ENV% pip install -r dev-requirements.txt"
-
+  - "python -m pip install --only-binary pypiwin32 pypiwin32"
   - "python setup.py install"
 
 build_script:
