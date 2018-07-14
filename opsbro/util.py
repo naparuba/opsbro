@@ -45,7 +45,9 @@ def exec_command(cmd):
     # windows do not manage close fds
     if os.name == 'nt':
         close_fds = False
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=close_fds, preexec_fn=os.setsid, shell=shell)
+    # There is no setsid function on windows
+    preexec_fn = getattr(os, 'setsid', None)
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=close_fds, preexec_fn=preexec_fn, shell=shell)
     stdout, stderr = p.communicate()
     stdout = bytes_to_unicode(stdout)
     stderr = bytes_to_unicode(stderr)
