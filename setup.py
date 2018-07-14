@@ -571,6 +571,7 @@ if not allow_black_magic:
 if system_distro == 'debian' and system_distroversion.startswith('6.'):
     install_from_pip = set()
 
+
 # Try to import setup tools, and if not, switch to
 try:
     from setuptools import setup, find_packages
@@ -594,13 +595,17 @@ print('\n')
 if allow_black_magic:
     title = 'Python lib installation ' + sprintf('(2/3)', color='magenta', end='')
     print_h1(title, raw_title=True)
-    
+
+    if install_from_pip:
+        cprint('  * %s packages will be installed from Pypi (%s)' % (len(install_from_pip), ','.join(install_from_pip)), end='')
+
     cprint('  * %s opsbro python lib in progress...' % what, end='')
 sys.stdout.flush()
 
 hook_stdout()
 
 setup_phase_is_done = False
+
 
 
 def print_fail_setup(exp=''):
