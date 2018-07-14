@@ -432,12 +432,6 @@ else:
         },
     }
 
-if os.name == 'nt':
-    mod_need['pypiwin32'] = {
-        'packages': {
-            'windows': 'pypiwin32'
-        }
-    }
 
 # Some distro have another name for python-setuptools, so list here only exceptions
 setuptools_package_exceptions = {
@@ -559,6 +553,34 @@ if allow_black_magic:
         except Exception as exp:
             cprint('   - ERROR: cannot install the prerequite %s from the system. Please install it manually' % package_name, color='red')
             sys.exit(2)
+            
+# windows black magic: we ned pywin32
+if os.name == 'nt':
+    try:
+        import win32api
+    except ImportError:
+        # No win32api, try to install it, but setup() seems to fail, so call pip for this
+        from opsbro.util import exec_command
+        cprint('   - Prerequite for ', color='grey', end='')
+        cprint(system_distro, color='magenta', end='')
+        cprint(' : ', color='grey', end='')
+        cprint('%-20s' % 'pyiwin32', color='blue', end='')
+        cprint('       from pypi  : ', color='grey', end='')
+        sys.stdout.flush()
+
+        python_exe = sys.executable
+        pip_install_command = '%s -m pip install --only-binary pypiwin32 pypiwin32' % python_exe
+        cprint(pip_install_command)
+        try:
+            rc, stdout, stderr = exec_command(pip_install_command)
+        except Exception as exp:
+            cprint('ERROR: cannot install pyiwin32: %s' % exp, color='red')
+            sys.exit(2)
+        if rc != 0:
+            cprint('ERROR: cannot install pyiwin32: %s' % (stdout + stderr))
+            sys.exit(2)
+        cprint('%s' % CHARACTERS.check, color='green')
+
 
 # Remove duplicate from pip install
 install_from_pip = set(install_from_pip)
@@ -597,7 +619,7 @@ if allow_black_magic:
     print_h1(title, raw_title=True)
 
     if install_from_pip:
-        cprint('  * %s packages will be installed from Pypi (%s)' % (len(install_from_pip), ','.join(install_from_pip)), end='')
+        cprint('  * %s packages will be installed from Pypi (%s)' % (len(install_from_pip), ', '.join(install_from_pip)))
 
     cprint('  * %s opsbro python lib in progress...' % what, end='')
 sys.stdout.flush()
