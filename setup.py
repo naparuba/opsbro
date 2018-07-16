@@ -568,7 +568,7 @@ if os.name == 'nt':
         cprint('       from pypi  : ', color='grey', end='')
         sys.stdout.flush()
 
-        python_exe = sys.executable
+        python_exe = os.path.abspath(sys.executable)
         pip_install_command = '%s -m pip install --only-binary pypiwin32 pypiwin32' % python_exe
         try:
             rc, stdout, stderr = exec_command(pip_install_command)
@@ -577,6 +577,22 @@ if os.name == 'nt':
             sys.exit(2)
         if rc != 0:
             cprint('ERROR: cannot install pyiwin32: %s' % (stdout + stderr))
+            sys.exit(2)
+        
+        # Now need also to run the python Scripts\pywin32_postinstall.py -install script to register DLL. (I love windows...)
+        dll_script = os.path.join(os.path.dirname(python_exe), 'Scripts', 'pywin32_postinstall.py')
+        if not os.path.exists(dll_script):
+            cprint('ERROR: the pywin32 script to register the DLL is missing. Please install pywin32 manually', color='red')
+            sys.exit(2)
+        
+        dll_registering = '%s %s -install' % (python_exe, dll_script)
+        try:
+            rc, stdout, stderr = exec_command(pip_install_command)
+        except Exception as exp:
+            cprint('ERROR: cannot install pyiwin32 dlls: %s' % exp, color='red')
+            sys.exit(2)
+        if rc != 0:
+            cprint('ERROR: cannot install pyiwin32dlls: %s' % (stdout + stderr))
             sys.exit(2)
         cprint('%s' % CHARACTERS.check, color='green')
 

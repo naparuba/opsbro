@@ -113,7 +113,7 @@ install:
   #- "python -m pip install --only-binary pypiwin32 pypiwin32"
   - "python setup.py install"
   # TODO: remove this, and let the setup.py do the job
-  - xcopy . c:\opsbro /O /X /E /H /K /Y /F
+  - xcopy . c:\opsbro /O /X /E /H /K /Y /Q
   - dir c:\opsbro
 
 
@@ -129,12 +129,14 @@ test_script:
   - python bin\opsbro agent start --one-shot
   - echo "SERVICE RUN"
   - "python -c \"import sys; print(sys.executable)\""
-  - sc create OpsBro binPath="C:\Python27-x64\python.exe C:\opsbro\bin\opsbro agent start" type=own error=ignore start=auto
+  # This should be available before go
+  - C:\Python27-x64\lib\site-packages\win32\pythonservice.exe
+  #- sc create OpsBro binPath="C:\Python27-x64\python.exe C:\opsbro\bin\opsbro agent start" type=own error=ignore start=auto
 
   # CLEAN ALL logs
   - wevtutil cl System
   - wevtutil cl Application
-  #- "%CMD_IN_ENV% python bin/opsbro agent windows service-install"
+  - "%CMD_IN_ENV% python bin/opsbro agent windows service-install"
   - sc start OpsBro || sc qc OpsBro && sc query OpsBro && wevtutil qe Application && wevtutil qe System && type c:\opsbro.log && bad
   - C:\Python27-x64\python.exe C:\opsbro\bin\opsbro agent info
   #- "%CMD_IN_ENV% python bin/opsbro agent info"
