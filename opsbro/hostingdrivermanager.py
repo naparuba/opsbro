@@ -10,7 +10,8 @@ except ImportError:
     fcntl = None
 import struct
 
-from .misc.windows import windowser
+if os.name == 'nt':
+    from .misc.windows import windowser
 from .log import LoggerFactory
 from .misc.six import add_metaclass
 from .util import string_decode, my_sort, exec_command, my_cmp

@@ -1,7 +1,4 @@
-try:
-    import opsbro.misc.wmi as wmi
-except (ImportError, AttributeError):
-    wmi = None
+import opsbro.misc.wmi as wmi
 
 
 class Windowser():
