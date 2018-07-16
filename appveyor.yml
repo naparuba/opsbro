@@ -110,7 +110,7 @@ install:
   #- "python -m pip install --only-binary pypiwin32 pypiwin32"
   - "python setup.py install"
   # TODO: remove this, and let the setup.py do the job
-  - xcopy . c:\opsbro /O /X /E /H /K
+  - xcopy . c:\opsbro /O /X /E /H /K /Y
 
 
 build_script:
