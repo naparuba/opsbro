@@ -126,12 +126,14 @@ test_script:
   - python bin\opsbro agent start --one-shot
   - echo "SERVICE RUN"
   - "python -c \"import sys; print(sys.executable)\""
+  - sc create OpsBro binPath="C:\Python27-x64\python.exe C:\opsbro\bin\opsbro agent start" type=own error=ignore start=auto
 
   # CLEAN ALL logs
-  #- wevtutil cl System
-  #- wevtutil cl Application
+  - wevtutil cl System
+  - wevtutil cl Application
   #- "%CMD_IN_ENV% python bin/opsbro agent windows service-install"
-  #- sc start OpsBro || sc qc OpsBro && sc query OpsBro && wevtutil qe Application && wevtutil qe System && type c:\opsbro.log && bad
+  - sc start OpsBro || sc qc OpsBro && sc query OpsBro && wevtutil qe Application && wevtutil qe System && type c:\opsbro.log && bad
+  - C:\Python27-x64\python.exe C:\opsbro\bin\opsbro agent info
   #- "%CMD_IN_ENV% python bin/opsbro agent info"
   #- "%CMD_IN_ENV% python bin/opsbro collectors state"
   #- "%CMD_IN_ENV% python bin/opsbro monitoring state"
