@@ -110,7 +110,6 @@ install:
   # about it being out of date.
   - "python -m pip install --upgrade pip"
 
-  #- "python -m pip install --only-binary pypiwin32 pypiwin32"
   - "python setup.py install"
   # TODO: remove this, and let the setup.py do the job
   - xcopy . c:\opsbro /O /X /E /H /K /Y /Q
@@ -118,13 +117,11 @@ install:
 
 
 build_script:
-  #- "%CMD_IN_ENV% python setup.py build"
   - python --version
 
 test_script:
   # Run the project tests
   - "%CMD_IN_ENV% python bin/opsbro"
-  - sh: tests/test_python_tests.sh
   - echo "CLASSIC RUN"
   - python bin\opsbro agent start --one-shot
   - echo "SERVICE RUN"
@@ -136,29 +133,22 @@ test_script:
   # CLEAN ALL logs
   - wevtutil cl System
   - wevtutil cl Application
-  - "%CMD_IN_ENV% python bin/opsbro agent windows service-install"
+  - "%CMD_IN_ENV% python c:\opsbro\bin/opsbro agent windows service-install"
   - sc start OpsBro || sc qc OpsBro && sc query OpsBro && wevtutil qe Application && wevtutil qe System && type c:\opsbro.log && bad
-  - C:\Python27-x64\python.exe C:\opsbro\bin\opsbro agent info
-  #- "%CMD_IN_ENV% python bin/opsbro agent info"
-  #- "%CMD_IN_ENV% python bin/opsbro collectors state"
-  #- "%CMD_IN_ENV% python bin/opsbro monitoring state"
+  - "%CMD_IN_ENV% python c:\opsbro\bin/opsbro agent info"
+  - "%CMD_IN_ENV% python c:\opsbro\bin/opsbro collectors state"
+  - "%CMD_IN_ENV% python c:\opsbro\bin/opsbro monitoring state"
+  - "%CMD_IN_ENV% python c:\opsbro\bin/opsbro compliance state"
+  - "%CMD_IN_ENV% python c:\opsbro\bin/opsbro collectors show"
 
 
 
-after_test:
+#after_test:
   # If tests are successful, create binary packages for the project.
 #  - "%CMD_IN_ENV% python setup.py bdist_wheel"
 #  - "%CMD_IN_ENV% python setup.py bdist_wininst"
 #  - "%CMD_IN_ENV% python setup.py bdist_msi"
-  - ps: "ls"
-
-#artifacts:
-#  # Archive the generated packages in the ci.appveyor.com build report.
-#  - path: dist\*
-
-#on_success:
-#  - TODO: upload the content of dist/*.whl to a public wheelhouse
-#
+#  - ps: "ls"
 
 
 # ENABLE DEBUG MODE
