@@ -571,7 +571,7 @@ if os.name == 'nt':
         python_exe = os.path.abspath(sys.executable)
         
         # We need both pyiwin32 & pywin32 to works
-        for windows_package in ('pypiwin32', 'pypwin32'):
+        for windows_package in ('pypiwin32', 'pywin32'):
             pip_install_command = '%s -m pip install --only-binary %s %s' % (python_exe, windows_package, windows_package)
             try:
                 rc, stdout, stderr = exec_command(pip_install_command)
