@@ -3,10 +3,14 @@ import win32serviceutil
 import locale
 import win32event
 import sys
+import traceback
 
 from opsbro.launcher import Launcher
 from opsbro.threadmgr import threader
 from opsbro.stop import stopper
+from opsbro.log import LoggerFactory
+
+logger_crash = LoggerFactory.create_logger('crash')
 
 
 class Service(win32serviceutil.ServiceFramework):
@@ -35,27 +39,49 @@ class Service(win32serviceutil.ServiceFramework):
     
     def destroy_stdout_stderr(self):
         class NullWriter(object):
-            def write(self, value): pass
+            is_null_write = True
+            
+            
+            def write(self, value):
+                pass
         
         sys.stdout = sys.stderr = NullWriter()
     
     
     def SvcDoRun(self):
-        import servicemanager
-
-        # Set as english
-        locale.setlocale(locale.LC_ALL, 'English_Australia.1252')
-        
-        # under service, stdout and stderr are not available
-        # TODO: enable debug mode?
-        self.destroy_stdout_stderr()
-        l = Launcher(cfg_dir='c:\\opsbro\\etc')
-        l.do_daemon_init_and_start(is_daemon=False)
-        # Start the stopper threads
-        threader.create_and_launch(self.__check_for_hWaitStop, (), name='Windows service stopper', essential=True, part='agent')
-        # Here only the last son reach this
-        l.main()
-        # called when we're being shut down
+        try:
+            import servicemanager
+            
+            # Set as english
+            locale.setlocale(locale.LC_ALL, 'English_Australia.1252')
+            
+            # under service, stdout and stderr are not available
+            # TODO: enable debug mode?
+            self.destroy_stdout_stderr()
+            
+            # simulate CLI startup with config parsing
+            from opsbro.log import cprint, logger, is_tty
+            from opsbro.cli import CLICommander, save_current_binary
+            from opsbro.yamlmgr import yamler
+            
+            with open('c:\\opsbro\\etc\\agent.yml', 'r') as f:
+                buf = f.read()
+                CONFIG = yamler.loads(buf)
+            
+            # Load config
+            CLI = CLICommander(CONFIG, None)
+            
+            l = Launcher(cfg_dir='c:\\opsbro\\etc')
+            l.do_daemon_init_and_start(is_daemon=False)
+            # Start the stopper threads
+            threader.create_and_launch(self.__check_for_hWaitStop, (), name='Windows service stopper', essential=True, part='agent')
+            # Here only the last son reach this
+            l.main()
+            # called when we're being shut down
+        except Exception:
+            err = traceback.format_exc()
+            logger_crash.error(err)
+            raise
     
     
     def SvcStop(self):
@@ -67,7 +93,6 @@ class Service(win32serviceutil.ServiceFramework):
 
 def ctrlHandler(ctrlType):
     return True
-
 
 # if __name__ == '__main__':
 #    win32api.SetConsoleCtrlHandler(ctrlHandler, True)

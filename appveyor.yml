@@ -109,6 +109,9 @@ install:
 
   #- "python -m pip install --only-binary pypiwin32 pypiwin32"
   - "python setup.py install"
+  # TODO: remove this, and let the setup.py do the job
+  - xcopy . c:\opsbro /O /X /E /H /K
+
 
 build_script:
   #- "%CMD_IN_ENV% python setup.py build"
@@ -118,10 +121,13 @@ test_script:
   # Run the project tests
   - "%CMD_IN_ENV% python bin/opsbro"
   - sh: tests/test_python_tests.sh
-  - echo "CALSSIC RUN"
+  - echo "CLASSIC RUN"
   - "%CMD_IN_ENV% python bin/opsbro agent windows service-install"
-  - net start
-  - "%CMD_IN_ENV% python bin/opsbro info"
+  - net start OpsBro
+  - "%CMD_IN_ENV% python bin/opsbro agent info"
+  - "%CMD_IN_ENV% python bin/opsbro collectors state"
+  - "%CMD_IN_ENV% python bin/opsbro monitoring state"
+
 
 
 after_test:

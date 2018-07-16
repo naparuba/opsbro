@@ -25,9 +25,16 @@ class Dmidecode(Collector):
                     res[fname] = buf.strip()
             logger.debug('getdmidecode: completed, returning')
             return res
+        elif os.name == 'nt':
+            self.set_not_eligible('Windows is currently not managed for DMI informations')
+            return False
         # Ok not direct access, try to launch with
         else:  # try dmidecode way, if exists
-            for p in self.execute_shell('LANG=C dmidecode -s').split('\n'):
+            res = self.execute_shell('LANG=C dmidecode -s')
+            if res is False:
+                self.set_not_eligible('Cannot read dmi information')
+                return False
+            for p in res.split('\n'):
                 if re.search('^ ', p):
                     buf = self.execute_shell('LANG=C dmidecode -s %s' % p).strip()
                     if 'No such file or directory' in buf:

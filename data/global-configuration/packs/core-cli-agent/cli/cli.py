@@ -14,7 +14,6 @@ import os
 if os.name == 'nt':
     import win32serviceutil
     import win32api
-    from opsbro.windows_service.windows_service import Service
 
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger, sprintf
@@ -46,6 +45,7 @@ def __call_service_handler():
         return True
     
     
+    from opsbro.windows_service.windows_service import Service
     win32api.SetConsoleCtrlHandler(__ctrlHandler, True)
     win32serviceutil.HandleCommandLine(Service)
 
@@ -180,7 +180,10 @@ def do_info(show_logs):
     ext_server = httpservers.get('external')
     int_server = httpservers.get('internal')
     ext_threads = '%d/%d' % (ext_server['nb_threads'] - ext_server['idle_threads'], ext_server['nb_threads'])
-    int_threads = '%d/%d' % (int_server['nb_threads'] - int_server['idle_threads'], int_server['nb_threads'])
+    if int_server:
+        int_threads = '%d/%d' % (int_server['nb_threads'] - int_server['idle_threads'], int_server['nb_threads'])
+    else:  # windows case
+        int_threads = '(not available on windows)'
     
     __print_key_val('HTTP threads', 'LAN:%s                        Private socket:%s' % (ext_threads, int_threads), topic=TOPIC_SERVICE_DISCOVERY)
     __print_topic_picto(TOPIC_SERVICE_DISCOVERY)

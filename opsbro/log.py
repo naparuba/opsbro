@@ -20,6 +20,7 @@ from .misc.colorama import init as init_colorama
 string_decode = None
 bytes_to_unicode = None
 
+
 def is_tty():
     # TODO: what about windows? how to have beautiful & Windows?
     # on windows, we don't know how to have cool output
@@ -66,6 +67,8 @@ else:
     
     def cprint(s, color='', on_color='', end='\n'):
         global string_decode, bytes_to_unicode
+        if os.name == 'nt' and hasattr(sys.stdout, 'is_null_write'):  # maybe we are in a windows service, so skip printing
+            return
         if string_decode is None:
             from .util import string_decode
             string_decode = string_decode
