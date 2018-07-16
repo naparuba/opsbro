@@ -124,8 +124,11 @@ test_script:
   - echo "CLASSIC RUN"
   - python bin\opsbro agent start --one-shot
   - echo "SERVICE RUN"
+  # CLEAN ALL logs
+  - wevtutil cl System
+  - wevtutil cl Application
   - "%CMD_IN_ENV% python bin/opsbro agent windows service-install"
-  - net start OpsBro || wevtutil qe Application || bad
+  - net start OpsBro || wevtutil qe Application || wevtutil qe System || bad
   - "%CMD_IN_ENV% python bin/opsbro agent info"
   - "%CMD_IN_ENV% python bin/opsbro collectors state"
   - "%CMD_IN_ENV% python bin/opsbro monitoring state"
