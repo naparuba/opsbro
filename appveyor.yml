@@ -74,7 +74,7 @@ environment:
 #      PYTHON_VERSION: "3.7.0"
 #      PYTHON_ARCH: "64"
 
-  APPVEYOR_RDP_PASSWORD:  testpassword
+  APPVEYOR_RDP_PASSWORD:  Azerty123!
 
 
 install:
