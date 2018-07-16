@@ -13,6 +13,15 @@ environment:
     # a later point release.
     # See: http://www.appveyor.com/docs/installed-software#python
 
+
+#    - PYTHON: "C:\\Python266"
+#      PYTHON_VERSION: "2.6.6"
+#      PYTHON_ARCH: "32"
+
+#    - PYTHON: "C:\\Python266-x64"
+#      PYTHON_VERSION: "2.6.6"
+#      PYTHON_ARCH: "64"
+
 #    - PYTHON: "C:\\Python27"
 #      PYTHON_VERSION: "2.7.x"
 #      PYTHON_ARCH: "32"
@@ -21,33 +30,12 @@ environment:
       PYTHON_VERSION: "2.7.x"
       PYTHON_ARCH: "64"
 
-#    - PYTHON: "C:\\Python33"
-#      PYTHON_VERSION: "3.3.x"
-#      PYTHON_ARCH: "32"
-
-#    - PYTHON: "C:\\Python33-x64"
-#      PYTHON_VERSION: "3.3.x"
-#      PYTHON_ARCH: "64"
-
 #    - PYTHON: "C:\\Python34"
 #      PYTHON_VERSION: "3.4.x"
 #      PYTHON_ARCH: "32"
 
 #    - PYTHON: "C:\\Python34-x64"
 #      PYTHON_VERSION: "3.4.x"
-#      PYTHON_ARCH: "64"
-
-    # Python versions not pre-installed
-
-    # Python 2.6.6 is the latest Python 2.6 with a Windows installer
-    # See: https://github.com/ogrisel/python-appveyor-demo/issues/10
-
-#    - PYTHON: "C:\\Python266"
-#      PYTHON_VERSION: "2.6.6"
-#      PYTHON_ARCH: "32"
-
-#    - PYTHON: "C:\\Python266-x64"
-#      PYTHON_VERSION: "2.6.6"
 #      PYTHON_ARCH: "64"
 
 #    - PYTHON: "C:\\Python35"
@@ -74,6 +62,7 @@ environment:
 #      PYTHON_VERSION: "3.7.0"
 #      PYTHON_ARCH: "64"
 
+  # For debug purpose only
   APPVEYOR_RDP_PASSWORD:  Azerty123!
 
 
@@ -90,11 +79,7 @@ install:
   - ECHO "Filesystem root:"
   - ps: "ls \"C:/\""
 
-  - ECHO "Installed SDKs:"
-  - ps: "ls \"C:/Program Files/Microsoft SDKs/Windows\""
-
-  # Install Python (from the official .msi of http://python.org) and pip when
-  # not already installed.
+  # Install Python (from the official .msi of http://python.org) and pip when not already installed.
   - ps: if (-not(Test-Path($env:PYTHON))) { & appveyor\install.ps1 }
 
   # Prepend newly installed Python to the PATH of this build (this cannot be
