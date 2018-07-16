@@ -74,6 +74,9 @@ environment:
 #      PYTHON_VERSION: "3.7.0"
 #      PYTHON_ARCH: "64"
 
+  APPVEYOR_RDP_PASSWORD:  testpassword
+
+
 install:
   # If there is a newer build queued for the same PR, cancel this one.
   # The AppVeyor 'rollout builds' option is supposed to serve the same
@@ -154,3 +157,6 @@ after_test:
 #on_success:
 #  - TODO: upload the content of dist/*.whl to a public wheelhouse
 #
+
+on_finish:
+  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
