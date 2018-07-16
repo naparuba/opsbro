@@ -569,15 +569,18 @@ if os.name == 'nt':
         sys.stdout.flush()
 
         python_exe = os.path.abspath(sys.executable)
-        pip_install_command = '%s -m pip install --only-binary pypiwin32 pypiwin32' % python_exe
-        try:
-            rc, stdout, stderr = exec_command(pip_install_command)
-        except Exception as exp:
-            cprint('ERROR: cannot install pyiwin32: %s' % exp, color='red')
-            sys.exit(2)
-        if rc != 0:
-            cprint('ERROR: cannot install pyiwin32: %s' % (stdout + stderr))
-            sys.exit(2)
+        
+        # We need both pyiwin32 & pywin32 to works
+        for windows_package in ('pypiwin32', 'pypwin32'):
+            pip_install_command = '%s -m pip install --only-binary %s %s' % (python_exe, windows_package, windows_package)
+            try:
+                rc, stdout, stderr = exec_command(pip_install_command)
+            except Exception as exp:
+                cprint('ERROR: cannot install %s: %s' % (windows_package, exp), color='red')
+                sys.exit(2)
+            if rc != 0:
+                cprint('ERROR: cannot install %s: %s' % (windows_package, stdout + stderr), color='red')
+                sys.exit(2)
         
         # Now need also to run the python Scripts\pywin32_postinstall.py -install script to register DLL. (I love windows...)
         dll_script = os.path.join(os.path.dirname(python_exe), 'Scripts', 'pywin32_postinstall.py')
@@ -587,7 +590,7 @@ if os.name == 'nt':
         
         dll_registering = '%s %s -install' % (python_exe, dll_script)
         try:
-            rc, stdout, stderr = exec_command(pip_install_command)
+            rc, stdout, stderr = exec_command(dll_registering)
         except Exception as exp:
             cprint('ERROR: cannot install pyiwin32 dlls: %s' % exp, color='red')
             sys.exit(2)
