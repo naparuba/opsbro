@@ -58,7 +58,9 @@ class Service(win32serviceutil.ServiceFramework):
         try:
             LOG('SvcDoRun')
             import servicemanager
-            
+            servicemanager.LogMsg(servicemanager.EVENTLOG_INFORMATION_TYPE, servicemanager.PYS_SERVICE_STARTED, (self._svc_name_, ''))
+            servicemanager.LogInfoMsg("OpsBro Start")
+
             # Set as english
             locale.setlocale(locale.LC_ALL, 'English_Australia.1252')
             
@@ -99,8 +101,10 @@ class Service(win32serviceutil.ServiceFramework):
     
     
     def SvcStop(self):
+        import servicemanager
         # tell windows SCM we're shutting down
         self.ReportServiceStatus(win32service.SERVICE_STOP_PENDING)
+        servicemanager.LogInfoMsg("OpsBro Start")
         # launch the stop event
         win32event.SetEvent(self.hWaitStop)
 
