@@ -14,13 +14,13 @@ environment:
     # See: http://www.appveyor.com/docs/installed-software#python
 
 
-    - PYTHON: "C:\\Python266"
-      PYTHON_VERSION: "2.6.6"
-      PYTHON_ARCH: "32"
+#    - PYTHON: "C:\\Python266"
+#      PYTHON_VERSION: "2.6.6"
+#      PYTHON_ARCH: "32"
 
-    - PYTHON: "C:\\Python266-x64"
-      PYTHON_VERSION: "2.6.6"
-      PYTHON_ARCH: "64"
+#    - PYTHON: "C:\\Python266-x64"
+#      PYTHON_VERSION: "2.6.6"
+#      PYTHON_ARCH: "64"
 
     - PYTHON: "C:\\Python27"
       PYTHON_VERSION: "2.7.x"
