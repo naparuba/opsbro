@@ -125,7 +125,7 @@ test_script:
   - python bin\opsbro agent start --one-shot
   - echo "SERVICE RUN"
   - "%CMD_IN_ENV% python bin/opsbro agent windows service-install"
-  - net start OpsBro; wevtutil qe Application
+  - net start OpsBro || wevtutil qe Application || bad
   - "%CMD_IN_ENV% python bin/opsbro agent info"
   - "%CMD_IN_ENV% python bin/opsbro collectors state"
   - "%CMD_IN_ENV% python bin/opsbro monitoring state"
