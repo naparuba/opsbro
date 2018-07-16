@@ -117,7 +117,12 @@ build_script:
 test_script:
   # Run the project tests
   - "%CMD_IN_ENV% python bin/opsbro"
-  - ps: tests/test_python_tests.sh
+  - sh: tests/test_python_tests.sh
+  - echo "CALSSIC RUN"
+  - "%CMD_IN_ENV% python bin/opsbro agent windows service-install"
+  - net start
+  - "%CMD_IN_ENV% python bin/opsbro info"
+
 
 after_test:
   # If tests are successful, create binary packages for the project.
