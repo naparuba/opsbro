@@ -128,7 +128,7 @@ test_script:
   - wevtutil cl System
   - wevtutil cl Application
   - "%CMD_IN_ENV% python bin/opsbro agent windows service-install"
-  - net start OpsBro || wevtutil qe Application && wevtutil qe System && type c:\opsbro\log\crash.log && bad
+  - net start OpsBro || wevtutil qe Application && wevtutil qe System && dir c:\opsbro\log && type c:\opsbro\log\crash.log && bad
   - "%CMD_IN_ENV% python bin/opsbro agent info"
   - "%CMD_IN_ENV% python bin/opsbro collectors state"
   - "%CMD_IN_ENV% python bin/opsbro monitoring state"
