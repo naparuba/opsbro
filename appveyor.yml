@@ -122,6 +122,8 @@ test_script:
   - "%CMD_IN_ENV% python bin/opsbro"
   - sh: tests/test_python_tests.sh
   - echo "CLASSIC RUN"
+  - python bin\opsbro agent start --one-shot
+  " echo "SERVICE RUN"
   - "%CMD_IN_ENV% python bin/opsbro agent windows service-install"
   - net start OpsBro
   - "%CMD_IN_ENV% python bin/opsbro agent info"
