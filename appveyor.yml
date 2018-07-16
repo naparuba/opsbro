@@ -14,53 +14,53 @@ environment:
     # See: http://www.appveyor.com/docs/installed-software#python
 
 
-#    - PYTHON: "C:\\Python266"
-#      PYTHON_VERSION: "2.6.6"
-#      PYTHON_ARCH: "32"
+    - PYTHON: "C:\\Python266"
+      PYTHON_VERSION: "2.6.6"
+      PYTHON_ARCH: "32"
 
-#    - PYTHON: "C:\\Python266-x64"
-#      PYTHON_VERSION: "2.6.6"
-#      PYTHON_ARCH: "64"
+    - PYTHON: "C:\\Python266-x64"
+      PYTHON_VERSION: "2.6.6"
+      PYTHON_ARCH: "64"
 
-#    - PYTHON: "C:\\Python27"
-#      PYTHON_VERSION: "2.7.x"
-#      PYTHON_ARCH: "32"
+    - PYTHON: "C:\\Python27"
+      PYTHON_VERSION: "2.7.x"
+      PYTHON_ARCH: "32"
 
     - PYTHON: "C:\\Python27-x64"
       PYTHON_VERSION: "2.7.x"
       PYTHON_ARCH: "64"
 
-#    - PYTHON: "C:\\Python34"
-#      PYTHON_VERSION: "3.4.x"
-#      PYTHON_ARCH: "32"
+    - PYTHON: "C:\\Python34"
+      PYTHON_VERSION: "3.4.x"
+      PYTHON_ARCH: "32"
 
-#    - PYTHON: "C:\\Python34-x64"
-#      PYTHON_VERSION: "3.4.x"
-#      PYTHON_ARCH: "64"
+    - PYTHON: "C:\\Python34-x64"
+      PYTHON_VERSION: "3.4.x"
+      PYTHON_ARCH: "64"
 
-#    - PYTHON: "C:\\Python35"
-#      PYTHON_VERSION: "3.5.0"
-#      PYTHON_ARCH: "32"
+    - PYTHON: "C:\\Python35"
+      PYTHON_VERSION: "3.5.0"
+      PYTHON_ARCH: "32"
 
-#    - PYTHON: "C:\\Python35-x64"
-#      PYTHON_VERSION: "3.5.0"
-#      PYTHON_ARCH: "64"
+    - PYTHON: "C:\\Python35-x64"
+      PYTHON_VERSION: "3.5.0"
+      PYTHON_ARCH: "64"
 
-#    - PYTHON: "C:\\Python36"
-#      PYTHON_VERSION: "3.6.0"
-#      PYTHON_ARCH: "32"
+    - PYTHON: "C:\\Python36"
+      PYTHON_VERSION: "3.6.0"
+      PYTHON_ARCH: "32"
 
-#    - PYTHON: "C:\\Python36-x64"
-#      PYTHON_VERSION: "3.6.0"
-#      PYTHON_ARCH: "64"
+    - PYTHON: "C:\\Python36-x64"
+      PYTHON_VERSION: "3.6.0"
+      PYTHON_ARCH: "64"
 
-#    - PYTHON: "C:\\Python37"
-#      PYTHON_VERSION: "3.7.0"
-#      PYTHON_ARCH: "32"
+    - PYTHON: "C:\\Python37"
+      PYTHON_VERSION: "3.7.0"
+      PYTHON_ARCH: "32"
 
-#    - PYTHON: "C:\\Python37-x64"
-#      PYTHON_VERSION: "3.7.0"
-#      PYTHON_ARCH: "64"
+    - PYTHON: "C:\\Python37-x64"
+      PYTHON_VERSION: "3.7.0"
+      PYTHON_ARCH: "64"
 
   # For debug purpose only
   APPVEYOR_RDP_PASSWORD:  Azerty123!
