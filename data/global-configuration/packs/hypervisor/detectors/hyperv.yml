@@ -1,6 +1,6 @@
 detector:
     add_groups:
         - hyperv
-    apply_if: "{{collector.hypervisor.hypervisor}} == 'Microsoft Hv'"
+    apply_if: "{{collector.hypervisor.hypervisor}} == 'Microsoft Hv' or {{collector.hypervisor.hypervisor}} == 'MicrosoftHv'"
     interval: "3600s"
 
