@@ -12,6 +12,12 @@ from opsbro.log import LoggerFactory
 
 logger_crash = LoggerFactory.create_logger('crash')
 
+def LOG(s):
+    with open(r'c:\opsbro.txt', 'a') as f:
+        f.write('%s\n' % s)
+    
+
+LOG('IMPORT')
 
 class Service(win32serviceutil.ServiceFramework):
     _svc_name_ = "OpsBro"
@@ -50,6 +56,7 @@ class Service(win32serviceutil.ServiceFramework):
     
     def SvcDoRun(self):
         try:
+            LOG('SvcDoRun')
             import servicemanager
             
             # Set as english
@@ -58,7 +65,7 @@ class Service(win32serviceutil.ServiceFramework):
             # under service, stdout and stderr are not available
             # TODO: enable debug mode?
             self.destroy_stdout_stderr()
-            
+            LOG('BEFORE CLI')
             # simulate CLI startup with config parsing
             from opsbro.log import cprint, logger, is_tty
             from opsbro.cli import CLICommander, save_current_binary
@@ -67,19 +74,26 @@ class Service(win32serviceutil.ServiceFramework):
             with open('c:\\opsbro\\etc\\agent.yml', 'r') as f:
                 buf = f.read()
                 CONFIG = yamler.loads(buf)
+
+            LOG('CONF LOADED')
             
             # Load config
             CLI = CLICommander(CONFIG, None)
-            
+
+            LOG('CLI LOADED')
             l = Launcher(cfg_dir='c:\\opsbro\\etc')
+            LOG('LAUNCHER created')
             l.do_daemon_init_and_start(is_daemon=False)
+            LOG('LAUNCHER init')
             # Start the stopper threads
             threader.create_and_launch(self.__check_for_hWaitStop, (), name='Windows service stopper', essential=True, part='agent')
+            LOG('LAUNCHER call main')
             # Here only the last son reach this
             l.main()
             # called when we're being shut down
         except Exception:
             err = traceback.format_exc()
+            LOG('CRASH: %s' % err)
             logger_crash.error(err)
             raise
     
