@@ -120,11 +120,11 @@ test_script:
   - wevtutil cl Application
   - "%CMD_IN_ENV% python c:/opsbro/bin/opsbro agent windows service-install"
   - sc start OpsBro || sc qc OpsBro && sc query OpsBro && wevtutil qe Application && wevtutil qe System && type c:\opsbro.log && bad
-  - "%CMD_IN_ENV% python c:\opsbro\bin/opsbro agent info"
-  - "%CMD_IN_ENV% python c:\opsbro\bin/opsbro collectors state"
-  - "%CMD_IN_ENV% python c:\opsbro\bin/opsbro monitoring state"
-  - "%CMD_IN_ENV% python c:\opsbro\bin/opsbro compliance state"
-  - "%CMD_IN_ENV% python c:\opsbro\bin/opsbro collectors show"
+  - "%CMD_IN_ENV% python c:/opsbro/bin/opsbro agent info"
+  - "%CMD_IN_ENV% python c:/opsbro/bin/opsbro collectors state"
+  - "%CMD_IN_ENV% python c:/opsbro/bin/opsbro monitoring state"
+  - "%CMD_IN_ENV% python c:/opsbro/bin/opsbro compliance state"
+  - "%CMD_IN_ENV% python c:/opsbro/bin/opsbro collectors show"
 
 
 
