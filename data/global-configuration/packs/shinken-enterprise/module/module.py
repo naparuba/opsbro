@@ -1,9 +1,8 @@
-import json
-
 from opsbro.module import ConnectorModule
 from opsbro.parameters import StringParameter, BoolParameter
 from opsbro.gossip import gossiper
 from opsbro.collectormanager import collectormgr
+from opsbro.jsonmgr import jsoner
 
 
 class ShinkenEnterpriseModule(ConnectorModule):
@@ -20,7 +19,7 @@ class ShinkenEnterpriseModule(ConnectorModule):
         enabled = self.get_parameter('enabled')
         if not enabled:
             return
-        with gossiper.groups_lock:
+        with gossiper.nodes_lock:
             groups = gossiper.groups[:]
         self.logger.info('Pushing back ours groups and discovery informations to Shinken Enterprise')
         
@@ -110,7 +109,7 @@ class ShinkenEnterpriseModule(ConnectorModule):
         file_result = self.get_parameter('file_result')
         if file_result:
             f = open(file_result, 'w')
-            f.write(json.dumps(payload, indent=4))
+            f.write(jsoner.dumps(payload, indent=4))
             f.close()
             
             
