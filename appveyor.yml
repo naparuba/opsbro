@@ -112,6 +112,9 @@ test_script:
   - wevtutil cl System
   - wevtutil cl Application
   - "%CMD_IN_ENV% python c:/opsbro/bin/opsbro agent windows service-install"
+  # Enable the shinken-enterprise module
+  - "%CMD_IN_ENV% python c:/opsbro/bin/opsbro packs parameters set local.shinken-enterprise.enabled True"
+  - "%CMD_IN_ENV% python c:/opsbro/bin/opsbro packs parameters set local.shinken-enterprise.file_result \"C:\shinken-local-analyzer-payload.json\" "
   - sc start OpsBro || sc qc OpsBro && sc query OpsBro && wevtutil qe Application && wevtutil qe System && type c:\opsbro.log && bad
   - "python -c \"import time; time.sleep(10)\""
   - "%CMD_IN_ENV% python c:/opsbro/bin/opsbro agent info"
@@ -119,6 +122,7 @@ test_script:
   - "%CMD_IN_ENV% python c:/opsbro/bin/opsbro monitoring state"
   - "%CMD_IN_ENV% python c:/opsbro/bin/opsbro compliance state"
   - "%CMD_IN_ENV% python c:/opsbro/bin/opsbro collectors show"
+  - type C:\shinken-local-analyzer-payload.json
 
 
 
