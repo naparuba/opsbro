@@ -432,7 +432,6 @@ else:
         },
     }
 
-
 # Some distro have another name for python-setuptools, so list here only exceptions
 setuptools_package_exceptions = {
     'alpine'       : 'py-setuptools',
@@ -553,7 +552,7 @@ if allow_black_magic:
         except Exception as exp:
             cprint('   - ERROR: cannot install the prerequite %s from the system. Please install it manually' % package_name, color='red')
             sys.exit(2)
-            
+
 # windows black magic: we ned pywin32
 if os.name == 'nt':
     try:
@@ -561,24 +560,23 @@ if os.name == 'nt':
     except ImportError:
         # No win32api, try to install it, but setup() seems to fail, so call pip for this
         from opsbro.util import exec_command
+        
         cprint('   - Prerequite for ', color='grey', end='')
         cprint(system_distro, color='magenta', end='')
         cprint(' : ', color='grey', end='')
         cprint('%-20s' % 'pyiwin32', color='blue', end='')
         cprint('       from pypi  : ', color='grey', end='')
         sys.stdout.flush()
-
+        
         python_exe = os.path.abspath(sys.executable)
         
         # We need both pyiwin32 & pywin32 to works
-        packages_to_install = ('pypiwin32', 'pywin32')
-        specific_version = ''
-        # But lastest pywin32 on pypi do not support 3.4, need to fail back to an old version
-        if PY3 and sys.version_info.minor == 4: # == 3.4
-            packages_to_install = ('pypiwin32',)
-            specific_version = '==219'
-        for windows_package in packages_to_install:
-            pip_install_command = '%s -m pip install --only-binary %s %s%s' % (python_exe, windows_package, windows_package, specific_version)
+        # But lastest pywin32 on pypi do not support 3.4, cannot install in automagic
+        if PY3 and sys.version_info.minor == 4:  # == 3.4
+            cprint('ERROR: the python 3.4 is not managed under windows for automatic installaiton, please install pywin32 first (no more available on pypi for this python version).')
+            sys.exit(2)
+        for windows_package in ('pypiwin32', 'pywin32'):
+            pip_install_command = '%s -m pip install --only-binary %s %s' % (python_exe, windows_package, windows_package)
             try:
                 rc, stdout, stderr = exec_command(pip_install_command)
             except Exception as exp:
@@ -605,7 +603,6 @@ if os.name == 'nt':
             sys.exit(2)
         cprint('%s' % CHARACTERS.check, color='green')
 
-
 # Remove duplicate from pip install
 install_from_pip = set(install_from_pip)
 
@@ -616,7 +613,6 @@ if not allow_black_magic:
 # HACK: debian 6 do not allow any more pypi install, sorry :'(
 if system_distro == 'debian' and system_distroversion.startswith('6.'):
     install_from_pip = set()
-
 
 # Try to import setup tools, and if not, switch to
 try:
@@ -641,17 +637,16 @@ print('\n')
 if allow_black_magic:
     title = 'Python lib installation ' + sprintf('(2/3)', color='magenta', end='')
     print_h1(title, raw_title=True)
-
+    
     if install_from_pip:
         cprint('  * %s packages will be installed from Pypi (%s)' % (len(install_from_pip), ', '.join(install_from_pip)))
-
+    
     cprint('  * %s opsbro python lib in progress...' % what, end='')
 sys.stdout.flush()
 
 hook_stdout()
 
 setup_phase_is_done = False
-
 
 
 def print_fail_setup(exp=''):

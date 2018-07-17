@@ -80,6 +80,12 @@ __VERSION__ = __version__ = "1.4.9"
 _DEBUG = False
 
 import sys
+
+PY3 = sys.version_info >= (3,)
+if PY3:
+    long = int
+    unicode = str
+
 import datetime
 import re
 import struct
