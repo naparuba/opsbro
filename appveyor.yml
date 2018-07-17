@@ -102,11 +102,14 @@ test_script:
   - "%CMD_IN_ENV% python bin/opsbro"
   - echo "CLASSIC RUN"
   - python bin\opsbro agent start --one-shot
+
   - echo "Analyser RUN
   - python bin\opsbro packs overload   global.shinken-enterprise
   - python bin\opsbro packs parameters set local.shinken-enterprise.enabled True
   - python bin\opsbro packs parameters set local.shinken-enterprise.file_result "C:\shinken-local-analyzer-payload.json"
+  - python bin\opsbro agent start --one-shot
   - type C:\shinken-local-analyzer-payload.json
+
   - echo "SERVICE RUN"
   - "python -c \"import sys; print(sys.executable)\""
   # This should be available before go
