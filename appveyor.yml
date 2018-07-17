@@ -106,7 +106,6 @@ test_script:
   - "python -c \"import sys; print(sys.executable)\""
   # This should be available before go
   #- C:\Python27-x64\lib\site-packages\win32\pythonservice.exe
-  #- sc create OpsBro binPath="C:\Python27-x64\python.exe C:\opsbro\bin\opsbro agent start" type=own error=ignore start=auto
 
   # CLEAN ALL logs
   - wevtutil cl System
@@ -124,9 +123,9 @@ test_script:
   - "%CMD_IN_ENV% python c:/opsbro/bin/opsbro compliance state"
   - "%CMD_IN_ENV% python c:/opsbro/bin/opsbro collectors show"
   - sc stop OpsBro
-  - "python -c \"import time; time.sleep(10)\""
+  #- "python -c \"import time; time.sleep(10)\""
   # Now stop and check that the shinken module did works
-  - type C:\shinken-local-analyzer-payload.json
+  #- type C:\shinken-local-analyzer-payload.json
 
 
 
