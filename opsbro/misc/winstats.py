@@ -11,6 +11,7 @@ import sys
 PY3 = sys.version_info >= (3,)
 if PY3:
     long = int
+    unicode = str
 
 import ctypes, string
 from ctypes import (Structure, Union, WinError, byref, c_double, c_longlong,

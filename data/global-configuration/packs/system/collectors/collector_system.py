@@ -107,8 +107,9 @@ class System(Collector):
             except OSError:  # some background daemon can have problem on ancien os
                 if pwd is not None:
                     res['user'] = pwd.getpwuid(os.geteuid()).pw_name
-            res['uid'] = os.getuid()
-            res['gid'] = os.getgid()
+            if hasattr(os, 'getuid'):  # windows python 3 do not have it
+                res['uid'] = os.getuid()
+                res['gid'] = os.getgid()
         
         # Get public & local address, and directly from the hosting driver as it already does the job
         hostingdrvmgr = get_hostingdrivermgr()
