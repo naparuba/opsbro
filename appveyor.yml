@@ -14,13 +14,13 @@ environment:
     # See: http://www.appveyor.com/docs/installed-software#python
 
 
-#    - PYTHON: "C:\\Python27"
-#      PYTHON_VERSION: "2.7.x"
-#      PYTHON_ARCH: "32"
+    - PYTHON: "C:\\Python27"
+      PYTHON_VERSION: "2.7.x"
+      PYTHON_ARCH: "32"
 
-#    - PYTHON: "C:\\Python27-x64"
-#      PYTHON_VERSION: "2.7.x"
-#      PYTHON_ARCH: "64"
+    - PYTHON: "C:\\Python27-x64"
+      PYTHON_VERSION: "2.7.x"
+      PYTHON_ARCH: "64"
 
 # NOTE: python3.4 is disabled as we cannot install automatically the pywin32 lib from pypi
 #    - PYTHON: "C:\\Python34"
@@ -35,9 +35,9 @@ environment:
 #      PYTHON_VERSION: "3.5.0"
 #      PYTHON_ARCH: "32"
 
-    - PYTHON: "C:\\Python35-x64"
-      PYTHON_VERSION: "3.5.0"
-      PYTHON_ARCH: "64"
+#    - PYTHON: "C:\\Python35-x64"
+#      PYTHON_VERSION: "3.5.0"
+#      PYTHON_ARCH: "64"
 
 #    - PYTHON: "C:\\Python36"
 #      PYTHON_VERSION: "3.6.0"
@@ -123,5 +123,5 @@ test_script:
 
 
 # ENABLE DEBUG MODE
-on_finish:
-  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+#on_finish:
+#  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
