@@ -102,6 +102,11 @@ test_script:
   - "%CMD_IN_ENV% python bin/opsbro"
   - echo "CLASSIC RUN"
   - python bin\opsbro agent start --one-shot
+  - echo "Analyser RUN
+  - python bin\opsbro packs overload   global.shinken-enterprise
+  - python bin\opsbro packs parameters set local.shinken-enterprise.enabled True
+  - python bin\opsbro packs parameters set local.shinken-enterprise.file_result "C:\shinken-local-analyzer-payload.json"
+  - type C:\shinken-local-analyzer-payload.json
   - echo "SERVICE RUN"
   - "python -c \"import sys; print(sys.executable)\""
   # This should be available before go
@@ -112,9 +117,7 @@ test_script:
   - wevtutil cl Application
   - "%CMD_IN_ENV% python c:/opsbro/bin/opsbro agent windows service-install"
   # Enable the shinken-enterprise module
-  - "%CMD_IN_ENV% python c:/opsbro/bin/opsbro packs overload   global.shinken-enterprise"
-  - "%CMD_IN_ENV% python c:/opsbro/bin/opsbro packs parameters set local.shinken-enterprise.enabled True"
-  - "%CMD_IN_ENV% python c:/opsbro/bin/opsbro packs parameters set local.shinken-enterprise.file_result \"C:\\shinken-local-analyzer-payload.json\" "
+
   - sc start OpsBro || sc qc OpsBro && sc query OpsBro && wevtutil qe Application && wevtutil qe System && type c:\opsbro.log && bad
   - "python -c \"import time; time.sleep(10)\""
   - "%CMD_IN_ENV% python c:/opsbro/bin/opsbro agent info"
@@ -125,7 +128,7 @@ test_script:
   - sc stop OpsBro
   #- "python -c \"import time; time.sleep(10)\""
   # Now stop and check that the shinken module did works
-  #- type C:\shinken-local-analyzer-payload.json
+  #-
 
 
 
