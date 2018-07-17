@@ -99,6 +99,7 @@ from opsbro.log import LoggerFactory
 # Global logger for this part
 logger = LoggerFactory.create_logger('wmi')
 
+
 def signed_to_unsigned(signed):
     """Convert a (possibly signed) long to unsigned hex. Useful
     when converting a COM error code to the more conventional
@@ -118,35 +119,35 @@ class SelfDeprecatingDict(object):
     `list` during an interregnum, issuing a `DeprecationWarning`
     if accessed as a `dict`.
     """
-
+    
     dict_only = set(dir(dict)).difference(dir(list))
-
-
+    
+    
     def __init__(self, dictlike):
         self.dict = dict(dictlike)
         self.list = list(self.dict)
-
-
+    
+    
     def __getattr__(self, attribute):
         if attribute in self.dict_only:
             warnings.warn("In future this will be a list and not a dictionary", DeprecationWarning)
             return getattr(self.dict, attribute)
         else:
             return getattr(self.list, attribute)
-
-
+    
+    
     def __iter__(self):
         return iter(self.list)
-
-
+    
+    
     def __str__(self):
         return str(self.list)
-
-
+    
+    
     def __repr__(self):
         return repr(self.list)
-
-
+    
+    
     def __getitem__(self, item):
         try:
             return self.list[item]
@@ -160,14 +161,14 @@ class ProvideConstants(object):
     They can then be accessed as attributes of the :attr:`_constants`
     property. (From Thomas Heller on c.l.py).
     """
-
-
+    
+    
     def __init__(self, comobj):
         comobj.__dict__["_constants"] = self
         self.__typecomp = \
             comobj._oleobj_.GetTypeInfo().GetContainingTypeLib()[0].GetTypeComp()
-
-
+    
+    
     def __getattr__(self, name):
         if name.startswith("__") and name.endswith("__"):
             raise AttributeError(name)
@@ -194,13 +195,13 @@ class x_wmi(Exception):
     an info message and the underlying COM error if any, exposed
     as the :attr:`com_error` attribute.
     """
-
-
+    
+    
     def __init__(self, info="", com_error=None):
         self.info = info
         self.com_error = com_error
-
-
+    
+    
     def __str__(self):
         return "<x_wmi: %s %s>" % (
             self.info or "Unexpected COM Error",
@@ -300,15 +301,15 @@ def from_time(year=None, month=None, day=None, hours=None, minutes=None, seconds
 
     :returns: A WMI datetime string of the form: `yyyymmddHHMMSS.mmmmmm+UUU`
     """
-
-
+    
+    
     def str_or_stars(i, length):
         if i is None:
             return "*" * length
         else:
             return str(i).rjust(length, "0")
-
-
+    
+    
     wmi_time = ""
     wmi_time += str_or_stars(year, 4)
     wmi_time += str_or_stars(month, 2)
@@ -324,7 +325,7 @@ def from_time(year=None, month=None, day=None, hours=None, minutes=None, seconds
         wmi_time += "-"
         timezone = abs(timezone)
     wmi_time += str_or_stars(timezone, 3)
-
+    
     return wmi_time
 
 
@@ -338,15 +339,15 @@ def to_time(wmi_time):
 
     :returns: A 9-tuple of (year, month, day, hours, minutes, seconds, microseconds, timezone)
     """
-
-
+    
+    
     def int_or_none(s, start, end):
         try:
             return int(s[start:end])
         except ValueError:
             return None
-
-
+    
+    
     year = int_or_none(wmi_time, 0, 4)
     month = int_or_none(wmi_time, 4, 6)
     day = int_or_none(wmi_time, 6, 8)
@@ -357,7 +358,7 @@ def to_time(wmi_time):
     timezone = wmi_time[22:]
     if timezone == "***":
         timezone = None
-
+    
     return year, month, day, hours, minutes, seconds, microseconds, timezone
 
 
@@ -383,8 +384,8 @@ class _wmi_method:
     given parameter is expecting an array, and what
     special privileges are required to call the method.
     """
-
-
+    
+    
     def __init__(self, ole_object, method_name):
         """
         :param ole_object: The WMI class/instance whose method is to be called
@@ -397,7 +398,7 @@ class _wmi_method:
             for q in self.method.Qualifiers_:
                 self.qualifiers[q.Name] = q.Value
             self.provenance = "\n".join(self.qualifiers.get("MappingStrings", []))
-
+            
             self.in_parameters = self.method.InParameters
             self.out_parameters = self.method.OutParameters
             if self.in_parameters is None:
@@ -408,7 +409,7 @@ class _wmi_method:
                 self.out_parameter_names = []
             else:
                 self.out_parameter_names = [(i.Name, i.IsArray) for i in self.out_parameters.Properties_]
-
+            
             doc = "%s (%s) => (%s)" % (
                 method_name,
                 ", ".join([name + ("", "[]")[is_array] for (name, is_array) in self.in_parameter_names]),
@@ -420,8 +421,8 @@ class _wmi_method:
             self.__doc__ = doc
         except pywintypes.com_error:
             handle_com_error()
-
-
+    
+    
     def __call__(self, *args, **kwargs):
         """Execute the call to a WMI method, returning
         a tuple (even if is of only one value) containing
@@ -432,9 +433,9 @@ class _wmi_method:
                 parameter_names = {}
                 for name, is_array in self.in_parameter_names:
                     parameter_names[name] = is_array
-
+                
                 parameters = self.in_parameters
-
+                
                 #
                 # Check positional parameters first
                 #
@@ -447,7 +448,7 @@ class _wmi_method:
                         except TypeError:
                             raise TypeError("parameter %d must be iterable" % n_arg)
                     parameter.Value = arg
-
+                
                 #
                 # If any keyword param supersedes a positional one,
                 # it'll simply overwrite it.
@@ -463,11 +464,11 @@ class _wmi_method:
                             except TypeError:
                                 raise TypeError("%s must be iterable" % k)
                     parameters.Properties_(k).Value = v
-
+                
                 result = self.ole_object.ExecMethod_(self.method.Name, self.in_parameters)
             else:
                 result = self.ole_object.ExecMethod_(self.method.Name)
-
+            
             results = []
             for name, is_array in self.out_parameter_names:
                 value = result.Properties_(name).Value
@@ -479,11 +480,11 @@ class _wmi_method:
                 else:
                     results.append(value)
             return tuple(results)
-
+        
         except pywintypes.com_error:
             handle_com_error()
-
-
+    
+    
     def __repr__(self):
         return "<function %s>" % self.__doc__
 
@@ -495,16 +496,16 @@ class _wmi_property(object):
         self.value = property.Value
         self.qualifiers = dict((q.Name, q.Value) for q in property.Qualifiers_)
         self.type = self.qualifiers.get("CIMTYPE", None)
-
-
+    
+    
     def set(self, value):
         self.property.Value = value
-
-
+    
+    
     def __repr__(self):
         return "<wmi_property: %s>" % self.name
-
-
+    
+    
     def __getattr__(self, attr):
         return getattr(self.property, attr)
 
@@ -530,8 +531,8 @@ class _wmi_object:
       c_drive = wmi._wmi_object (wmiobj)
       print c_drive
     """
-
-
+    
+    
     def __init__(self, ole_object, instance_of=None, fields=[], property_map={}):
         try:
             _set(self, "ole_object", ole_object)
@@ -542,29 +543,29 @@ class _wmi_object:
             _set(self, "property_map", property_map)
             _set(self, "_associated_classes", None)
             _set(self, "_keys", None)
-
+            
             if fields:
                 for field in fields:
                     self.properties[field] = None
             else:
                 for p in ole_object.Properties_:
                     self.properties[p.Name] = None
-
+            
             for m in ole_object.Methods_:
                 self.methods[m.Name] = None
-
+            
             _set(self, "_properties", self.properties.keys())
             _set(self, "_methods", self.methods.keys())
             _set(self, "qualifiers", dict((q.Name, q.Value) for q in self.ole_object.Qualifiers_))
-
+        
         except pywintypes.com_error:
             handle_com_error()
-
-
+    
+    
     def __lt__(self, other):
         return self.id < other.id
-
-
+    
+    
     def __str__(self):
         """For a call to print [object] return the OLE description
         of the properties / values of the object
@@ -573,8 +574,8 @@ class _wmi_object:
             return self.ole_object.GetObjectText_()
         except pywintypes.com_error:
             handle_com_error()
-
-
+    
+    
     def __repr__(self):
         """
         Indicate both the fact that this is a wrapped WMI object
@@ -584,20 +585,20 @@ class _wmi_object:
             return "<%s: %s>" % (self.__class__.__name__, self.Path_.Path.encode("ascii", "backslashreplace"))
         except pywintypes.com_error:
             handle_com_error()
-
-
+    
+    
     def _cached_properties(self, attribute):
         if self.properties[attribute] is None:
             self.properties[attribute] = _wmi_property(self.ole_object.Properties_(attribute))
         return self.properties[attribute]
-
-
+    
+    
     def _cached_methods(self, attribute):
         if self.methods[attribute] is None:
             self.methods[attribute] = _wmi_method(self.ole_object, attribute)
         return self.methods[attribute]
-
-
+    
+    
     def __getattr__(self, attribute):
         """
         Attempt to pass attribute calls to the proxied COM object.
@@ -626,8 +627,8 @@ class _wmi_object:
                 return getattr(self.ole_object, attribute)
         except pywintypes.com_error:
             handle_com_error()
-
-
+    
+    
     def __setattr__(self, attribute, value):
         """If the attribute to be set is valid for the proxied
         COM object, set that objects's parameter value; if not,
@@ -642,23 +643,23 @@ class _wmi_object:
                 raise AttributeError(attribute)
         except pywintypes.com_error:
             handle_com_error()
-
-
+    
+    
     def __eq__(self, other):
         return self.id == other.id
-
-
+    
+    
     def __hash__(self):
         return hash(self.id)
-
-
+    
+    
     def _getAttributeNames(self):
         """Return list of methods/properties for IPython completion"""
         attribs = [str(x) for x in self.methods.keys()]
         attribs.extend([str(x) for x in self.properties.keys()])
         return attribs
-
-
+    
+    
     def _get_keys(self):
         """A WMI object is uniquely defined by a set of properties
         which constitute its keys. Lazily retrieves the keys for this
@@ -676,25 +677,25 @@ class _wmi_object:
                     if qualifier.Name == "key" and qualifier.Value:
                         self._keys.append(property.Name)
         return self._keys
-
-
+    
+    
     keys = property(_get_keys)
-
-
+    
+    
     def wmi_property(self, property_name):
         """Return the cached object representing one property
         of this object
         """
         return _wmi_property(self.ole_object.Properties_(property_name))
-
-
+    
+    
     def put(self):
         """Push all outstanding property updates back to the
         WMI database.
         """
         self.ole_object.Put_()
-
-
+    
+    
     def set(self, **kwargs):
         """Set several properties of the underlying object
         at one go. This is particularly useful in combination
@@ -718,8 +719,8 @@ class _wmi_object:
                     self.ole_object.Put_()
             except pywintypes.com_error:
                 handle_com_error()
-
-
+    
+    
     def path(self):
         """Return the WMI URI to this object. Can be used to
         determine the path relative to the parent namespace::
@@ -733,8 +734,8 @@ class _wmi_object:
             return self.ole_object.Path_
         except pywintypes.com_error:
             handle_com_error()
-
-
+    
+    
     def derivation(self):
         """Return a tuple representing the object derivation for
         this object, with the most specific object first::
@@ -746,8 +747,8 @@ class _wmi_object:
             return self.ole_object.Derivation_
         except pywintypes.com_error:
             handle_com_error()
-
-
+    
+    
     def _cached_associated_classes(self):
         if self._associated_classes is None:
             if isinstance(self, _wmi_class):
@@ -756,19 +757,19 @@ class _wmi_object:
                 params = {'bClassesOnly': True}
             try:
                 associated_classes = dict(
-                        (assoc.Path_.Class, _wmi_class(self._namespace, assoc)) for
-                        assoc in self.ole_object.Associators_(**params)
+                    (assoc.Path_.Class, _wmi_class(self._namespace, assoc)) for
+                    assoc in self.ole_object.Associators_(**params)
                 )
                 _set(self, "_associated_classes", associated_classes)
             except pywintypes.com_error:
                 handle_com_error()
-
+        
         return self._associated_classes
-
-
+    
+    
     associated_classes = property(_cached_associated_classes)
-
-
+    
+    
     def associators(self, wmi_association_class="", wmi_result_class=""):
         """Return a list of objects related to this one, optionally limited
         either by association class (ie the name of the class which relates
@@ -788,14 +789,14 @@ class _wmi_object:
             return [
                 _wmi_object(i) for i in \
                 self.ole_object.Associators_(
-                        strAssocClass=wmi_association_class,
-                        strResultClass=wmi_result_class
+                    strAssocClass=wmi_association_class,
+                    strResultClass=wmi_result_class
                 )
-                ]
+            ]
         except pywintypes.com_error:
             handle_com_error()
-
-
+    
+    
     def references(self, wmi_class=""):
         """Return a list of associations involving this object, optionally
         limited by the result class (the name of the association class).
@@ -832,14 +833,14 @@ class _wmi_event(_wmi_object):
     extra information such as the type of event.
     """
     event_type_re = re.compile("__Instance(Creation|Modification|Deletion)Event")
-
-
+    
+    
     def __init__(self, event, event_info, fields=[]):
         _wmi_object.__init__(self, event, fields=fields)
         _set(self, "event_type", None)
         _set(self, "timestamp", None)
         _set(self, "previous", None)
-
+        
         if event_info:
             event_type = self.event_type_re.match(event_info.Path_.Class).group(1).lower()
             _set(self, "event_type", event_type)
@@ -863,8 +864,8 @@ class _wmi_class(_wmi_object):
       c = wmi.WMI ()
       c_drives = c.Win32_LogicalDisk (Name='C:')
     """
-
-
+    
+    
     def __init__(self, namespace, wmi_class):
         _wmi_object.__init__(self, wmi_class)
         _set(self, "_class_name", wmi_class.Path_.Class)
@@ -875,8 +876,8 @@ class _wmi_class(_wmi_object):
             winmgmts, namespace_moniker, class_name = class_moniker.split(":")
             namespace = _wmi_namespace(GetObject(winmgmts + ":" + namespace_moniker), False)
             _set(self, "_namespace", namespace)
-
-
+    
+    
     def __getattr__(self, attribute):
         try:
             if attribute in self.properties:
@@ -885,8 +886,8 @@ class _wmi_class(_wmi_object):
                 return _wmi_object.__getattr__(self, attribute)
         except pywintypes.com_error:
             handle_com_error()
-
-
+    
+    
     def query(self, fields=[], **where_clause):
         """Make it slightly easier to query against the class,
          by calling the namespace's query with the class preset.
@@ -897,7 +898,7 @@ class _wmi_class(_wmi_object):
         #
         if self._namespace is None:
             raise x_wmi_no_namespace("You cannot query directly from a WMI class")
-
+        
         try:
             field_list = ", ".join(fields) or "*"
             wql = "SELECT " + field_list + " FROM " + self._class_name
@@ -906,11 +907,11 @@ class _wmi_class(_wmi_object):
             return self._namespace.query(wql, self, fields)
         except pywintypes.com_error:
             handle_com_error()
-
-
+    
+    
     __call__ = query
-
-
+    
+    
     def watch_for(
             self,
             notification_type="operation",
@@ -920,20 +921,20 @@ class _wmi_class(_wmi_object):
     ):
         if self._namespace is None:
             raise x_wmi_no_namespace("You cannot watch directly from a WMI class")
-
+        
         valid_notification_types = ("operation", "creation", "deletion", "modification")
         if notification_type.lower() not in valid_notification_types:
             raise x_wmi("notification_type must be one of %s" % ", ".join(valid_notification_types))
-
+        
         return self._namespace.watch_for(
-                notification_type=notification_type,
-                wmi_class=self,
-                delay_secs=delay_secs,
-                fields=fields,
-                **where_clause
+            notification_type=notification_type,
+            wmi_class=self,
+            delay_secs=delay_secs,
+            fields=fields,
+            **where_clause
         )
-
-
+    
+    
     def instances(self):
         """Return a list of instances of the WMI class
         """
@@ -941,8 +942,8 @@ class _wmi_class(_wmi_object):
             return [_wmi_object(instance, self) for instance in self.Instances_()]
         except pywintypes.com_error:
             handle_com_error()
-
-
+    
+    
     def new(self, **kwargs):
         """This is the equivalent to the raw-WMI SpawnInstance\_
         method. Note that there are relatively few uses for
@@ -988,8 +989,8 @@ class _wmi_result:
     """Simple, data only result for targeted WMI queries which request
     data only result classes via fetch_as_classes.
     """
-
-
+    
+    
     def __init__(self, obj, attributes):
         if attributes:
             for attr in attributes:
@@ -1013,15 +1014,15 @@ class _wmi_namespace:
         if "user" in i.lower ():
           print i
     """
-
-
+    
+    
     def __init__(self, namespace, find_classes):
         _set(self, "_namespace", namespace)
         #
         # wmi attribute preserved for backwards compatibility
         #
         _set(self, "wmi", namespace)
-
+        
         self._classes = None
         self._classes_map = {}
         #
@@ -1034,37 +1035,37 @@ class _wmi_namespace:
         #
         if find_classes:
             _ = self.classes
-
-
+    
+    
     def __repr__(self):
         return "<_wmi_namespace: %s>" % self.wmi
-
-
+    
+    
     def __str__(self):
         return repr(self)
-
-
+    
+    
     def _get_classes(self):
         if self._classes is None:
             self._classes = self.subclasses_of()
         return SelfDeprecatingDict(dict.fromkeys(self._classes))
-
-
+    
+    
     classes = property(_get_classes)
-
-
+    
+    
     def get(self, moniker):
         try:
             return _wmi_object(self.wmi.Get(moniker))
         except pywintypes.com_error:
             handle_com_error()
-
-
+    
+    
     def handle(self):
         """The raw OLE object representing the WMI namespace"""
         return self._namespace
-
-
+    
+    
     def subclasses_of(self, root="", regex=r".*"):
         try:
             SubclassesOf = self._namespace.SubclassesOf
@@ -1072,12 +1073,12 @@ class _wmi_namespace:
             return set()
         else:
             return set(
-                    c.Path_.Class
-                    for c in SubclassesOf(root)
-                    if re.match(regex, c.Path_.Class)
+                c.Path_.Class
+                for c in SubclassesOf(root)
+                if re.match(regex, c.Path_.Class)
             )
-
-
+    
+    
     def instances(self, class_name):
         """Return a list of instances of the WMI class. This is
         (probably) equivalent to querying with no qualifiers::
@@ -1090,16 +1091,16 @@ class _wmi_namespace:
             return [_wmi_object(obj) for obj in self._namespace.InstancesOf(class_name)]
         except pywintypes.com_error:
             handle_com_error()
-
-
+    
+    
     def new(self, wmi_class, **kwargs):
         """This is now implemented by a call to :meth:`_wmi_class.new`"""
         return getattr(self, wmi_class).new(**kwargs)
-
-
+    
+    
     new_instance_of = new
-
-
+    
+    
     def _raw_query(self, wql):
         """Execute a WQL query and return its raw results.  Use the flags
         recommended by Microsoft to achieve a read-only, semi-synchronous
@@ -1112,15 +1113,15 @@ class _wmi_namespace:
             return self._namespace.ExecQuery(strQuery=wql, iFlags=flags)
         except pywintypes.com_error:
             handle_com_error()
-
-
+    
+    
     def query(self, wql, instance_of=None, fields=[]):
         """Perform an arbitrary query against a WMI object, and return
         a list of _wmi_object representations of the results.
         """
         return [_wmi_object(obj, instance_of, fields) for obj in self._raw_query(wql)]
-
-
+    
+    
     def fetch_as_classes(self, wmi_classname, fields=(), **where_clause):
         """Build and execute a wql query to fetch the specified list of fields from
         the specified wmi_classname + where_clause, then return the results as
@@ -1133,8 +1134,8 @@ class _wmi_namespace:
         if where_clause:
             wql += " WHERE " + " AND ".join(["%s = '%s'" % (k, v) for k, v in where_clause.items()])
         return [_wmi_result(obj, fields) for obj in self._raw_query(wql)]
-
-
+    
+    
     def fetch_as_lists(self, wmi_classname, fields, **where_clause):
         """Build and execute a wql query to fetch the specified list of fields from
         the specified wmi_classname + where_clause, then return the results as
@@ -1147,8 +1148,8 @@ class _wmi_namespace:
         for obj in self._raw_query(wql):
             results.append([obj.Properties_(field).Value for field in fields])
         return results
-
-
+    
+    
     def watch_for(
             self,
             raw_wql=None,
@@ -1236,17 +1237,17 @@ class _wmi_namespace:
                 wql = \
                     "SELECT %s FROM __Instance%sEvent WITHIN %d WHERE TargetInstance ISA '%s' %s" % \
                     (field_list, notification_type, delay_secs, class_name, where)
-
+        
         try:
             return _wmi_watcher(
-                    self._namespace.ExecNotificationQuery(wql),
-                    is_extrinsic=is_extrinsic,
-                    fields=fields
+                self._namespace.ExecNotificationQuery(wql),
+                is_extrinsic=is_extrinsic,
+                fields=fields
             )
         except pywintypes.com_error:
             handle_com_error()
-
-
+    
+    
     def __getattr__(self, attribute):
         """Offer WMI classes as simple attributes. Pass through any untrapped
         unattribute to the underlying OLE object. This means that new or
@@ -1261,8 +1262,8 @@ class _wmi_namespace:
             return self._cached_classes(attribute)
         except pywintypes.com_error:
             return getattr(self._namespace, attribute)
-
-
+    
+    
     def _cached_classes(self, class_name):
         """Standard caching helper which keeps track of classes
         already retrieved by name and returns the existing object
@@ -1272,8 +1273,8 @@ class _wmi_namespace:
         if class_name not in self._classes_map:
             self._classes_map[class_name] = _wmi_class(self, self._namespace.Get(class_name))
         return self._classes_map[class_name]
-
-
+    
+    
     def _getAttributeNames(self):
         """Return list of classes for IPython completion engine"""
         return [x for x in self.classes if not x.startswith('__')]
@@ -1284,19 +1285,19 @@ class _wmi_namespace:
 #
 class _wmi_watcher:
     """Helper class for WMI.watch_for below (qv)"""
-
+    
     _event_property_map = {
         "TargetInstance"  : _wmi_object,
         "PreviousInstance": _wmi_object
     }
-
-
+    
+    
     def __init__(self, wmi_event, is_extrinsic, fields=[]):
         self.wmi_event = wmi_event
         self.is_extrinsic = is_extrinsic
         self.fields = fields
-
-
+    
+    
     def __call__(self, timeout_ms=-1):
         """When called, return the instance which caused the event. Supports
          timeout in milliseconds (defaulting to infinite). If the watcher
@@ -1309,9 +1310,9 @@ class _wmi_watcher:
                 return _wmi_event(event, None, self.fields)
             else:
                 return _wmi_event(
-                        event.Properties_("TargetInstance").Value,
-                        _wmi_object(event, property_map=self._event_property_map),
-                        self.fields
+                    event.Properties_("TargetInstance").Value,
+                    _wmi_object(event, property_map=self._event_property_map),
+                    self.fields
                 )
         except pywintypes.com_error:
             handle_com_error()
@@ -1360,17 +1361,17 @@ def connect(
     """
     global _DEBUG
     _DEBUG = debug
-
+    
     try:
         try:
             if wmi:
                 obj = wmi
-
+            
             elif moniker:
                 if not moniker.startswith(PROTOCOL):
                     moniker = PROTOCOL + moniker
                 obj = GetObject(moniker)
-
+            
             else:
                 if user:
                     if privileges or suffix:
@@ -1379,29 +1380,29 @@ def connect(
                         raise x_wmi_authentication("You can only specify user/password for a remote connection")
                     else:
                         obj = connect_server(
-                                server=computer,
-                                namespace=namespace,
-                                user=user,
-                                password=password,
-                                authority=authority,
-                                impersonation_level=impersonation_level,
-                                authentication_level=authentication_level
+                            server=computer,
+                            namespace=namespace,
+                            user=user,
+                            password=password,
+                            authority=authority,
+                            impersonation_level=impersonation_level,
+                            authentication_level=authentication_level
                         )
-
+                
                 else:
                     moniker = construct_moniker(
-                            computer=computer,
-                            impersonation_level=impersonation_level,
-                            authentication_level=authentication_level,
-                            authority=authority,
-                            privileges=privileges,
-                            namespace=namespace,
-                            suffix=suffix
+                        computer=computer,
+                        impersonation_level=impersonation_level,
+                        authentication_level=authentication_level,
+                        authority=authority,
+                        privileges=privileges,
+                        namespace=namespace,
+                        suffix=suffix
                     )
                     obj = GetObject(moniker)
-
+            
             wmi_type = get_wmi_type(obj)
-
+            
             if wmi_type == "namespace":
                 return _wmi_namespace(obj, find_classes)
             elif wmi_type == "class":
@@ -1410,10 +1411,10 @@ def connect(
                 return _wmi_object(obj)
             else:
                 raise x_wmi("Unknown moniker type")
-
+        
         except pywintypes.com_error:
             handle_com_error()
-
+    
     except x_wmi_uninitialised_thread:
         raise x_wmi_uninitialised_thread("WMI returned a syntax error: you're probably running inside a thread without first calling pythoncom.CoInitialize[Ex]")
 
@@ -1431,23 +1432,30 @@ def construct_moniker(
         suffix=None
 ):
     security = []
-    if impersonation_level: security.append("impersonationLevel=%s" % impersonation_level)
-    if authentication_level: security.append("authenticationLevel=%s" % authentication_level)
+    if impersonation_level:
+        security.append("impersonationLevel=%s" % impersonation_level)
+    if authentication_level:
+        security.append("authenticationLevel=%s" % authentication_level)
     #
     # Use of the authority descriptor is invalid on the local machine
     #
-    if authority and computer: security.append("authority=%s" % authority)
-    if privileges: security.append("(%s)" % ", ".join(privileges))
-
+    if authority and computer:
+        security.append("authority=%s" % authority)
+    if privileges:
+        security.append("(%s)" % ", ".join(privileges))
+    
     moniker = [PROTOCOL]
-    if security: moniker.append("{%s}!" % ",".join(security))
-    if computer: moniker.append("//%s/" % computer)
+    if security:
+        moniker.append("{%s}!" % ",".join(security))
+    if computer:
+        moniker.append("//%s/" % computer)
     if namespace:
         parts = re.split(r"[/\\]", namespace)
         if parts[0] != 'root':
             parts.insert(0, "root")
         moniker.append("/".join(parts))
-    if suffix: moniker.append(":%s" % suffix)
+    if suffix:
+        moniker.append(":%s" % suffix)
     return "".join(moniker)
 
 
@@ -1505,7 +1513,7 @@ def connect_server(
             raise x_wmi_authentication("No such impersonation level: %s" % impersonation_level)
     else:
         impersonation = None
-
+    
     if authentication_level:
         try:
             authentication = getattr(obj._constants, "wbemAuthenticationLevel%s" % authentication_level.title())
@@ -1513,17 +1521,17 @@ def connect_server(
             raise x_wmi_authentication("No such impersonation level: %s" % impersonation_level)
     else:
         authentication = None
-
+    
     server = Dispatch("WbemScripting.SWbemLocator"). \
         ConnectServer(
-            server,
-            namespace,
-            user,
-            password,
-            locale,
-            authority,
-            security_flags,
-            named_value_set
+        server,
+        namespace,
+        user,
+        password,
+        locale,
+        authority,
+        security_flags,
+        named_value_set
     )
     if impersonation:
         server.Security_.ImpersonationLevel = impersonation
@@ -1543,25 +1551,29 @@ def Registry(
     warnings.warn("This function can be implemented using wmi.WMI (namespace='DEFAULT').StdRegProv", DeprecationWarning)
     if not moniker:
         moniker = construct_moniker(
-                computer=computer,
-                impersonation_level=impersonation_level,
-                authentication_level=authentication_level,
-                authority=authority,
-                privileges=privileges,
-                namespace="default",
-                suffix="StdRegProv"
+            computer=computer,
+            impersonation_level=impersonation_level,
+            authentication_level=authentication_level,
+            authority=authority,
+            privileges=privileges,
+            namespace="default",
+            suffix="StdRegProv"
         )
-
+    
     try:
         return _wmi_object(GetObject(moniker))
-
+    
     except pywintypes.com_error:
         handle_com_error()
 
 
-import _winreg as winreg
+try:
+    import _winreg as winreg
+except ImportError:  # Python 3 did move it
+    import winreg
 
-def regkey_value(path, name="", start_key = None):
+
+def regkey_value(path, name="", start_key=None):
     if isinstance(path, str):
         path = path.split("\\")
     if start_key is None:
@@ -1586,7 +1598,8 @@ class WMIAccess(object):
         self.need_pdh_translate = not hasattr(pdh, 'PdhAddEnglishCounterW')
         self.q_cache = {}
         self.pdh_indexes = {}
-
+    
+    
     # If we don't have any acess to the call PdhAddEnglishCounterW
     # we will need to translate calls
     def __compute_pdh_indexes(self):
@@ -1602,8 +1615,8 @@ class WMIAccess(object):
             else:
                 self.pdh_indexes[s] = cur_idx
             idx += 1
-
-
+    
+    
     def __parse_and_translate_query(self, q):
         # if we have a direct access to english counters, go for it
         if not self.need_pdh_translate:
@@ -1634,8 +1647,8 @@ class WMIAccess(object):
         res = '\\'.join(nparts)
         self.q_cache[q] = res
         return res
-
-
+    
+    
     def get_table_where(self, tname, where={}):
         try:
             pythoncom.CoInitialize()
@@ -1644,8 +1657,8 @@ class WMIAccess(object):
             return f(**where)
         finally:
             pythoncom.CoUninitialize()
-
-
+    
+    
     def get_perf_data(self, q, unit='long', delay=0):
         # english query are anble if we do not need translate
         english = not self.need_pdh_translate
@@ -1656,19 +1669,19 @@ class WMIAccess(object):
         raw = winstats.get_perf_data(q, fmts=unit, delay=delay, english=english)
         # only the first element is need
         r = raw[0]
-        tr = {'long':long, 'double':float}
+        tr = {'long': long, 'double': float}
         r = tr[unit](r)
         return r
 
 
 wmiaccess = WMIAccess()
 
-
 #
 # Typical use test
 #
 if __name__ == '__main__':
     import time
+    
     t0 = time.time()
     system = WMI()
     print("TIME: ", time.time() - t0)
