@@ -30,14 +30,14 @@ environment:
       PYTHON_VERSION: "3.4.x"
       PYTHON_ARCH: "64"
 
-#    - PYTHON: "C:\\Python35"
-#      PYTHON_VERSION: "3.5.0"
-#      PYTHON_ARCH: "32"
-#
-#    - PYTHON: "C:\\Python35-x64"
-#      PYTHON_VERSION: "3.5.0"
-#      PYTHON_ARCH: "64"
-#
+    - PYTHON: "C:\\Python35"
+      PYTHON_VERSION: "3.5.0"
+      PYTHON_ARCH: "32"
+
+    - PYTHON: "C:\\Python35-x64"
+      PYTHON_VERSION: "3.5.0"
+      PYTHON_ARCH: "64"
+
 #    - PYTHON: "C:\\Python36"
 #      PYTHON_VERSION: "3.6.0"
 #      PYTHON_ARCH: "32"
@@ -130,5 +130,5 @@ test_script:
 
 
 # ENABLE DEBUG MODE
-on_finish:
-  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+#on_finish:
+#  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))

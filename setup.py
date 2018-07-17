@@ -571,13 +571,14 @@ if os.name == 'nt':
         python_exe = os.path.abspath(sys.executable)
         
         # We need both pyiwin32 & pywin32 to works
-        for windows_package in ('pypiwin32', 'pywin32'):
-            # Lastest pywin32 on pypi do not support 3.4, need to fail back to an old version
-            to_install = windows_package
-            if PY3:  # only Python3
-                if sys.version_info.minor == 4: # == 3.4
-                    to_install = '%s==219' % windows_package
-            pip_install_command = '%s -m pip install --only-binary %s %s' % (python_exe, windows_package, to_install)
+        packages_to_install = ('pypiwin32', 'pywin32')
+        specific_version = ''
+        # But lastest pywin32 on pypi do not support 3.4, need to fail back to an old version
+        if PY3 and sys.version_info.minor == 4: # == 3.4
+            packages_to_install = ('pypiwin32',)
+            specific_version = '==219'
+        for windows_package in packages_to_install:
+            pip_install_command = '%s -m pip install --only-binary %s %s%s' % (python_exe, windows_package, windows_package, specific_version)
             try:
                 rc, stdout, stderr = exec_command(pip_install_command)
             except Exception as exp:
