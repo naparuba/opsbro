@@ -572,7 +572,12 @@ if os.name == 'nt':
         
         # We need both pyiwin32 & pywin32 to works
         for windows_package in ('pypiwin32', 'pywin32'):
-            pip_install_command = '%s -m pip install --only-binary %s %s' % (python_exe, windows_package, windows_package)
+            # Lastest pywin32 on pypi do not support 3.4, need to fail back to an old version
+            to_install = windows_package
+            if PY3:  # only Python3
+                if sys.version_info.minor == 4: # == 3.4
+                    to_install = '%s==219' % windows_package
+            pip_install_command = '%s -m pip install --only-binary %s %s' % (python_exe, windows_package, to_install)
             try:
                 rc, stdout, stderr = exec_command(pip_install_command)
             except Exception as exp:
