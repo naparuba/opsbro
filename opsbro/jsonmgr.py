@@ -8,14 +8,14 @@ class JsonMgr(object):
         pass
     
     
-    def dumps(self, o):
-        return json.dumps(byteify(o))
+    def dumps(self, o, indent=None):
+        return json.dumps(byteify(o), indent=indent)
     
     
     def loads(self, s, encoding='utf8'):
         s = string_decode(s)
         try:
-            r = json.loads(s, encoding='utf8')
+            r = json.loads(s, encoding=encoding)
         except Exception as exp:  # beware: ValueError in python2, but some freaking exception in python3
             raise ValueError(str(exp))
         return r
