@@ -123,6 +123,9 @@ test_script:
   - "%CMD_IN_ENV% python c:/opsbro/bin/opsbro monitoring state"
   - "%CMD_IN_ENV% python c:/opsbro/bin/opsbro compliance state"
   - "%CMD_IN_ENV% python c:/opsbro/bin/opsbro collectors show"
+  - sc stop OpsBro
+  - "python -c \"import time; time.sleep(10)\""
+  # Now stop and check that the shinken module did works
   - type C:\shinken-local-analyzer-payload.json
 
 
