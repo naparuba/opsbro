@@ -107,7 +107,9 @@ class ShinkenEnterpriseModule(ConnectorModule):
         if volumes:
             payload['_VOLUMES'] = volumes
         
+
         file_result = self.get_parameter('file_result')
+        self.logger.info('Writing file result to : %s' % file_result)
         if file_result:
             f = open(file_result, 'w')
             f.write(jsoner.dumps(payload, indent=4))
