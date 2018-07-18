@@ -31,6 +31,8 @@ print_header "Look at final result"
 cat /tmp/shinken-local-analyzer-payload.json | jq
 if [ $? != 0 ];then
    echo "ERROR: the json file seems to be invalid or missing"
+   ls -thor log
+   cat log/module.*.log
    exit 2
 fi
 
