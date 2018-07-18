@@ -35,6 +35,8 @@ if [ $? != 0 ];then
    echo "ERROR: the json file seems to be invalid or missing"
    ls -thor log
    cat log/module.*.log
+   cat log/daemon.log
+   cat log/crash.log
    exit 2
 fi
 
