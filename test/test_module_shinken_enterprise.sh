@@ -42,7 +42,7 @@ for key in use _LAT _LONG _FQDN _TIMEZONE _LINUX_DISTRIBUTION host_name address 
    cat /tmp/shinken-local-analyzer-payload.json | jq ".$key"
    if [ $? != 0 ];then
       echo "ERROR: the json file seems to be invalid or missing"
-      cat /var/log/opsbro/module.*.log
+      cat log/module.*.log
       exit 2
    fi
    echo ""
