@@ -60,7 +60,7 @@ class OpsBroTestCoreFunctions(OpsBroTest):
     def setUp(self):
         print("** loading core function module")
         my_dir = os.path.abspath(os.path.dirname(__file__))
-        core_functions_dir = os.path.join(my_dir, '..', 'data', 'global-configuration', 'packs', 'core-functions', 'module')
+        core_functions_dir = os.path.join(my_dir, '..', 'data', 'core-configuration', 'packs', 'core-functions', 'module')
         print("** From directory", core_functions_dir)
         sys.path.insert(0, core_functions_dir)
         m = imp.load_source('module___titi___toto___tata', os.path.join(core_functions_dir, 'module.py'))
