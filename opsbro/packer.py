@@ -13,7 +13,7 @@ logger = LoggerFactory.create_logger('packs')
 
 class PackManager(object):
     def __init__(self):
-        self.packs = {'global': {}, 'zone': {}, 'local': {}}
+        self.packs = {'core': {}, 'global': {}, 'zone': {}, 'local': {}}
         
         # We got an object, we can fill the http daemon part
         self.export_http()
@@ -65,7 +65,7 @@ class PackManager(object):
     def give_pack_directories_to_load(self):
         to_load_idx = set()  # used to know if we already see suck a pack
         to_load = {}
-        for level in ('local', 'zone', 'global'):
+        for level in ('local', 'zone', 'global', 'core'):
             for pname in self.packs[level]:
                 if pname in to_load_idx:
                     logger.debug('Skipping pack %s/%s to load because it was already present in a more priority level' % (level, pname))
@@ -83,7 +83,7 @@ class PackManager(object):
     
     
     def get_pack_all_topics(self, pname):
-        for level in ('local', 'zone', 'global'):
+        for level in ('local', 'zone', 'global', 'core'):
             pack = self.packs[level].get(pname, None)
             if not pack:
                 continue

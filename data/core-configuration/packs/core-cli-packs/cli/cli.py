@@ -115,7 +115,7 @@ def do_packs_show():
     # now we read them, set it in our object
     
     from opsbro.packer import packer
-    packs = {'global': {}, 'zone': {}, 'local': {}}
+    packs = {'core': {}, 'global': {}, 'zone': {}, 'local': {}}
     for level in packer.packs:
         for pname in packer.packs[level]:
             packs[level][pname] = {'checks': {}, 'module': None, 'collectors': {}, 'generators': {}}
@@ -148,7 +148,7 @@ def do_packs_show():
         pack_level = generator.pack_level
         packs[pack_level][pack_name]['generators'][gname] = generator
     
-    for level in ('global', 'zone', 'local'):
+    for level in ('core', 'global', 'zone', 'local'):
         s1 = sprintf('Packs at level ', color='yellow', end='')
         s2 = sprintf(level, color='blue', end='')
         print_h1(s1 + s2, raw_title=True)
@@ -269,7 +269,7 @@ def do_packs_list():
     for pname in pnames:
         present_before = False
         keywords = []  # useless but make lint code check happy
-        for level in ('global', 'zone', 'local'):
+        for level in ('core', 'global', 'zone', 'local'):
             if pname in packs[level]:
                 (pack, _) = packs[level][pname]
                 if present_before:
@@ -285,7 +285,7 @@ def do_overload(pack_full_id, to_level='local'):
     packs = packer.get_packs()
     pack_level, pack_name = __split_pack_full_id(pack_full_id)
     
-    if pack_level not in ['global', 'zone']:
+    if pack_level not in ['core', 'global', 'zone']:
         logger.error('The pack level %s is not valid for the pack overload.' % pack_level)
         sys.exit(2)
     packs_from_level = packs[pack_level]
@@ -294,7 +294,7 @@ def do_overload(pack_full_id, to_level='local'):
         sys.exit(2)
     package_data, dir_name = packs[pack_level][pack_name]
     
-    if to_level not in ['zone', 'local']:
+    if to_level not in ['global', 'zone', 'local']:
         logger.error('The destination pack level %s is not valid for the pack overload.' % to_level)
         sys.exit(2)
     

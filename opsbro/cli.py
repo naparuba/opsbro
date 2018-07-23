@@ -293,15 +293,18 @@ class CLICommander(object):
             os.mkdir(data_dir)
         
         # Then we will need to look at other directories, list from
+        # * core-configuration = fill by installation, read-only
         # * global-configration = common to all nodes
         # * zone-configuration = common to zone nodes
         # * local-configuration = on this specific node
+        core_configuration = os.path.join(data_dir, 'core-configuration')
         global_configuration = os.path.join(data_dir, 'global-configuration')
         zone_configuration = os.path.join(data_dir, 'zone-configuration')
         local_configuration = os.path.join(data_dir, 'local-configuration')
         
         # Ask the packer to load pack descriptions so it will be able to
         # give us which pack directories must be read (with good order)
+        packer.load_pack_descriptions(core_configuration, 'core')
         packer.load_pack_descriptions(global_configuration, 'global')
         packer.load_pack_descriptions(zone_configuration, 'zone')
         packer.load_pack_descriptions(local_configuration, 'local')
