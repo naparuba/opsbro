@@ -31,4 +31,4 @@ RUN        opsbro packs parameters set local.mail.enabled true
 # Copy the new checks that will fail
 ADD        test/test-files/test-mail-handlers   /var/lib/opsbro/global-configuration/packs/
 
-ENTRYPOINT    test/test_feature_email_handlers.sh
+ENTRYPOINT    test/test_module_email_handlers.sh

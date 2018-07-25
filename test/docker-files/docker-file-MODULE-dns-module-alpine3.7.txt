@@ -22,4 +22,4 @@ WORKDIR    /root/opsbro-oss
 RUN        python setup.py install
 
 
-ENTRYPOINT     test/test_feature_dns_module.sh
+ENTRYPOINT     test/test_module_dns.sh

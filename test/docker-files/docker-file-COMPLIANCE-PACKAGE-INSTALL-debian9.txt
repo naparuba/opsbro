@@ -26,4 +26,4 @@ RUN        opsbro  packs overload global.nginx
 # Copy the new compliance value
 ADD        test/test-files/test-compliance-package-install/compliance/install-nginx.yml   /var/lib/opsbro/local-configuration/packs/nginx/compliance/
 
-ENTRYPOINT     test/test_feature_compliance-package-install.sh
+ENTRYPOINT     test/test_compliance-package-install.sh

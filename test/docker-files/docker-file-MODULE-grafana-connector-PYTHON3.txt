@@ -35,4 +35,4 @@ RUN       python setup.py install
 EXPOSE    3000:3000
 
 
-ENTRYPOINT     test/test_feature_grafana_connector.sh
+ENTRYPOINT     test/test_module_grafana_connector.sh

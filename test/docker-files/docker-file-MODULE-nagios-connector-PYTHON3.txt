@@ -73,4 +73,4 @@ RUN        opsbro  packs parameters set local.shinken.reload_command        "/et
 RUN        opsbro  packs parameters set local.shinken.monitoring_tool       nagios
 
 
-ENTRYPOINT     test/test_feature_nagios_connector.sh
+ENTRYPOINT     test/test_module_nagios_connector.sh

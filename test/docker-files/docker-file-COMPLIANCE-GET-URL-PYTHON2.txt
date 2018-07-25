@@ -26,4 +26,4 @@ RUN        opsbro  packs overload global.linux
 # Copy the new compliance value
 ADD        test/test-files/test-compliance-get-uri/compliance/install-cockroachdb.yml   /var/lib/opsbro/local-configuration/packs/linux/compliance/
 
-ENTRYPOINT     test/test_feature_compliance-get-url.sh
+ENTRYPOINT     test/test_compliance-get-url.sh

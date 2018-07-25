@@ -93,3 +93,42 @@ function assert_cannot_ping {
     fi
     echo "OK we cannot ping $1"
 }
+
+
+function assert_in_file {
+    LINE="$1"
+    FILE="$2"
+    printf "ASSERTING LINE:    %-30s in the file   %-30s :" "$LINE" "$FILE"
+    grep "$LINE" "$FILE" >/dev/null
+    if [ $? != 0 ];then
+        printf "\n"
+        echo "ERROR: cannot find the line $LINE in the agent file $FILE"
+        cat $FILE
+        exit 2
+    fi
+    printf " √\n"
+}
+
+
+function assert_directory_missing {
+    DIRECTORY="$1"
+    printf "ASSERTING non exist directory: %-30s:" "$DIRECTORY"
+    if [ -d $DIRECTORY ];then
+       printf "\n"
+       echo "ERROR: The directory $DIRECTORY does exists, and it is not normal"
+       exit 2
+    fi
+    printf " √\n"
+}
+
+
+function assert_directory_exists {
+    DIRECTORY="$1"
+    printf "ASSERTING exist directory: %-30s:" "$DIRECTORY"
+    if [ ! -d $DIRECTORY ];then
+       printf "\n"
+       echo "ERROR: The directory $DIRECTORY does not exists, and it is not normal"
+       exit 2
+    fi
+    printf " √\n"
+}

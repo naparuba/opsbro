@@ -13,9 +13,6 @@ RUN        /apt_get_install   python3-apt
 # Set python3 as default python
 RUN        update-alternatives --install /usr/bin/python python /usr/bin/python3 1
 
-# DNS: need dig
-RUN        /apt_get_install  dnsutils
-
 ADD        . /root/opsbro-oss
 
 
@@ -24,4 +21,4 @@ WORKDIR    /root/opsbro-oss
 RUN        python setup.py install
 
 
-ENTRYPOINT     test/test_module_dns.sh
+ENTRYPOINT     test/test_feature_config_edit.sh

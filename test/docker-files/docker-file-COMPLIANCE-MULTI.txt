@@ -23,4 +23,4 @@ RUN        opsbro  packs overload global.linux
 RUN        rm /var/lib/opsbro/local-configuration/packs/linux/compliance/passwd.yml
 ADD        test/test-files/test-compliance-multi/compliance/passwd_and_shadow.yml   /var/lib/opsbro/local-configuration/packs/linux/compliance/
 
-ENTRYPOINT     test/test_feature_compliance-multi.sh
+ENTRYPOINT     test/test_compliance-multi.sh

@@ -22,4 +22,4 @@ RUN        opsbro  packs overload global.linux
 # Copy the new compliance value
 ADD        test/test-files/test-compliance-file-rights/compliance/passwd.yml   /var/lib/opsbro/local-configuration/packs/linux/compliance/
 
-ENTRYPOINT     test/test_feature_compliance-file-rights.sh
+ENTRYPOINT     test/test_compliance-file-rights.sh
