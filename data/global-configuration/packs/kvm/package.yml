@@ -1,20 +1,19 @@
-name: dns
+name: kvm
 topics:
-    - service discovery
+    - automatic detection
 types:
     - pack
 version: "1.0"
 homepage: ""
 author: Shinken Solutions
-description:  Module to allow your daemon to answer to DNS queries
+description: Look at KVM hypervisor information
 contributors:
     - Jean Gabès
 repository: ""
 keywords:
     - pack
-    - module
-    - dns
-
+    - hypervisor
+    - kvm
 dependencies:
     core: ">=1.0"
 license: ""

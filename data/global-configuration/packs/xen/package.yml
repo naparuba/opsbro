@@ -1,0 +1,19 @@
+name: xen
+topics:
+    - automatic detection
+types:
+    - pack
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description: Look at Xen hypervisor information
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - hypervisor
+    - xen
+dependencies:
+    core: ">=1.0"
+license: ""

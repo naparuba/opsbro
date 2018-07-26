@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+# Load common shell functions
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $MYDIR/common_shell_functions.sh
+
+
 /etc/init.d/opsbro start
 
 echo "Starting to test APIS"

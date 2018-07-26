@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
-echo "Starting to test STATSD module"
+# Load common shell functions
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $MYDIR/common_shell_functions.sh
+
+
+print_header "Starting to test STATSD module"
 
 # Enable STATSD module
 opsbro agent parameters add groups statsd-listener
@@ -24,4 +29,4 @@ if [ $? != 0 ]; then
     exit 2
 fi
 
-echo "opsbro Statsd module is OK"
+print_header "opsbro Statsd module is OK"

@@ -70,4 +70,4 @@ if [ $CASE == "NODE2" ]; then
 fi
 
 
-echo "EVENT sharing is done"
+print_header "EVENT sharing is done"

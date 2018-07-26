@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 
+# Load common shell functions
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $MYDIR/common_shell_functions.sh
+
+
 # Start daemon
 /etc/init.d/opsbro start
 
 
-echo "Starting to test Compliance"
+print_header "Starting to test Compliance"
 touch /tmp/install_cock
 
 
@@ -51,6 +56,6 @@ echo "HISTORY"
 echo "$HISTORY"
 
 printf "\n ****** Result ***** \n"
-echo "OK:  Compliance in enforcing mode is working"
+print_header "OK:  Compliance in enforcing mode is working"
 
 exit 0

@@ -40,7 +40,7 @@ if [ "$NODE_NB" == "3" ]; then
 fi
 
 sleep 20
-echo "Waiting done, everyone should be there"
+print_header "Waiting done, everyone should be there"
 
 
 wait_member_display_name_with_timeout "node-1" 10

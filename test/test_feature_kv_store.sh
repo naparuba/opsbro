@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+# Load common shell functions
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $MYDIR/common_shell_functions.sh
+
+
 /etc/init.d/opsbro start
 
 NODE_UUID=$(opsbro agent print uuid)
@@ -34,4 +39,4 @@ if [ $RES != 0 ];then
    exit 2
 fi
 
-echo "OK: CLI kv store"
+print_header "OK: CLI kv store"

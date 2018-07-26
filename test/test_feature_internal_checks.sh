@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 
+# Load common shell functions
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $MYDIR/common_shell_functions.sh
+
 
 /etc/init.d/opsbro start
 
 sleep 60
 
-echo "Starting to test Internal test (dummy check)"
+print_header "Starting to test Internal test (dummy check)"
 
 
 opsbro monitoring state | grep 'CRITICAL OUTPUT'
@@ -26,4 +30,4 @@ fi
 
 echo "$HISTORY"
 
-echo "OK:  internal checks are working"
+print_header "OK:  internal checks are working"

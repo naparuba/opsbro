@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# Load common shell functions
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $MYDIR/common_shell_functions.sh
+
+
+
 /etc/init.d/postfix start
 
 # We do force a compliance error
@@ -9,7 +15,7 @@ chmod 777 /etc/passwd
 
 sleep 5
 
-echo "Starting to test MAIL handlers"
+print_header "Starting to test MAIL handlers"
 
 NB_EMAILS_DEFERED=$(find /var/spool/postfix/defer* -type f | wc -l)
 NB_EMAILS_ACTIVE=$(find /var/spool/postfix/active -type f | wc -l)
@@ -21,7 +27,7 @@ if [ $NB_EMAILS_DEFERED -eq 0 ] && [ $NB_EMAILS_ACTIVE -eq 0 ]; then
     exit 2
 fi
 
-echo "Emails: Defered:$NB_EMAILS_DEFERED   Active:$NB_EMAILS_ACTIVE "
+print_header "Emails: Defered:$NB_EMAILS_DEFERED   Active:$NB_EMAILS_ACTIVE "
 
 echo "DEFERED"
 cat /var/spool/postfix/defer*/*/*
@@ -36,4 +42,4 @@ if [ $? != 0 ];then
    cat /var/log/opsbro/module.mail.log
 fi
 
-echo "Email handler OK"
+print_header "Email handler OK"

@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+# Load common shell functions
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $MYDIR/common_shell_functions.sh
+
+
 /etc/init.d/opsbro start
 
 
@@ -15,7 +20,7 @@ if [ $? != 0 ];then
 fi
 
 
-echo "Starting to test Generator"
+print_header "Starting to test Generator"
 
 echo "**********************************************"
 cat /tmp/authorized_keys.txt
@@ -65,4 +70,4 @@ fi
 
 echo "$HISTORY"
 
-echo "OK:  Generators are working"
+print_header "OK:  Generators are working"

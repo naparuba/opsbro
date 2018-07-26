@@ -1,22 +1,20 @@
-name: docker
+name: dns-listener
 topics:
     - service discovery
-    - metrology
 types:
-    - module
-    - cli
+    - pack
 version: "1.0"
 homepage: ""
 author: Shinken Solutions
-description: Module & CLI about interacting and monitor Docker
+description:  Module to allow your daemon to answer to DNS queries
 contributors:
     - Jean Gabès
 repository: ""
 keywords:
+    - pack
     - module
-    - cli
-    - docker
+    - dns
+
 dependencies:
     core: ">=1.0"
 license: ""
-

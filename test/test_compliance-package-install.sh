@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
-echo "Starting to test Compliance for nginx install"
+# Load common shell functions
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $MYDIR/common_shell_functions.sh
+
+
+print_header "Starting to test Compliance for nginx install"
 
 
 # Start daemon
@@ -43,5 +48,5 @@ fi
 
 opsbro compliance state
 
-echo "nginx install compliance rule is OK"
+print_header "nginx install compliance rule is OK"
 exit 0

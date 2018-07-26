@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
-echo "Starting to test Compliance for mongodb install with repository"
+# Load common shell functions
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $MYDIR/common_shell_functions.sh
+
+
+print_header "Starting to test Compliance for mongodb install with repository"
 
 
 # Start daemon
@@ -31,5 +36,5 @@ fi
 opsbro compliance state
 opsbro compliance history
 
-echo "Mongodb install by repository compliance rule is OK"
+print_header "Mongodb install by repository compliance rule is OK"
 exit 0

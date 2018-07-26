@@ -1,0 +1,19 @@
+name: uml
+topics:
+    - automatic detection
+types:
+    - pack
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description: Look at User Mode Linux hypervisor information
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - hypervisor
+    - uml
+dependencies:
+    core: ">=1.0"
+license: ""

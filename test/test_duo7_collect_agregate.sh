@@ -95,4 +95,4 @@ wait_event_with_timeout "END-NODE2" 120
 
 sleep 10
 
-echo "Agregator module test di done"
+print_header "Agregator module test di done"

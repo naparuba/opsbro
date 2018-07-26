@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
-echo "Starting to test Compliance for user existence"
+# Load common shell functions
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $MYDIR/common_shell_functions.sh
+
+
+print_header "Starting to test Compliance for user existence"
 
 
 echo "*************** User creation *****************"
@@ -43,7 +48,7 @@ fi
 if [ "$CAN_MOD"  == "TRUE" ]; then
 
 
-  echo "*************** User modification *****************"
+  print_header "*************** User modification *****************"
   # Now modify the user and expect the shinken user to get back to normal
   usermod --comment "Nop, pas OK" shinken
   if [ $? != 0 ];then
@@ -63,4 +68,4 @@ fi
 
 
 printf "\n ****** Result ***** \n"
-echo "OK:  Compliance in enforcing mode is working"
+print_header "OK:  Compliance in enforcing mode is working"

@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+# Load common shell functions
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $MYDIR/common_shell_functions.sh
+
 
 
 #
@@ -61,7 +65,7 @@ if [ $? != 0 ];then
 fi
 
 
-echo "OK completion seems to be working"
+print_header "OK completion seems to be working"
 get_completions 'opsbro agent inf '
 exit 0
 

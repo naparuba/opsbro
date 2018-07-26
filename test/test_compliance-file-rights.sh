@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
-echo "Starting to test Compliance"
+# Load common shell functions
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $MYDIR/common_shell_functions.sh
+
+
+print_header "Starting to test Compliance"
 chmod 777 /etc/passwd
 chown news:news /etc/passwd
 
@@ -67,4 +72,4 @@ echo "HISTORY"
 echo "$HISTORY"
 
 printf "\n ****** Result ***** \n"
-echo "OK:  Compliance in enforcing mode is working: $OUT is 644/root/root"
+print_header "OK:  Compliance in enforcing mode is working: $OUT is 644/root/root"

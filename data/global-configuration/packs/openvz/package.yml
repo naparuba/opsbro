@@ -1,0 +1,19 @@
+name: openvz
+topics:
+    - automatic detection
+types:
+    - pack
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description: Look at OpenVZ hypervisor information
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - hypervisor
+    - openvz
+dependencies:
+    core: ">=1.0"
+license: ""

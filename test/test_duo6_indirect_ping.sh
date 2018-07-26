@@ -82,4 +82,4 @@ wait_event_with_timeout "END-NODE2" 60
 
 sleep 10
 
-echo "INDIRECT PING is done"
+print_header "INDIRECT PING is done"

@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# Load common shell functions
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $MYDIR/common_shell_functions.sh
+
+
+
 # Start redis
 redis-server&
 
@@ -37,6 +43,7 @@ fi
 
 
 opsbro collectors show redis
-echo "Redis is OK"
+
+print_header "Redis is OK"
 
 

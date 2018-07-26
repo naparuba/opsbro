@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 
+# Load common shell functions
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $MYDIR/common_shell_functions.sh
+
 
 /etc/init.d/opsbro start
 
 sleep 60
 
-echo "Starting to test Nagios test (dummy check)"
+print_header "Starting to test Nagios test (dummy check)"
 
 
 echo "Checking nagios check outputs"
@@ -18,4 +22,4 @@ if [ $? != 0 ]; then
 fi
 
 
-echo "OK:  nagios checks are working"
+print_header "OK:  nagios checks are working"

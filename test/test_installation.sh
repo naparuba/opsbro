@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+# Load common shell functions
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $MYDIR/common_shell_functions.sh
+
+
 
 # Travis: only need to run the installation once, it it not link to a specific python version. They don't need to use CPU for nothing ;)
 if [ "X$TRAVIS_PYTHON_VERSION" == "X2.6" ]; then
@@ -7,7 +12,7 @@ if [ "X$TRAVIS_PYTHON_VERSION" == "X2.6" ]; then
    exit 0
 fi
 
-echo "Launching installations tests for SUITE: $TEST_SUITE"
+print_header "Launching installations tests for SUITE: $TEST_SUITE"
 
 cd ..
 

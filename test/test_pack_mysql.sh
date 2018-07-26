@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+# Load common shell functions
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $MYDIR/common_shell_functions.sh
+
+
 
 # Fix: centos do not have mysqld on the PATH
 export PATH=/usr/libexec/:$PATH
@@ -46,6 +51,7 @@ fi
 
 
 opsbro collectors show mysql
-echo "Mysql is OK"
+
+print_header "Mysql is OK"
 
 

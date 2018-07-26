@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 
+# Load common shell functions
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $MYDIR/common_shell_functions.sh
 
-echo "Starting to test Nagios export (dummy check)"
+
+
+print_header "Starting to test Nagios export (dummy check)"
 
 /etc/init.d/opsbro start
 
@@ -55,4 +60,4 @@ if [ $EXPORTED_CHECKS == 0 ]; then
     exit 2
 fi
 
-echo "OK:  nagios cfg export is working as expected (node is exported into CFG and checks are launched and received by Nagios)"
+print_header "OK:  nagios cfg export is working as expected (node is exported into CFG and checks are launched and received by Nagios)"

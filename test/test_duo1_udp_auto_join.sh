@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+# Load common shell functions
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $MYDIR/common_shell_functions.sh
+
 CASE=$1
 
 test/set_network_simulated_type "WAN"

@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 
-echo "Starting to test DNS module"
+# Load common shell functions
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $MYDIR/common_shell_functions.sh
+
+
+
+print_header "Starting to test DNS module"
 
 # Start it
 /etc/init.d/opsbro --debug start
@@ -9,7 +15,7 @@ echo "Starting to test DNS module"
 # Enable DNS module
 opsbro agent parameters add groups dns-listener
 
-
+print_header "Wait for dns relay"
 opsbro compliance wait-compliant "Install local dns relay" --timeout=60
 if [ $? != 0 ];then
    echo "ERROR: the local dns cannot be installed"
@@ -19,7 +25,7 @@ if [ $? != 0 ];then
    cat /var/log/opsbro/crash.log 2>/dev/null
 fi
 
-
+print_header "Checking module is working"
 # Now look we are ready
 # Look which addr we dhould match
 ADDR=$(opsbro agent print public-addr)
@@ -65,4 +71,4 @@ if [ $? != 0 ]; then
     exit 2
 fi
 
-echo "opsbro DNS module is OK"
+print_header "opsbro DNS module is OK"

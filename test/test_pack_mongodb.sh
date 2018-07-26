@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# Load common shell functions
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $MYDIR/common_shell_functions.sh
+
+
+
 # Start mongodb
 nohup mongod -f /etc/mongod.conf &
 
@@ -28,6 +34,7 @@ if [ $RES != "True" ]; then
 fi
 
 opsbro collectors show mongodb
-echo "Mongodb is OK"
+
+print_header "Mongodb is OK"
 
 

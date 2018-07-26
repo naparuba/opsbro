@@ -28,7 +28,7 @@ function wait_step_event {
     wait_event_with_timeout "$1-NODE-CLIENT" 180
 }
 
-echo "$CASE starts to run `date` $TRAVIS"
+print_header "$CASE starts to run `date` $TRAVIS"
 
 
 # Set a valid display name for debug

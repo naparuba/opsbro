@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 
+# Load common shell functions
+MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+. $MYDIR/common_shell_functions.sh
 
-echo "Starting to test Grafana"
+
+
+print_header "Starting to test Grafana"
 
 # We will modify a pack, so overload it first
 opsbro  packs overload global.grafana
@@ -22,7 +27,7 @@ sleep 5
 /etc/init.d/grafana-server stop
 
 # We need an API key, insert it
-echo "Creating the API key into th SQLITE database"
+print_header "Creating the API key into th SQLITE database"
 sqlite3 /var/lib/grafana/grafana.db "INSERT INTO 'api_key' VALUES(1,1,'OpsBro','6799edffb8d523e4cbbbc7cea83269576689aeffdd7a88aa775622bacf8ac0bd653a333b94a525d4394a34c9ee1f41bbab25','Admin','2017-09-15 20:00:37','2017-09-15 20:00:37');"
 
 if [ $? != 0 ]; then
@@ -35,7 +40,7 @@ fi
 
 sleep 5
 
-echo "Checking for authentification"
+print_header "Checking for authentification"
 OUT=$(curl -s -H "Authorization: Bearer eyJrIjoibmhIR0FuRnB0MTN6dFBMTlNMZDZKWjJXakFuR0I2Wk4iLCJuIjoiT3BzQnJvIiwiaWQiOjF9" http://localhost:3000/api/dashboards/home)
 
 printf "$OUT"|grep --color timepicker
@@ -57,7 +62,7 @@ fi
 # Wait a bit for the module to work
 sleep 10
 
-echo "Checking if the data source is created, with NAME--opsbro--NODE_UUID as name"
+print_header "Checking if the data source is created, with NAME--opsbro--NODE_UUID as name"
 
 curl -s -H "Authorization: Bearer eyJrIjoibmhIR0FuRnB0MTN6dFBMTlNMZDZKWjJXakFuR0I2Wk4iLCJuIjoiT3BzQnJvIiwiaWQiOjF9" http://localhost:3000/api/datasources | grep --color opsbro
 if [ $? != 0 ]; then
@@ -68,4 +73,4 @@ if [ $? != 0 ]; then
 fi
 
 
-echo "OK:  grafana export is working"
+print_header "OK:  grafana export is working"
