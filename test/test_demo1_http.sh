@@ -42,12 +42,19 @@ if [ $CASE == "NODE-HAPROXY" ]; then
 fi
 
 
-# Client node will need to expose nodes with DNS
+# Client node will need to expose nodes with DNS, and use the standard way to hook dns queries
 if [ $CASE == "NODE-CLIENT" ]; then
-   opsbro packs overload global.dns
-   opsbro packs parameters set local.dns.port  53
    opsbro agent parameters add groups dns-listener
-   printf "nameserver 127.0.0.1\n" > /etc/resolv.conf
+
+   print_header "Wait for dns relay"
+   opsbro compliance wait-compliant "Install local dns relay" --timeout=60
+   if [ $? != 0 ];then
+      echo "ERROR: the local dns cannot be installed"
+      opsbro generators state
+      opsbro generators history
+      cat /var/log/opsbro/generator.log
+      cat /var/log/opsbro/crash.log 2>/dev/null
+   fi
 fi
 
 
