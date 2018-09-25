@@ -257,8 +257,8 @@ fi  # end of SQLITE
 # Some distro do not have access to leveldb anymore...
 if [ "X$SKIP_LEVELDB" == "X" ];then
 
-    # Note: compilation of leveldb can be long
-    opsbro compliance launch 'Install Leveldb' --timeout=180
+    # Note: compilation of leveldb can be long (and depedency download too)
+    opsbro compliance launch 'Install Leveldb' --timeout=300
     if [ $? != 0 ];then
        echo "ERROR: Cannot install leveldb"
        opsbro compliance state
