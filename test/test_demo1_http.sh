@@ -65,6 +65,14 @@ echo "============================== [`date`] Launching daemon =================
 
 echo "Daemon started `date`"
 
+opsbro agent info
+if [ $? != 0 ];then
+   echo "ERROR: `date` the daemon was not started"
+   cat /var/log/opsbro/daemon.log
+   cat /var/log/opsbro/crash.log 2>/dev/null
+   exit 2
+fi
+
 # For debug purpose
 show_my_system_ip
 
