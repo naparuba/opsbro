@@ -79,6 +79,7 @@ if [ $? != 0 ];then
    echo "ERROR: `date` the automatic detect call did fail after 15s"
    cat /var/log/opsbro/gossip.log
    cat /var/log/opsbro/daemon.log
+   cat /var/log/opsbro/crash.log 2>/dev/null
    exit 2
 fi
 
@@ -138,6 +139,8 @@ if [ $CASE == "NODE-HTTP-1" ] || [ $CASE == "NODE-HTTP-2" ]; then
       echo "ERROR: cannot send a event ENDING-$CASE"
       cat /var/log/opsbro/daemon.log
       cat /var/log/opsbro/gossip.log
+      cat /var/log/opsbro/crash.log 2>/dev/null
+      exit 2
    fi
    wait_step_event "ENDING"
 
@@ -179,6 +182,7 @@ if [ $CASE == "NODE-HAPROXY" ]; then
     opsbro detectors wait-group 'haproxy'
     if [ $? != 0 ];then
        echo "ERROR: the haproxy group was not detected"
+       cat /var/log/opsbro/crash.log 2>/dev/null
        exit 2
     fi
 
@@ -195,6 +199,7 @@ if [ $CASE == "NODE-HAPROXY" ]; then
           ps axjf
           cat /var/log/opsbro/generator.log
           cat /etc/haproxy/haproxy.cfg
+          cat /var/log/opsbro/crash.log 2>/dev/null
           exit 2
        fi
     fi
@@ -221,6 +226,7 @@ if [ $CASE == "NODE-HAPROXY" ]; then
          echo "HAPROXY `date` Cannot reach real HTTP servers from the local HAPROXY: $OUT"
          cat /var/log/opsbro/generator.log
          cat /etc/haproxy/haproxy.cfg
+         cat /var/log/opsbro/crash.log 2>/dev/null
          exit 2
     fi
 
@@ -252,6 +258,7 @@ if [ $CASE == "NODE-HAPROXY" ]; then
        echo "$STATS"
        cat /var/log/opsbro/generator.log
        cat /etc/haproxy/haproxy.cfg
+       cat /var/log/opsbro/crash.log 2>/dev/null
        exit 2
     fi
 
