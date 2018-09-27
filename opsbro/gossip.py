@@ -37,6 +37,8 @@ class NODE_STATES(object):
     ALIVE = 'alive'
     DEAD = 'dead'
     LEAVE = 'leave'
+    SUSPECT = 'suspect'
+    UNKNOWN = 'unknown'
 
 
 # Main class for a Gossip cluster
@@ -457,6 +459,10 @@ class Gossip(BaseManager):
         # if bootstrap, do not export to other nodes or modules
         if bootstrap:
             return
+        
+        # Save this change into our history
+        self.__add_node_state_change_history_entry(node, NODE_STATES.UNKNOWN, node['state'])
+        
         # Warn network elements
         self.stack_alive_broadcast(node)
         # And finally callback other part of the code about this
@@ -533,7 +539,7 @@ class Gossip(BaseManager):
     def set_suspect(self, suspect):
         incarnation = suspect['incarnation']
         uuid = suspect['uuid']
-        state = 'suspect'
+        state = NODE_STATES.SUSPECT
         
         # Maybe we didn't even have this nodes in our list?
         if uuid not in self.nodes:
@@ -721,7 +727,7 @@ class Gossip(BaseManager):
                 self.set_alive(node)
             # note: for dead, we never believe others for dead, we set suspect
             # and wait for timeout to finish
-            elif state == NODE_STATES.DEAD or state == 'suspect':
+            elif state == NODE_STATES.DEAD or state == NODE_STATES.SUSPECT:
                 self.set_suspect(node)
             elif state == NODE_STATES.LEAVE:
                 self.set_leave(node)
@@ -1378,7 +1384,7 @@ class Gossip(BaseManager):
         with self.nodes_lock:
             for node in self.nodes.values():
                 # Only look at suspect nodes of course...
-                if node['state'] != 'suspect':
+                if node['state'] != NODE_STATES.SUSPECT:
                     continue
                 stime = node.get('suspect_time', now)
                 if stime < (now - suspect_timeout):
@@ -1387,7 +1393,7 @@ class Gossip(BaseManager):
                     # warn internal elements
                     self.node_did_change(node['uuid'])
                     # Save this change into our history
-                    self.__add_node_state_change_history_entry(node, 'suspect', NODE_STATES.DEAD)
+                    self.__add_node_state_change_history_entry(node, NODE_STATES.SUSPECT, NODE_STATES.DEAD)
                     # and external ones
                     self.stack_dead_broadcast(node)
         
@@ -1435,7 +1441,7 @@ class Gossip(BaseManager):
     def create_suspect_msg(self, node):
         r = self.__get_node_basic_msg(node)
         r['type'] = 'suspect'
-        r['state'] = 'suspect'
+        r['state'] = NODE_STATES.SUSPECT
         return r
     
     

@@ -18,11 +18,22 @@ from opsbro.cli_display import print_h1, print_h2
 from opsbro.threadmgr import threader
 from opsbro.jsonmgr import jsoner
 from opsbro.util import my_sort, my_cmp
+from opsbro.gossip import NODE_STATES
 
 NO_ZONE_DEFAULT = '(no zone)'
 
-NODE_STATE_COLORS = {'alive': 'green', 'dead': 'red', 'suspect': 'yellow', 'leave': 'cyan'}
-NODE_STATE_PREFIXS = {'alive': CHARACTERS.check, 'dead': CHARACTERS.cross, 'suspect': CHARACTERS.double_exclamation, 'leave': CHARACTERS.arrow_bottom}
+NODE_STATE_COLORS = {NODE_STATES.ALIVE  : 'green',
+                     NODE_STATES.DEAD   : 'red',
+                     NODE_STATES.SUSPECT: 'yellow',
+                     NODE_STATES.LEAVE  : 'cyan',
+                     NODE_STATES.UNKNOWN: 'grey',
+                     }
+NODE_STATE_PREFIXS = {NODE_STATES.ALIVE  : CHARACTERS.check,
+                      NODE_STATES.DEAD   : CHARACTERS.cross,
+                      NODE_STATES.SUSPECT: CHARACTERS.double_exclamation,
+                      NODE_STATES.LEAVE  : CHARACTERS.arrow_bottom,
+                      NODE_STATES.UNKNOWN: CHARACTERS.arrow_bottom,
+                      }
 
 
 ############# ********************        MEMBERS management          ****************###########

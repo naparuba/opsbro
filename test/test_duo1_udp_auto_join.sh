@@ -6,6 +6,8 @@ MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 CASE=$1
 
+print_header "Set slow wan"
+
 test/set_network_simulated_type "WAN"
 
 # If node2: wait and quite
@@ -15,12 +17,15 @@ opsbro agent parameters set display_name "$CASE"
 
 /etc/init.d/opsbro start
 
+print_header "Start auto detect"
+
 opsbro gossip detect --auto-join --timeout=15
 
 if [ $CASE == "NODE2" ]; then
-    echo "Case node2, just waiting for the other node to join us then exit"
+    print_header "Case node2, just waiting for the other node to join us then exit"
     ip addr show
     # Wait for 2 nodes
+    print_header "Wait for NODE1 in members"
     opsbro gossip wait-members --display-name "NODE1" --timeout 60
     if [ $? != 0 ]; then
        echo "ERROR: NODE1 is not present after 60s"
@@ -32,6 +37,19 @@ if [ $CASE == "NODE2" ]; then
     printf "Node2 gossip view\n"
     opsbro gossip members
 
+    print_header "Check history"
+    HISTORY=$(opsbro gossip history)
+    echo "$HISTORY" | grep NODE1
+    if [ $? != 0 ];then
+       echo "ERROR: no NODE1 entry in the gossip history"
+       echo "$HISTORY"
+       cat /var/log/opsbro/daemon.log
+       cat /var/log/opsbro/gossip.log
+       cat /var/log/opsbro/crash.log 2>/dev/null
+       exit 2
+    fi
+
+    print_header "Send EVENT and wait for end"
     # Warn the first node we are done
     opsbro gossip events add 'NODE2-END'
     # Be sure we are sending it to the other node
@@ -49,7 +67,7 @@ if [ $CASE == "NODE2" ]; then
     exit 0
 fi
 
-# Case 1: try to detect and join other node
+print_header "Case 1: try to detect and join other node"
 
 # Sleep a bit to be sure that node2 is up and ready to answer us
 ip addr show
@@ -66,7 +84,19 @@ if [ $? != 0 ]; then
    exit 2
 fi
 
+print_header "Check history"
+HISTORY=$(opsbro gossip history)
+echo "$HISTORY" | grep NODE2
+if [ $? != 0 ];then
+   echo "ERROR: no NODE2 entry in the gossip history"
+   echo "$HISTORY"
+   cat /var/log/opsbro/daemon.log
+   cat /var/log/opsbro/gossip.log
+   cat /var/log/opsbro/crash.log 2>/dev/null
+   exit 2
+fi
 
+print_header "Send EVENT and wait for end"
 # Warn the first node we are done
 opsbro gossip events add 'NODE1-END'
 # Be sure we are sending it to the other node
