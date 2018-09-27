@@ -41,10 +41,10 @@ def exec_command(cmd):
     import subprocess
     # If we have a list, we should not call with a shell
     shell = False if isinstance(cmd, list) else True
-    close_fds = True
-    # windows do not manage close fds
-    if os.name == 'nt':
-        close_fds = False
+    # close_fds: I used to set True on unix (False on Windows because it do not manage it)
+    # but it's just tooooooo cpu consuming, calling 65K time close()
+    # so... nop
+    close_fds = False
     # There is no setsid function on windows
     preexec_fn = getattr(os, 'setsid', None)
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=close_fds, preexec_fn=preexec_fn, shell=shell)
