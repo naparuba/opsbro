@@ -133,7 +133,7 @@ def get_not_critical_request_errors():
 
 
 def get_request_errors():
-    request_errors = (URLError, socket.timeout)
+    request_errors = (URLError, socket.timeout, socket.error)
     return request_errors
 
 

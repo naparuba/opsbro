@@ -139,7 +139,11 @@ class AnyAgent(object):
         except get_request_errors() as exp:
             logger.error(exp)
             return
-    
+        agent_state = wait_for_agent_stopped()
+        if agent_state != AGENT_STATE_STOPPED:
+            logger.error('The temporary agent did not stopped in a valid time. Currently: %s' % agent_state)
+            return
+
     
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.tmp_agent is not None:
@@ -186,6 +190,30 @@ class AnyAgent(object):
             agent_state = wait_for_agent_started(visual_wait=True, wait_for_spawn=True)  # note: we wait for spawn as it can take some few seconds before the unix socket is available
         if agent_state == AGENT_STATE_STOPPED:
             raise Exception('Cannot have the agent, even a temporary one')
+
+
+def wait_for_agent_stopped(timeout=5, visual_wait=False):
+    spinners = itertools.cycle(CHARACTERS.spinners)
+    start = NOW.monotonic()  # note: thanks to monotonic, we don't care about the system get back in time during this loop
+    agent_state = 'unknown'
+    while NOW.monotonic() - start < timeout:
+        try:
+            agent_state = get_opsbro_json('/agent/state')
+        except get_request_errors():
+            return 'stopped'
+        if visual_wait:
+            cprint('\r %s ' % next(spinners), color='blue', end='')  # note: spinners.next() do not exists in python3
+            cprint(' agent is still ', end='')
+            cprint('stopping', color='yellow', end='')
+            sys.stdout.flush()
+        time.sleep(0.1)
+    if visual_wait:
+        # Clean what we did put before
+        cprint('\r', end='')
+        cprint(' ' * 100, end='')
+        cprint('\r', end='')
+        sys.stdout.flush()
+    return agent_state
 
 
 # Maybe the agent is initializing or not even started (as unix socket).
