@@ -1,0 +1,20 @@
+name: core-cli-raft
+types:
+    - cli
+topics:
+    - service discovery
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description:  CLI for nodes raft cluster
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - cli
+    - raft
+    - cluster
+
+dependencies:
+    core: ">=1.0"
+license: ""

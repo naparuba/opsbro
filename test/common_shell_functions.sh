@@ -132,3 +132,20 @@ function assert_directory_exists {
     fi
     printf " √\n"
 }
+
+
+# In this function, we are exiting the TEST, but first look
+# if the crash.log file is not present. If so, maybe the daemon did crash in a way,
+# and if so, display it and exit BAD because this is not tolerated
+function exit_if_no_crash {
+    print_header "Ending"
+
+    if [ -f /var/log/opsbro/crash.log ];then
+       echo "ERROR: BIG CRASH"
+       cat /var/log/opsbro/crash.log
+       exit 2
+    fi
+    print " - $1\n"
+    printf " - Clean exit: OK √\n"
+    exit 0
+}

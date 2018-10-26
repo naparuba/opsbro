@@ -28,10 +28,8 @@ class NoElementsExceptions(Exception):
 def ok_nodes(group='', if_none=''):
     res = deque()
     if group == '':
-        with gossiper.nodes_lock:
-            nodes = copy.copy(gossiper.nodes)  # just copy the dict, not the nodes themselves
         res = []
-        for n in nodes.values():
+        for n in gossiper.nodes.values():  # note: nodes is a static dict
             if n['state'] != 'alive':
                 continue
             res.append(n)
@@ -142,10 +140,8 @@ class Generator(object):
             self.template = None
             return
         
-        # copy objects because they can move
-        node = copy.copy(gossiper.nodes[gossiper.uuid])
-        with gossiper.nodes_lock:
-            nodes = copy.copy(gossiper.nodes)  # just copy the dict, not the nodes themselves
+        # NOTE: nodes is a static object, node too (or atomic change)
+        node = gossiper.nodes[gossiper.uuid]
         
         # Now try to make it a jinja template object
         try:
@@ -165,7 +161,7 @@ class Generator(object):
         
         # Now try to render all of this with real objects
         try:
-            self.output = self.template.render(nodes=nodes, node=node, ok_nodes=ok_nodes)
+            self.output = self.template.render(nodes=gossiper.nodes, node=node, ok_nodes=ok_nodes)
         except NoElementsExceptions:
             self.set_error('No nodes did match filters for template : %s %s' % (self.g['template'], self.name))
             self.output = None

@@ -60,4 +60,4 @@ if [ $EXPORTED_CHECKS == 0 ]; then
     exit 2
 fi
 
-print_header "OK:  nagios cfg export is working as expected (node is exported into CFG and checks are launched and received by Nagios)"
+exit_if_no_crash "OK:  nagios cfg export is working as expected (node is exported into CFG and checks are launched and received by Nagios)"

@@ -68,3 +68,5 @@ if [ $RES != "True" ]; then
    echo "ERROR: the group docker-container is missing!"
    exit 2
 fi
+
+exit_if_no_crash "Tarball execution"

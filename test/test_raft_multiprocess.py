@@ -7,7 +7,7 @@ import threading
 from multiprocessing import Process, Value, Array
 
 from opsbro_test import *
-from opsbro.raft import RaftNode
+from opsbro.raft_old import RaftNode
 from opsbro.log import cprint
 from opsbro.util import PY3
 if PY3:

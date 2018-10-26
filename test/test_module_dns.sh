@@ -71,4 +71,4 @@ if [ $? != 0 ]; then
     exit 2
 fi
 
-print_header "opsbro DNS module is OK"
+exit_if_no_crash "opsbro DNS module is OK"

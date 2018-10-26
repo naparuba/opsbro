@@ -67,5 +67,6 @@ fi
 
 print_header "OK completion seems to be working"
 get_completions 'opsbro agent inf '
-exit 0
+
+exit_if_no_crash "Ok completion"
 

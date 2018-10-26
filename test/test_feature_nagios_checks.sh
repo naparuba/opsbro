@@ -22,4 +22,4 @@ if [ $? != 0 ]; then
 fi
 
 
-print_header "OK:  nagios checks are working"
+exit_if_no_crash "OK:  nagios checks are working"

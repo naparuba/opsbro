@@ -8,7 +8,7 @@ from multiprocessing import cpu_count
 NB_CPUS = cpu_count()
 
 from opsbro_test import *
-from opsbro.raft import RaftNode
+from opsbro.raft_old import RaftNode
 from opsbro.log import cprint
 
 

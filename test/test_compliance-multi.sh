@@ -72,4 +72,4 @@ echo "HISTORY"
 echo "$HISTORY"
 
 printf "\n ****** Result ***** \n"
-print_header "OK:  Compliance in enforcing mode is working: $OUT is 644/root/root"
+exit_if_no_crash "OK:  Compliance in enforcing mode is working: $OUT is 644/root/root"

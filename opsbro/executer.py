@@ -123,11 +123,11 @@ class Executer(object):
         uid = libuuid.uuid1().get_hex()
         logger.debug('EXEC ask for launching command', cmd)
         all_uuids = []
-        with gossiper.nodes_lock:  # get the nodes that follow the group (or all in *)
-            for (uuid, n) in gossiper.nodes.items():
-                if (group == '*' or group in n['groups']) and n['state'] == 'alive':
-                    exec_id = libuuid.uuid1().get_hex()  # to get back execution id
-                    all_uuids.append((uuid, exec_id))
+        
+        for (uuid, n) in gossiper.nodes.items():
+            if (group == '*' or group in n['groups']) and n['state'] == 'alive':
+                exec_id = libuuid.uuid1().get_hex()  # to get back execution id
+                all_uuids.append((uuid, exec_id))
         
         e = {'cmd': cmd, 'group': group, 'thread': None, 'res': {}, 'nodes': all_uuids, 'ctime': int(time.time())}
         self.execs[uid] = e

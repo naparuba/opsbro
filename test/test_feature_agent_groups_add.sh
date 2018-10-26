@@ -43,4 +43,4 @@ if [ $? == 0 ]; then
     exit 2
 fi
 
-print_header "OK:  CLI groups add is working well"
+exit_if_no_crash "OK:  CLI groups add is working well"

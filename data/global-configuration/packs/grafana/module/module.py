@@ -142,8 +142,8 @@ class GrafanaModule(ConnectorModule):
                 time.sleep(1)
                 continue
             nodes_in_grafana_set = set(nodes_in_grafana.keys())
-            with gossiper.nodes_lock:
-                gossip_nodes_uuids = gossiper.nodes.keys()
+
+            gossip_nodes_uuids = gossiper.nodes.keys()  # note: nodes is a static dict, no need to lock it
             gossip_nodes_uuids = set(gossip_nodes_uuids)
             
             self.logger.debug("Nodes in grafana", nodes_in_grafana_set)

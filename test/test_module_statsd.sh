@@ -29,4 +29,4 @@ if [ $? != 0 ]; then
     exit 2
 fi
 
-print_header "opsbro Statsd module is OK"
+exit_if_no_crash "opsbro Statsd module is OK"

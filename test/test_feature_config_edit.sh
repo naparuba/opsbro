@@ -52,4 +52,4 @@ if [ $? != 0 ];then
 fi
 
 
-print_header "TEST OK"
+exit_if_no_crash "TEST OK"

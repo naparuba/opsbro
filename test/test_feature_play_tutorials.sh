@@ -27,4 +27,4 @@ if [ $DID_PLAY == "0" ];then
    exit 2
 fi
 
-print_header "opsbro playing tutorials is OK"
+exit_if_no_crash "opsbro playing tutorials is OK"

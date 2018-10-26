@@ -20,8 +20,7 @@ class ShinkenEnterpriseModule(ConnectorModule):
         enabled = self.get_parameter('enabled')
         if not enabled:
             return
-        with gossiper.nodes_lock:
-            groups = gossiper.groups[:]
+        groups = gossiper.groups  # no need to copy, the group pointer is in read only
         self.logger.info('Pushing back ours groups and discovery informations to Shinken Enterprise')
         
         collectors_data = {}

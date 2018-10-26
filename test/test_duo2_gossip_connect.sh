@@ -60,8 +60,7 @@ wait_event_with_timeout 'NODE3-SYNC' 20
 if [ "$NODE_NB" == "1" ]; then
    # let the others finish
    /etc/init.d/opsbro stop
-   echo "NODE1 is exiting and nothing more to check for it, it will be dead"
-   exit 0
+   exit_if_no_crash "NODE1 is exiting and nothing more to check for it, it will be dead"
 fi
 
 
@@ -80,7 +79,7 @@ if [ "$NODE_NB" == "2" ]; then
    cat /var/log/opsbro/gossip.log
    echo "NODE2 exiting"
    opsbro gossip history
-   exit 0
+   exit_if_no_crash "Node 2 exiting"
 fi
 
 
@@ -104,10 +103,8 @@ if [ "$NODE_NB" == "3" ]; then
    assert_state_count "dead" "1"
    assert_state_count "alive" "1"
 
-
-   echo "NODE3: All states are good, exiting"
    cat /var/log/opsbro/gossip.log
-   exit 0
+   exit_if_no_crash "NODE3: All states are good, exiting"
 fi
 
 echo "This node is unexpected..."

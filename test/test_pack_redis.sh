@@ -44,6 +44,6 @@ fi
 
 opsbro collectors show redis
 
-print_header "Redis is OK"
+exit_if_no_crash "Redis is OK"
 
 

@@ -15,4 +15,4 @@ if [ $? != 0 ]; then
 fi
 
 
-print_header "opsbro agent parameters show OK"
+exit_if_no_crash "opsbro agent parameters show OK"

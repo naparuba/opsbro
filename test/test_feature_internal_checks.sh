@@ -30,4 +30,4 @@ fi
 
 echo "$HISTORY"
 
-print_header "OK:  internal checks are working"
+exit_if_no_crash "OK:  internal checks are working"

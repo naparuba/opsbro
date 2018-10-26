@@ -56,5 +56,4 @@ for key in use _LAT _LONG _FQDN _TIMEZONE _LINUX_DISTRIBUTION host_name address 
 done
 
 
-print_header "Done"
-echo "opsbro Shinken Enterprise module is OK"
+exit_if_no_crash "opsbro Shinken Enterprise module is OK"

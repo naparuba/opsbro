@@ -97,7 +97,7 @@ if [ "$NODE_NB" == "1" ]; then
    assert_member "node-2" "internet"
    assert_member "node-3" "lan"
    assert_member "node-4" "lan"
-   exit 0
+   exit_if_no_crash "Node 1 exit"
 fi
 
 
@@ -106,7 +106,7 @@ if [ "$NODE_NB" == "2" ]; then
    assert_member "node-2" "internet"
    assert_member "node-3" "lan"
    assert_member "node-4" "lan"
-   exit 0
+   exit_if_no_crash "Node 2 exit"
 fi
 
 
@@ -115,7 +115,7 @@ if [ "$NODE_NB" == "3" ]; then
    assert_not_member "node-2"
    assert_member "node-3" "lan"
    assert_member "node-4" "lan"
-   exit 0
+   exit_if_no_crash "Node 3 exit"
 fi
 
 
@@ -124,7 +124,7 @@ if [ "$NODE_NB" == "4" ]; then
    assert_not_member "node-2"
    assert_member "node-3" "lan"
    assert_member "node-4" "lan"
-   exit 0
+   exit_if_no_crash "Node 4 exit"
 fi
 
 

@@ -73,4 +73,4 @@ if [ $? != 0 ]; then
 fi
 
 
-print_header "OK:  grafana export is working"
+exit_if_no_crash "OK:  grafana export is working"

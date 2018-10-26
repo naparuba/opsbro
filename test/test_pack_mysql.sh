@@ -52,6 +52,6 @@ fi
 
 opsbro collectors show mysql
 
-print_header "Mysql is OK"
+exit_if_no_crash "Mysql is OK"
 
 

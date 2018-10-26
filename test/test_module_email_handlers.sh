@@ -42,4 +42,4 @@ if [ $? != 0 ];then
    cat /var/log/opsbro/module.mail.log
 fi
 
-print_header "Email handler OK"
+exit_if_no_crash "Email handler OK"

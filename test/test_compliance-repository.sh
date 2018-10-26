@@ -36,5 +36,5 @@ fi
 opsbro compliance state
 opsbro compliance history
 
-print_header "Mongodb install by repository compliance rule is OK"
-exit 0
+exit_if_no_crash "Mongodb install by repository compliance rule is OK"
+

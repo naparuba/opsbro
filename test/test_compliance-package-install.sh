@@ -48,5 +48,5 @@ fi
 
 opsbro compliance state
 
-print_header "nginx install compliance rule is OK"
-exit 0
+exit_if_no_crash "nginx install compliance rule is OK"
+

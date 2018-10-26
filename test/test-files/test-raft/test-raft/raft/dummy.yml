@@ -1,0 +1,3 @@
+raft:
+    if_group: raft-member
+

@@ -63,8 +63,7 @@ if [ $CASE == "NODE2" ]; then
        exit 2
     fi
 
-    echo "NODE2 is OK"
-    exit 0
+    exit_if_no_crash "NODE2 is OK"
 fi
 
 print_header "Case 1: try to detect and join other node"
@@ -111,4 +110,4 @@ if [ $? != 0 ]; then
 fi
 
 
-echo "Auto join is OK"
+exit_if_no_crash "Auto join is OK"

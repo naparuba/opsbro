@@ -70,4 +70,4 @@ fi
 
 echo "$HISTORY"
 
-print_header "OK:  Generators are working"
+exit_if_no_crash "OK:  Generators are working"

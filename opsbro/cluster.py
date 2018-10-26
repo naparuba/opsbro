@@ -26,6 +26,7 @@ from .httpclient import get_http_exceptions, httper
 
 # now singleton objects
 from .gossip import gossiper
+from .raft import rafter
 from .configurationmanager import configmgr
 from .kv import kvmgr
 from .broadcast import broadcaster
@@ -532,6 +533,8 @@ class Cluster(object):
                     executer.manage_exec_challenge_ask_message(m, addr)
                 elif t == '/exec/challenge/return':
                     executer.manage_exec_challenge_return_message(m, addr)
+                elif t.startswith('raft-'):
+                    rafter.stack_message(m, addr)
                 else:
                     self.manage_message(m)
     
@@ -1227,6 +1230,7 @@ class Cluster(object):
             threader.create_and_launch(gossiper.do_launch_gossip_loop, name='Cluster messages broadcasting', essential=True, part='gossip')
             threader.create_and_launch(gossiper.launch_full_sync_loop, name='Nodes full synchronization', essential=True, part='gossip')
             threader.create_and_launch(gossiper.do_history_save_loop, name='Nodes history writing', essential=True, part='gossip')
+            threader.create_and_launch(rafter.do_raft_thread, name='Raft managment', essential=True, part='raft')
         
         if one_shot:
             self.wait_one_shot_end()

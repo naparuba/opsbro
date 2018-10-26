@@ -35,6 +35,6 @@ fi
 
 opsbro collectors show mongodb
 
-print_header "Mongodb is OK"
+exit_if_no_crash "Mongodb is OK"
 
 

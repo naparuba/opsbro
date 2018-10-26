@@ -39,4 +39,4 @@ if [ $RES != 0 ];then
    exit 2
 fi
 
-print_header "OK: CLI kv store"
+exit_if_no_crash "OK: CLI kv store"

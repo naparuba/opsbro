@@ -55,9 +55,6 @@ class DNSQuery:
     
     # We look in the nodes for the good group
     def lookup_for_nodes(self, dom):
-        # TODO: copy nodes can be huge, maybe ask gossip to have a static list?
-        with gossiper.nodes_lock:
-            nodes = copy.copy(gossiper.nodes)
         self.logger.debug('Querying %s for managed domaine: %s' % (dom, self.domain))
         if not self.domain.endswith(dom):
             self.logger.debug('Domain %s is not matching managed domain: %s' % (dom, self.domain))
@@ -72,9 +69,9 @@ class DNSQuery:
         dc = elts[2]
         _type = elts[1]
         group = elts[0]
-        self.logger.debug('Looking in %s nodes' % len(nodes))
+        self.logger.debug('Looking in %s nodes' % len(gossiper.nodes))
         r = []
-        for n in nodes.values():
+        for n in gossiper.nodes.values():  # note: gossiper node is a read only list
             # skip non alive nodes
             if n['state'] != 'alive':
                 self.logger.debug('Skipping node %s, state=%s != alive' % (n['name'], n['state']))

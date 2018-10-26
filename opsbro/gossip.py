@@ -52,8 +52,9 @@ class Gossip(BaseManager):
     
     
     def init(self, nodes, nodes_lock, addr, port, name, display_name, incarnation, uuid, groups, seeds, bootstrap, zone, is_proxy):
-        self.nodes = nodes
         self.nodes_lock = nodes_lock
+        self._nodes_writing = nodes
+        self.__refresh_read_only_nodes()  # Create the self.nodes
         self.addr = addr
         self.port = port
         self.name = name
@@ -128,6 +129,11 @@ class Gossip(BaseManager):
             self.events[eventid] = event
     
     
+    # We cant nodes that are not officially off, so not down, leave, but suspect is ok
+    def get_uuids_of_my_zone_not_off_nodes(self):
+        return [node['uuid'] for node in self.nodes.values() if node['zone'] == self.zone and node['state'] in [NODE_STATES.ALIVE, NODE_STATES.SUSPECT]]
+    
+    
     # We should clean nodes that are not from our zone or direct top/sub one
     # and for:
     # * our zone: all nodes
@@ -162,10 +168,11 @@ class Gossip(BaseManager):
                     to_del.append(nuuid)
             if len(to_del) > 0:
                 logger.info("We have %d dirty nodes to remove because their zone is not valid from our own zone (%s)" % (len(to_del), self.zone))
-            for nuuid in to_del:
-                node = self.nodes[nuuid]
-                logger.info('CLEANING we are in zone %s so we are removing a node from a unmanaged/distant zone: %s/%s (was in zone %s)' % (self.zone, nuuid, node['name'], node['zone']))
-                del self.nodes[nuuid]
+                for nuuid in to_del:
+                    node = self._nodes_writing[nuuid]
+                    logger.info('CLEANING we are in zone %s so we are removing a node from a unmanaged/distant zone: %s/%s (was in zone %s)' % (self.zone, nuuid, node['name'], node['zone']))
+                # We can clean them now, in bulk mode (so we only regenerate read only nodes once)
+                self.delete_nodes(to_del)
     
     
     def get(self, uuid, default=None):
@@ -173,25 +180,34 @@ class Gossip(BaseManager):
     
     
     def __iter__(self):
-        with self.nodes_lock:
-            return self.nodes.__iter__()
+        return self.nodes.__iter__()
     
     
     def __contains__(self, uuid):
         return uuid in self.nodes
     
     
-    def __setitem__(self, k, value):
+    # Inserting a new node
+    def __setitem__(self, uuid, new_node):
         with self.nodes_lock:
-            self.nodes[k] = value
+            self._nodes_writing[uuid] = new_node
+            self.__refresh_read_only_nodes()
     
     
-    def __delitem__(self, k):
+    def __delitem__(self, node_uuid):
         with self.nodes_lock:
-            try:
-                del self.nodes[k]
-            except IndexError:
-                pass
+            if node_uuid not in self._nodes_writing:
+                return
+            del self._nodes_writing[node_uuid]
+            self.__refresh_read_only_nodes()
+    
+    
+    # We did change nodes so we are updating the read only copy with the new nodes DICT
+    # WE DO NOT COPY nodes themselve, so YOU MUST respect and don't edit them! (or atomic write only)
+    def __refresh_read_only_nodes(self):
+        with self.nodes_lock:
+            nodes_copy = copy.copy(self._nodes_writing)
+            self.nodes = nodes_copy
     
     
     def __register_myself(self):
@@ -200,12 +216,11 @@ class Gossip(BaseManager):
     
     
     def is_in_group(self, group):
-        with self.nodes_lock:
-            return group in self.groups
+        return group in self.groups
     
     
     def __add_group_change_history_entry(self, group, action):
-        node = self.nodes[self.uuid]
+        node = self._get_myself_read_only()
         history_entry = {'type': 'group-%s' % action,
                          'name': node['name'], 'display_name': node.get('display_name', ''),
                          'uuid': node['uuid'], 'group': group,
@@ -240,61 +255,65 @@ class Gossip(BaseManager):
     
     
     def add_group(self, group, broadcast_when_change=True):
-        did_change = False
         with self.nodes_lock:
-            if group not in self.groups:
-                self.groups.append(group)
-                # let the caller known that we did work
-                did_change = True
-                logger.info('The group %s was added.' % group)
+            # if group already in exit with False (don't changed)
+            if group in self.groups:
+                return False
+            
+            new_groups = copy.copy(self.groups)
+            new_groups.append(group)
+            self.groups = new_groups
+            self._set_myself_atomic_property('groups', self.groups)
+            
+            logger.info('The group %s was added.' % group)
             # If our groups did change and we did allow to broadcast here (like in CLI call but not in
             # auto discovery because we want to send only 1 network packet), we can broadcast it
-            if did_change:
-                # We always stack a history entry, it's only save once a seconds
-                self.__add_group_change_history_entry(group, 'add')
-                # Let the handlers known about it
-                handlermgr.launch_group_handlers(group, 'add')
-                # but not always network, must be done once a loop
-                if broadcast_when_change:
-                    self.node_did_change(self.uuid)  # a node did change: ourselve
-                    self.increase_incarnation_and_broadcast()
+            # We always stack a history entry, it's only save once a seconds
+            self.__add_group_change_history_entry(group, 'add')
+            # Let the handlers known about it
+            handlermgr.launch_group_handlers(group, 'add')
+            # but not always network, must be done once a loop
+            if broadcast_when_change:
+                self.node_did_change(self.uuid)  # a node did change: ourselve
+                self.increase_incarnation_and_broadcast()
         
-        return did_change
+        return True  # we did change
     
     
     def remove_group(self, group, broadcast_when_change=True):
-        did_change = False
         with self.nodes_lock:
-            if group in self.groups:
-                self.groups.remove(group)
-                # let the caller known that we did work
-                logger.info('The group %s was removed.' % group)
-                did_change = True
+            if group not in self.groups:
+                return False
+            new_groups = copy.copy(self.groups)
+            new_groups.remove(group)
+            self.groups = new_groups
+            self._set_myself_atomic_property('groups', self.groups)
+            # let the caller known that we did work
+            logger.info('The group %s was removed.' % group)
+            
             # If our groups did change and we did allow to broadcast here (like in CLI call but not in
             # auto discovery because we want to send only 1 network packet), we can broadcast it
-            if did_change:
-                # We always stack a history entry, it's only save once a seconds
-                self.__add_group_change_history_entry(group, 'remove')
-                # Let the handlers known about it
-                handlermgr.launch_group_handlers(group, 'remove')
-                
-                # but not always network, must be done once a loop
-                if broadcast_when_change:
-                    self.node_did_change(self.uuid)  # a node did change: ourselve
-                    self.increase_incarnation_and_broadcast()
-        return did_change
+            # We always stack a history entry, it's only save once a seconds
+            self.__add_group_change_history_entry(group, 'remove')
+            # Let the handlers known about it
+            handlermgr.launch_group_handlers(group, 'remove')
+            
+            # but not always network, must be done once a loop
+            if broadcast_when_change:
+                self.node_did_change(self.uuid)  # a node did change: ourselve
+                self.increase_incarnation_and_broadcast()
+        return True  # we did change
     
     
     # find all nearly alive nodes with a specific group
     def find_group_nodes(self, group):
         nodes = []
-        with self.nodes_lock:
-            for (uuid, node) in self.nodes.items():
-                if node['state'] in [NODE_STATES.DEAD, NODE_STATES.LEAVE]:
-                    continue
-                groups = node.get('groups', [])
-                if group in groups:
-                    nodes.append(uuid)
+        for (uuid, node) in self.nodes.items():
+            if node['state'] in [NODE_STATES.DEAD, NODE_STATES.LEAVE]:
+                continue
+            groups = node.get('groups', [])
+            if group in groups:
+                nodes.append(uuid)
         return nodes
     
     
@@ -315,17 +334,16 @@ class Gossip(BaseManager):
     
     
     def count(self, state='', group=''):
-        with self.nodes_lock:
-            if group:
-                if state:
-                    return len([n for n in self.nodes.values() if group in n['groups'] and n['state'] == state])
-                else:  # no filter, take all
-                    return len([n for n in self.nodes.values() if group in n['groups']])
-            else:
-                if state:
-                    return len([n for n in self.nodes.values() if n['state'] == state])
-                else:  # no filter, take all
-                    return len(self.nodes)
+        if group:
+            if state:
+                return len([n for n in self.nodes.values() if group in n['groups'] and n['state'] == state])
+            else:  # no filter, take all
+                return len([n for n in self.nodes.values() if group in n['groups']])
+        else:
+            if state:
+                return len([n for n in self.nodes.values() if n['state'] == state])
+            else:  # no filter, take all
+                return len(self.nodes)
     
     
     # Another module/part did give a new group, take it and warn others node about this
@@ -364,30 +382,62 @@ class Gossip(BaseManager):
         return did_change
     
     
-    # A check did change it's state, update it in our structure
-    def update_check_state_id(self, cname, state_id):
-        node = self.nodes[self.uuid]
+    def _get_myself_read_only(self):
+        return self.nodes[self.uuid]
+    
+    
+    def _get_myself_write_allowed(self):
+        return self._nodes_writing[self.uuid]
+    
+    
+    # We are updating a property of myself, so we must do in both read only and
+    # write allowed myself node
+    def _set_myself_atomic_property(self, prop, value):
         with self.nodes_lock:
-            if cname not in node['checks']:
-                node['checks'][cname] = {'state_id': 3}
-            node['checks'][cname]['state_id'] = state_id
+            myself_read_only = self._get_myself_read_only()
+            myself_read_only[prop] = value
+            
+            myself_write_allowed = self._get_myself_write_allowed()
+            myself_write_allowed[prop] = value
+            
+            if myself_read_only is not myself_write_allowed:
+                raise Exception('Oups, both objects are differents')
+            if id(myself_read_only) != id(myself_write_allowed):
+                raise Exception('Oups, both objects ids are differents')
+    
+    
+    # A check did change it's state (we did check this), update it in our structure
+    # but beware: in an ATOMIC way from the node poitn of view
+    def update_check_state_id(self, cname, state_id):
+        with self.nodes_lock:
+            myself = self._get_myself_write_allowed()
+            check_entry = myself['checks'].get(cname, None)
+            # We can just atomic write it
+            if check_entry is not None:
+                check_entry['state_id'] = state_id
+                return
+            # ok need to update the full checks structure, and in an atomic way, so need to clone it first
+            new_checks = copy.deepcopy(myself['checks'])
+            new_checks[cname] = {'state_id': state_id}
+            myself['checks'] = new_checks
     
     
     # We did have a massive change or a bad information from network, we must
     # fix this and warn others about good information
     def increase_incarnation_and_broadcast(self):
         self.incarnation += 1
-        node = self.nodes[self.uuid]
-        node['incarnation'] = self.incarnation
-        my_state = node['state']
+        # As it's a simple operation, just update both nodes read only, and write one
+        self._set_myself_atomic_property('incarnation', self.incarnation)
+        myself_read_only = self._get_myself_read_only()
+        
+        my_state = myself_read_only['state']
         if my_state == NODE_STATES.ALIVE:
-            self.stack_alive_broadcast(node)
+            self.stack_alive_broadcast(myself_read_only)
         elif my_state == NODE_STATES.LEAVE:
-            self.stack_leave_broadcast(node)
+            self.stack_leave_broadcast(myself_read_only)
         else:
-            logger.error('Asking for an unknown broadcast type for node: %s => %s' % (node, my_state))
-            sys.exit(2)
-        logger.info('Did have to send a new incarnation node for myself. New incarnation=%d new-node=%s' % (self.incarnation, node))
+            raise Exception('Asking for an unknown broadcast type for node: %s => %s' % (myself_read_only, my_state))
+        logger.info('Did have to send a new incarnation node for myself. New incarnation=%d new-node=%s' % (self.incarnation, myself_read_only))
     
     
     def change_zone(self, zname):
@@ -395,7 +445,8 @@ class Gossip(BaseManager):
             return
         logger.info('Switching to zone: %s' % zname)
         self.zone = zname
-        self.nodes[self.uuid]['zone'] = zname
+        # Simple string change, we can change both write and read node
+        self._set_myself_atomic_property('zone', zname)
         # let the others nodes know it
         self.increase_incarnation_and_broadcast()
         # As we did change, we need to update our own node list to keep only what we should
@@ -414,8 +465,7 @@ class Gossip(BaseManager):
     
     
     def get_number_of_nodes(self):
-        with self.nodes_lock:
-            return len(self.nodes)
+        return len(self.nodes)
     
     
     # get my own node entry
@@ -428,12 +478,30 @@ class Gossip(BaseManager):
     
     # Definitivly remove a node from our list, and warn others about it
     def delete_node(self, nid):
-        try:
-            with self.nodes_lock:
-                del self.nodes[nid]
-            pubsub.pub('delete-node', node_uuid=nid)
-        except IndexError:  # not here? it was was we want
-            pass
+        if nid not in self.nodes:
+            return
+        with self.nodes_lock:
+            del self._nodes_writing[nid]
+            self.__refresh_read_only_nodes()
+        
+        # Le the modules know about it
+        pubsub.pub('delete-node', node_uuid=nid)
+    
+    
+    def delete_nodes(self, nodes_uuids):
+        with self.nodes_lock:
+            did_delete = False
+            for node_uuid in nodes_uuids:
+                if node_uuid not in self._nodes_writing:
+                    continue
+                did_delete = True
+                del self._nodes_writing[node_uuid]
+                
+                # Let the modules know about it
+                pubsub.pub('delete-node', node_uuid=node_uuid)
+            # We did delete some nodes, so refresh the read only nodes list
+            if did_delete:
+                self.__refresh_read_only_nodes()
     
     
     # Got a new node, great! Warn others about this
@@ -455,7 +523,8 @@ class Gossip(BaseManager):
         
         # Add the node but in a protected mode
         with self.nodes_lock:
-            self.nodes[nuuid] = node
+            self._nodes_writing[nuuid] = node
+            self.__refresh_read_only_nodes()
         # if bootstrap, do not export to other nodes or modules
         if bootstrap:
             return
@@ -521,7 +590,8 @@ class Gossip(BaseManager):
         if strong or incarnation > prev['incarnation']:
             # protect the nodes access with the lock so others threads are happy :)
             with self.nodes_lock:
-                self.nodes[uuid] = node
+                self._nodes_writing[uuid] = node
+                self.__refresh_read_only_nodes()
             
             # Only broadcast if it's a new data from somewhere else
             if (strong and change_state) or incarnation > prev['incarnation']:
@@ -571,9 +641,12 @@ class Gossip(BaseManager):
         
         logger.info('SUSPECTING: I suspect node %s' % node['name'])
         # Ok it's definitivly someone else that is now suspected, update this, and update it :)
+        # We can update both write & read node
+        now = int(time.time())
+        
         node['incarnation'] = incarnation
         node['state'] = state
-        node['suspect_time'] = int(time.time())
+        node['suspect_time'] = now
         
         # warn internal elements
         self.node_did_change(uuid)
@@ -633,7 +706,7 @@ class Gossip(BaseManager):
                 
                 logger.info('LEAVE: someone is asking me for leaving.')
                 # Mark myself as leave so
-                node['state'] = state
+                self._set_myself_atomic_property('state', state)
                 self.increase_incarnation_and_broadcast()
                 
                 
@@ -757,8 +830,7 @@ class Gossip(BaseManager):
     # * top zone: only proxy node
     # * lower zone: NO: we don't initialize sync to lower zone, they will do it themselve
     def __get_valid_nodes_to_full_sync(self):
-        with self.nodes_lock:
-            nodes = copy.copy(self.nodes)
+        nodes = self.nodes
         top_zones = zonemgr.get_top_zones_from(self.zone)
         
         possible_nodes = []
@@ -826,8 +898,7 @@ class Gossip(BaseManager):
         if len(broadcaster.broadcasts) == 0:
             return
         
-        with self.nodes_lock:
-            nodes = copy.copy(self.nodes)
+        nodes = self.nodes
         
         # First we need to send all message to the others TOP zone, and do not 'consume' messages
         # only our zone will consume them so we are sure they will disapear
@@ -867,8 +938,7 @@ class Gossip(BaseManager):
     # * top zone: only proxy node and if we are a proxy node
     # * lower zone: only proxy node and if we are a proxy node
     def __get_valid_nodes_to_ping(self):
-        with self.nodes_lock:
-            nodes = copy.copy(self.nodes)
+        nodes = self.nodes
         # If we are a proxy, we are allowed to talk to other zone
         if self.is_proxy:
             top_zones = zonemgr.get_top_zones_from(self.zone)
@@ -973,9 +1043,9 @@ class Gossip(BaseManager):
         except (socket.timeout, socket.gaierror) as exp:
             logger.info("PING: error joining the other node %s:%s : %s" % (addr, port, exp))
             logger.info("PING: go indirect mode")
-            with self.nodes_lock:
-                possible_relays = [n for n in self.nodes.values() if
-                                   n['uuid'] != self.uuid and n != other and n['state'] == NODE_STATES.ALIVE]
+            # with self.nodes_lock:
+            possible_relays = [n for n in self.nodes.values() if
+                               n['uuid'] != self.uuid and n != other and n['state'] == NODE_STATES.ALIVE]
             
             if len(possible_relays) == 0:
                 logger.info("PING: no possible relays for ping")
@@ -1029,7 +1099,7 @@ class Gossip(BaseManager):
         if did_want_to_ping_uuid != self.uuid:  # not me? skip this
             logger.info('A node ask us a ping but it is not for our uuid, skiping it')
             return
-        my_self = self.nodes.get(self.uuid)
+        my_self = self._get_myself_read_only()
         my_node_data = self.create_alive_msg(my_self)
         ack = {'type': 'ack', 'seqno': m['seqno'], 'node': my_node_data}
         ret_msg = jsoner.dumps(ack)
@@ -1046,6 +1116,29 @@ class Gossip(BaseManager):
         if node and node['state'] != NODE_STATES.ALIVE:
             logger.debug('PINGBACK +ing node', node['name'])
             self.to_ping_back.append(fr_uuid)
+    
+    
+    def send_raft_message(self, dest_uuid, message):
+        if dest_uuid == self.uuid:  # me? skip this
+            return
+        
+        dest_node = self.nodes.get(dest_uuid, None)
+        # maybe the other node did disapear
+        if dest_node is None:
+            return
+        
+        dest_addr = dest_node['addr']
+        dest_port = dest_node['port']
+        flat_message = jsoner.dumps(message)
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
+            encrypter = libstore.get_encrypter()
+            encrypted_message = encrypter.encrypt(flat_message)
+            sock.sendto(encrypted_message, (dest_addr, dest_port))
+            sock.close()
+            logger.debug('Sending raft message to (%s) (type:%s)' % (dest_node['uuid'], message['type']))
+        except (socket.timeout, socket.gaierror) as exp:
+            logger.error('Cannot Send raft message to (%s) (type:%s): %s' % (dest_node['uuid'], message['type'], exp))
     
     
     # We are ask to do a indirect ping to tgt and return the ack to
@@ -1102,7 +1195,7 @@ class Gossip(BaseManager):
     # A node did send us a discovery message but with the valid network key of course.
     # If so, give back our node informations
     def manage_detect_ping_message(self, m, addr):
-        my_self = self.nodes[self.uuid]
+        my_self = self._get_myself_read_only()
         my_node_data = self.create_alive_msg(my_self)
         
         r = {'type': 'detect-pong', 'node': my_node_data}
@@ -1292,8 +1385,7 @@ class Gossip(BaseManager):
     # * the upper zone
     # * NEVER lower zone. They will connect to us
     def do_push_pull(self, other):
-        with self.nodes_lock:
-            nodes = copy.deepcopy(self.nodes)
+        nodes = self.nodes
         sub_zones = zonemgr.get_sub_zones_from(self.zone)
         nodes_to_send = {}
         for (nuuid, node) in nodes.items():
@@ -1349,8 +1441,9 @@ class Gossip(BaseManager):
         # Same zone: give all we know about
         if other_node_zone == self.zone:
             logger.debug('PUSH-PULL same zone ask us, give back all we know about')
-            with self.nodes_lock:
-                nodes = copy.copy(self.nodes)
+            # with self.nodes_lock:
+            #    nodes = copy.copy(self.nodes)
+            nodes = self.nodes
             return nodes
         
         # Ok look if in sub zones: if found, all they need to know is
@@ -1358,11 +1451,11 @@ class Gossip(BaseManager):
         sub_zones = zonemgr.get_sub_zones_from(self.zone)
         if other_node_zone in sub_zones:
             only_my_zone_proxies = {}
-            with self.nodes_lock:
-                for (nuuid, node) in self.nodes.items():
-                    if node['is_proxy'] and node['zone'] == self.zone:
-                        only_my_zone_proxies[nuuid] = node
-                        logger.debug('PUSH-PULL: give back data about proxy node: %s' % node['name'])
+            # with self.nodes_lock:
+            for (nuuid, node) in self.nodes.items():
+                if node['is_proxy'] and node['zone'] == self.zone:
+                    only_my_zone_proxies[nuuid] = node
+                    logger.debug('PUSH-PULL: give back data about proxy node: %s' % node['name'])
             return only_my_zone_proxies
         
         logger.warning('SECURITY: a node from an unallowed zone %s did ask us push_pull' % other_node_zone)
@@ -1373,6 +1466,7 @@ class Gossip(BaseManager):
     # set the node as dead, and broadcast the information to everyone
     def look_at_deads(self):
         # suspect a node for 5 * log(n+1) * interval
+        # with self.nodes_lock:
         node_scale = math.ceil(math.log10(float(len(self.nodes) + 1)))
         probe_interval = 1
         suspicion_mult = 5
@@ -1381,34 +1475,34 @@ class Gossip(BaseManager):
         
         # print "SUSPECT timeout", suspect_timeout
         now = int(time.time())
-        with self.nodes_lock:
-            for node in self.nodes.values():
-                # Only look at suspect nodes of course...
-                if node['state'] != NODE_STATES.SUSPECT:
-                    continue
-                stime = node.get('suspect_time', now)
-                if stime < (now - suspect_timeout):
-                    logger.info("SUSPECT: NODE", node['name'], node['incarnation'], node['state'], "is NOW DEAD")
-                    node['state'] = NODE_STATES.DEAD
-                    # warn internal elements
-                    self.node_did_change(node['uuid'])
-                    # Save this change into our history
-                    self.__add_node_state_change_history_entry(node, NODE_STATES.SUSPECT, NODE_STATES.DEAD)
-                    # and external ones
-                    self.stack_dead_broadcast(node)
+        # with self.nodes_lock:
+        for node in self.nodes.values():
+            # Only look at suspect nodes of course...
+            if node['state'] != NODE_STATES.SUSPECT:
+                continue
+            stime = node.get('suspect_time', now)
+            if stime < (now - suspect_timeout):
+                logger.info("SUSPECT: NODE", node['name'], node['incarnation'], node['state'], "is NOW DEAD")
+                node['state'] = NODE_STATES.DEAD
+                # warn internal elements
+                self.node_did_change(node['uuid'])
+                # Save this change into our history
+                self.__add_node_state_change_history_entry(node, NODE_STATES.SUSPECT, NODE_STATES.DEAD)
+                # and external ones
+                self.stack_dead_broadcast(node)
         
         # Now for leave nodes, this time we will really remove the entry from our nodes
         to_del = []
-        with self.nodes_lock:
-            for node in self.nodes.values():
-                # Only look at suspect nodes of course...
-                if node['state'] != NODE_STATES.LEAVE:
-                    continue
-                ltime = node.get('leave_time', now)
-                logger.debug("LEAVE TIME for node %s %s %s %s" % (node['name'], ltime, now - leave_timeout, (now - leave_timeout) - ltime))
-                if ltime < (now - leave_timeout):
-                    logger.info("LEAVE: NODE", node['name'], node['incarnation'], node['state'], "is now definitivly leaved. We remove it from our nodes")
-                    to_del.append(node['uuid'])
+        # with self.nodes_lock:
+        for node in self.nodes.values():
+            # Only look at suspect nodes of course...
+            if node['state'] != NODE_STATES.LEAVE:
+                continue
+            ltime = node.get('leave_time', now)
+            logger.debug("LEAVE TIME for node %s %s %s %s" % (node['name'], ltime, now - leave_timeout, (now - leave_timeout) - ltime))
+            if ltime < (now - leave_timeout):
+                logger.info("LEAVE: NODE", node['name'], node['incarnation'], node['state'], "is now definitivly leaved. We remove it from our nodes")
+                to_del.append(node['uuid'])
         # now really remove them from our list :)
         for uuid in to_del:
             self.delete_node(uuid)
@@ -1530,7 +1624,7 @@ class Gossip(BaseManager):
         
         @http_export('/agent/name')
         def get_name():
-            return jsoner.dumps(self.nodes[self.uuid]['name'])
+            return jsoner.dumps(self._get_myself_read_only()['name'])
         
         
         @http_export('/agent/uuid')
@@ -1540,8 +1634,8 @@ class Gossip(BaseManager):
         
         @http_export('/agent/leave/:nuuid', protected=True)
         def set_node_leave(nuuid):
-            with self.nodes_lock:
-                node = self.nodes.get(nuuid, None)
+            # with self.nodes_lock:
+            node = self.nodes.get(nuuid, None)
             if node is None:
                 logger.error('Asking us to set as leave the node %s but we cannot find it' % (nuuid))
                 return abort(404, 'This node is not found')
@@ -1552,9 +1646,9 @@ class Gossip(BaseManager):
         @http_export('/agent/members')
         def agent_members():
             response.content_type = 'application/json'
-            with self.nodes_lock:
-                nodes = copy.copy(self.nodes)
-            return nodes
+            # with self.nodes_lock:
+            #    nodes = copy.copy(self.nodes)
+            return self.nodes
         
         
         @http_export('/agent/members/history', method='GET')

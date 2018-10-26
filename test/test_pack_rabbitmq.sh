@@ -38,6 +38,6 @@ fi
 
 opsbro collectors show rabbitmq
 
-print_header "Rabbitmq is OK"
+exit_if_no_crash "Rabbitmq is OK"
 
 

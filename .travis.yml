@@ -54,6 +54,8 @@ env:
 # This one is with 2 nodes: one collector, and the other a data agregator that save data send by the first to sqlite
 - TEST_SUITE=COMPOSE-MODULE-AGREGATOR
 - TEST_SUITE=COMPOSE-MODULE-AGREGATOR-PYTHON3
+# This test is a 3 node RAFT test, just to see if we have a leader after a huge time
+- TEST_SUITE=COMPOSE-RAFT-INIT
 ##### Then installation on various distros
 - TEST_SUITE=ALPINE
 - TEST_SUITE=AMAZONLINUX

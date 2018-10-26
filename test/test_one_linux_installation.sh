@@ -290,4 +290,6 @@ fi  # end of LEVELDB
 
 printf "\n\n"
 printf "\n\n"
-echo "************************************ One linux installation is OK *********************************************"
+
+
+exit_if_no_crash "**** One linux installation is OK *****"
