@@ -1,0 +1,16 @@
+FROM       naparuba/debian-9-python3
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+
+
+ADD        . /root/opsbro-oss
+WORKDIR       /root/opsbro-oss
+
+RUN       python setup.py install
+
+# Ask for an encrypted test
+RUN       opsbro agent parameters set encryption_key NGNjZWI2ZmEyMzEyMTFlOA==
+
+# 3 nodes will be joined, and then we look at the raft state
+ENTRYPOINT    test/test_duo8_raft_init.sh "2"

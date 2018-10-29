@@ -21,7 +21,7 @@ print_header "Joining"
 opsbro gossip detect --auto-join --timeout=15
 
 
-TOTAL_NUMBER_OF_NODES=3
+TOTAL_NUMBER_OF_NODES=5
 
 for ii in `seq 1 $TOTAL_NUMBER_OF_NODES`; do
    wait_member_display_name_with_timeout "node-$ii" 20

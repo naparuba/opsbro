@@ -56,6 +56,7 @@ env:
 - TEST_SUITE=COMPOSE-MODULE-AGREGATOR-PYTHON3
 # This test is a 3 node RAFT test, just to see if we have a leader after a huge time
 - TEST_SUITE=COMPOSE-RAFT-INIT
+- TEST_SUITE=COMPOSE-RAFT-INIT-PYTHON3
 ##### Then installation on various distros
 - TEST_SUITE=ALPINE
 - TEST_SUITE=AMAZONLINUX

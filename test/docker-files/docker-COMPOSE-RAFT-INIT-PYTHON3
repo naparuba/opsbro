@@ -3,7 +3,7 @@ services:
   node1:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DUO8-raft-init-node1.txt
+       dockerfile: test/docker-files/docker-file-DUO8-raft-init-PYTHON3-node1.txt
     networks:
        - raft-init
     cap_add:
@@ -13,7 +13,7 @@ services:
   node2:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DUO8-raft-init-node2.txt
+       dockerfile: test/docker-files/docker-file-DUO8-raft-init-PYTHON3-node2.txt
     networks:
        - raft-init
     cap_add:
@@ -23,33 +23,30 @@ services:
   node3:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DUO8-raft-init-node3.txt
+       dockerfile: test/docker-files/docker-file-DUO8-raft-init-PYTHON3-node3.txt
     networks:
        - raft-init
     cap_add:
        - ALL
-
 
 
   node4:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DUO8-raft-init-node4.txt
+       dockerfile: test/docker-files/docker-file-DUO8-raft-init-PYTHON3-node4.txt
     networks:
        - raft-init
     cap_add:
        - ALL
-
 
   node5:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DUO8-raft-init-node5.txt
+       dockerfile: test/docker-files/docker-file-DUO8-raft-init-PYTHON3-node5.txt
     networks:
        - raft-init
     cap_add:
        - ALL
-
 
 
 
