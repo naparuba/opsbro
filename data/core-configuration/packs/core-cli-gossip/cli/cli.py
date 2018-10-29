@@ -286,9 +286,12 @@ def do_detect_nodes(auto_join, timeout=5):
         cprint('NOTICE: ', color='blue', end='')
         cprint("Auto join (--auto-join) is not enabled, so don't try to join theses nodes")
         return
+    
     # try to join theses nodes so :)
-    all_proxys = [node for node in network_nodes if node['is_proxy']]
-    not_proxys = [node for node in network_nodes if not node['is_proxy']]
+    # NOTE: sort by uuid so we are always joining the same nodes
+    # and so we don't have split network if possible (common node)
+    all_proxys = sorted([node for node in network_nodes if node['is_proxy']], key=lambda n: n['uuid'])
+    not_proxys = sorted([node for node in network_nodes if not node['is_proxy']], key=lambda n: n['uuid'])
     if all_proxys:
         node = all_proxys.pop()
         cprint("A proxy node is detected, using it: %s (%s:%d)" % (node['name'], node['addr'], node['port']))
