@@ -10,9 +10,9 @@ import time
 
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger
-from opsbro.unixclient import get_request_errors
-from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, put_opsbro_json, wait_for_agent_started, post_opsbro_json
-from opsbro.raft import RAFT_STATES, RAFT_STATE_COLORS, RAFT_MINIMAL_MEMBERS_NB
+from opsbro.unixclient import get_request_errors, get_not_critical_request_errors
+from opsbro.cli import get_opsbro_json, wait_for_agent_started
+from opsbro.raft import RAFT_STATE_COLORS, RAFT_MINIMAL_MEMBERS_NB
 
 
 def do_raft_state():
@@ -65,10 +65,12 @@ def do_raft_wait_leader(timeout=30):
     for i in range(timeout):
         try:
             raft_infos = get_opsbro_json('/raft/state', timeout=1)
+        except get_not_critical_request_errors():  # we did fail to call it in 1s (timeout), but we allow a global timeout, skip this
+            continue
         except get_request_errors() as exp:
             logger.error('Cannot join opsbro agent to get RAFT state: %s' % exp)
             sys.exit(1)
-
+        
         raft_state = raft_infos['state']
         raft_state_color = RAFT_STATE_COLORS.get(raft_state)
         leader = raft_infos['leader']
@@ -97,8 +99,9 @@ def do_raft_wait_leader(timeout=30):
     cprint("\nThe RAFT leader is still not elected after %s seconds" % timeout)
     sys.exit(2)
 
+
 exports = {
-    do_raft_state: {
+    do_raft_state      : {
         'keywords'   : ['raft', 'state'],
         'args'       : [],
         'description': 'Show the state of the internal RAFT cluster of your nodes'
