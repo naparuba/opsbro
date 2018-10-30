@@ -12,6 +12,7 @@ logger = LoggerFactory.create_logger('packs')
 
 # Pack directory levels, but beware: the order IS important
 PACKS_LEVELS = ('core', 'global', 'zone', 'local')
+REVERSE_PACKS_LEVELS = tuple(reversed(PACKS_LEVELS))
 
 class PackManager(object):
     def __init__(self):
@@ -67,7 +68,7 @@ class PackManager(object):
     def give_pack_directories_to_load(self):
         to_load_idx = set()  # used to know if we already see suck a pack
         to_load = {}
-        for level in PACKS_LEVELS:
+        for level in REVERSE_PACKS_LEVELS:
             for pname in self.packs[level]:
                 if pname in to_load_idx:
                     logger.debug('Skipping pack %s/%s to load because it was already present in a more priority level' % (level, pname))
@@ -85,7 +86,7 @@ class PackManager(object):
     
     
     def get_pack_all_topics(self, pname):
-        for level in PACKS_LEVELS:
+        for level in REVERSE_PACKS_LEVELS:
             pack = self.packs[level].get(pname, None)
             if not pack:
                 continue
