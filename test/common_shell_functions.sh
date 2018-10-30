@@ -26,7 +26,7 @@ function assert_state_count {
          cat /var/log/opsbro/crash.log 2>/dev/null
          exit 2
       fi
-      NB=$(echo "$STATS" | grep 'docker-container' | grep "$1" | wc -l)
+      NB=$(echo "$STATS" | grep "$1" | wc -l)
       if [ "$NB" == "$2" ]; then
           echo "OK: founded $NB $1 states nodes"
           return 0

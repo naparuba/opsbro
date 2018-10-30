@@ -72,7 +72,7 @@ opsbro gossip members --detail
 function assert_member {
    NAME="$1"
    ZONE="$2"
-   opsbro gossip members | grep 'docker-container' | grep "$NAME" | grep "zone::$ZONE" > /dev/null
+   opsbro gossip members | grep "$NAME" | grep "zone::$ZONE" > /dev/null
    if [ $? != 0 ];then
       echo "ERROR: there should be $NAME in the zone $ZONE"
       opsbro gossip members
@@ -84,7 +84,7 @@ function assert_member {
 
 function assert_not_member {
    NAME="$1"
-   opsbro gossip members | grep 'docker-container' | grep "$NAME" > /dev/null
+   opsbro gossip members | grep "$NAME" > /dev/null
    if [ $? == 0 ];then
       echo "ERROR: there should not be $NAME"
       opsbro gossip members

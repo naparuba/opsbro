@@ -12,6 +12,11 @@ test/set_network_simulated_type "WAN"
 
 # If node2: wait and quite
 
+
+# We only want to test gossip here
+set_to_minimal_gossip_core
+
+
 # Set a valid display name for debug
 opsbro agent parameters set display_name "$CASE"
 
