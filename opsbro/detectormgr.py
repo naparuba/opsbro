@@ -8,6 +8,7 @@ from .evaluater import evaluater
 from .collectormanager import collectormgr
 from .gossip import gossiper
 from .monitoring import monitoringmgr
+from .topic import topiker, TOPIC_AUTOMATIC_DECTECTION
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('detector')
@@ -53,6 +54,54 @@ class DetectorMgr(object):
         self.detectors[detector['id']] = detector
     
     
+    def _launch_detectors(self):
+        matching_groups = set()
+        for (gname, gen) in self.detectors.items():
+            interval = int(gen['interval'].split('s')[0])  # todo manage like it should
+            should_be_launch = gen['last_launch'] < int(time.time()) - interval
+            if should_be_launch:
+                logger.debug('Launching detector: %s rule: %s' % (gname, gen['apply_if']))
+                gen['last_launch'] = int(time.time())
+                try:
+                    do_apply = evaluater.eval_expr(gen['apply_if'])
+                except Exception as exp:
+                    logger.error('Cannot execute detector %s: %s' % (gname, exp))
+                    do_apply = False
+                gen['do_apply'] = do_apply
+                if do_apply:
+                    groups = gen['add_groups']
+                    new_groups = []
+                    try:
+                        # Try to evaluate the group if need (can be an expression {} )
+                        # NOTE: to_string=True to not have a json object with 'value' but directly the string value
+                        for t in groups:
+                            compile_group = evaluater.compile(t, to_string=True)
+                            if ',' in compile_group:
+                                for sub_compile_group in [_g.strip() for _g in compile_group.split(',')]:
+                                    new_groups.append(sub_compile_group)
+                            else:
+                                new_groups.append(compile_group)
+                        groups = new_groups
+                    except Exception as exp:
+                        logger.error('Cannot execute detector group %s: %s' % (gname, exp))
+                        groups = []
+                    logger.debug('groups %s are applying for the detector %s' % (groups, gname))
+                    self.detected_groups[gname] = groups
+                else:
+                    self.detected_groups[gname] = []
+        # take all from the current state of all detectors, and update gossiper about it
+        for groups in self.detected_groups.values():
+            for group in groups:
+                matching_groups.add(group)
+        logger.debug('Detector loop generated groups: %s' % matching_groups, part='gossip')
+        
+        # Merge with gossip part
+        did_changed = gossiper.update_detected_groups(matching_groups)
+        # if groups did change, recompute checks
+        if did_changed:
+            monitoringmgr.link_checks()
+    
+    
     # Main thread for launching detectors
     def do_detector_thread(self):
         # if the collector manager did not run, our evaluation can be invalid, so wait for all collectors to run at least once
@@ -61,51 +110,9 @@ class DetectorMgr(object):
         # Ok we can use collector data :)
         logger.log('DETECTOR thread launched')
         while not stopper.is_stop():
-            matching_groups = set()
-            for (gname, gen) in self.detectors.items():
-                interval = int(gen['interval'].split('s')[0])  # todo manage like it should
-                should_be_launch = gen['last_launch'] < int(time.time()) - interval
-                if should_be_launch:
-                    logger.debug('Launching detector: %s rule: %s' % (gname, gen['apply_if']))
-                    gen['last_launch'] = int(time.time())
-                    try:
-                        do_apply = evaluater.eval_expr(gen['apply_if'])
-                    except Exception as exp:
-                        logger.error('Cannot execute detector %s: %s' % (gname, exp))
-                        do_apply = False
-                    gen['do_apply'] = do_apply
-                    if do_apply:
-                        groups = gen['add_groups']
-                        new_groups = []
-                        try:
-                            # Try to evaluate the group if need (can be an expression {} )
-                            # NOTE: to_string=True to not have a json object with 'value' but directly the string value
-                            for t in groups:
-                                compile_group = evaluater.compile(t, to_string=True)
-                                if ',' in compile_group:
-                                    for sub_compile_group in [_g.strip() for _g in compile_group.split(',')]:
-                                        new_groups.append(sub_compile_group)
-                                else:
-                                    new_groups.append(compile_group)
-                            groups = new_groups
-                        except Exception as exp:
-                            logger.error('Cannot execute detector group %s: %s' % (gname, exp))
-                            groups = []
-                        logger.debug('groups %s are applying for the detector %s' % (groups, gname))
-                        self.detected_groups[gname] = groups
-                    else:
-                        self.detected_groups[gname] = []
-            # take all from the current state of all detectors, and update gossiper about it
-            for groups in self.detected_groups.values():
-                for group in groups:
-                    matching_groups.add(group)
-            logger.debug('Detector loop generated groups: %s' % matching_groups, part='gossip')
-            
-            # Merge with gossip part
-            did_changed = gossiper.update_detected_groups(matching_groups)
-            # if groups did change, recompute checks
-            if did_changed:
-                monitoringmgr.link_checks()
+            # Only launch detectors if we are allowed to
+            if topiker.is_topic_enabled(TOPIC_AUTOMATIC_DECTECTION):
+                self._launch_detectors()
             
             self.did_run = True  # ok we did detect our groups, we can be sure about us
             time.sleep(1)

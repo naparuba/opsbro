@@ -18,6 +18,7 @@ from .now import NOW
 from .ts import tsmgr
 from .gossip import gossiper
 from .basemanager import BaseManager
+from .topic import topiker, TOPIC_METROLOGY
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('collector')
@@ -58,6 +59,8 @@ class CollectorManager(BaseManager):
         self.results = {}
         
         self.logger = logger
+        
+        self.cur_launchs = {}
     
     
     def load_directory(self, directory, pack_name='', pack_level=''):
@@ -204,37 +207,43 @@ class CollectorManager(BaseManager):
                 tsmgr.tsb.add_value(timestamp, key, value, local=True)
     
     
+    def _launch_collectors(self):
+        now = int(time.time())
+        for (colname, e) in self.collectors.items():
+            colname = e['name']
+            inst = e['inst']
+            # maybe a collection is already running
+            if colname in self.cur_launchs:
+                continue
+            if now >= e['next_check']:
+                logger.debug('COLLECTOR: launching collector %s' % colname)
+                t = threader.create_and_launch(inst.main, name='collector-%s' % colname, part='collector')
+                self.cur_launchs[colname] = t
+                e['next_check'] += 10
+                e['last_check'] = now
+        
+        to_del = []
+        for (colname, t) in self.cur_launchs.items():
+            # if the thread is finish, join it
+            # NOTE: but also wait for all first execution to finish
+            if not t.is_alive() or not self.did_run:
+                logger.debug('Joining collector thread: %s' % colname)
+                t.join()
+                to_del.append(colname)
+        for colname in to_del:
+            del self.cur_launchs[colname]
+    
+    
     # Main thread for launching collectors
     def do_collector_thread(self):
         logger.log('COLLECTOR thread launched')
-        cur_launchs = {}
         # Before run, be sure we have a history directory ready
         self.prepare_history_directory()
         while not stopper.is_stop():
-            now = int(time.time())
-            for (colname, e) in self.collectors.items():
-                colname = e['name']
-                inst = e['inst']
-                # maybe a collection is already running
-                if colname in cur_launchs:
-                    continue
-                if now >= e['next_check']:
-                    logger.debug('COLLECTOR: launching collector %s' % colname)
-                    t = threader.create_and_launch(inst.main, name='collector-%s' % colname, part='collector')
-                    cur_launchs[colname] = t
-                    e['next_check'] += 10
-                    e['last_check'] = now
+            # Only launch if we are allowed
+            if topiker.is_topic_enabled(TOPIC_METROLOGY):
+                self._launch_collectors()
             
-            to_del = []
-            for (colname, t) in cur_launchs.items():
-                # if the thread is finish, join it
-                # NOTE: but also wait for all first execution to finish
-                if not t.is_alive() or not self.did_run:
-                    logger.debug('Joining collector thread: %s' % colname)
-                    t.join()
-                    to_del.append(colname)
-            for colname in to_del:
-                del cur_launchs[colname]
             self.did_run = True  # ok our data are filled, you can use this data
             # Each loop we save our history data (collector state changed)
             self.write_history_entry()

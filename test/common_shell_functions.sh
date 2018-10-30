@@ -149,3 +149,16 @@ function exit_if_no_crash {
     printf " - Clean exit: OK √\n"
     exit 0
 }
+
+
+# We configure the daemon so only the gossip part is enabled
+# to lower the server load during test
+function set_to_minimal_gossip_core {
+    for param in automatic_detection_topic_enabled automatic_detection_topic_enabled monitoring_topic_enabled metrology_topic_enabled configuration_automation_topic_enabled system_compliance_topic_enabled; do
+        opsbro agent parameters set $param false
+        if [ $? != 0 ];then
+           echo "ERROR: cannot set the agent parameter: $param"
+           exit 2
+        fi
+    done
+}

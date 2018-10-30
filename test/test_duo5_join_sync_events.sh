@@ -15,6 +15,10 @@ CASE=$1
 show_my_system_ip
 
 
+# We only want to test gossip here
+set_to_minimal_gossip_core
+
+
 # Set a valid display name for debug
 opsbro agent parameters set display_name "$CASE"
 

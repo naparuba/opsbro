@@ -271,7 +271,7 @@ do_start_() {
         return
     fi
 
-    #START
+    # START
     [ "$DEBUG" = 1 ] && DEBUGCMD="--debug "
     output=$(opsbro $DEBUGCMD agent start --daemon  2>&1)
     rc=$?

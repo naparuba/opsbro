@@ -12,6 +12,8 @@ from .unixclient import get_json, get_request_errors
 # Global logger for this part
 logger = LoggerFactory.create_logger('docker')
 
+DOCKER_SOCKET_PATH = '/var/run/docker.sock'
+
 
 def lower_dict(d):
     nd = {}
@@ -68,9 +70,11 @@ class DockerManager(object):
     
     
     def connect(self):
+        if not os.path.exists(DOCKER_SOCKET_PATH):  # Quick exit if the socket is not even exiting
+            return
         if not self.con:
             try:
-                self.con = get_json('/version', local_socket='/var/run/docker.sock')
+                self.con = get_json('/version', local_socket=DOCKER_SOCKET_PATH)
             except get_request_errors():  # cannot connect
                 self.con = None
                 logger.debug('Cannot connect to docker')
@@ -89,7 +93,7 @@ class DockerManager(object):
     
     def load_container(self, _id):
         try:
-            inspect = get_json('/containers/%s/json' % _id, local_socket='/var/run/docker.sock')
+            inspect = get_json('/containers/%s/json' % _id, local_socket=DOCKER_SOCKET_PATH)
         except get_request_errors() as exp:
             self.connect()
             return
@@ -102,7 +106,7 @@ class DockerManager(object):
         if not self.con:
             return
         try:
-            conts = get_json('/containers/json', local_socket='/var/run/docker.sock')
+            conts = get_json('/containers/json', local_socket=DOCKER_SOCKET_PATH)
         except get_request_errors():
             self.connect()
             return
@@ -118,7 +122,7 @@ class DockerManager(object):
         if not self.con:
             return
         try:
-            self.images = get_json('/images/json', local_socket='/var/run/docker.sock')
+            self.images = get_json('/images/json', local_socket=DOCKER_SOCKET_PATH)
         except get_request_errors():
             self.connect()
             return
@@ -253,7 +257,7 @@ class DockerManager(object):
                 continue
             now = int(time.time())
             try:
-                evts = get_json("/events", local_socket='/var/run/docker.sock', params={'until': now, 'since': now - 1},
+                evts = get_json("/events", local_socket=DOCKER_SOCKET_PATH, params={'until': now, 'since': now - 1},
                                 multi=True)
             except Exception as exp:
                 logger.debug('cannot get docker events: %s' % exp)
@@ -313,7 +317,7 @@ class DockerManager(object):
             response.content_type = 'application/json'
             if self.con is None:
                 return json.dumps(None)
-            imgs = get_json('/images/json', local_socket='/var/run/docker.sock')
+            imgs = get_json('/images/json', local_socket=DOCKER_SOCKET_PATH)
             r = [lower_dict(d) for d in imgs]
             return json.dumps(r)
         
@@ -323,7 +327,7 @@ class DockerManager(object):
             response.content_type = 'application/json'
             if self.con is None:
                 return json.dumps(None)
-            imgs = get_json('/images/json', local_socket='/var/run/docker.sock')
+            imgs = get_json('/images/json', local_socket=DOCKER_SOCKET_PATH)
             for d in imgs:
                 if d['Id'] == _id:
                     return json.dumps(lower_dict(d))

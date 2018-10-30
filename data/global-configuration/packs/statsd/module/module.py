@@ -53,6 +53,10 @@ class StatsdModule(ListenerModule):
         
         # Numpy lib is heavy, don't load it unless we really need it
         self.np = None
+        
+        # if we never got any metrics, we do a large wait for thread
+        # but as soon as we have one, go into small waits
+        self.did_have_metrics = False
     
     
     def prepare(self):
@@ -110,7 +114,10 @@ class StatsdModule(ListenerModule):
             if now > self.last_write + self.stats_interval:
                 self.compute_stats()
                 self.last_write = now
-            time.sleep(0.1)
+            if self.did_have_metrics:  # small wait
+                time.sleep(0.1)
+            else:
+                time.sleep(5)  # can wait a bit for the first run
     
     
     def compute_stats(self):
@@ -254,6 +261,9 @@ class StatsdModule(ListenerModule):
                 if len(_nvs) != 2:
                     continue
                 mname = _nvs[0].strip()
+                
+                # We have a ral value, so we will allow now smaller wait time
+                self.did_have_metrics = True
                 
                 # Two cases: it's for me or not
                 hkey = hashlib.sha1(mname).hexdigest()
