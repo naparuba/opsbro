@@ -226,7 +226,11 @@ class ThreadMgr(object):
             if psutil:
                 # NOTE: os.getpid() need by old psutil versions
                 our_process = psutil.Process(os.getpid())
-                our_threads = our_process.get_threads()
+                # Varies from psutil version
+                if hasattr(our_process, 'get_threads'):
+                    our_threads = our_process.get_threads()
+                else:  # new versions
+                    our_threads = our_process.threads()
                 for thr in our_threads:
                     t_id = thr.id
                     user_time = thr.user_time
@@ -241,10 +245,17 @@ class ThreadMgr(object):
             main_process = self.__get_thread_entry('Main Process', True, tid=os.getpid(), part='agent')  # our process, to allow to get user/system times
             res['process'] = main_process
             if our_process:
-                v = our_process.get_cpu_times()
+                if hasattr(our_process, 'get_cpu_times'):  # manage old/new versions
+                    v = our_process.get_cpu_times()
+                else:
+                    v = our_process.cpu_times()
                 main_process['user_time'] = v.user
                 main_process['system_time'] = v.system
-                res['age'] = time.time() - our_process.create_time
+                if callable(our_process.create_time):  # manage old/new versions
+                    create_time = our_process.create_time()
+                else:
+                    create_time = our_process.create_time
+                res['age'] = time.time() - create_time
             
             props = ['name', 'tid', 'essential', 'user_time', 'system_time', 'part']  # only copy jsonifiable objects
             for d in threads:
