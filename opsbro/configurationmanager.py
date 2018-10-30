@@ -1,6 +1,7 @@
 import os
 import sys
 import codecs
+import time
 
 PY3 = sys.version_info >= (3,)
 if PY3:
@@ -399,6 +400,40 @@ class ConfigurationManager(object):
         
         # now hosting driver class are loaded, we can load all
         compliancemgr.load_backends()
+    
+    
+    def finish_to_load_configuration_and_objects(self):
+        t0 = time.time()
+        # Now that packs are load and clean, we can load collector code from it
+        self.load_collectors_from_packs()
+        logger.debug('configmgr.load_collectors_from_packs :: %.3f' % (time.time() - t0))
+        
+        t0 = time.time()
+        # load all compliance drivers
+        self.load_compliancebackends_from_packs()
+        logger.debug('configmgr.load_compliancebackends_from_packs :: %.3f' % (time.time() - t0))
+        
+        t0 = time.time()
+        # Now that packs are load and clean, we can load modules code from it
+        self.load_modules_from_packs()
+        logger.debug('configmgr.load_modules_from_packs :: %.3f' % (time.time() - t0))
+        
+        t0 = time.time()
+        # We load configuration from packs, but only the one we are sure we must load
+        self.load_configuration_from_packs()
+        logger.debug('configmgr.load_configuration_from_packs :: %.3f' % (time.time() - t0))
+        
+        t0 = time.time()
+        # We can now give configuration to the collectors
+        from .collectormanager import collectormgr
+        collectormgr.get_parameters_from_packs()
+        logger.debug('configmgr.get_parameters_from_packs :: %.3f' % (time.time() - t0))
+        
+        t0 = time.time()
+        # We can now give configuration to the modules
+        from .modulemanager import modulemanager
+        modulemanager.get_parameters_from_packs()
+        logger.debug('modulemanager.get_parameters_from_packs :: %.3f' % (time.time() - t0))
     
     
     ############## Http interface

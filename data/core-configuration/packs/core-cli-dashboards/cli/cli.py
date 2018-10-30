@@ -190,20 +190,22 @@ def do_dashboards_list():
 exports = {
     
     do_dashboards_show: {
-        'keywords'             : ['dashboards', 'show'],
-        'args'                 : [
+        'keywords'               : ['dashboards', 'show'],
+        'args'                   : [
             {'name': 'dashboard_name', 'description': 'Dashboard name'},
             {'name': '--occurences', 'type': 'int', 'default': 0, 'description': 'How much refresh for the dashboards. By default 0 (means infinite)'},
         ],
-        'allow_temporary_agent': {'enabled': True, },
-        'description'          : 'Show a specific dashboard'
+        'allow_temporary_agent'  : {'enabled': True, },
+        'description'            : 'Show a specific dashboard',
+        'need_full_configuration': True,
     },
     
     do_dashboards_list: {
-        'keywords'   : ['dashboards', 'list'],
-        'args'       : [
+        'keywords'               : ['dashboards', 'list'],
+        'args'                   : [
         ],
-        'description': 'List dashboards'
+        'description'            : 'List dashboards',
+        'need_full_configuration': True,
     },
     
 }

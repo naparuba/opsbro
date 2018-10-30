@@ -207,11 +207,12 @@ exports = {
     },
     
     do_collectors_run    : {
-        'keywords'   : ['collectors', 'run'],
-        'args'       : [
+        'keywords'               : ['collectors', 'run'],
+        'args'                   : [
             {'name': 'name', 'description': 'Show a specific'},
         ],
-        'description': 'Run a collector'
+        'description'            : 'Run a collector',
+        'need_full_configuration': True,
     },
     
     do_collectors_wait_ok: {

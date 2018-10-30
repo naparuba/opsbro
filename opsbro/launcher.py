@@ -1,18 +1,20 @@
 import os
 import sys
-import signal
-import locale
-
-# On unix, try to raise system resources to the max (unlimited if possible)
-try:
-    import resource
-except ImportError:
-    resource = None
 
 from .cluster import Cluster
 from .log import logger
+from .configurationmanager import configmgr
 
 REDIRECT_TO = getattr(os, "devnull", "/dev/null")
+
+
+def get_resource_lib():
+    # On unix, try to raise system resources to the max (unlimited if possible)
+    try:
+        import resource
+    except ImportError:
+        resource = None
+    return resource
 
 
 # Main class for launching the daemon
@@ -24,6 +26,7 @@ class Launcher(object):
         
         # on windows, skip locale globaly
         if os.name == 'nt':
+            import locale
             locale.setlocale(locale.LC_ALL, 'C')
     
     
@@ -101,6 +104,7 @@ class Launcher(object):
     # Go in "daemon" mode: redirect stdout/err,
     # chdir, umask, fork-setsid-fork-writepid
     def __daemonize(self):
+        import signal
         logger.debug("Redirecting stdout and stderr as necessary..")
         if self.debug_path:
             fdtemp = os.open(self.debug_path, os.O_CREAT | os.O_WRONLY | os.O_TRUNC)
@@ -157,6 +161,8 @@ class Launcher(object):
     
     
     def __find_and_set_higer_system_limit(self, res, res_name):
+        resource = get_resource_lib()
+        
         # first try to get the system limit, if already unlimited (-1) then we are good :)
         soft, hard = resource.getrlimit(res)
         if soft == -1 and hard == -1:
@@ -188,6 +194,7 @@ class Launcher(object):
     
     
     def __find_and_set_higer_system_limits(self):
+        resource = get_resource_lib()
         if not resource:
             logger.info('System resource package is not available, cannot increase system limits')
             return
@@ -213,6 +220,12 @@ class Launcher(object):
         
         # Now we are started, try to raise system limits to the maximum allowed
         self.__find_and_set_higer_system_limits()
+    
+    
+    # To boost CLI we did not loaded all configuration and objects
+    # so now we need to launch the agent, we must to it now
+    def finish_to_load_configuration_and_objects(self):
+        configmgr.finish_to_load_configuration_and_objects()
     
     
     # Main locking function, will LOCK here until the daemon is dead/killed/whatever

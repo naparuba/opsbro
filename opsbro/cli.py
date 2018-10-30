@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 import os
-import json
 import imp
 import traceback
 import sys
@@ -15,9 +14,7 @@ if PY3:
     xrange = range  # note: python 3 do not have xrange
 
 from .configurationmanager import configmgr
-from .collectormanager import collectormgr
-from .modulemanager import modulemanager
-from .packer import packer
+from .packer import packer, PACKS_LEVELS
 from .unixclient import get_json, get_local, get_request_errors
 from .httpclient import httper
 from .log import cprint, logger, sprintf
@@ -143,7 +140,7 @@ class AnyAgent(object):
         if agent_state != AGENT_STATE_STOPPED:
             logger.error('The temporary agent did not stopped in a valid time. Currently: %s' % agent_state)
             return
-
+    
     
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.tmp_agent is not None:
@@ -284,12 +281,13 @@ class Dummy():
 
 
 class CLIEntry(object):
-    def __init__(self, f, args, description, allow_temporary_agent, topic):
+    def __init__(self, f, args, description, allow_temporary_agent, topic, need_full_configuration):
         self.f = f
         self.args = args
         self.description = description
         self.allow_temporary_agent = allow_temporary_agent
         self.topic = topic
+        self.need_full_configuration = need_full_configuration
 
 
 # Commander is the main class for managing the CLI session and behavior
@@ -311,8 +309,10 @@ class CLICommander(object):
             logger.error('Configuration directory [%s] is missing' % cfg_dir)
             sys.exit(2)
         
+        t0 = time.time()
         # We need the main cfg_directory
         configmgr.load_cfg_dir(cfg_dir, load_focus='agent')
+        logger.debug('configmgr.load_cfg_dir (agent) :: %.3f' % (time.time() - t0))
         
         data_dir = os.path.abspath(os.path.join(DEFAULT_DATA_DIR))  # '/var/lib/opsbro/'
         
@@ -325,41 +325,51 @@ class CLICommander(object):
         # * global-configration = common to all nodes
         # * zone-configuration = common to zone nodes
         # * local-configuration = on this specific node
-        core_configuration = os.path.join(data_dir, 'core-configuration')
-        global_configuration = os.path.join(data_dir, 'global-configuration')
-        zone_configuration = os.path.join(data_dir, 'zone-configuration')
-        local_configuration = os.path.join(data_dir, 'local-configuration')
+        for configuration_level in PACKS_LEVELS:
+            path = os.path.join(data_dir, '%s-configuration' % configuration_level)
+            # Ask the packer to load pack descriptions so it will be able to
+            # give us which pack directories must be read (with good order)
+            packer.load_pack_descriptions(path, configuration_level)
         
-        # Ask the packer to load pack descriptions so it will be able to
-        # give us which pack directories must be read (with good order)
-        packer.load_pack_descriptions(core_configuration, 'core')
-        packer.load_pack_descriptions(global_configuration, 'global')
-        packer.load_pack_descriptions(zone_configuration, 'zone')
-        packer.load_pack_descriptions(local_configuration, 'local')
+        # t0 = time.time()
+        # # Now that packs are load and clean, we can load collector code from it
+        # configmgr.load_collectors_from_packs()
+        # print('configmgr.load_collectors_from_packs :: %.3f' % (time.time() - t0))
         
-        # Now that packs are load and clean, we can load collector code from it
-        configmgr.load_collectors_from_packs()
-        
+        t0 = time.time()
         # also load hosting driver (like EC2 or scaleway) from packs too
         configmgr.load_hostingdrivers_from_packs()
+        logger.debug('configmgr.load_hostingdrivers_from_packs :: %.3f' % (time.time() - t0))
         
-        # load all compliance drivers
-        configmgr.load_compliancebackends_from_packs()
+        # t0 = time.time()
+        # # load all compliance drivers
+        # configmgr.load_compliancebackends_from_packs()
+        # print('configmgr.load_compliancebackends_from_packs :: %.3f' % (time.time() - t0))
         
-        # Now that packs are load and clean, we can load modules code from it
-        configmgr.load_modules_from_packs()
+        # t0 = time.time()
+        # # Now that packs are load and clean, we can load modules code from it
+        # configmgr.load_modules_from_packs()
+        # print('configmgr.load_modules_from_packs :: %.3f' % (time.time() - t0))
         
-        # We load configuration from packs, but only the one we are sure we must load
-        configmgr.load_configuration_from_packs()
+        # t0 = time.time()
+        # # We load configuration from packs, but only the one we are sure we must load
+        # configmgr.load_configuration_from_packs()
+        # print('configmgr.load_configuration_from_packs :: %.3f' % (time.time() - t0))
         
-        # We can now give configuration to the collectors
-        collectormgr.get_parameters_from_packs()
+        # t0 = time.time()
+        # # We can now give configuration to the collectors
+        # collectormgr.get_parameters_from_packs()
+        # print('configmgr.get_parameters_from_packs :: %.3f' % (time.time() - t0))
         
-        # We can now give configuration to the modules
-        modulemanager.get_parameters_from_packs()
+        # t0 = time.time()
+        # # We can now give configuration to the modules
+        # modulemanager.get_parameters_from_packs()
+        # print('modulemanager.get_parameters_from_packs :: %.3f' % (time.time() - t0))
         
+        t0 = time.time()
         # We will now try to load the keywords from the modules
-        self.load_cli_mods(opts)
+        self._load_cli_mods(opts)
+        logger.debug('self.load_cli_mods :: %.3f' % (time.time() - t0))
     
     
     # We should look on the sys.argv if we find a valid keywords to
@@ -393,7 +403,7 @@ class CLICommander(object):
     
     
     # For some keywords, find (and create if need) the keywords entry in the keywords tree
-    def insert_keywords_entry(self, keywords, e):
+    def _insert_keywords_entry(self, keywords, e):
         
         # Simulate 'global' entry before top level entries
         if len(keywords) == 1:
@@ -425,12 +435,13 @@ class CLICommander(object):
         args = raw_entry.get('args', [])
         description = raw_entry.get('description', '')
         allow_temporary_agent = raw_entry.get('allow_temporary_agent', None)
-        e = CLIEntry(f, args, description, allow_temporary_agent, main_topic)
+        need_full_configuration = raw_entry.get('need_full_configuration', False)
+        e = CLIEntry(f, args, description, allow_temporary_agent, main_topic, need_full_configuration)
         # Finally save it
-        self.insert_keywords_entry(m_keywords, e)
+        self._insert_keywords_entry(m_keywords, e)
     
     
-    def get_cli_entry_from_args(self, command_args):
+    def _get_cli_entry_from_args(self, command_args):
         logger.debug("ARGS: %s" % command_args)
         if len(command_args) == 1:
             command_args = ['global', command_args[0]]
@@ -447,7 +458,7 @@ class CLICommander(object):
         return ptr
     
     
-    def load_cli_mods(self, opts):
+    def _load_cli_mods(self, opts):
         global CONFIG
         # Main list of keywords for the first parameter
         self.keywords.clear()
@@ -518,7 +529,7 @@ class CLICommander(object):
     def one_loop(self, command_args):
         logger.debug("ARGS: %s" % command_args)
         
-        entry = self.get_cli_entry_from_args(command_args)
+        entry = self._get_cli_entry_from_args(command_args)
         if entry is None:
             self.print_list(command_args[0])
             sys.exit(2)
@@ -562,6 +573,15 @@ class CLICommander(object):
         cmd_opts, cmd_args = command_parser.parse_args(command_args)
         f = entry.f
         logger.debug("CALLING " + str(f) + " WITH " + str(cmd_args) + " and " + str(cmd_opts))
+        
+        # Maybe the entry need to finish the loading to run (like dump configuration or such things)
+        if entry.need_full_configuration:
+            cprint(' * This command need the agent configuration to be loaded to be executed. This can take some few seconds.', color='grey', end='')
+            sys.stdout.flush()
+            configmgr.finish_to_load_configuration_and_objects()
+            # Make the first line disapear, and clean it with space
+            cprint('\r' + ' ' * 150 + '\r', end='')
+            sys.stdout.flush()
         
         # Look if this call need a specific execution context, like a temporary agent
         execution_ctx = self.__get_execution_context(entry)

@@ -97,24 +97,25 @@ def do_tutorial_show(tutorial_name):
         time.sleep(wait_time)
         cprint(line, end='')
         sys.stdout.flush()
-
     
     cprint('\n\nTutorial is ended', color='magenta')
 
 
 exports = {
     do_tutorials_list: {
-        'keywords'   : ['tutorials', 'list'],
-        'args'       : [
+        'keywords'               : ['tutorials', 'list'],
+        'args'                   : [
         ],
-        'description': 'List available tutorials'
+        'description'            : 'List available tutorials',
+        'need_full_configuration': True,
     },
     do_tutorial_show : {
-        'keywords'   : ['tutorials', 'show'],
-        'args'       : [
+        'keywords'               : ['tutorials', 'show'],
+        'args'                   : [
             {'name': 'tutorial-name', 'description': 'Name of the tutorial to show'},
         ],
-        'description': 'Show a tutorial in your terminal (note that no action will be done, all is fake)'
+        'description'            : 'Show a tutorial in your terminal (note that no action will be done, all is fake)',
+        'need_full_configuration': True,
     },
     
 }

@@ -340,9 +340,10 @@ def do_parameters_get(parameter_full_path):
 exports = {
     
     do_packs_show    : {
-        'keywords'   : ['packs', 'show'],
-        'args'       : [],
-        'description': 'Print pack informations & contents'
+        'keywords'               : ['packs', 'show'],
+        'args'                   : [],
+        'description'            : 'Print pack informations & contents',
+        'need_full_configuration': True,
     },
     
     do_packs_list    : {
@@ -361,20 +362,22 @@ exports = {
     },
     
     do_parameters_set: {
-        'keywords'   : ['packs', 'parameters', 'set'],
-        'args'       : [
+        'keywords'               : ['packs', 'parameters', 'set'],
+        'args'                   : [
             {'name': 'parameter_full_path', 'description': 'Parameter path of the form LEVEL.packs.PACK_NAME.KEY'},
             {'name': 'value', 'description': 'Value to set for this parameter'},
         ],
-        'description': 'List packs'
+        'description'            : 'List packs',
+        'need_full_configuration': True,
     },
     
     do_parameters_get: {
-        'keywords'   : ['packs', 'parameters', 'get'],
-        'args'       : [
+        'keywords'               : ['packs', 'parameters', 'get'],
+        'args'                   : [
             {'name': 'parameter_full_path', 'description': 'Parameter path of the form LEVEL.packs.PACK_NAME.KEY'},
         ],
-        'description': 'List packs'
+        'description'            : 'List packs',
+        'need_full_configuration': True,
     },
     
 }
