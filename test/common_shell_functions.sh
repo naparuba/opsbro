@@ -145,7 +145,7 @@ function exit_if_no_crash {
        cat /var/log/opsbro/crash.log
        exit 2
     fi
-    print " - $1\n"
+    printf " - $1\n"
     printf " - Clean exit: OK √\n"
     exit 0
 }

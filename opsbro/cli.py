@@ -17,7 +17,7 @@ from .configurationmanager import configmgr
 from .packer import packer, PACKS_LEVELS
 from .unixclient import get_json, get_local, get_request_errors
 from .httpclient import httper
-from .log import cprint, logger, sprintf
+from .log import cprint, logger, sprintf, is_tty
 from .defaultpaths import DEFAULT_LOG_DIR, DEFAULT_CFG_DIR, DEFAULT_DATA_DIR, DEFAULT_SOCK_PATH
 from .info import VERSION
 from .cli_display import print_h1, get_terminal_size
@@ -576,12 +576,15 @@ class CLICommander(object):
         
         # Maybe the entry need to finish the loading to run (like dump configuration or such things)
         if entry.need_full_configuration:
-            cprint(' * This command need the agent configuration to be loaded to be executed. This can take some few seconds.', color='grey', end='')
-            sys.stdout.flush()
+            # Only print helper if we are inside a tty, if it's a | command, don't need this
+            if is_tty():
+                cprint(' * This command need the agent configuration to be loaded to be executed. This can take some few seconds.', color='grey', end='')
+                sys.stdout.flush()
             configmgr.finish_to_load_configuration_and_objects()
-            # Make the first line disapear, and clean it with space
-            cprint('\r' + ' ' * 150 + '\r', end='')
-            sys.stdout.flush()
+            if is_tty():
+                # Make the first line disapear, and clean it with space
+                cprint('\r' + ' ' * 150 + '\r', end='')
+                sys.stdout.flush()
         
         # Look if this call need a specific execution context, like a temporary agent
         execution_ctx = self.__get_execution_context(entry)

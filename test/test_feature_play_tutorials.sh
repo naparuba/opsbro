@@ -14,7 +14,7 @@ ALL_TUTORIALS=`opsbro tutorials list | awk '{print $5}' | grep -vE '^$'`
 DID_PLAY="0"
 for tutorial in $ALL_TUTORIALS; do
    DID_PLAY="1"
-   print_header "Playing tutorial" $tutorial
+   print_header "Playing tutorial $tutorial "
    opsbro tutorials show $tutorial
    if [ $? != 0 ]; then
       echo "ERROR: the tutorial $tutorial did not play well."
