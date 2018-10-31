@@ -331,40 +331,10 @@ class CLICommander(object):
             # give us which pack directories must be read (with good order)
             packer.load_pack_descriptions(path, configuration_level)
         
-        # t0 = time.time()
-        # # Now that packs are load and clean, we can load collector code from it
-        # configmgr.load_collectors_from_packs()
-        # print('configmgr.load_collectors_from_packs :: %.3f' % (time.time() - t0))
-        
         t0 = time.time()
         # also load hosting driver (like EC2 or scaleway) from packs too
         configmgr.load_hostingdrivers_from_packs()
         logger.debug('configmgr.load_hostingdrivers_from_packs :: %.3f' % (time.time() - t0))
-        
-        # t0 = time.time()
-        # # load all compliance drivers
-        # configmgr.load_compliancebackends_from_packs()
-        # print('configmgr.load_compliancebackends_from_packs :: %.3f' % (time.time() - t0))
-        
-        # t0 = time.time()
-        # # Now that packs are load and clean, we can load modules code from it
-        # configmgr.load_modules_from_packs()
-        # print('configmgr.load_modules_from_packs :: %.3f' % (time.time() - t0))
-        
-        # t0 = time.time()
-        # # We load configuration from packs, but only the one we are sure we must load
-        # configmgr.load_configuration_from_packs()
-        # print('configmgr.load_configuration_from_packs :: %.3f' % (time.time() - t0))
-        
-        # t0 = time.time()
-        # # We can now give configuration to the collectors
-        # collectormgr.get_parameters_from_packs()
-        # print('configmgr.get_parameters_from_packs :: %.3f' % (time.time() - t0))
-        
-        # t0 = time.time()
-        # # We can now give configuration to the modules
-        # modulemanager.get_parameters_from_packs()
-        # print('modulemanager.get_parameters_from_packs :: %.3f' % (time.time() - t0))
         
         t0 = time.time()
         # We will now try to load the keywords from the modules
