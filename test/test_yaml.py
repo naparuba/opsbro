@@ -5,8 +5,6 @@
 
 from opsbro_test import *
 
-import os
-import sys
 from opsbro.yamlmgr import yamler
 from opsbro.log import cprint
 
@@ -38,7 +36,7 @@ class TestYaml(OpsBroTest):
 # ending comment
 '''
         
-        data = yamler.loads(s)
+        data = yamler.loads(s, with_comments=True)
         
         self.assert_(data[0] == 'super string')
         self.assert_(data[1]['k1'] == 'blabla')
@@ -64,7 +62,7 @@ key4: 36
 # ending comment
 # ending comment bis
         '''
-        data = yamler.loads(s)
+        data = yamler.loads(s, with_comments=True)
         cprint("DATA: %s %s %s" % (data, type(data), dir(data)))
         
         cprint("CA:%s" % data.ca)
@@ -120,7 +118,7 @@ key3: 45
 
 
 #___ENDING___'''
-        data = yamler.loads(s)
+        data = yamler.loads(s, with_comments=True)
         cprint("DATA: %s %s %s" % (data, type(data), dir(data)))
         
         cprint("CA : %s" % data.ca)

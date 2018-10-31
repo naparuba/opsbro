@@ -11,10 +11,32 @@ from .characters import CHARACTERS
 import opsbro.misc
 from .library import libstore
 
-p = os.path.join(os.path.dirname(opsbro.misc.__file__), 'internalyaml')
-sys.path.insert(0, p)
+ruamel_yaml = None
 
-import ruamel.yaml as yaml
+
+def get_ruamel_yaml():
+    global ruamel_yaml
+    p = os.path.join(os.path.dirname(opsbro.misc.__file__), 'internalyaml')
+    sys.path.insert(0, p)
+    import ruamel.yaml as ruamel_yaml
+    ruamel_yaml = ruamel_yaml
+    return ruamel_yaml
+
+
+simple_yaml = None
+simple_yaml_loader = None
+
+
+def get_simple_yaml():
+    global simple_yaml, simple_yaml_loader
+    # Always load simple yaml as we load the agent with it
+    try:
+        import yaml as simple_yaml
+        from yaml import CLoader as simple_yaml_loader
+    except ImportError:  # oups not founded, take the internal one
+        simple_yaml = get_ruamel_yaml()
+    return simple_yaml
+
 
 from .log import LoggerFactory
 from .util import bytes_to_unicode
@@ -28,10 +50,22 @@ ENDING_SUFFIX = '#___ENDING___'
 class YamlMgr(object):
     def __init__(self):
         # To allow some libs to directly call ruaml.yaml. FOR DEBUGING PURPOSE ONLY!
-        self.yaml = yaml
+        self.ruamel_yaml = None
+        self.simple_yaml = None
     
     
-    def get_object_from_parameter_file(self, parameters_file_path, suffix=''):
+    def get_yaml_lib(self, with_comments=False):
+        if with_comments:
+            if self.ruamel_yaml is None:  # ok need to load the lib
+                self.ruamel_yaml = get_ruamel_yaml()
+            return self.ruamel_yaml
+        # simple one
+        if self.simple_yaml is None:
+            self.simple_yaml = get_simple_yaml()
+        return self.simple_yaml
+    
+    
+    def get_object_from_parameter_file(self, parameters_file_path, suffix='', with_comments=False):
         if not os.path.exists(parameters_file_path):
             logger.error('The parameters file %s is missing' % parameters_file_path)
             sys.exit(2)
@@ -49,12 +83,12 @@ class YamlMgr(object):
                 buf = '%s\n' % suffix
         
         # As we have a parameter style, need to insert dummy key entry to have all comments, even the first key one
-        o = self.loads(buf, force_document_comment_to_first_entry=True)
+        o = self.loads(buf, force_document_comment_to_first_entry=True, with_comments=with_comments)
         return o
     
     
     def set_value_in_parameter_file(self, parameters_file_path, parameter_name, python_value, str_value, change_type='SET'):
-        o = yamler.get_object_from_parameter_file(parameters_file_path, suffix=ENDING_SUFFIX)
+        o = self.get_object_from_parameter_file(parameters_file_path, suffix=ENDING_SUFFIX)
         
         # Set the value into the original object
         o[parameter_name] = python_value
@@ -63,9 +97,9 @@ class YamlMgr(object):
         # BEWARE: only a oneliner!
         value_str = str_value.replace('\n', ' ')
         change_line = '# CHANGE: (%s) %s %s %s %s' % (datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), change_type, parameter_name, CHARACTERS.arrow_left, value_str)
-        yamler.add_document_ending_comment(o, change_line, ENDING_SUFFIX)
+        self.add_document_ending_comment(o, change_line, ENDING_SUFFIX)
         
-        result_str = yamler.dumps(o)
+        result_str = self.dumps(o)
         tmp_file = '%s.tmp' % parameters_file_path
         f = codecs.open(tmp_file, 'wb', 'utf8')
         # always save as unicode, because f.write() will launch an error if not
@@ -78,24 +112,38 @@ class YamlMgr(object):
     def dumps(self, o):
         StringIO = libstore.get_StringIO()
         f = StringIO()
-        yaml.round_trip_dump(o, f, default_flow_style=False)
+        yamllib = self.get_yaml_lib(with_comments=True)  # when writing, comments are mandatory
+        yamllib.round_trip_dump(o, f, default_flow_style=False)
         buf = f.getvalue()
         return buf
     
     
     # when loading, cal insert a key entry at start, for parameters, in order to allow
     # the first real key to have comments and not set in the global document one
-    def loads(self, s, force_document_comment_to_first_entry=False):
+    def loads(self, s, force_document_comment_to_first_entry=False, with_comments=False):
+        if not with_comments:  # don't care about first comment if we don't care about coments globaly
+            force_document_comment_to_first_entry = False
         if force_document_comment_to_first_entry:
             s = '____useless_property: true\n' + s
-        data = yaml.round_trip_load(s)
+        yamllib = self.get_yaml_lib(with_comments)
+        if with_comments:
+            data = yamllib.round_trip_load(s)
+        else:
+            # The yaml lib do not manage loads, so need to fake it first
+            StringIO = libstore.get_StringIO_unicode_compatible()
+            fake_file = StringIO(s)  # unicode_to_bytes(s))
+            if simple_yaml_loader is not None:
+                data = yamllib.load(fake_file, Loader=simple_yaml_loader)
+            else:
+                data = yamllib.round_trip_load(s)
         if force_document_comment_to_first_entry:
             del data['____useless_property']
         return data
     
     
     def get_document_comment(self, data):
-        if not isinstance(data, yaml.comments.CommentedMap):
+        yamllib = self.get_yaml_lib(with_comments=True)
+        if not isinstance(data, yamllib.comments.CommentedMap):
             logger.error('Cannot access comment to document because it is not a CommentedMap object (%s)' % type(data))
             return None
         # something like this : [None, [CommentToken(value=u'# Document gull comment\n'), CommentToken(value=u'# document full comment bis\n')]]
@@ -104,7 +152,8 @@ class YamlMgr(object):
     
     
     def get_document_ending_comment(self, data):
-        if not isinstance(data, yaml.comments.CommentedMap):
+        yamllib = self.get_yaml_lib(with_comments=True)
+        if not isinstance(data, yamllib.comments.CommentedMap):
             logger.error('Cannot access comment to document because it is not a CommentedMap object (%s)' % type(data))
             return None
         # something like this : [None, [CommentToken(value=u'# Document gull comment\n'), CommentToken(value=u'# document full comment bis\n')]]
@@ -115,7 +164,8 @@ class YamlMgr(object):
     
     
     def get_key_comment(self, data, key):
-        if not isinstance(data, yaml.comments.CommentedMap):
+        yamllib = self.get_yaml_lib(with_comments=True)
+        if not isinstance(data, yamllib.comments.CommentedMap):
             logger.error('Cannot access comment to document because it is not a CommentedMap object (%s)' % type(data))
             return ''
         key_comments = data.ca.items
@@ -139,7 +189,8 @@ class YamlMgr(object):
     
     
     def add_document_ending_comment(self, doc, s, what_to_replace):
-        if not isinstance(doc, yaml.comments.CommentedMap):
+        yamllib = self.get_yaml_lib(with_comments=True)
+        if not isinstance(doc, yamllib.comments.CommentedMap):
             logger.error('Cannot set comments to document because it is not a CommentedMap object (%s)' % type(doc))
             return
         ending_comments = doc.ca.end

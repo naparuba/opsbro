@@ -2,6 +2,7 @@
 import json
 import os
 import codecs
+import traceback
 
 from .yamlmgr import yamler
 from .log import LoggerFactory
@@ -60,7 +61,7 @@ class PackManager(object):
                         package = yamler.loads(package_buf)
                         self.load_package(package, package_pth, level)
                 except Exception as exp:  # todo: more precise catch? I think so
-                    logger.error('Cannot load package %s: %s' % (package_pth, exp))
+                    logger.error('Cannot load package %s: %s' % (package_pth, traceback.format_exc()))
     
     
     # We want to have directories that we need to load, but there is a rule:

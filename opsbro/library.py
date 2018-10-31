@@ -6,6 +6,7 @@ class LibraryStore(object):
         self.__pprint = None
         self.__pygments = None
         self.__StringIO = None
+        self.__StringIO_unicode = None  # unicode compliant version
     
     
     def get_encrypter(self):
@@ -66,6 +67,17 @@ class LibraryStore(object):
             from io import StringIO
         self.__StringIO = StringIO
         return self.__StringIO
+    
+    
+    def get_StringIO_unicode_compatible(self):
+        if self.__StringIO_unicode is not None:
+            return self.__StringIO_unicode
+        try:
+            from StringIO import StringIO
+        except ImportError:  # Python3
+            from io import StringIO
+        self.__StringIO_unicode = StringIO
+        return self.__StringIO_unicode
 
 
 libstore = LibraryStore()

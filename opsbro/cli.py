@@ -332,11 +332,6 @@ class CLICommander(object):
             packer.load_pack_descriptions(path, configuration_level)
         
         t0 = time.time()
-        # also load hosting driver (like EC2 or scaleway) from packs too
-        configmgr.load_hostingdrivers_from_packs()
-        logger.debug('configmgr.load_hostingdrivers_from_packs :: %.3f' % (time.time() - t0))
-        
-        t0 = time.time()
         # We will now try to load the keywords from the modules
         self._load_cli_mods(opts)
         logger.debug('self.load_cli_mods :: %.3f' % (time.time() - t0))

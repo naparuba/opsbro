@@ -85,7 +85,7 @@ def __assert_pname_in_obj(pname, o, parameters_file_path):
 def yml_parameter_get(parameters_file_path, parameter_name, file_display=None):
     if file_display is None:
         file_display = parameters_file_path
-    o = yamler.get_object_from_parameter_file(parameters_file_path)
+    o = yamler.get_object_from_parameter_file(parameters_file_path, with_comments=True)  # in CLI comments are importants
     
     # Error if the parameter is not present
     __assert_pname_in_obj(parameter_name, o, parameters_file_path)
@@ -142,7 +142,7 @@ def yml_parameter_add(parameters_file_path, parameter_name, str_value, file_disp
         file_display = parameters_file_path
     
     # First get the value
-    o = yamler.get_object_from_parameter_file(parameters_file_path)
+    o = yamler.get_object_from_parameter_file(parameters_file_path, with_comments=True)  # in CLI comments are importants
     # Error if the parameter is not present
     __assert_pname_in_obj(parameter_name, o, parameters_file_path)
     
@@ -177,7 +177,7 @@ def yml_parameter_remove(parameters_file_path, parameter_name, str_value, file_d
         file_display = parameters_file_path
     
     # First get the value
-    o = yamler.get_object_from_parameter_file(parameters_file_path)
+    o = yamler.get_object_from_parameter_file(parameters_file_path, with_comments=True)  # in CLI comments are importants
     # Error if the parameter is not present
     __assert_pname_in_obj(parameter_name, o, parameters_file_path)
     

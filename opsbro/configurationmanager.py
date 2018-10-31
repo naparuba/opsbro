@@ -424,6 +424,11 @@ class ConfigurationManager(object):
         logger.debug('configmgr.load_configuration_from_packs :: %.3f' % (time.time() - t0))
         
         t0 = time.time()
+        # also load hosting driver (like EC2 or scaleway) from packs too
+        configmgr.load_hostingdrivers_from_packs()
+        logger.debug('configmgr.load_hostingdrivers_from_packs :: %.3f' % (time.time() - t0))
+        
+        t0 = time.time()
         # We can now give configuration to the collectors
         from .collectormanager import collectormgr
         collectormgr.get_parameters_from_packs()
