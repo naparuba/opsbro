@@ -130,8 +130,8 @@ class ImraneModule(ListenerModule):
                 self.logger.debug('IMRANE: not a collector thread')
                 time.sleep(1)
                 continue
-            self.logger.info('IMRANE: collector loop')
-            self.logger.info('IMRANE: manage: %s' % self.queue)
+            self.logger.debug('IMRANE: collector loop')
+            self.logger.debug('IMRANE: manage: %s' % self.queue)
             imrane_collector = None
             for collector in collectormgr.collectors.values():
                 name = collector['name']
@@ -146,7 +146,7 @@ class ImraneModule(ListenerModule):
             # Maybe this collector did not run since we last look at it, if so, skip it
             last_check = imrane_collector['last_check']
             if last_check == last_collector_check:
-                self.logger.info('IMRANE: the collector did not run since the last loop, skiping this turn')
+                self.logger.debug('IMRANE: the collector did not run since the last loop, skiping this turn')
                 time.sleep(1)
                 continue
             last_collector_check = last_check

@@ -41,7 +41,7 @@ class BaseManager(object):
         with self._current_history_entry_lock:
             now = int(time.time())
             pth = os.path.join(self.history_directory, '%d.json' % now)
-            self.logger.info('Saving new collector history entry to %s' % pth)
+            self.logger.debug('Saving new collector history entry to %s' % pth)
             buf = jsoner.dumps(self._current_history_entry)
             with open(pth, 'w') as f:
                 f.write(buf)

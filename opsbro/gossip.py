@@ -234,7 +234,7 @@ class Gossip(BaseManager):
                          'name': node['name'], 'display_name': node.get('display_name', ''),
                          'uuid': node['uuid'], 'old_state': old_state, 'state': new_state,
                          }
-        logger.info('__add_node_state_change_history_entry:: %s' % history_entry)
+        logger.debug('__add_node_state_change_history_entry:: %s' % history_entry)
         self.add_history_entry(history_entry)
     
     
@@ -243,7 +243,7 @@ class Gossip(BaseManager):
                          'name': node['name'], 'display_name': node.get('display_name', ''),
                          'uuid': node['uuid'], 'old_zone': old_zone, 'zone': new_zone,
                          }
-        logger.info('__add_node_zone_change_history_entry:: %s' % history_entry)
+        logger.debug('__add_node_zone_change_history_entry:: %s' % history_entry)
         self.add_history_entry(history_entry)
     
     
@@ -366,14 +366,14 @@ class Gossip(BaseManager):
                 # We do not want to send a broadcast now, we have still other group to manage
                 # and send only one change
                 self.add_group(group, broadcast_when_change=False)
-                logger.info("New group detected from detector for this node: %s" % group)
+                logger.debug("New group detected from detector for this node: %s" % group)
         for group in deleted_groups:
             if self.is_in_group(group):
                 did_change = True
                 # We do not want to send a broadcast now, we have still other group to manage
                 # and send only one change
                 self.remove_group(group, broadcast_when_change=False)
-                logger.info("Group was lost from the previous detection for this node: %s" % group)
+                logger.debug("Group was lost from the previous detection for this node: %s" % group)
         # warn other parts only if need, and do it only once even for lot of groups
         if did_change:
             self.node_did_change(self.uuid)  # a node did change: ourselve
@@ -460,7 +460,7 @@ class Gossip(BaseManager):
         if node is None:
             return ''
         node_zone = node.get('zone', '')
-        logger.info('get_zone_from_node:: giving back %s' % node_zone)
+        logger.debug('get_zone_from_node:: giving back %s' % node_zone)
         return node_zone
     
     
@@ -927,7 +927,7 @@ class Gossip(BaseManager):
         nb_dest = min(len(others), KGOSSIP)
         dests = random.sample(others, nb_dest)
         for dest in dests:
-            logger.info("launch_gossip::  into own zone::%s  to %s(%s)" % (self.zone, dest['name'], dest['display_name']))
+            logger.debug("launch_gossip::  into own zone::%s  to %s(%s)" % (self.zone, dest['name'], dest['display_name']))
             self.__do_gossip_push(dest, consume=True)
     
     
@@ -1025,11 +1025,11 @@ class Gossip(BaseManager):
             sock.settimeout(3)
             ret = sock.recv(65535)
             uncrypted_ret = encrypter.decrypt(ret)
-            logger.info('RECEIVING PING RESPONSE: %s' % uncrypted_ret)
+            logger.debug('RECEIVING PING RESPONSE: %s' % uncrypted_ret)
             try:
                 msg = jsoner.loads(uncrypted_ret)
                 new_other = msg['node']
-                logger.info('PING got a return from %s (%s) (node state)=%s: %s' % (new_other['name'], new_other['display_name'], new_other['state'], msg))
+                logger.debug('PING got a return from %s (%s) (node state)=%s: %s' % (new_other['name'], new_other['display_name'], new_other['state'], msg))
                 if new_other['state'] == NODE_STATES.ALIVE:
                     # An aswer? great it is alive!
                     self.set_alive(other, strong=True)
@@ -1041,8 +1041,7 @@ class Gossip(BaseManager):
             except ValueError:  # bad json
                 self.set_suspect(other)
         except (socket.timeout, socket.gaierror) as exp:
-            logger.info("PING: error joining the other node %s:%s : %s" % (addr, port, exp))
-            logger.info("PING: go indirect mode")
+            logger.info("PING: error joining the other node %s:%s : %s. Switching to a indirect ping mode." % (addr, port, exp))
             # with self.nodes_lock:
             possible_relays = [n for n in self.nodes.values() if
                                n['uuid'] != self.uuid and n != other and n['state'] == NODE_STATES.ALIVE]
@@ -1052,7 +1051,7 @@ class Gossip(BaseManager):
                 self.set_suspect(other)
             # Take at least 3 relays to ask ping
             relays = random.sample(possible_relays, min(len(possible_relays), 3))
-            logger.info('POSSIBLE RELAYS', relays)
+            logger.debug('POSSIBLE RELAYS', relays)
             ping_relay_payload = {'type': 'ping-relay', 'seqno': 0, 'tgt': other['uuid'], 'from': self.uuid}
             message = jsoner.dumps(ping_relay_payload)
             enc_message = encrypter.encrypt(message)
@@ -1077,8 +1076,7 @@ class Gossip(BaseManager):
             uncrypted_ret = encrypter.decrypt(ret)
             msg = jsoner.loads(uncrypted_ret)
             new_other = msg['node']
-            logger.info('PING got a return from %s (%s) via a relay: %s' % (new_other['name'], new_other['display_name'], msg))
-            logger.debug('RELAY set alive', other['name'])
+            logger.debug('PING got a return from %s (%s) via a relay: %s' % (new_other['name'], new_other['display_name'], msg))
             # Ok it's no more suspected, great :)
             if new_other['state'] == NODE_STATES.ALIVE:
                 # An aswer? great it is alive!
@@ -1329,11 +1327,11 @@ class Gossip(BaseManager):
             encrypter = libstore.get_encrypter()
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
             for message in messages:
-                logger.info('BROADCAST: sending message: (len=%d) %s' % (len(message), message))
+                logger.debug('BROADCAST: sending message: (len=%d) %s' % (len(message), message))
                 enc_message = encrypter.encrypt(message)
                 total_size += len(enc_message)
                 sock.sendto(enc_message, (addr, port))
-            logger.info('BROADCAST: sent %d messages (total size=%d) to %s:%s (uuid=%s  display_name=%s)' % (len(messages), total_size, addr, port, dest['uuid'], dest['display_name']))
+            logger.debug('BROADCAST: sent %d messages (total size=%d) to %s:%s (uuid=%s  display_name=%s)' % (len(messages), total_size, addr, port, dest['uuid'], dest['display_name']))
         except (socket.timeout, socket.gaierror) as exp:
             logger.error("ERROR: cannot sent the UDP message of len %d to %s: %s" % (len(message), dest['uuid'], exp))
         try:

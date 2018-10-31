@@ -312,7 +312,7 @@ def do_wait_event(event_type, timeout=30):
     
     for i in range(timeout):
         uri = '/agent/event/%s' % event_type
-        logger.info('ASK FOR EVENT %s' % event_type)
+        logger.debug('ASK FOR EVENT %s' % event_type)
         try:
             evt = get_opsbro_json(uri, timeout=1)  # slow timeout to allow fast looping
         # Timemouts: just loop

@@ -93,6 +93,6 @@ opsbro gossip events add "END-$CASE"
 wait_event_with_timeout "END-NODE1" 120
 wait_event_with_timeout "END-NODE2" 120
 
-sleep 10
+sleep 20
 
 exit_if_no_crash "Agregator module test di done"
