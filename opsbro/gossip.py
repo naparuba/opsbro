@@ -14,7 +14,6 @@ from .threadmgr import threader
 from .broadcast import broadcaster
 from .websocketmanager import websocketmgr
 from .pubsub import pubsub
-from .httpdaemon import http_export, response, abort, request
 from .library import libstore
 from .httpclient import get_http_exceptions, httper
 from .zonemanager import zonemgr
@@ -1619,6 +1618,7 @@ class Gossip(BaseManager):
     # We must create http callbacks in running because
     # we must have the self object
     def export_http(self):
+        from .httpdaemon import http_export, response, abort, request
         
         @http_export('/agent/name')
         def get_name():

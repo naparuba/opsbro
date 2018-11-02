@@ -8,7 +8,6 @@ import traceback
 
 from .log import LoggerFactory
 from .stop import stopper
-from .httpdaemon import http_export, response, request
 from .evaluater import evaluater
 from .topic import topiker, TOPIC_SYSTEM_COMPLIANCE
 from .handlermgr import handlermgr
@@ -683,6 +682,7 @@ class ComplianceManager(BaseManager):
     
     
     def export_http(self):
+        from .httpdaemon import http_export, response, request
         @http_export('/compliance/state', method='GET')
         def get_compliance_state():
             response.content_type = 'application/json'

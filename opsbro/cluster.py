@@ -30,7 +30,6 @@ from .raft import rafter
 from .configurationmanager import configmgr
 from .kv import kvmgr
 from .broadcast import broadcaster
-from .httpdaemon import httpdaemon, http_export, response, request, abort, gserver
 from .pubsub import pubsub
 from .dockermanager import dockermgr
 from .library import libstore
@@ -49,14 +48,17 @@ from .compliancemgr import compliancemgr
 from .defaultpaths import DEFAULT_LIBEXEC_DIR, DEFAULT_LOCK_PATH, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR, DEFAULT_CFG_DIR, DEFAULT_SOCK_PATH
 from .hostingdrivermanager import get_hostingdrivermgr
 from .topic import topiker, TOPIC_SERVICE_DISCOVERY, TOPIC_AUTOMATIC_DECTECTION, TOPIC_MONITORING, TOPIC_METROLOGY, TOPIC_CONFIGURATION_AUTOMATION, TOPIC_SYSTEM_COMPLIANCE
+from .packer import packer
+from .agentstates import AGENT_STATES
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('daemon')
 logger_gossip = LoggerFactory.create_logger('gossip')
 
-AGENT_STATE_INITIALIZING = 'initializing'
-AGENT_STATE_OK = 'ok'
-AGENT_STATE_STOPPED = 'stopped'
+# TODO: use the AGENT_STATES averywhere
+AGENT_STATE_INITIALIZING = AGENT_STATES.AGENT_STATE_INITIALIZING
+AGENT_STATE_OK = AGENT_STATES.AGENT_STATE_OK
+AGENT_STATE_STOPPED = AGENT_STATES.AGENT_STATE_STOPPED
 
 
 class Cluster(object):
@@ -316,6 +318,9 @@ class Cluster(object):
         if self.configuration_dir:
             self.configuration_dir = os.path.abspath(self.configuration_dir)
         
+        # Threader should export it's http objects
+        threader.export_http()
+        
         # We will receive a list of path to update for libexec, and we will manage them
         # in athread so the upd thread is not blocking
         self.libexec_to_update = []
@@ -344,6 +349,12 @@ class Cluster(object):
         # the evaluater need us to grok into our cfg_data and such things
         evaluater.load(self.cfg_data)
         evaluater.export_http()
+        
+        # Raft need http too
+        rafter.export_http()
+        
+        # packer need http export too (lasy export)
+        packer.export_http()
         
         # Load docker thing if possible
         dockermgr.export_http()
@@ -541,6 +552,7 @@ class Cluster(object):
     
     # TODO: SPLIT into modules :)
     def launch_tcp_listener(self):
+        from .httpdaemon import httpdaemon, http_export, response, request, abort, gserver
         
         @http_export('/agent/state')
         def get_agent_state():

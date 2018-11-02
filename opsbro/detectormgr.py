@@ -3,7 +3,6 @@ import json
 
 from .log import LoggerFactory
 from .stop import stopper
-from .httpdaemon import http_export, response
 from .evaluater import evaluater
 from .collectormanager import collectormgr
 from .gossip import gossiper
@@ -121,6 +120,7 @@ class DetectorMgr(object):
     # main method to export http interface. Must be in a method that got
     # a self entry
     def export_http(self):
+        from .httpdaemon import http_export, response
         
         @http_export('/agent/detectors/')
         @http_export('/agent/detectors')

@@ -17,7 +17,6 @@ PY3 = sys.version_info >= (3,)
 
 from .collectormanager import collectormgr
 from .log import LoggerFactory
-from .httpdaemon import http_export, response, request
 from .util import string_decode
 
 # Global logger for this part
@@ -327,7 +326,7 @@ class Evaluater(object):
     # main method to export http interface. Must be in a method that got
     # a self entry
     def export_http(self):
-        
+        from .httpdaemon import http_export, response, request
         @http_export('/agent/evaluator/list')
         def get_exports():
             response.content_type = 'application/json'

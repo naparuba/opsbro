@@ -6,7 +6,6 @@ import traceback
 
 from .yamlmgr import yamler
 from .log import LoggerFactory
-from .httpdaemon import http_export, response
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('packs')
@@ -19,9 +18,6 @@ class PackManager(object):
     def __init__(self):
         self.packs = {'core': {}, 'global': {}, 'zone': {}, 'local': {}}
         
-        # We got an object, we can fill the http daemon part
-        self.export_http()
-    
     
     def load_package(self, package, file_path, level):
         if level not in self.packs:
@@ -107,6 +103,8 @@ class PackManager(object):
     # main method to export http interface. Must be in a method that got
     # a self entry
     def export_http(self):
+        from .httpdaemon import http_export, response
+        
         @http_export('/packs/')
         @http_export('/packs')
         def get_packs():

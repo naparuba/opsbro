@@ -5,7 +5,6 @@ import os
 
 from .log import LoggerFactory
 from .threadmgr import threader
-from .httpdaemon import http_export, response
 from .misc.cgroups import cgroupmgr
 from .unixclient import get_json, get_request_errors
 
@@ -290,6 +289,8 @@ class DockerManager(object):
     # main method to export http interface. Must be in a method that got
     # a self entry
     def export_http(self):
+        from .httpdaemon import http_export, response
+        
         @http_export('/docker/')
         @http_export('/docker')
         def get_docker():

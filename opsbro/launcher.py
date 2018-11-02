@@ -1,7 +1,6 @@
 import os
 import sys
 
-from .cluster import Cluster
 from .log import logger
 from .configurationmanager import configmgr
 
@@ -230,6 +229,7 @@ class Launcher(object):
     
     # Main locking function, will LOCK here until the daemon is dead/killed/whatever
     def main(self, one_shot=False):
+        from .cluster import Cluster  # lazy load, it's a huge one
         c = Cluster(cfg_dir=self.cfg_dir)
         
         # Blocking function here

@@ -11,7 +11,6 @@ import hashlib
 from .log import LoggerFactory
 from .gossip import gossiper
 from .kv import kvmgr
-from .httpdaemon import http_export, response, request, abort
 from .stop import stopper
 from .threadmgr import threader
 from .perfdata import PerfDatas
@@ -653,6 +652,8 @@ class MonitoringManager(BaseManager):
     
     
     def export_http(self):
+        from .httpdaemon import http_export, response, request, abort
+        
         @http_export('/monitoring/state/:nuuid')
         @http_export('/monitoring/state')
         def get_state(nuuid=''):

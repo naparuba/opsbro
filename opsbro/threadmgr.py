@@ -7,10 +7,8 @@ except ImportError:  # on python static build for example
 import sys
 import os
 import time
-import traceback
-import json
-from .httpdaemon import http_export, response
 from .library import libstore
+from .jsonmgr import jsoner
 
 # this part is doomed for windows portability, will be fun to manage :)
 try:
@@ -180,7 +178,6 @@ def w(d, f, name, is_essential, args):
 class ThreadMgr(object):
     def __init__(self):
         self.all_threads = []
-        self.export_http()
     
     
     def check_alives(self):
@@ -213,9 +210,9 @@ class ThreadMgr(object):
         return t
     
     
-    # main method to export http interface. Must be in a method that got
-    # a self entry
+    # main method to export http interface. Must be in a method that got a self entry
     def export_http(self):
+        from .httpdaemon import http_export, response
         @http_export('/threads/', protected=True)
         @http_export('/threads', protected=True)
         def GET_threads():
@@ -271,7 +268,7 @@ class ThreadMgr(object):
                 res['threads'].append(nd)
             # and also our process if possible
             
-            return json.dumps(res)
+            return jsoner.dumps(res)
 
 
 threader = ThreadMgr()

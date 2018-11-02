@@ -24,7 +24,7 @@ from .cli_display import print_h1, get_terminal_size
 from .topic import topiker
 from .characters import CHARACTERS
 from .misc.lolcat import lolcat
-from .cluster import AGENT_STATE_STOPPED
+from .agentstates import AGENT_STATES
 from .now import NOW
 from .jsonmgr import jsoner
 
@@ -137,7 +137,7 @@ class AnyAgent(object):
             logger.error(exp)
             return
         agent_state = wait_for_agent_stopped()
-        if agent_state != AGENT_STATE_STOPPED:
+        if agent_state != AGENT_STATES.AGENT_STATE_STOPPED:
             logger.error('The temporary agent did not stopped in a valid time. Currently: %s' % agent_state)
             return
     
@@ -168,7 +168,7 @@ class AnyAgent(object):
     # quick dashboards)
     def assert_one_agent(self):
         agent_state = wait_for_agent_started(visual_wait=True)
-        if agent_state == AGENT_STATE_STOPPED:
+        if agent_state == AGENT_STATES.AGENT_STATE_STOPPED:
             self.did_start_a_tmp_agent = True
             tmp_agent_cmd = 'python %s agent start' % get_current_binary()
             logger.debug('Temporary agent command: %s' % tmp_agent_cmd)
@@ -185,7 +185,7 @@ class AnyAgent(object):
             cprint('%s | - you can avoid the temporary agent by launching one with "opsbro agent start" or "/etc/init.d/opsbro start" ' % CHARACTERS.corner_bottom_left, color='grey')
             cprint('')
             agent_state = wait_for_agent_started(visual_wait=True, wait_for_spawn=True)  # note: we wait for spawn as it can take some few seconds before the unix socket is available
-        if agent_state == AGENT_STATE_STOPPED:
+        if agent_state == AGENT_STATES.AGENT_STATE_STOPPED:
             raise Exception('Cannot have the agent, even a temporary one')
 
 

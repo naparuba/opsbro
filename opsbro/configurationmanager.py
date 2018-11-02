@@ -9,7 +9,6 @@ if PY3:
 
 from .defaultpaths import DEFAULT_DATA_DIR
 from .log import LoggerFactory
-from .httpdaemon import http_export, response
 from .yamlmgr import yamler
 from .packer import packer
 
@@ -445,6 +444,8 @@ class ConfigurationManager(object):
     # We must create http callbacks in running because
     # we must have the self object
     def export_http(self):
+        from .httpdaemon import http_export, response
+        
         @http_export('/configuration/parameters')
         def dump_parameters():
             response.content_type = 'application/json'

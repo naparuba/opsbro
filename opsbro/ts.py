@@ -16,7 +16,6 @@ from .now import NOW
 from .dbwrapper import dbwrapper
 from .stop import stopper
 from .kv import kvmgr
-from .httpdaemon import http_export, response
 
 # DO NOT FORGEET:
 # sysctl -w net.core.rmem_max=26214400
@@ -306,6 +305,8 @@ class TSBackend(object):
     
     # Export end points to get/list TimeSeries
     def export_http(self):
+        from .httpdaemon import http_export, response
+        
         @http_export('/list/')
         @http_export('/list/:key')
         def get_ts_keys(key=''):

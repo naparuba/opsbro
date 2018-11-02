@@ -5,7 +5,6 @@ import json
 from .log import LoggerFactory
 from .stop import stopper
 from .generator import Generator, GENERATOR_STATES
-from .httpdaemon import http_export, response
 from .basemanager import BaseManager
 
 # Global logger for this part
@@ -106,6 +105,7 @@ class GeneratorMgr(BaseManager):
     
     
     def export_http(self):
+        from .httpdaemon import http_export, response
         
         @http_export('/generators/history', method='GET')
         def get_generator_history_checks():

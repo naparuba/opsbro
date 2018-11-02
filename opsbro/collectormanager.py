@@ -11,7 +11,6 @@ import json
 from .log import LoggerFactory
 from .threadmgr import threader
 from .stop import stopper
-from .httpdaemon import http_export, response
 from .collector import Collector
 from .jsonmgr import jsoner
 from .now import NOW
@@ -263,6 +262,7 @@ class CollectorManager(BaseManager):
     # main method to export http interface. Must be in a method that got
     # a self entry
     def export_http(self):
+        from .httpdaemon import http_export, response
         
         @http_export('/collectors/')
         @http_export('/collectors')

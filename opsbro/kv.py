@@ -10,7 +10,6 @@ from .log import LoggerFactory
 from .threadmgr import threader
 from .now import NOW
 from .dbwrapper import dbwrapper
-from .httpdaemon import response, http_export, abort, request
 from .gossip import gossiper
 from .library import libstore
 from .stop import stopper
@@ -529,6 +528,8 @@ class KVBackend:
     # main method to export http interface. Must be in a method that got
     # a self entry
     def export_http(self):
+        from .httpdaemon import response, http_export, abort, request
+        
         @http_export('/kv/')
         @http_export('/kv')
         def list_keys():

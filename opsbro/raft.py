@@ -17,7 +17,6 @@ print_lock = threading.RLock()
 from .basemanager import BaseManager
 from .log import LoggerFactory
 from .gossip import gossiper
-from .httpdaemon import http_export, response, abort, request
 from .jsonmgr import jsoner
 
 # Global logger for this part
@@ -584,7 +583,6 @@ class RaftManager(BaseManager):
         super(RaftManager, self).__init__()
         self.logger = logger
         self.raft_node = RaftNode()
-        self.export_http()
     
     
     def do_raft_thread(self):
@@ -599,6 +597,8 @@ class RaftManager(BaseManager):
     # We must create http callbacks in running because
     # we must have the self object
     def export_http(self):
+        from .httpdaemon import http_export, response, abort, request
+        
         @http_export('/raft/state')
         def get_state():
             nb_nodes = len(self.raft_node._get_nodes_uuids())

@@ -24,7 +24,6 @@ from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, prin
 from opsbro.cli_display import print_h1, yml_parameter_set, yml_parameter_get, yml_parameter_add, yml_parameter_remove
 from opsbro.defaultpaths import DEFAULT_LOCK_PATH, DEFAULT_CFG_FILE
 from opsbro.configurationmanager import configmgr
-from opsbro.cluster import AGENT_STATE_INITIALIZING, AGENT_STATE_OK, AGENT_STATE_STOPPED
 from opsbro.collectormanager import COLLECTORS_STATE_COLORS, COLLECTORS_STATES
 from opsbro.module import TYPES_DESCRIPTIONS, MODULE_STATE_COLORS, MODULE_STATES
 from opsbro.topic import TOPICS, TOPICS_LABELS, TOPICS_LABEL_BANNER, MAX_TOPICS_LABEL_SIZE, TOPICS_COLORS, topiker, TOPIC_SERVICE_DISCOVERY, TOPIC_AUTOMATIC_DECTECTION, TOPIC_GENERIC, TOPIC_METROLOGY, TOPIC_MONITORING, TOPIC_SYSTEM_COMPLIANCE, \
@@ -721,15 +720,17 @@ def do_agent_parameters_remove(parameter_name, str_value):
 
 
 def do_agent_wait_full_initialized(timeout=30):
+    from opsbro.agentstates import AGENT_STATES
+    
     agent_state = wait_for_agent_started(visual_wait=True, timeout=timeout, wait_for_spawn=True)
-    if agent_state == AGENT_STATE_OK:
-        cprint(AGENT_STATE_OK, color='green')
+    if agent_state == AGENT_STATES.AGENT_STATE_OK:
+        cprint(AGENT_STATES.AGENT_STATE_OK, color='green')
         return
-    if agent_state == AGENT_STATE_STOPPED:
-        cprint(AGENT_STATE_STOPPED, color='red')
+    if agent_state == AGENT_STATES.AGENT_STATE_STOPPED:
+        cprint(AGENT_STATES.AGENT_STATE_STOPPED, color='red')
         sys.exit(2)
-    if agent_state == AGENT_STATE_INITIALIZING:
-        cprint(AGENT_STATE_INITIALIZING, color='yellow')
+    if agent_state == AGENT_STATES.AGENT_STATE_INITIALIZING:
+        cprint(AGENT_STATES.AGENT_STATE_INITIALIZING, color='yellow')
         sys.exit(2)
     cprint(agent_state, color='grey')
 

@@ -1,7 +1,6 @@
 import socket
 import uuid as libuuid
 import base64
-import os
 import time
 
 from .library import libstore
@@ -9,7 +8,6 @@ from .log import LoggerFactory
 from .threadmgr import threader
 from .gossip import gossiper
 from .kv import kvmgr
-from .httpdaemon import http_export, response, abort, request
 from .topic import topiker, TOPIC_CONFIGURATION_AUTOMATION
 from .jsonmgr import jsoner
 from .util import exec_command
@@ -266,6 +264,7 @@ class Executer(object):
     # We must create http callbacks in running because
     # we must have the self object
     def export_http(self):
+        from .httpdaemon import http_export, response, abort, request
         
         @http_export('/exec/:group')
         def launch_exec(group='*'):
