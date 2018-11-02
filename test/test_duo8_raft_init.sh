@@ -5,7 +5,9 @@ MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 . $MYDIR/common_shell_functions.sh
 
 print_header "Initializing"
-test/set_network_simulated_type "WAN"
+
+# TODO: get back RAFT with a WAN profile
+#test/set_network_simulated_type "WAN"
 
 NODE_NB=$1
 
