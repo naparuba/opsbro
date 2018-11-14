@@ -110,6 +110,8 @@ class RaftNode(object):
         self._term = 0
         
         self._leader = None
+        self._last_leader_hearthbeat_date = 0.0  # epoch of when we did send a heatbeat as leader
+        
         self._pending_messages_lock = threading.RLock()
         self._pending_messages = []
         
@@ -161,6 +163,9 @@ class RaftNode(object):
     def _get_election_timeouts(self):
         ratio = math.ceil(len(self._get_nodes_uuids()) / 100.0)
         low_limit, high_limit = self.ELECTION_TIMEOUT_LIMITS
+        if self._election_turn != 0:  # increase the timeouts as the election get long
+            low_limit *= self._election_turn
+            high_limit *= self._election_turn
         return low_limit * 0.001, high_limit * ratio * 0.001
     
     
@@ -179,7 +184,7 @@ class RaftNode(object):
     
     
     def _get_print_header(self):
-        return '[%3d][%s][%-20s][%.3f]' % (self._election_turn, self._uuid, self._state, time.time() - self._creation_date)
+        return '[turn=%3d][uuid=%s][state=%-20s][delay=%.3fs]' % (self._election_turn, self._uuid, self._state, time.time() - self._creation_date)
     
     
     def do_print(self, *args, **kwargs):
@@ -246,13 +251,18 @@ class RaftNode(object):
     # someone did ask us to vote for him. We must not already have a leader, and
     # we must be a follower or not already a candidate
     def manage_ask_vote(self, msg):
-        if self._leader is None and self._state in [RAFT_STATES.FOLLOWER, RAFT_STATES.WAIT_FOR_CANDIDATE]:  # no leader? ok vote for you guy!
-            self._set_state(RAFT_STATES.DID_VOTE)
-            self._vote_for_uuid = msg['candidate']
-            self._vote_date = time.time()
-            self._give_vote_to_candidate()
-            # I am helping my new leader to win, I propagate the fact it is a candidate
-            self._forward_to_other_nodes_my_candidate(msg)
+        if self._leader is not None:
+            return
+        
+        if self._state not in [RAFT_STATES.FOLLOWER, RAFT_STATES.WAIT_FOR_CANDIDATE]:  # no leader? ok vote for you guy!
+            # only follower and wait for candidate can vote
+            return
+        self._set_state(RAFT_STATES.DID_VOTE)
+        self._vote_for_uuid = msg['candidate']
+        self._vote_date = time.time()
+        self._give_vote_to_candidate()
+        # I am helping my new leader to win, I propagate the fact it is a candidate
+        self._forward_to_other_nodes_my_candidate(msg)
     
     
     # Someone did vote for me, but I must be a candidate to accept this
@@ -346,6 +356,10 @@ class RaftNode(object):
     # someone did ask us t ovote for him. We must not already have a leader, and
     # we must be a follower or not already a candidate
     def _launch_heartbeat_to_others(self):
+        now = time.time()
+        if now < self._last_leader_hearthbeat_date + (self.HEARTHBEAT_TIMEOUT / 1000.0) / 3:  # send at least 3 heatbeat by timeout
+            return  # too early
+        self._last_leader_hearthbeat_date = now
         t0 = time.time()
         msg = {'type': RAFT_MESSAGES.LEADER_HEARTBEAT, 'leader': self._uuid, 'from': self._uuid}
         self.send_to_all_others(msg)
@@ -423,11 +437,11 @@ class RaftNode(object):
         
         while not self._interrrupted:
             msg = None
-            wait_time = 1  # if no message, wait a lot
+            wait_time = 0.1  # if no message, wait a lot
             with self._pending_messages_lock:
                 if len(self._pending_messages) >= 1:
                     msg = self._pending_messages.pop()
-                    wait_time = 0.001
+                    wait_time = 0.0  # no sleep this turn
             
             if FEATURE_FLAG_FROZEN:
                 # Look if we are still frozen
@@ -531,7 +545,7 @@ class RaftNode(object):
             elif self._state == RAFT_STATES.FOLLOWER and self._leader is not None:
                 now = time.time()
                 if now > self._last_leader_talk_epoch + hearthbeat_timeout:
-                    self._fail_to_elect(" my leader is too old, I refute it. exchange timeout=%.3f" % (hearthbeat_timeout))
+                    self._fail_to_elect(" my leader (%s) is too old (was %.3f s ago), I refute it. exchange timeout=%.3f" % (self._leader, now - self._last_leader_talk_epoch, hearthbeat_timeout))
             
             elif self._state == RAFT_STATES.CANDIDATE:
                 now = time.time()
@@ -582,15 +596,19 @@ class RaftManager(BaseManager):
     history_directory_suffix = 'raft'
     
     
-    def __init__(self, layer_class):
+    def __init__(self, raft_layer):
         super(RaftManager, self).__init__()
         self.logger = logger
-        self.raft_layer = layer_class()
+        self.raft_layer = raft_layer
         self.raft_node = RaftNode(self.raft_layer)
     
     
     def do_raft_thread(self):
         self.raft_node.main()
+    
+    
+    def stop(self):
+        self.raft_node.stop()
     
     
     def stack_message(self, message, addr_from):
@@ -626,6 +644,6 @@ def get_rafter(raft_layer=None):
     global rafter_
     if rafter_ is None:
         if raft_layer is None:
-            raft_layer = GossipRaftLayer
+            raft_layer = GossipRaftLayer()
         rafter_ = RaftManager(raft_layer)
     return rafter_
