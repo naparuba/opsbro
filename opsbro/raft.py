@@ -16,7 +16,6 @@ print_lock = threading.RLock()
 
 from .basemanager import BaseManager
 from .log import LoggerFactory
-from .gossip import gossiper
 from .jsonmgr import jsoner
 
 # Global logger for this part
@@ -54,12 +53,58 @@ RAFT_STATE_COLORS = {RAFT_STATES.DID_VOTE          : 'blue',
 FEATURE_FLAG_FROZEN = False
 
 
+class RaftLayer(object):
+    def __init__(self):
+        pass
+    
+    
+    def get_nodes_uuids(self):
+        raise NotImplemented()
+    
+    
+    def send_raft_message(self, node_uuid, msg):
+        raise NotImplemented()
+    
+    
+    def get_my_uuid(self):
+        raise NotImplemented()
+    
+    
+    def get_other_node(self, node_uuid):
+        raise NotImplemented()
+
+
+class GossipRaftLayer(RaftLayer):
+    def __init__(self):
+        from .gossip import gossiper
+        super(GossipRaftLayer, self).__init__()
+        self.gossiper = gossiper
+    
+    
+    def get_nodes_uuids(self):
+        return self.gossiper.get_uuids_of_my_zone_not_off_nodes()
+    
+    
+    def send_raft_message(self, node_uuid, msg):
+        self.gossiper.send_raft_message(node_uuid, msg)
+    
+    
+    def get_my_uuid(self):
+        return self.gossiper.uuid
+    
+    
+    def get_other_node(self, node_uuid):
+        return self.gossiper.nodes.get(node_uuid, None)
+
+
 class RaftNode(object):
     HEARTHBEAT_TIMEOUT = 1000
     ELECTION_TIMEOUT_LIMITS = (150, 300)  # 150ms and 300ms for election period
     
     
-    def __init__(self):
+    def __init__(self, raft_layer):
+        self.raft_layer = raft_layer
+        
         self._uuid = None
         self._state = RAFT_STATES.FOLLOWER
         self._term = 0
@@ -109,7 +154,7 @@ class RaftNode(object):
     
     
     def _get_nodes_uuids(self):
-        return gossiper.get_uuids_of_my_zone_not_off_nodes()
+        return self.raft_layer.get_nodes_uuids()
     
     
     # timeouts will change based on the number of elements, as s timing
@@ -161,20 +206,20 @@ class RaftNode(object):
         msg['election_turn'] = self._election_turn
         for node_uuid in node_uuids:
             if node_uuid != self._uuid:
-                gossiper.send_raft_message(node_uuid, msg)
+                self.raft_layer.send_raft_message(node_uuid, msg)
     
     
     # Return a ok vote to the candidate_uuid node
     def _give_vote_to_candidate(self):
         self.do_print("I give a vote to %s" % (self._vote_for_uuid))
         msg_vote = {'type': RAFT_MESSAGES.VOTE, 'from': self._uuid, 'election_turn': self._election_turn}
-        gossiper.send_raft_message(self._vote_for_uuid, msg_vote)
+        self.raft_layer.send_raft_message(self._vote_for_uuid, msg_vote)
     
     
     # Return a ok vote to the candidate_uuid node
     def _warn_other_node_about_old_election_turn(self, other_uuid):
         m_ret = {'type': RAFT_MESSAGES.WARN_OLD_ELECTION_TURN, 'from': self._uuid, 'election_turn': self._election_turn}
-        gossiper.send_raft_message(other_uuid, m_ret)
+        self.raft_layer.send_raft_message(other_uuid, m_ret)
     
     
     # Wrn all nodes about a new election turn
@@ -195,7 +240,7 @@ class RaftNode(object):
         # try to find n nodes randomly from nodes
         for i in xrange(n):
             random_other_uuid = random.choice(nodes_uuids)
-            gossiper.send_raft_message(random_other_uuid, msg)
+            self.raft_layer.send_raft_message(random_other_uuid, msg)
     
     
     # someone did ask us to vote for him. We must not already have a leader, and
@@ -292,7 +337,7 @@ class RaftNode(object):
             random.shuffle(possible_voters)  # so not every one is asking the same on the same time
             ask_vote_msg = {'type': RAFT_MESSAGES.ASK_VOTE, 'candidate': self._uuid, 'from': self._uuid, 'election_turn': self._election_turn}
             for possible_voter_uuid in possible_voters:
-                gossiper.send_raft_message(possible_voter_uuid, ask_vote_msg)
+                self.raft_layer.send_raft_message(possible_voter_uuid, ask_vote_msg)
             # set that we was a candidate this turn
             self._candidate_nb_times += 1
             self._candidate_date = time.time()  # save when we did candidate, so we know when we are outdated
@@ -323,7 +368,7 @@ class RaftNode(object):
         msg = {'type': RAFT_MESSAGES.DUMMY, 'election_turn': self._election_turn, 'from': self._uuid}
         for i in xrange(n):
             other_uuid = random.choice(nodes_uuids)
-            gossiper.send_raft_message(other_uuid, msg)
+            self.raft_layer.send_raft_message(other_uuid, msg)
     
     
     # We did fail to elect someone, so we increase the election_turn
@@ -349,7 +394,7 @@ class RaftNode(object):
     
     
     def main(self):
-        self._uuid = gossiper.uuid
+        self._uuid = self.raft_layer.get_my_uuid()
         # be sure to have a specific random
         random.seed(time.time() * random.random())
         while not self._interrrupted:
@@ -533,56 +578,15 @@ class RaftNode(object):
 N = 3
 
 
-# nodes = [{'node': RaftNode(uuid), 'queue': Queue()} for uuid in range(N)]
-# nodes = [{'node': RaftNode(uuid), 'queue': [], 'lck': threading.RLock()} for uuid in range(N)]
-
-
-# def do_the_job(LOOP):
-#     # nodes = [{'node':RaftNode(uuid), 'queue': Queue()} for uuid in range(N)]
-#
-#     threads = []
-#     for d in nodes:
-#         n = d['node']
-#         q = d['queue']
-#         t = threading.Thread(None, target=n.main, name='node-%d' % n.uuid, args=(q, nodes))
-#         t.daemon = True
-#         t.start()
-#         threads.append(t)
-#
-#     for t in threads:
-#         t.join()
-#
-#     # did we got a leader?
-#     print("RESULT FOR", LOOP)
-#     leader = None
-#     max_vote = 0
-#     for d in nodes:
-#         n = d['node']
-#         max_vote = max(max_vote, n.nb_vote)
-#         if n.state == RAFT_STATES.LEADER:
-#             if leader is not None:
-#                 print("WE GOT 2 LEADER, WTF DID YOU DID JEAN?????")
-#                 sys.exit("JEAN HOW CAN YOU BREAK SUCH AN ALGO?")
-#
-#             print("GOT A LEADER", n.uuid, 'with ', n.nb_vote, "LOOP", LOOP)
-#             leader = n
-#
-#     print("Candidate density::", LOOP, 300 * (2 ** LOOP) / float(N), "ms", "& number of candidate in this loop (%d)" % LOOP, len([d for d in nodes if d['node'].state in (RAFT_STATES.CANDIDATE, RAFT_STATES.LEADER)]))
-#     if leader is not None:
-#         print("Good job jim", "LOOP", LOOP)
-#         sys.exit(0)
-#
-#     print("No leader, max vote is", max_vote)
-
-
 class RaftManager(BaseManager):
     history_directory_suffix = 'raft'
     
     
-    def __init__(self):
+    def __init__(self, layer_class):
         super(RaftManager, self).__init__()
         self.logger = logger
-        self.raft_node = RaftNode()
+        self.raft_layer = layer_class()
+        self.raft_node = RaftNode(self.raft_layer)
     
     
     def do_raft_thread(self):
@@ -597,7 +601,7 @@ class RaftManager(BaseManager):
     # We must create http callbacks in running because
     # we must have the self object
     def export_http(self):
-        from .httpdaemon import http_export, response, abort, request
+        from .httpdaemon import http_export
         
         @http_export('/raft/state')
         def get_state():
@@ -606,13 +610,22 @@ class RaftManager(BaseManager):
             leader_uuid = self.raft_node._leader
             # when we are leader, the leader uuid is missing
             if current_state == RAFT_STATES.LEADER:
-                leader_uuid = gossiper.uuid
+                leader_uuid = self.raft_layer.get_my_uuid()
             if leader_uuid:
-                leader = gossiper.nodes.get(leader_uuid, None)
+                leader = self.raft_layer.get_other_node(leader_uuid)  # Note: can returns None if not founded
             else:
                 leader = None
             
             return jsoner.dumps({'state': current_state, 'leader': leader, 'nb_nodes': nb_nodes})
 
 
-rafter = RaftManager()
+rafter_ = None
+
+
+def get_rafter(raft_layer=None):
+    global rafter_
+    if rafter_ is None:
+        if raft_layer is None:
+            raft_layer = GossipRaftLayer
+        rafter_ = RaftManager(raft_layer)
+    return rafter_
