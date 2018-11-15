@@ -72,7 +72,7 @@ class TestRaft(OpsBroTest):
         global ALL_NODES
         
         ALL_NODES.clear()  # reset other tests
-        for node_uuid in xrange(N):
+        for node_uuid in range(N):
             layer = TestRaftLayer(node_uuid)
             manager = RaftManager(layer)
             ALL_NODES[node_uuid] = manager
