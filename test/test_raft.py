@@ -25,7 +25,7 @@ class TestRaftLayer(RaftLayer):
     
     def get_nodes_uuids(self):
         global ALL_NODES
-        return ALL_NODES.keys()
+        return list(ALL_NODES.keys())  # list for python3
     
     
     def send_raft_message(self, node_uuid, msg):
