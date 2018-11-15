@@ -84,7 +84,7 @@ class TestRaft(OpsBroTest):
         for (node_uuid, manager) in ALL_NODES.items():
             raft_node = manager.raft_node
             state = raft_node._state
-            print "Node: %s is %s" % (node_uuid, state)
+            cprint("Node: %s is %s" % (node_uuid, state))
             if state not in self.stats:
                 self.stats[state] = 0
             self.stats[state] += 1
@@ -124,7 +124,7 @@ class TestRaft(OpsBroTest):
     
     def stop(self):
         for (node_uuid, manager) in ALL_NODES.items():
-            print "STOPPING: %s" % node_uuid
+            cprint("STOPPING: %s" % node_uuid)
             manager.stop()
     
     
