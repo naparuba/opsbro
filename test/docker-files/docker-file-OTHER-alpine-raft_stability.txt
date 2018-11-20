@@ -1,0 +1,25 @@
+FROM alpine:3.7
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+RUN        /apk_add bash
+RUN        /apk_add python
+RUN        /apk_add less
+RUN        /apk_add py-jinja2
+RUN        /apk_add py-crypto
+RUN        /apk_add musl-dev
+RUN        /apk_add py-setuptools
+
+# Need by the test
+RUN        /apk_add bc
+
+ADD        . /root/opsbro-oss
+
+WORKDIR       /root/opsbro-oss
+
+
+RUN        python setup.py install
+
+
+WORKDIR       /root/opsbro-oss/test
+ENTRYPOINT    /bin/bash  test_raft_stability.sh

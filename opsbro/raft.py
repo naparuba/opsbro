@@ -50,7 +50,21 @@ RAFT_STATE_COLORS = {RAFT_STATES.DID_VOTE          : 'blue',
                      RAFT_STATES.WAIT_FOR_CANDIDATE: 'wait_for_candidate',
                      RAFT_STATES.LEAVED            : 'grey'}
 
+# If set (default False), if we are too old in the election turn, we are set as frozen, and so
+# don't candidate until a frozen period (FROZEN_TIME_RATIO * self.frozen_number)
 FEATURE_FLAG_FROZEN = False
+FROZEN_TIME_RATIO = 5  # will wait 5s * frozen_number
+
+
+# If set (default True) will increase the time we will go candidate
+# to enlarge election period, and so have less candidates that runs for election
+# and make it fail
+# (bench: reach X
+FEATURE_ENLARGE_YOUR_ELECTION_TIMEOUT_BY_ELECTION_TURN = False
+
+
+# Late nodes that show it will send late messages to random other ones
+FEATURE_LATE_NODES_DOES_RELAY_MESSAGE = True
 
 
 class RaftLayer(object):
@@ -163,9 +177,11 @@ class RaftNode(object):
     def _get_election_timeouts(self):
         ratio = math.ceil(len(self._get_nodes_uuids()) / 100.0)
         low_limit, high_limit = self.ELECTION_TIMEOUT_LIMITS
-        if self._election_turn != 0:  # increase the timeouts as the election get long
-            low_limit *= self._election_turn
-            high_limit *= self._election_turn
+        
+        if FEATURE_ENLARGE_YOUR_ELECTION_TIMEOUT_BY_ELECTION_TURN:
+            if self._election_turn != 0:  # increase the timeouts as the election get long
+                low_limit *= self._election_turn
+                high_limit *= self._election_turn
         return low_limit * 0.001, high_limit * ratio * 0.001
     
     
@@ -482,7 +498,7 @@ class RaftNode(object):
                         # Ok I was too old, go in frozen mode
                         self.is_frozen = True
                         self.frozen_number += 1
-                        self.end_frozen_date = time.time() + random.random() * 5 * self.frozen_number  # frozen for ~10s
+                        self.end_frozen_date = time.time() + random.random() * FROZEN_TIME_RATIO * self.frozen_number  # frozen for ~5s
                         self.do_print("Going to freeze for %ss" % (self.end_frozen_date - time.time()))
                     
                     # action can be different based on if we already did action or not
@@ -493,10 +509,12 @@ class RaftNode(object):
                         self._fail_to_elect("Our election turn is too old (our=%d other=%d) we close our election turn." % (self._election_turn, election_turn))
                         self._election_turn = election_turn  # get back to this election turn level
                         if self._state == RAFT_STATES.LEADER or self._state == RAFT_STATES.CANDIDATE:
-                            # If we did candidate or are leader, warn others about we did fail and do not want their vote any more
-                            self.warn_other_nodes_about_old_election_turn()
+                            if FEATURE_LATE_NODES_DOES_RELAY_MESSAGE:
+                                # If we did candidate or are leader, warn others about we did fail and do not want their vote any more
+                                self.warn_other_nodes_about_old_election_turn()
                     # Randomly ask some others nodes about our election_turn
-                    self.launch_dummy_to_random_others()
+                    if FEATURE_LATE_NODES_DOES_RELAY_MESSAGE:
+                        self.launch_dummy_to_random_others()
                 
                 if did_change_election_turn:
                     self.do_print('I did change election turn and I am still managing message type: %s' % msg['type'])

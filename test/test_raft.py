@@ -3,7 +3,7 @@
 #    Gabes Jean, naparuba@gmail.com
 
 import threading
-from multiprocessing import cpu_count
+from multiprocessing import cpu_count, Process
 
 NB_CPUS = cpu_count()
 
@@ -78,8 +78,12 @@ class TestRaft(OpsBroTest):
             ALL_NODES[node_uuid] = manager
     
     
-    def compute_stats(self):
+    def _reset_stats(self):
         self.stats = {'votes': {}, 'election_turn': {}, 'frozen_number': {}, 'is_frozen': {True: 0, False: 0}, 'with_leader': {True: 0, False: 0}}
+    
+    
+    def _compute_stats(self):
+        self._reset_stats()
         
         for (node_uuid, manager) in ALL_NODES.items():
             raft_node = manager.raft_node
@@ -108,12 +112,16 @@ class TestRaft(OpsBroTest):
     
     def count(self, state):
         # hummering the stats so we are up to date
-        self.compute_stats()
+        self._compute_stats()
         logger.info('\n' * 10 + "Computed stats:" + '\n' * 10)
         logger.info('%s' % self.stats)
         return self.stats.get(state, 0)
     
     
+    def get_number_of_election_turns(self):
+        return len(self.stats['election_turn'])
+
+
     def launch(self):
         for (node_uuid, manager) in ALL_NODES.items():
             t = threading.Thread(None, target=manager.do_raft_thread, name='node-%d' % node_uuid)
@@ -133,7 +141,32 @@ class TestRaft(OpsBroTest):
         self.create(N)
         self.launch()
         
-        time.sleep(wait)
+        start = time.time()
+        while True:
+            now = time.time()
+            self._compute_stats()
+            
+            nb_leader = self.count('leader')
+            nb_followers = self.count('follower')
+            
+            if now > start + wait:
+                err = 'Election timeout after %s seconds: nbleader=%s  nbfollower=%s   electionturn=%s' % (wait, nb_leader, nb_followers, 33)
+                cprint('ERROR: %s' % err)
+                os._exit(2)  # fast kill
+            
+            cprint("test_raft_large_leader_election:: Looking if we really got a leader, and only one")
+            
+            if nb_leader == 1 and nb_followers == N - 1:
+                if self.get_number_of_election_turns() != 1:
+                    cprint('FAIL: Election did SUCCESS but the election turn is not stable: nbleader=%s  nbfollower=%s   electionturn=%s after %.3fsec' % (nb_leader, nb_followers, self.get_number_of_election_turns(), time.time() - start))
+                    cprint(str(self.stats))
+                    os._exit(2)  # fast kill
+                # Ok valid election turns
+                cprint('Election did SUCCESS : nbleader=%s  nbfollower=%s   electionturn=%s after %.3fsec' % (nb_leader, nb_followers, 33, time.time() - start))
+                cprint(str(self.stats))
+                os._exit(0)
+            cprint("Current: %.3f %s %s %s" % (time.time() - start, nb_leader, nb_followers, 33))
+            time.sleep(0.5)
     
     
     def get_leader(self):
@@ -166,23 +199,21 @@ class TestRaft(OpsBroTest):
     def test_raft_large_leader_election(self):
         cprint("TEST: test_raft_large_leader_election")
         
-        N = 75 * NB_CPUS
-        W = 30  # for very slow computing like travis?
-        self.create_and_wait(N=N, wait=W)
+        NB_NODES_BY_CPU = int(os.environ.get('NB_NODES_BY_CPU', '75'))
+        TEST_TIMEOUT = int(os.environ.get('TEST_TIMEOUT', '30'))
+        N = NB_NODES_BY_CPU  # * NB_CPUS
+        wait = TEST_TIMEOUT  # for very slow computing like travis?
         
-        cprint("test_raft_large_leader_election:: Looking if we really got a leader, and only one")
-        cprint("test_raft_large_leader_election:: Number of leaders: %d" % self.count('leader'))
-        self.compute_stats()
-        
-        nb_leader = self.count('leader')
-        
-        self.assert_(nb_leader == 1)
-        
-        # and N-1 followers
-        nb_followers = self.count('follower')
-        cprint("NB followers: %s" % nb_followers)
-        cprint(str(self.stats))
-        self.assert_(nb_followers == N - 1)
+        # launch this test as a sub process so we can kill it as fast as possible when finish (no close and such log things)
+        process = Process(None, target=self.create_and_wait, args=(N, wait))
+        process.start()
+        process.join(wait + 3)
+        if process.is_alive():
+            os.kill(process.pid, 9)  # KILL
+            raise Exception('The process did timeout after %s seconds' % (wait + 3))
+        if process.exitcode != 0:
+            raise Exception('The process did fail with return code: %s' % process.exitcode)
+        cprint('OK: the process did exit well')
 
 
 if __name__ == '__main__':
