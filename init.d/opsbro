@@ -49,6 +49,10 @@ unset http_proxy
 unset https_proxy
 
 
+# We do not want systemd hook, as it hide our display and help message
+SYSTEMCTL_SKIP_REDIRECT=1
+
+
 # default
 DEBUG=false
 

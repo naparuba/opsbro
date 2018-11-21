@@ -53,8 +53,8 @@ LAST_VALID_NODE_BY_CPU=$CURRENT_NODE_BY_CPU
  # * success: we found our final value
  # * fail: /2 with the last working value
 # Phase3:
- # slow-increase: we +1 with our last working value
- # * success: +1 again
+ # slow-increase: we /2 with the last bad
+ # * success: /2 again
  # * fail: STOP: the last working is our final result
 
 for exp in `seq 1 300`; do
