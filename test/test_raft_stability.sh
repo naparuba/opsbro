@@ -8,6 +8,9 @@ export NB_TRY=10
 
 IN_ERROR="False"
 
+# Test: bench how we did increase the time one TRAVIS with the last commit, so comment this one
+exit 0
+
 function launch_trys {
     IN_ERROR="False"
     total_seconds=0
