@@ -113,6 +113,18 @@ class Launcher(object):
         os.dup2(fdtemp, 1)  # standard output (1)
         os.dup2(fdtemp, 2)  # standard error (2)
         
+        # We do not need stdin any more, and more important, we should NOT
+        # have it because cherrypy will try to select/read it if available
+        # We do not need stdin any more, close it to do not polute caller shell
+        try:
+            os.close(0)
+        except OSError:  # was not open
+            pass
+        # but IMPORTANT: if we just close it, the next open() will take the 0 file
+        # descriptor, and then cherrypy will try to read it! So fake open it
+        # with a dummy file, we will never use it, but it take the file descriptor 0
+        zero_fd = os.open(REDIRECT_TO, os.O_RDWR)
+        
         # Now the fork/setsid/fork..
         try:
             pid = os.fork()
