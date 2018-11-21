@@ -286,34 +286,7 @@ do_start_() {
         return 1
     fi
 
-    # WAIT FOR INITIALISATION
-    TIMEOUT=60
-
-    for ii in `seq 1 $TIMEOUT`; do
-       print_starting_bro
-       echo_initializing
-       WAIT=$(opsbro agent wait-initialized --timeout 1)  # NOTE: timeout 1 as we are looping over it
-
-       # If bad result, maybe we are not at the limit and so we will loop again
-       if [ $? != 0 ]; then
-          # IF we reach the timeout, get out of this
-          if [ $ii == $TIMEOUT ]; then
-              print_starting_bro
-              echo_failed "FAILED (initialisation was not finish after $TIMEOUT seconds): $WAIT"
-              return 1
-          fi
-          # We did not reach the TIMEOUT, we can retry again
-          continue
-       fi
-       # We are OK? so we can quit this loop and live an happy life with our agent
-       break
-    done
-
-    # We are fully started, let's enjoy
-    print_starting_bro
-    echo_started
-    python -c "from opsbro.log import cprint;from opsbro.characters import CHARACTERS;cprint('  %s Note: you can have information about OpsBro with the command: opsbro agent info' % CHARACTERS.corner_bottom_left, color='grey')" 2>/dev/null
-
+    opsbro agent wait-initialized --timeout 60 --show-init-header
     return 0
 }
 

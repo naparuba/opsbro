@@ -719,20 +719,72 @@ def do_agent_parameters_remove(parameter_name, str_value):
     return
 
 
-def do_agent_wait_full_initialized(timeout=30):
+def _show_init_d_label():
+    cprint('\rStarting ', color='magenta', end='')
+    cprint('Ops', color='blue', end='')
+    cprint('*', color='white', end='')
+    cprint('Bro', color='red', end='')
+    cprint(':', end='')
+
+
+def _print_move_to_init_d_state():
+    cprint('\033[60G', end='')
+
+
+# We are waiting for the agent to start. We have 3 modes based on the show_init_header
+# False (default): call by cli script, will display a text helping the user to
+#                  understand what is the current state of the daemon
+# True           : used by the init.d script, will display the init.d header
+def do_agent_wait_full_initialized(timeout=30, show_init_header=False):
+    import itertools
     from opsbro.agentstates import AGENT_STATES
     
-    agent_state = wait_for_agent_started(visual_wait=True, timeout=timeout, wait_for_spawn=True)
-    if agent_state == AGENT_STATES.AGENT_STATE_OK:
-        cprint(AGENT_STATES.AGENT_STATE_OK, color='green')
-        return
-    if agent_state == AGENT_STATES.AGENT_STATE_STOPPED:
-        cprint(AGENT_STATES.AGENT_STATE_STOPPED, color='red')
+    if show_init_header:
+        spinners = itertools.cycle(CHARACTERS.spinners)
+        display_state = AGENT_STATES.AGENT_STATE_INITIALIZING
+        agent_state = display_state
+        for i in range(timeout):
+            _show_init_d_label()
+            _print_move_to_init_d_state()
+            cprint('[', end='')
+            cprint('%s ' % next(spinners), color='cyan', end='')  # note: spinners.next() do not exists in python3
+            cprint(display_state, color='blue', end='')
+            cprint(']', end='')
+            sys.stdout.flush()
+            agent_state = wait_for_agent_started(visual_wait=False, timeout=1, wait_for_spawn=True)
+            
+            # If the agent is started, we can exit and show the user help
+            if agent_state == AGENT_STATES.AGENT_STATE_OK:
+                _show_init_d_label()
+                _print_move_to_init_d_state()
+                cprint('[', end='')
+                cprint('%s OK' % CHARACTERS.check, color='green', end='')
+                cprint(']           ')  # lot of space to clean the initializing text
+                cprint('  %s Note: you can have information about OpsBro with the command: opsbro agent info' % CHARACTERS.corner_bottom_left, color='grey')
+                return
+            # if stopped or initializing, still wait
+            elif agent_state in [AGENT_STATES.AGENT_STATE_STOPPED, AGENT_STATES.AGENT_STATE_INITIALIZING]:
+                continue
+            else:
+                cprint('ERROR: the agent state: %s is not managed', color='red')
+                sys.exit(2)
+        # Oups, timeout reached, still not initialized after this
+        _show_init_d_label()
+        _print_move_to_init_d_state()
+        cprint('FAILED (initialisation was not finish after %d seconds): %s' % (timeout, agent_state), color='red')
         sys.exit(2)
-    if agent_state == AGENT_STATES.AGENT_STATE_INITIALIZING:
-        cprint(AGENT_STATES.AGENT_STATE_INITIALIZING, color='yellow')
-        sys.exit(2)
-    cprint(agent_state, color='grey')
+    else:
+        agent_state = wait_for_agent_started(visual_wait=True, timeout=timeout, wait_for_spawn=True)
+        if agent_state == AGENT_STATES.AGENT_STATE_OK:
+            cprint(AGENT_STATES.AGENT_STATE_OK, color='green')
+            return
+        if agent_state == AGENT_STATES.AGENT_STATE_STOPPED:
+            cprint(AGENT_STATES.AGENT_STATE_STOPPED, color='red')
+            sys.exit(2)
+        if agent_state == AGENT_STATES.AGENT_STATE_INITIALIZING:
+            cprint(AGENT_STATES.AGENT_STATE_INITIALIZING, color='yellow')
+            sys.exit(2)
+        cprint(agent_state, color='grey')
 
 
 exports = {
@@ -871,6 +923,7 @@ exports = {
         'keywords'   : ['agent', 'wait-initialized'],
         'args'       : [
             {'name': '--timeout', 'type': 'int', 'default': 30, 'description': 'Timeout to let the initialization'},
+            {'name': '--show-init-header', 'type': 'bool', 'default': False, 'description': '(used by the init.d script) show the init.d header'},
         ],
         'description': 'Wait until the agent is fully initialized (collector, detection, system conpliance are done, etc)'
     },
