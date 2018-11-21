@@ -4,12 +4,10 @@
 MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 . $MYDIR/common_shell_functions.sh
 
-export NB_TRY=10
+export NB_TRY=5
 
 IN_ERROR="False"
 
-# Test: bench how we did increase the time one TRAVIS with the last commit, so comment this one
-exit 0
 
 function launch_trys {
     IN_ERROR="False"
