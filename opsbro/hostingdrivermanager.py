@@ -14,7 +14,7 @@ if os.name == 'nt':
     from .misc.windows import windowser
 from .log import LoggerFactory
 from .misc.six import add_metaclass
-from .util import string_decode, my_sort, exec_command, my_cmp
+from .util import string_decode, my_sort, exec_command, my_cmp, unicode_to_bytes
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('hosting-driver')
@@ -75,7 +75,7 @@ class InterfaceHostingDriver(object):
         return socket.inet_ntoa(fcntl.ioctl(
             s.fileno(),
             0x8915,  # SIOCGIFADDR
-            struct.pack('256s', ifname[:15])
+            struct.pack('256s', unicode_to_bytes(ifname[:15]))
         )[20:24])
     
     
@@ -93,7 +93,7 @@ class InterfaceHostingDriver(object):
         if len(res) == 0:
             logger.info('Cannot use the hostname -I call for linux, trying to guess local addresses')
             for prefi in ['bond', 'eth', 'venet', 'wlan']:
-                for i in xrange(0, 10):
+                for i in range(0, 10):
                     ifname = '%s%d' % (prefi, i)
                     try:
                         addr = self.__get_ip_address(ifname)

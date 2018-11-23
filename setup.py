@@ -382,7 +382,7 @@ if PY3:
                 'oracle-linux' : 'python3-jinja2',
                 'fedora'       : 'python3-jinja2',
                 'opensuse'     : 'python3-Jinja2',
-                'alpine'       : 'py-jinja2',
+                'alpine'       : 'py3-jinja2',
             }
         },
         'Crypto': {
@@ -396,7 +396,7 @@ if PY3:
                 'oracle-linux' : 'python3-crypto',
                 'fedora'       : 'python3-crypto',
                 'opensuse'     : 'python3-pycrypto',
-                'alpine'       : 'py-crypto',
+                'alpine'       : 'py3-crypto',
             }
         },
     }

@@ -11,7 +11,7 @@ print_header "Starting to test Nagios export (dummy check)"
 /etc/init.d/opsbro start
 
 
-opsbro gossip events wait 'shinken-restart' --timeout 60
+opsbro gossip events wait 'shinken-restart' --timeout 20
 if [ $? != 0 ]; then
     echo "ERROR: the nagios module did not restart nagios"
     cat /var/log/opsbro/module.shinken.log
@@ -20,12 +20,12 @@ if [ $? != 0 ]; then
 fi
 
 
-/usr/local/nagios/bin/nagios -v /usr/local/nagios/etc/nagios.cfg
+nagios -v /etc/nagios/nagios.cfg
 
-ls -R /usr/local/nagios/etc/
+ls -R /etc/nagios/
 
 # Start opsbro and assert that the cfg file of the local element is created
-NB_CFG=$(ls -1 /usr/local/nagios/etc/objects/agent/*cfg | wc -l)
+NB_CFG=$(ls -1 /etc/nagios/objects/agent/*cfg | wc -l)
 
 
 if [ $NB_CFG == 0 ]; then
@@ -34,7 +34,7 @@ if [ $NB_CFG == 0 ]; then
 fi
 
 # Nagios check should be OK
-NAGIOS_CHECK=$(/usr/local/nagios/bin/nagios -v /usr/local/nagios/etc/nagios.cfg)
+NAGIOS_CHECK=$(nagios -v /etc/nagios/nagios.cfg)
 
 if [ $? != 0 ]; then
     echo "ERROR: the nagios check is not happy"
@@ -52,11 +52,11 @@ opsbro agent info
 sleep 15
 
 # There sould be some alerts now in nagios log
-EXPORTED_CHECKS=$(cat  /usr/local/nagios/var/nagios.log | grep 'PROCESS_SERVICE_CHECK_RESULT' | wc -l)
+EXPORTED_CHECKS=$(cat  /var/nagios/nagios.log | grep 'PROCESS_SERVICE_CHECK_RESULT' | wc -l)
 
 if [ $EXPORTED_CHECKS == 0 ]; then
     echo "ERROR: the checks executions are not send into nagios"
-    cat  /usr/local/nagios/var/nagios.log
+    cat  /var/nagios/nagios.log
     exit 2
 fi
 
