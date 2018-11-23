@@ -124,6 +124,13 @@ if [ "X$TRAVIS" == "Xtrue" ]; then
    NB_DISTRIBUTED_LAUNCHS=5
 fi
 
+# On travis: pre-pull the base images so parallel docker build will already have a cache, and not
+# try to dowload them all
+if [ "X$TRAVIS" == "Xtrue" ]; then
+   docker pull naparuba/debian-9-python3
+   docker pull naparuba/debian-9
+fi
+
 # For compose, we are asking to docker-compose to build and run
 if [[ $TEST_SUITE == COMPOSE* ]];then
 
