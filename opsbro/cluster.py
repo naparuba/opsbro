@@ -481,7 +481,8 @@ class Cluster(object):
     
     
     def launch_pinghome(self):
-        headers = {'User-Agent': 'OpsBro / %s' % VERSION}
+        is_travis = os.environ.get('TRAVIS', 'false') == 'true'
+        headers = {'User-Agent': 'OpsBro / %s (travis:%s)' % (VERSION, is_travis)}
         try:
             httper.get('http://shinken.io/pingbro', headers=headers)
         except:  # not a problem
