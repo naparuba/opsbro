@@ -470,10 +470,22 @@ class Cluster(object):
         threader.create_and_launch(self.launch_tcp_listener, name='Http backend', essential=True, part='agent')
     
     
+    def launch_pinghome_thread(self):
+        threader.create_and_launch(self.launch_pinghome, name='Ping Home', essential=False, part='agent')
+    
+    
     @staticmethod
     def launch_modules_threads():
         # Launch modules threads
         modulemanager.launch()
+    
+    
+    def launch_pinghome(self):
+        headers = {'User-Agent': 'OpsBro / %s' % VERSION}
+        try:
+            httper.get('http://shinken.io/pingbro', headers=headers)
+        except:  # not a problem
+            pass
     
     
     def launch_udp_listener(self):
@@ -1202,6 +1214,7 @@ class Cluster(object):
             # We need to have modules if need, maybe one of them can do something when exiting
             # but in one shot we only call them at the stop, without allow them to spawn their thread
             self.launch_modules_threads()
+            self.launch_pinghome_thread()
         
         # joining is for gossip part, useless in a oneshot run
         if not one_shot:

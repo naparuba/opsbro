@@ -8,6 +8,11 @@ import datetime
 import logging
 import json
 import codecs
+import shutil
+from glob import glob
+from threading import Lock as ThreadLock
+from multiprocessing.sharedctypes import Value
+from ctypes import c_int
 
 PY3 = sys.version_info >= (3,)
 if PY3:
@@ -19,6 +24,9 @@ from .misc.colorama import init as init_colorama
 # Lasy load to avoid recursive import
 string_decode = None
 bytes_to_unicode = None
+
+# Keep 7 days of logs
+LOG_ROTATION_KEEP = 7
 
 
 def is_tty():
@@ -136,6 +144,22 @@ class Logger(object):
         
         self.last_date_print_time = 0
         self.last_date_print_value = ''
+        
+        self.last_rotation_day = Value(c_int, 0)  # shared epoch of the last time we did rotate, round by 86400
+        
+        # Log will be protected by a lock (for rotating and such things)
+        # WARNING the lock is link to a pid, if used on a sub process it can fail because
+        # the master process can have aquire() it and so will never unset it in your new process
+        self.log_lock = None
+        self.current_lock_pid = os.getpid()
+    
+    
+    # ~Get (NOT aquire) current lock, but beware: if we did change process, recreate it
+    def _get_lock(self):
+        cur_pid = os.getpid()
+        if self.log_lock is None or self.current_lock_pid != cur_pid:
+            self.log_lock = ThreadLock()
+        return self.log_lock
     
     
     # A code module register it's
@@ -155,13 +179,21 @@ class Logger(object):
                 setattr(self, s.lower(), self.do_null)
     
     
+    def _get_log_file_path(self, fname):
+        return os.path.join(self.data_dir, fname)
+    
+    
+    def _get_log_open(self, fname):
+        return codecs.open(self._get_log_file_path(fname), 'ab', encoding="utf-8")
+    
+    
     def load(self, data_dir, name):
         self.name = name
         self.data_dir = data_dir
         # We can start with a void data dir
         if not os.path.exists(self.data_dir):
             os.mkdir(self.data_dir)
-        self.log_file = codecs.open(os.path.join(self.data_dir, 'daemon.log'), 'ab', encoding="utf-8")
+        self.log_file = self._get_log_open('daemon.log')
     
     
     # If a level is set to force, a not foce setting is not taken
@@ -198,52 +230,109 @@ class Logger(object):
         return self.last_date_print_value
     
     
-    def log(self, *args, **kwargs):
-        part = kwargs.get('part', '')
-        s_part = '' if not part else '[%s]' % part.upper()
-        
-        d_display = self.__get_time_display()
-        s = '[%s][%s][%s] %s: %s' % (d_display, kwargs.get('level', 'UNSET  '), self.name, s_part, u' '.join([get_unicode_string(s) for s in args]))
-        
-        # Sometime we want a log output, but not in the stdout
-        if kwargs.get('do_print', True):
-            if 'color' in kwargs:
-                cprint(s, color=kwargs['color'])
-            else:
-                print(s)
-        stack = kwargs.get('stack', False)
-        
-        # Not a perf problems as it's just for errors and a limited size
-        if stack:
-            self.last_errors_stack[stack].append(s)
-            # And keep only the last 20 ones for example
-            self.last_errors_stack[stack] = self.last_errors_stack[stack][-self.last_errors_stack_size:]
-        
-        # if no data_dir, we cannot save anything...
-        if self.data_dir == '':
+    # We will find all .log file and rotate them to the yesterday day
+    # NOTe: if not running for several days, this will make past log from yesterday, I know
+    # and it's ok
+    def _check_log_rotation(self):
+        now = int(time.time())
+        current_day_nb, current_day_offset = divmod(now, 86400)
+        if current_day_nb == self.last_rotation_day.value:
             return
-        s = s + '\n'
-        f = None
+        
+        # Maybe we are just starting, if so, do not rotate, no luck for old files and
+        # was not running at midnight
+        if current_day_nb == 0:
+            self.last_rotation_day.value = current_day_nb
+            return
+        
+        self.last_rotation_day.value = current_day_nb  # warn ourselve but aso other sub process
+        
+        # As we will rotate them, we need to close all files
+        # note: clean all logs entries, will be reopen when need
+        for (part, f) in self.logs.items():
+            f.close()
+        self.logs.clear()
+        self.log_file.close()
+        self.log_file = None
+        
+        # ok need to rotate
+        in_yesterday = (current_day_nb * 86400) - 1
+        yesterday_string = datetime.datetime.fromtimestamp(in_yesterday).strftime('%Y-%m-%d')
+        all_log_files = glob(os.path.join(self.data_dir, '*.log'))
+        for file_path in all_log_files:
+            self._do_rotate_one_log(file_path, yesterday_string)
+        
+        # TODO: clean after 7 days
+    
+    
+    @staticmethod
+    def _do_rotate_one_log(base_full_path, yesterday_string):
+        if os.path.exists(base_full_path):
+            shutil.move(base_full_path, base_full_path + '.' + yesterday_string)
+    
+    
+    def _get_log_file_and_rotate_it_if_need(self, part):
+        self._check_log_rotation()
+        
+        # core daemon.log
         if part == '':
-            if self.log_file is not None:
-                self.log_file.write(s)
-        else:
-            f = self.logs.get(part, None)
-            if f is None:
-                f = codecs.open(os.path.join(self.data_dir, '%s.log' % part), 'ab', encoding="utf-8")
-                self.logs[part] = f
+            if self.log_file is None:  # was rotated
+                self.log_file = self._get_log_open('daemon.log')
+            return self.log_file
+        
+        # classic part log
+        f = self.logs.get(part, None)
+        if f is None:  # was rotated or maybe rotated
+            log_name = '%s.log' % part
+            f = self._get_log_open(log_name)
+            self.logs[part] = f
+        return self.logs[part]
+    
+    
+    def log(self, *args, **kwargs):
+        # We must protect logs against thread access, and even sub-process ones
+        with self._get_lock():
+            part = kwargs.get('part', '')
+            s_part = '' if not part else '[%s]' % part.upper()
+            
+            d_display = self.__get_time_display()
+            s = '[%s][%s][%s] %s: %s' % (d_display, kwargs.get('level', 'UNSET  '), self.name, s_part, u' '.join([get_unicode_string(s) for s in args]))
+            
+            # Sometime we want a log output, but not in the stdout
+            if kwargs.get('do_print', True):
+                if 'color' in kwargs:
+                    cprint(s, color=kwargs['color'])
+                else:
+                    print(s)
+            stack = kwargs.get('stack', False)
+            
+            # Not a perf problems as it's just for errors and a limited size
+            if stack:
+                self.last_errors_stack[stack].append(s)
+                # And keep only the last 20 ones for example
+                self.last_errors_stack[stack] = self.last_errors_stack[stack][-self.last_errors_stack_size:]
+            
+            # if no data_dir, we cannot save anything...
+            if self.data_dir == '':
+                return
+            s = s + '\n'
+            
+            # Now get the log file and write into it
+            # NOTE: if need, will rotate all files
+            f = self._get_log_file_and_rotate_it_if_need(part)
             f.write(s)
             f.flush()
-        
-        listener = kwargs.get('listener', '')
-        if listener and hasattr(os, 'O_NONBLOCK') and f is not None:  # no named pipe on windows
-            try:
-                fd = os.open(listener, os.O_WRONLY | os.O_NONBLOCK)
-                os.write(fd, s)
-                os.close(fd)
-            except Exception as exp:  # maybe the path did just disapear
-                s = "ERROR LISTERNER %s" % exp
-                f.write(s)
+            
+            # Now update the log listener if exis
+            listener = kwargs.get('listener', '')
+            if listener and hasattr(os, 'O_NONBLOCK') and f is not None:  # no named pipe on windows
+                try:
+                    fd = os.open(listener, os.O_WRONLY | os.O_NONBLOCK)
+                    os.write(fd, s)
+                    os.close(fd)
+                except Exception as exp:  # maybe the path did just disapear
+                    s = "ERROR LISTERNER %s" % exp
+                    f.write(s)
     
     
     def do_debug(self, *args, **kwargs):
