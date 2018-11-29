@@ -26,7 +26,7 @@ string_decode = None
 bytes_to_unicode = None
 
 # Keep 7 days of logs
-LOG_ROTATION_KEEP = 7
+LOG_ROTATION_KEEP = 7 + 1
 
 
 def is_tty():
@@ -230,6 +230,10 @@ class Logger(object):
         return self.last_date_print_value
     
     
+    def _get_day_string_for_log(self, epoch):
+        return datetime.datetime.fromtimestamp(epoch).strftime('%Y-%m-%d')
+    
+    
     # We will find all .log file and rotate them to the yesterday day
     # NOTe: if not running for several days, this will make past log from yesterday, I know
     # and it's ok
@@ -257,12 +261,21 @@ class Logger(object):
         
         # ok need to rotate
         in_yesterday = (current_day_nb * 86400) - 1
-        yesterday_string = datetime.datetime.fromtimestamp(in_yesterday).strftime('%Y-%m-%d')
+        yesterday_string = self._get_day_string_for_log(in_yesterday)
+        
+        # At which time the file is too old to be kept?
+        too_old_limit = (current_day_nb * 86400) - (LOG_ROTATION_KEEP * 86400)  # today minus - days
+        
         all_log_files = glob(os.path.join(self.data_dir, '*.log'))
         for file_path in all_log_files:
+            # Maybe the file is too old, if so, delete it
+            if os.stat(file_path).st_mtime < too_old_limit:
+                try:
+                    os.unlink(file_path)
+                except OSError:  # oups, cannot remove, but we are the log, cannot log this...
+                    pass
+                continue
             self._do_rotate_one_log(file_path, yesterday_string)
-        
-        # TODO: clean after 7 days
     
     
     @staticmethod

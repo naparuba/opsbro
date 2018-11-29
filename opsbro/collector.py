@@ -1,7 +1,5 @@
 import sys
-import os
 import traceback
-import subprocess
 
 PY3 = sys.version_info >= (3,)
 if PY3:
