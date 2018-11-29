@@ -230,7 +230,8 @@ class Logger(object):
         return self.last_date_print_value
     
     
-    def _get_day_string_for_log(self, epoch):
+    @staticmethod
+    def __get_day_string_for_log(epoch):
         return datetime.datetime.fromtimestamp(epoch).strftime('%Y-%m-%d')
     
     
@@ -261,7 +262,7 @@ class Logger(object):
         
         # ok need to rotate
         in_yesterday = (current_day_nb * 86400) - 1
-        yesterday_string = self._get_day_string_for_log(in_yesterday)
+        yesterday_string = self.__get_day_string_for_log(in_yesterday)
         
         # At which time the file is too old to be kept?
         too_old_limit = (current_day_nb * 86400) - (LOG_ROTATION_KEEP * 86400)  # today minus - days

@@ -1,10 +1,10 @@
 compliance:
 #   name: Install Leveldb if in group kv-store-backend:leveldb
-   name: Install Leveldb
+   name: Install tuning libs
 #   verify_if:   "is_in_group('kv-store-backend:leveldb')"
    mode: enforcing
    interval: 1s
-   note: This installer will install the leveldb librairy
+   note: This installer will install the tuning libs (leveldb & simplejson)
    rule:
       type: package-install
       # You can set variables in order to not repeat yourself in the if rules
@@ -30,6 +30,7 @@ compliance:
                 - gcc
                 - python-devel
                 - python-pip
+                - python-simplejson
            post_commands:
               - pip install leveldb
 
@@ -44,6 +45,7 @@ compliance:
                 - gcc
                 - python-devel
                 - python2-pip
+                - python-simplejson
            post_commands:
               - pip install leveldb
 
@@ -62,6 +64,7 @@ compliance:
            parameters:
              packages:
                 - python-leveldb
+                - python-simplejson
 
 
          # like debian6, cannot reach pypi
@@ -77,6 +80,7 @@ compliance:
            parameters:
              packages:
                 - python-leveldb
+                - python-simplejson
 
 
          - name: fedora26_and_more
@@ -88,6 +92,7 @@ compliance:
                 - python2-devel
                 - redhat-rpm-config
                 - python2-pip
+                - python2-simplejson
            post_commands:
               - pip install leveldb
 
@@ -101,6 +106,7 @@ compliance:
                 - python-devel
                 - redhat-rpm-config
                 - python-pip
+                - python-simplejson
            post_commands:
               - pip install leveldb
 
@@ -144,6 +150,7 @@ compliance:
            parameters:
              packages:
                 - python-leveldb
+                - python-simplejson
 
 
          - name: amazon_linux
@@ -154,6 +161,7 @@ compliance:
                 - gcc-c++
                 - python27-devel
                 - python27-pip
+                - python27-simplejson
            post_commands:
               - pip install leveldb
 
@@ -166,6 +174,7 @@ compliance:
                 - gcc-c++
                 - python-devel
                 - python2-pip
+                - python2-simplejson
            post_commands:
               - pip install leveldb
 

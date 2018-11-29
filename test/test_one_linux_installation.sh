@@ -258,7 +258,7 @@ fi  # end of SQLITE
 if [ "X$SKIP_LEVELDB" == "X" ];then
 
     # Note: compilation of leveldb can be long (and depedency download too)
-    opsbro compliance launch 'Install Leveldb' --timeout=300
+    opsbro compliance launch 'Install tuning libs' --timeout=300
     if [ $? != 0 ];then
        echo "ERROR: Cannot install leveldb"
        opsbro compliance state
