@@ -12,6 +12,9 @@ logger = LoggerFactory.create_logger('system-packages')
 
 
 class YumBackend(LinuxBackend):
+    RPM_PACKAGE_FILE_PATH = '/var/lib/rpm/Packages'  # seems to be list of installed packages
+    
+    
     def __init__(self):
         self.yumbase_lock = threading.RLock()
         
@@ -23,13 +26,39 @@ class YumBackend(LinuxBackend):
         except ImportError:
             yum = None
         self.yum = yum
+        
+        self._installed_packages_cache = set()
+        self._rpm_package_file_age = None
+    
+    
+    def _assert_valid_cache(self):
+        last_package_change = os.stat(self.RPM_PACKAGE_FILE_PATH).st_mtime
+        
+        if self._rpm_package_file_age != last_package_change:
+            self._rpm_package_file_age = last_package_change
+            self._update_cache()
+        return
+    
+    
+    def _update_cache(self):
+        # NOTE: need to close yum base
+        logger.info('Yum:: updating the rpm package cache')
+        yum_base = self.yum.YumBase()
+        rpm_db = yum_base.rpmdb
+        all_packages = rpm_db.returnPackages()
+        self._installed_packages_cache = set([pkg.name for pkg in all_packages])
+        
+        # IMPORTANT: close the db before exiting, if not, memory leak will be present
+        yum_base.close()
+        yum_base.closeRpmDB()
     
     
     def has_package(self, package):
         # Yum conf seem to be global and so cannot set it in 2 threads at the same time
         # NOTE: the yum base is not able to detect that the cache is wrong :'(
         with self.yumbase_lock:
-            return package in (pkg.name for pkg in self.yum.YumBase().rpmdb.returnPackages())
+            self._assert_valid_cache()  # be sure that the package list is up to date, iff need, reload it
+            return package in self._installed_packages_cache
     
     
     # yum  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto  install  XXXXX
