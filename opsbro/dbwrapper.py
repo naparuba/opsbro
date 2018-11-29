@@ -46,6 +46,10 @@ class SqliteDBBackend(object):
     
     def GetStats(self):
         return {'size': self.__get_size(), 'raw': 'No stats from sqlitedb', 'error': self.last_error}
+    
+    
+    def RangeIter(self):
+        return self.db.iterkeys()
 
 
 class FailbackLevelDBBackend(object):
@@ -87,6 +91,10 @@ class FailbackLevelDBBackend(object):
     
     def GetStats(self):
         return {'size': self.__get_size(), 'raw': 'no stats', 'error': ''}
+    
+    
+    def RangeIter(self):
+        return self.db.RangeIter()
 
 
 class LevelDBBackend(object):
@@ -124,6 +132,10 @@ class LevelDBBackend(object):
     
     def GetStats(self):
         return {'size': self.__get_size(), 'raw': self.db.GetStats(), 'error': ''}
+    
+    
+    def RangeIter(self):
+        return self.db.RangeIter()
 
 
 class DBWrapper(object):
