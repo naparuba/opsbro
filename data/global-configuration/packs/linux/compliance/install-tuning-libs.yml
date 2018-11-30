@@ -45,7 +45,7 @@ compliance:
                 - gcc
                 - python-devel
                 - python2-pip
-                - python-simplejson
+                - python2-simplejson
            post_commands:
               - pip install leveldb
 
@@ -174,7 +174,7 @@ compliance:
                 - gcc-c++
                 - python-devel
                 - python2-pip
-                - python2-simplejson
+                - python-simplejson
            post_commands:
               - pip install leveldb
 
