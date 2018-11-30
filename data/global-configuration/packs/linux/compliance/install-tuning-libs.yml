@@ -106,7 +106,7 @@ compliance:
                 - python-devel
                 - redhat-rpm-config
                 - python-pip
-                - python-simplejson
+                - python2-simplejson
            post_commands:
               - pip install leveldb
 
