@@ -138,6 +138,7 @@ compliance:
                  - g++
                  - python2-dev
                  - py2-pip
+                 - py2-simplejson
            post_commands:
               - pip2 install leveldb
 
@@ -155,6 +156,7 @@ compliance:
                  - g++
                  - python-dev
                  - py-pip
+                 - py-simplejson
            post_commands:
               - pip2 install leveldb
 
