@@ -12,7 +12,7 @@ encrypter = libstore.get_encrypter()
 
 class TestEncrypter(OpsBroTest):
     def setUp(self):
-        encrypter.load('NTdiN2NlNmE4NTViMTFlNA==')
+        encrypter.load_encryption_key('NTdiN2NlNmE4NTViMTFlNA==')
         cprint("ENCRYPTER: %s" % encrypter)
         if encrypter.get_AES() is None:
             raise Exception('The Crypto librairy is missing')
@@ -25,6 +25,7 @@ class TestEncrypter(OpsBroTest):
         clear = encrypter.decrypt(bobread)
         cprint('CLEAN: %s' % clear)
         self.assert_(clear == orig_test)
+        self.assert_(bobread != orig_test)
 
 
 if __name__ == '__main__':

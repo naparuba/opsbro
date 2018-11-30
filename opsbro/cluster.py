@@ -158,18 +158,8 @@ class Cluster(object):
         
         # Look if our encryption key is valid or not
         encrypter = libstore.get_encrypter()
-        if self.encryption_key:
-            AES = encrypter.get_AES()
-            if AES is None:
-                logger.error('You set an encryption key but cannot import python-crypto module, please install it. Exiting.')
-                sys.exit(2)
-            try:
-                self.encryption_key = base64.b64decode(self.encryption_key)
-            except ValueError:
-                logger.error('The encryption key is invalid, not in base64 format')
-                sys.exit(2)
         # and load the encryption key in the global encrypter object
-        encrypter.load(self.encryption_key)
+        encrypter.load_encryption_key(self.encryption_key)
         
         # Same for master fucking key PRIVATE
         if self.master_key_priv:
