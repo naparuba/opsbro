@@ -547,7 +547,8 @@ if allow_black_magic:
         cprint('       from system packages  : ', color='grey', end='')
         sys.stdout.flush()
         try:
-            systepacketmgr.update_or_install(package_name)
+            if not systepacketmgr.has_package(package_name):
+                systepacketmgr.update_or_install(package_name)
             cprint('%s' % CHARACTERS.check, color='green')
         except Exception as exp:
             cprint('   - ERROR: cannot install the prerequite %s from the system. Please install it manually' % package_name, color='red')
