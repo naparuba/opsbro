@@ -96,7 +96,21 @@ compliance:
            post_commands:
               - pip install leveldb
 
+         # Fedora 24 have the python-simplejson package, not python2-simplejson
+         - name: fedora
+           if: "{{variables.is_fedora}} and {{collector.system.os.linux.major_version}} == 24"
+           parameters:
+             packages:
+                - gcc-c++
+                - gcc
+                - python-devel
+                - redhat-rpm-config
+                - python-pip
+                - python-simplejson
+           post_commands:
+              - pip install leveldb
 
+         # So fedora 25
          - name: fedora
            if: "{{variables.is_fedora}}"
            parameters:
