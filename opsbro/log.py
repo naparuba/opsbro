@@ -246,7 +246,7 @@ class Logger(object):
         
         # Maybe we are just starting, if so, do not rotate, no luck for old files and
         # was not running at midnight
-        if current_day_nb == 0:
+        if self.last_rotation_day.value == 0:
             self.last_rotation_day.value = current_day_nb
             return
         
