@@ -172,8 +172,6 @@ class Encrypter(object):
         if encryption_key is None:  # we do not have valid key for this zone, cannot encrypt
             return data
         
-        logger.info('ENCRYPT with key from zone %s (%s)' % (dest_zone_name, self.fingerprints_from_zone[dest_zone_name]))
-        
         try:
             cypher = AES.new(encryption_key, AES.MODE_ECB)
             encrypted_data = cypher.encrypt(data)

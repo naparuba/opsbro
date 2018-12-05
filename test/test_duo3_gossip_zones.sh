@@ -57,6 +57,7 @@ opsbro gossip join node2
 opsbro gossip join node3
 opsbro gossip join node4
 
+assert_no_crash
 
 sleep 2
 
