@@ -9,7 +9,7 @@ from .log import LoggerFactory
 from .util import bytes_to_unicode, unicode_to_bytes
 
 # Global logger for this part
-logger = LoggerFactory.create_logger('security')
+logger = LoggerFactory.create_logger('gossip')
 
 MAGIC_FLAG = unicode_to_bytes('᠁1')  # ok, won't be easy to see such a thing
 MAGIC_FLAG_SIZE = 8  # 4 for the character HEADER + 4 \x00
@@ -22,10 +22,11 @@ ENCRYPTED_PACKET_HEADER_SIZE = MAGIC_FLAG_SIZE + KEY_FINGERPRINT_SIZE
 
 class Encrypter(object):
     def __init__(self):
-        self.encryption_key = None
         self.AES = None
         self.RSA = None
-        self.key_fingerprints = {}
+        self.key_fingerprints = {}  # finger print => key
+        self.fingerprints_from_zone = {}  # zone name => key finger print
+        self.zone_from_fingerprint = {}  # key finger print => zone name
     
     
     def get_RSA(self):
@@ -67,38 +68,65 @@ class Encrypter(object):
         return hashlib.sha1(unicode_to_bytes(key)).hexdigest()[:KEY_FINGERPRINT_SIZE]  # 16 char for the default size
     
     
-    def load_encryption_key(self, encryption_key):
-        if not encryption_key:
-            self.encryption_key = None
-            return
-        
+    def load_zone_encryption_key(self, zone_encryption_key, zone_name):
         AES = self.get_AES()
         if AES is None:
             logger.error('You set an encryption key but cannot import python-crypto module, please install it. Exiting.')
             sys.exit(2)
         try:
-            encryption_key = base64.b64decode(encryption_key)
+            zone_encryption_key = base64.b64decode(zone_encryption_key)
         except ValueError:
             logger.error('The encryption key is invalid, not in base64 format')
             sys.exit(2)
-        self.encryption_key = bytes_to_unicode(encryption_key)
+        zone_encryption_key = bytes_to_unicode(zone_encryption_key)
         
-        key_fingerprint = self._get_finger_print_from_key(self.encryption_key)
-        self.key_fingerprints[key_fingerprint] = self.encryption_key
+        key_fingerprint = self._get_finger_print_from_key(zone_encryption_key)
+        self.key_fingerprints[key_fingerprint] = zone_encryption_key  # so we can listen for packages from this zone
+        self.fingerprints_from_zone[zone_name] = key_fingerprint  # for this zone
+        self.zone_from_fingerprint[key_fingerprint] = zone_name
+        logger.debug('Loading the encryption key %s for the zone %s' % (key_fingerprint, zone_name))
+    
+    
+    def _get_key_from_zone(self, zone_name):
+        if zone_name is None or zone_name not in self.fingerprints_from_zone:
+            from .gossip import gossiper
+            zone_name = gossiper.zone
+            # Maybe our own zone do not have any key, if so, skip encryption
+            if zone_name not in self.fingerprints_from_zone:
+                return None
+        key_fingerprint = self.fingerprints_from_zone[zone_name]
+        encryption_key = self.key_fingerprints[key_fingerprint]
+        logger.info('ENCRYPTION: founded the key %s for the zone %s' % (key_fingerprint, zone_name))
+        return encryption_key
+    
+    
+    def _is_our_zone_have_a_key(self):
+        from .gossip import gossiper
+        zone_name = gossiper.zone
+        return zone_name in self.fingerprints_from_zone
+    
+    
+    # Decrypt did fail (not encrypted or malformed. If our zone
+    # is encrypted, then we cannot accept this raw_data at all
+    def _give_failback_raw_data_is_possible(self, raw_data):
+        if self._is_our_zone_have_a_key():
+            return None
+        return raw_data
     
     
     # We received data from UDP, if we are set to encrypt, decrypt it
     def decrypt(self, raw_data):
-        # We do nto manage encryption at all
-        if not self.encryption_key:
-            return raw_data
+        if not raw_data.startswith(MAGIC_FLAG):
+            logger.info('Package do not seems to be encrypted: %s' % raw_data)
+            # Give uncrypted data only if our zone is not encrypted
+            return self._give_failback_raw_data_is_possible(raw_data)
+        
         AES = self.get_AES()
-        logger.debug('DECRYPT with ' + self.encryption_key)
         try:
             raw_packet_size = len(raw_data)
             if raw_packet_size - ENCRYPTED_PACKET_HEADER_SIZE <= 0:
                 logger.error('Decryption fail: the packet is not valid, do not have enough data after header')
-                return u''
+                return None
             
             # print('RAW PACKET SIZE: %s' % raw_packet_size)
             header_and_payload_format = '%ds%ds%ds' % (MAGIC_FLAG_SIZE, KEY_FINGERPRINT_SIZE, raw_packet_size - ENCRYPTED_PACKET_HEADER_SIZE)
@@ -109,15 +137,17 @@ class Encrypter(object):
             # print('MAGIC FLAG: %s %s %s %s' % (type(magic_flag), len(magic_flag),  type(MAGIC_FLAG_HEADER), len(MAGIC_FLAG_HEADER) ))
             if magic_flag != MAGIC_FLAG_HEADER:
                 logger.error('Decryption fail: the magic flag is wrong %s' % magic_flag)
-                return u''
+                return None
             # print('HEADER: %s' % magic_flag)
             
             # print('Key finger print %s' % key_fingerprint)
             
+            logger.info('DECRYPT: did receive a key %s from zone: %s' % (key_fingerprint, self.zone_from_fingerprint.get(key_fingerprint)))
+            
             encryption_key = self.key_fingerprints.get(key_fingerprint, None)
             if encryption_key is None:
                 logger.error('Decryption fail: the packet is valid, but we do not know about this key fingerprint (%s)' % key_fingerprint)
-                return u''
+                return None
             
             # Be sure the data is x16 lenght
             if len(encrypted_data) % 16 != 0:
@@ -126,25 +156,29 @@ class Encrypter(object):
             decrypted_data = cypher.decrypt(encrypted_data).strip()
             return bytes_to_unicode(decrypted_data)
         except Exception as exp:
-            logger.error('Decryption fail:', exp)
-            return u''
+            logger.error('Decryption fail: %s' % exp)
+            return None
     
     
-    def encrypt(self, data):
-        if not self.encryption_key:
-            return data
+    def encrypt(self, data, dest_zone_name=None):
         AES = self.get_AES()
-        logger.debug('ENCRYPT with ' + self.encryption_key)
         
         # Be sure the data is x16 lenght
         if len(data) % 16 != 0:
             data += ' ' * (-len(data) % 16)
         # print('TO encrypt data size: %s' % len(data))
+        
+        encryption_key = self._get_key_from_zone(dest_zone_name)
+        if encryption_key is None:  # we do not have valid key for this zone, cannot encrypt
+            return data
+        
+        logger.info('ENCRYPT with key from zone %s (%s)' % (dest_zone_name, self.fingerprints_from_zone[dest_zone_name]))
+        
         try:
-            cypher = AES.new(self.encryption_key, AES.MODE_ECB)
+            cypher = AES.new(encryption_key, AES.MODE_ECB)
             encrypted_data = cypher.encrypt(data)
             encrypted_data_size = len(encrypted_data)
-            key_fingerprint = self._get_finger_print_from_key(self.encryption_key)
+            key_fingerprint = self._get_finger_print_from_key(encryption_key)
             
             final_packet_format = '%ds%ds%ds' % (MAGIC_FLAG_SIZE, KEY_FINGERPRINT_SIZE, encrypted_data_size)
             # print('STRUCT FORMAT %s' % final_packet_format)

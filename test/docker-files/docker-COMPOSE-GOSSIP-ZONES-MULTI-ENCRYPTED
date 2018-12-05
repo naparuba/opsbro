@@ -1,0 +1,42 @@
+version: '2'
+services:
+  node1:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO9-gossip-zones-multi-encrypted-1.txt
+    networks:
+       - gossip-zones-multi-encrypted
+    cap_add:
+       - ALL
+
+  node2:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO9-gossip-zones-multi-encrypted-2.txt
+    networks:
+       - gossip-zones-multi-encrypted
+    cap_add:
+       - ALL
+
+  node3:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO9-gossip-zones-multi-encrypted-3.txt
+    networks:
+       - gossip-zones-multi-encrypted
+    cap_add:
+       - ALL
+
+  node4:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO9-gossip-zones-multi-encrypted-4.txt
+    networks:
+       - gossip-zones-multi-encrypted
+    cap_add:
+       - ALL
+
+networks:
+  gossip-zones-multi-encrypted:
+      driver: bridge
+

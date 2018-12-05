@@ -84,8 +84,6 @@ class Cluster(object):
         
         # Some default value that can be erased by the
         # main configuration file
-        # By default no encryption
-        self.encryption_key = ''
         # Same for public/priv for the master fucking key
         self.master_key_priv = ''  # Paths
         self.master_key_pub = ''
@@ -158,8 +156,6 @@ class Cluster(object):
         
         # Look if our encryption key is valid or not
         encrypter = libstore.get_encrypter()
-        # and load the encryption key in the global encrypter object
-        encrypter.load_encryption_key(self.encryption_key)
         
         # Same for master fucking key PRIVATE
         if self.master_key_priv:
@@ -502,16 +498,19 @@ class Cluster(object):
             # Look if we use encryption
             encrypter = libstore.get_encrypter()
             data = encrypter.decrypt(data)
+            
+            logger_gossip.info('Try to load package with zone %s' % self.zone)
+            
             # Maybe the decryption failed?
-            if data == '':
-                logger_gossip.debug("UDP: received message with bad encryption key from ", addr)
+            if data is None:
+                logger_gossip.error("UDP: received message with bad encryption key from %s" % str(addr))
                 continue
-            logger_gossip.debug("UDP: received message:", data, 'from', addr)
+            logger_gossip.info("UDP: received message:", data, 'from', addr)
             # Ok now we should have a json to parse :)
             try:
                 raw = jsoner.loads(data)
             except ValueError:  # garbage
-                logger_gossip.debug("UDP: received message that is not valid json:", data, 'from', addr)
+                logger_gossip.error("UDP: received message that is not valid json:", data, 'from', addr)
                 continue
             
             if isinstance(raw, list):

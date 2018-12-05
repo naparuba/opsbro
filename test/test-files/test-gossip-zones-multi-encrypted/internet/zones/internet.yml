@@ -1,0 +1,7 @@
+zone:
+    name: internet
+    encryption_key: "NGEwNDdlMzBmNzljMTFlOA=="
+    sub-zones:
+        - customer-1
+
+

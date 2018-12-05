@@ -31,7 +31,6 @@ class ConfigurationManager(object):
         'bootstrap'                             : {'type': 'bool', 'mapto': 'bootstrap'},
         'seeds'                                 : {'type': 'list', 'mapto': 'seeds'},
         'groups'                                : {'type': 'list', 'mapto': 'groups'},
-        'encryption_key'                        : {'type': 'string', 'mapto': 'encryption_key'},
         'master_key_priv'                       : {'type': 'string', 'mapto': 'master_key_priv'},
         'master_key_pub'                        : {'type': 'string', 'mapto': 'master_key_pub'},
         'node-zone'                             : {'type': 'string', 'mapto': 'zone'},
@@ -119,6 +118,11 @@ class ConfigurationManager(object):
         return self.parameters_for_cluster_from_configuration
     
     
+    def load_main_cfg_dir(self, cfg_dir):
+        self.main_cfg_directory = cfg_dir
+        self.load_cfg_dir(self.main_cfg_directory, load_focus='agent')
+    
+    
     def load_cfg_dir(self, cfg_dir, load_focus, pack_name='', pack_level=''):
         if not os.path.exists(cfg_dir):
             logger.error('ERROR: the configuration directory %s is missing' % cfg_dir)
@@ -126,7 +130,7 @@ class ConfigurationManager(object):
         for root, dirs, files in os.walk(cfg_dir):
             for name in files:
                 fp = os.path.join(root, name)
-                # Only json and yml are interesting
+                # Only yml are interesting
                 if not name.endswith('.yml'):
                     continue
                 logger.debug('Loader: looking for cfg file: %s' % fp)
@@ -180,7 +184,8 @@ class ConfigurationManager(object):
         if 'zone' in o:
             zone = o['zone']
             zonemgr = self.get_zonemgr()
-            zonemgr.add(zone)
+            zone_keys_directory = os.path.join(self.main_cfg_directory, 'zone_keys')
+            zonemgr.add_zone(zone, zone_keys_directory)
         
         # grok all others data so we can use them in our checks
         cluster_parameters = self.__class__.cluster_parameters

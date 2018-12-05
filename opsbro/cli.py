@@ -310,8 +310,9 @@ class CLICommander(object):
             sys.exit(2)
         
         t0 = time.time()
+        
         # We need the main cfg_directory
-        configmgr.load_cfg_dir(cfg_dir, load_focus='agent')
+        configmgr.load_main_cfg_dir(cfg_dir)
         logger.debug('configmgr.load_cfg_dir (agent) :: %.3f' % (time.time() - t0))
         
         data_dir = os.path.abspath(os.path.join(DEFAULT_DATA_DIR))  # '/var/lib/opsbro/'

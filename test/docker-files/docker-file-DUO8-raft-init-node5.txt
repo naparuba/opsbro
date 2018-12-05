@@ -10,7 +10,7 @@ WORKDIR       /root/opsbro-oss
 RUN       python setup.py install
 
 # Ask for an encrypted test
-RUN       opsbro agent parameters set encryption_key NGNjZWI2ZmEyMzEyMTFlOA==
+RUN       echo -n "NGNjZWI2ZmEyMzEyMTFlOA==" > /etc/opsbro/zone_keys/internet.key
 
 # 3 nodes will be joined, and then we look at the raft state
 ENTRYPOINT    test/test_duo8_raft_init.sh "5"

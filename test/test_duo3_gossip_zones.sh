@@ -10,6 +10,9 @@ NODE_NB=$1
 
 show_my_system_ip
 
+# Do not enable monitoring & configuration stuff here
+set_to_only_gossip_and_detection
+
 # Set a valid display name for debug
 opsbro agent parameters set display_name "node-$NODE_NB"
 

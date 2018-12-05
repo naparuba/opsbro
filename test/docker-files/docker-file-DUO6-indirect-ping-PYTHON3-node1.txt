@@ -11,7 +11,7 @@ WORKDIR       /root/opsbro-oss
 RUN       python setup.py install
 
 # Ask for an encrypted test
-RUN       opsbro agent parameters set encryption_key NGNjZWI2ZmEyMzEyMTFlOA==
+RUN       echo -n "NGNjZWI2ZmEyMzEyMTFlOA==" > /etc/opsbro/zone_keys/internet.key
 
 
 ENTRYPOINT    test/test_duo6_indirect_ping.sh "NODE1"

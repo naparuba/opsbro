@@ -1,5 +1,11 @@
+import os
 import threading
 
+from .library import libstore
+from .log import LoggerFactory
+
+# Global logger for this part
+logger = LoggerFactory.create_logger('configuration')
 
 class Zone(object):
     def __init__(self):
@@ -63,13 +69,26 @@ class ZoneManager(object):
             self.__get_sub_zones_rec(sub_zone_name, sub_zones_set, level + 1)
     
     
-    def add(self, zone):
+    def add_zone(self, zone, zone_keys_directory):
         name = zone.get('name', '')
         if not name:
             return
         self.zones[name] = zone
         # We did change, dirty the trees
         self._dirty_tree = True
+
+        # If the zone have a key, load it into the encrypter so we will be
+        # able to use it to exchange with this zone
+        # The key can be a file in the zone key directory, with the name of the zone.key
+        key_file = os.path.join(zone_keys_directory, '%s.key' % name)
+        if os.path.exists(key_file):
+            logger.debug('The zone %s have a key file (%s)' % (name, key_file))
+            with open(key_file, 'rb') as f:
+                encryption_key = f.read().strip()
+                encrypter = libstore.get_encrypter()
+                encrypter.load_zone_encryption_key(encryption_key, name)
+        else:
+            logger.debug('The zone %s do not have a key file (%s)' % (name, key_file))
     
     
     def get_top_zones_from(self, zname):

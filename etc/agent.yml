@@ -20,7 +20,6 @@ node-zone: internet
 proxy-node: false
 
 
-encryption_key: ""
 master_key_priv: ""
 master_key_pub: ""
 

@@ -134,17 +134,22 @@ function assert_directory_exists {
 }
 
 
+function assert_no_crash {
+   if [ -f /var/log/opsbro/crash.log ];then
+       echo "ERROR: BIG CRASH"
+       cat /var/log/opsbro/crash.log
+       exit 2
+    fi
+}
+
+
 # In this function, we are exiting the TEST, but first look
 # if the crash.log file is not present. If so, maybe the daemon did crash in a way,
 # and if so, display it and exit BAD because this is not tolerated
 function exit_if_no_crash {
     print_header "Ending"
 
-    if [ -f /var/log/opsbro/crash.log ];then
-       echo "ERROR: BIG CRASH"
-       cat /var/log/opsbro/crash.log
-       exit 2
-    fi
+    assert_no_crash
     printf " - $1\n"
     printf " - Clean exit: OK √\n"
     exit 0
@@ -154,11 +159,38 @@ function exit_if_no_crash {
 # We configure the daemon so only the gossip part is enabled
 # to lower the server load during test
 function set_to_minimal_gossip_core {
-    for param in automatic_detection_topic_enabled automatic_detection_topic_enabled monitoring_topic_enabled metrology_topic_enabled configuration_automation_topic_enabled system_compliance_topic_enabled; do
+    for param in automatic_detection_topic_enabled monitoring_topic_enabled metrology_topic_enabled configuration_automation_topic_enabled system_compliance_topic_enabled; do
         opsbro agent parameters set $param false
         if [ $? != 0 ];then
            echo "ERROR: cannot set the agent parameter: $param"
            exit 2
         fi
     done
+}
+
+
+# We configure the daemon so only the gossip & detection are working
+function set_to_only_gossip_and_detection {
+    for param in monitoring_topic_enabled configuration_automation_topic_enabled system_compliance_topic_enabled; do
+        opsbro agent parameters set $param false
+        if [ $? != 0 ];then
+           echo "ERROR: cannot set the agent parameter: $param"
+           exit 2
+        fi
+    done
+}
+
+function assert_group {
+   # If the daemon did crash, exit
+   assert_no_crash
+
+   opsbro detectors wait-group "$1"
+   if [ $? != 0 ];then
+       echo "ERROR: cannot find the group $1"
+       opsbro agent info
+       cat /var/log/opsbro/daemon.log
+       cat /var/log/opsbro/gossip.log
+       cat /var/log/opsbro/crash.log 2>/dev/null
+       exit 2
+   fi
 }

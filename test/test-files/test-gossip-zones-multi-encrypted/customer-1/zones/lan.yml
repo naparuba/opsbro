@@ -1,0 +1,4 @@
+zone:
+    name: lan
+    sub-zones:
+        - internet

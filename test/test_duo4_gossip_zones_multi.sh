@@ -10,9 +10,13 @@ NODE_NB=$1
 
 show_my_system_ip
 
+# Keep only what is need for auto detection & gossip
+set_to_only_gossip_and_detection
 
+print_header "Set parameters"
 # Set a valid display name for debug
-opsbro agent parameters set display_name "node-$NODE_NB"
+MY_NAME="node-$NODE_NB"
+opsbro agent parameters set display_name "$MY_NAME"
 
 
 # LAN > internet > customer-1
@@ -53,6 +57,7 @@ fi
 opsbro gossip members --detail
 
 
+print_header "Join all together"
 # Join all together
 opsbro gossip join node1
 opsbro gossip join node2
@@ -64,10 +69,13 @@ opsbro gossip join node4
 
 sleep 2
 
+print_header "Checking that join is OK"
 opsbro gossip zone list
 opsbro gossip members --detail
 
+print_header "Checking every one see who should and should not"
 
+opsbro gossip events add "$MY_NAME""-EVENT"
 
 function assert_member {
    NAME="$1"
@@ -101,36 +109,66 @@ function assert_not_member {
 # node4 => 1,3,4 (only the proxy of a higer zone)
 if [ "$NODE_NB" == "1" ]; then
    assert_member "node-1" "lan"
+   wait_event_with_timeout "node-1-EVENT" 60
    assert_member "node-2" "lan"
+   wait_event_with_timeout "node-2-EVENT" 60
+   # Know about higher realm too
    assert_member "node-3" "internet"
+   wait_event_with_timeout "node-3-EVENT" 60
    assert_member "node-4" "customer-1"
+   wait_event_with_timeout "node-4-EVENT" 60
+
+   # We cannot synchronize end as all nodes are not talking each others
+   sleep 60
    exit_if_no_crash "Node 1 exit"
 fi
 
-
+# LAN TOO
 if [ "$NODE_NB" == "2" ]; then
    assert_member "node-1" "lan"
+   wait_event_with_timeout "node-1-EVENT" 60
+
    assert_member "node-2" "lan"
+   wait_event_with_timeout "node-2-EVENT" 60
+
    assert_member "node-3" "internet"
+   wait_event_with_timeout "node-3-EVENT" 60
+
    assert_member "node-4" "customer-1"
+   wait_event_with_timeout "node-4-EVENT" 60
+
+   # We cannot synchronize end as all nodes are not talking each others
+   sleep 60
    exit_if_no_crash "Node 2 exit"
 fi
 
-
+# node3 internet => 1,3,4 (only the proxy of a higer zone)
 if [ "$NODE_NB" == "3" ]; then
    assert_member "node-1" "lan"
    assert_not_member "node-2"
+   # Do not have access to higher events
+
    assert_member "node-3" "internet"
+   wait_event_with_timeout "node-3-EVENT" 60
+
    assert_member "node-4" "customer-1"
+   wait_event_with_timeout "node-4-EVENT" 60
+
+   sleep 60
    exit_if_no_crash "Node 3 exit"
 fi
 
-
+# node4 customer-1=> 1,3,4 (only the proxy of a higer zone)
 if [ "$NODE_NB" == "4" ]; then
    assert_member "node-1" "lan"
    assert_not_member "node-2"
    assert_member "node-3" "internet"
+   # Do not have access to higher events
+
    assert_member "node-4" "customer-1"
+   wait_event_with_timeout "node-4-EVENT" 60
+
+   sleep 60
    exit_if_no_crash "Node 4 exit"
 fi
 

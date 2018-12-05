@@ -1,0 +1,5 @@
+# Place here your keys with the valid name like
+internet.key
+
+# you can generate them with
+opsbro agent keygen

@@ -7,6 +7,7 @@ import sys
 import bisect
 import threading
 from collections import deque
+import traceback
 
 # some singleton :)
 from .log import LoggerFactory
@@ -1009,13 +1010,18 @@ class Gossip(BaseManager):
     
     # Launch a ping to another node and if fail set it as suspect
     def __do_ping(self, other):
-        ping_payload = {'type': 'ping', 'seqno': 0, 'node': other['uuid'], 'from': self.uuid}
+        addr = other['addr']
+        port = other['port']
+        other_zone_name = other['zone']
+        ping_zone = other_zone_name
+        # If the other node is a top level one, we must use our own zone, because we don't have it's
+        if zonemgr.is_top_zone_from(self.zone, other_zone_name):
+            ping_zone = self.zone
+        ping_payload = {'type': 'ping', 'seqno': 0, 'node': other['uuid'], 'from_zone': self.zone, 'from': self.uuid}
         # print "PREPARE PING", ping_payload, other
         message = jsoner.dumps(ping_payload)
         encrypter = libstore.get_encrypter()
-        enc_message = encrypter.encrypt(message)
-        addr = other['addr']
-        port = other['port']
+        enc_message = encrypter.encrypt(message, dest_zone_name=ping_zone)
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
             sock.sendto(enc_message, (addr, port))
@@ -1043,7 +1049,11 @@ class Gossip(BaseManager):
             logger.info("PING: error joining the other node %s:%s : %s. Switching to a indirect ping mode." % (addr, port, exp))
             # with self.nodes_lock:
             possible_relays = [n for n in self.nodes.values() if
-                               n['uuid'] != self.uuid and n != other and n['state'] == NODE_STATES.ALIVE]
+                               n['uuid'] != self.uuid
+                               and n != other
+                               and n['zone'] == other_zone_name
+                               and n['state'] == NODE_STATES.ALIVE
+                               ]
             
             if len(possible_relays) == 0:
                 logger.info("PING: no possible relays for ping")
@@ -1051,9 +1061,9 @@ class Gossip(BaseManager):
             # Take at least 3 relays to ask ping
             relays = random.sample(possible_relays, min(len(possible_relays), 3))
             logger.debug('POSSIBLE RELAYS', relays)
-            ping_relay_payload = {'type': 'ping-relay', 'seqno': 0, 'tgt': other['uuid'], 'from': self.uuid}
+            ping_relay_payload = {'type': 'ping-relay', 'seqno': 0, 'tgt': other['uuid'], 'from': self.uuid, 'from_zone': self.zone}
             message = jsoner.dumps(ping_relay_payload)
-            enc_message = encrypter.encrypt(message)
+            enc_message = encrypter.encrypt(message, dest_zone_name=ping_zone)  # relays are all in the other zone, so same as before
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
             for r in relays:
                 try:
@@ -1096,16 +1106,26 @@ class Gossip(BaseManager):
         if did_want_to_ping_uuid != self.uuid:  # not me? skip this
             logger.info('A node ask us a ping but it is not for our uuid, skiping it')
             return
+        from_zone = m.get('from_zone', None)
+        if from_zone is None:  # malformed ping message
+            return
+        # Maybe the caller is from a top zone level. If so, we don't have it's zone, so
+        # use our own
+        ack_zone_to_use = from_zone
+        if zonemgr.is_top_zone_from(self.zone, from_zone):
+            ack_zone_to_use = self.zone
+        
         my_self = self._get_myself_read_only()
         my_node_data = self.create_alive_msg(my_self)
         ack = {'type': 'ack', 'seqno': m['seqno'], 'node': my_node_data}
         ret_msg = jsoner.dumps(ack)
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
         encrypter = libstore.get_encrypter()
-        enc_ret_msg = encrypter.encrypt(ret_msg)
+        enc_ret_msg = encrypter.encrypt(ret_msg, dest_zone_name=ack_zone_to_use)
         sock.sendto(enc_ret_msg, addr)
         sock.close()
         logger.debug("PING RETURN ACK MESSAGE", ret_msg)
+        
         # now maybe the source was a suspect that just ping me? if so
         # ask for a future ping
         fr_uuid = m['from']
@@ -1126,11 +1146,15 @@ class Gossip(BaseManager):
         
         dest_addr = dest_node['addr']
         dest_port = dest_node['port']
+        dest_zone = dest_node['zone']
+        # If the other is in a top level, we don't have it's zone key, use our
+        if zonemgr.is_top_zone_from(self.zone, dest_zone):
+            dest_zone = self.zone
         flat_message = jsoner.dumps(message)
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
             encrypter = libstore.get_encrypter()
-            encrypted_message = encrypter.encrypt(flat_message)
+            encrypted_message = encrypter.encrypt(flat_message, dest_zone_name=dest_zone)
             sock.sendto(encrypted_message, (dest_addr, dest_port))
             sock.close()
             logger.debug('Sending raft message to (%s) (type:%s)' % (dest_node['uuid'], message['type']))
@@ -1148,13 +1172,18 @@ class Gossip(BaseManager):
         if not ntgt or not nfrom:
             logger.info('PING: asking for a ping relay for a node I dont know about: about %s from %s' % (ntgt, nfrom))
             return
+        tgtaddr = ntgt['addr']
+        tgtport = ntgt['port']
+        tgt_zone = ntgt['zone']
+        # Maybe the target zone is too high, if so we don't have it's key, so use our own
+        if zonemgr.is_top_zone_from(self.zone, tgt_zone):
+            tgt_zone = self.zone
         # Now do the real ping
         ping_payload = {'type': 'ping', 'seqno': 0, 'node': ntgt['uuid'], 'from': self.uuid}
         message = jsoner.dumps(ping_payload)
         encrypter = libstore.get_encrypter()
-        enc_message = encrypter.encrypt(message)
-        tgtaddr = ntgt['addr']
-        tgtport = ntgt['port']
+        enc_message = encrypter.encrypt(message, dest_zone_name=tgt_zone)
+        
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
             sock.sendto(enc_message, (tgtaddr, tgtport))
@@ -1168,7 +1197,11 @@ class Gossip(BaseManager):
             # An aswer? great it is alive! Let it know our _from node
             ack = {'type': 'ack', 'seqno': 0, 'node': j_ret['node']}
             ret_msg = jsoner.dumps(ack)
-            enc_ret_msg = encrypter.encrypt(ret_msg)
+            nfrom_zone = nfrom['zone']
+            # Same as before: cannot talk to higher zone
+            if zonemgr.is_top_zone_from(self.zone, nfrom_zone):
+                nfrom_zone = self.zone
+            enc_ret_msg = encrypter.encrypt(ret_msg, dest_zone_name=nfrom_zone)
             # sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
             sock.sendto(enc_ret_msg, addr)
             sock.close()
@@ -1199,10 +1232,16 @@ class Gossip(BaseManager):
         ret_msg = jsoner.dumps(r)
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
         encrypter = libstore.get_encrypter()
-        enc_ret_msg = encrypter.encrypt(ret_msg)
+        from_zone = m.get('from_zone', self.zone)
+        # If the zone from the other side is too high for us, we mustch switch to our own zone
+        # instead
+        # if it's lower, keep the other zone, as our own won't be available for him
+        if zonemgr.is_top_zone_from(self.zone, from_zone):
+            from_zone = self.zone
+        enc_ret_msg = encrypter.encrypt(ret_msg, dest_zone_name=from_zone)
         sock.sendto(enc_ret_msg, addr)
         sock.close()
-        logger.debug("Detect back: return back message", ret_msg)
+        logger.info("Detect back: return back message (from %s)", ret_msg, m)
     
     
     # launch a broadcast (UDP) and wait 5s for returns, and give all answers from others daemons
@@ -1212,9 +1251,9 @@ class Gossip(BaseManager):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         
-        p = '{"type":"detect-ping"}'
+        p = '{"type":"detect-ping", "from_zone":"%s"}' % self.zone
         encrypter = libstore.get_encrypter()
-        enc_p = encrypter.encrypt(p)
+        enc_p = encrypter.encrypt(p, dest_zone_name=self.zone)
         s.sendto(enc_p, ('<broadcast>', 6768))
         # Note: a socket timeout start from the recvfrom call
         # so we must compute the time where we should finish
@@ -1237,11 +1276,13 @@ class Gossip(BaseManager):
             except socket.timeout:
                 logger.info('UDP detection: no response after: %.2f' % (time.time() - start))
                 continue
+            logger.info('RECEIVE detect-ping response: %s' % data)
             try:
                 d_str = encrypter.decrypt(data)
                 d = jsoner.loads(d_str)
             # If bad json, skip it
-            except ValueError:
+            except ValueError as exp:
+                logger.error('Cannot load ping detection package: %s' % exp)
                 continue
             logger.info('UDP detected node: %s' % d)
             # if not a detect-pong package, I don't want it
@@ -1265,8 +1306,7 @@ class Gossip(BaseManager):
     # Randomly push some gossip broadcast messages and send them to
     # KGOSSIP others nodes
     # consume: if True (default) then a message will be decremented
-    @staticmethod
-    def __do_gossip_push(dest, consume=True):
+    def __do_gossip_push(self, dest, consume=True):
         messages = deque()
         message = ''
         to_del = []
@@ -1319,6 +1359,10 @@ class Gossip(BaseManager):
         
         addr = dest['addr']
         port = dest['port']
+        zone_name = dest['zone']
+        # if the other node is from a higher realm, we cannot talk to it with it's own key (we don't have it)
+        if zonemgr.is_top_zone_from(self.zone, zone_name):
+            zone_name = self.zone
         total_size = 0
         sock = None
         # and go for it!
@@ -1327,7 +1371,7 @@ class Gossip(BaseManager):
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
             for message in messages:
                 logger.debug('BROADCAST: sending message: (len=%d) %s' % (len(message), message))
-                enc_message = encrypter.encrypt(message)
+                enc_message = encrypter.encrypt(message, dest_zone_name=zone_name)
                 total_size += len(enc_message)
                 sock.sendto(enc_message, (addr, port))
             logger.debug('BROADCAST: sent %d messages (total size=%d) to %s:%s (uuid=%s  display_name=%s)' % (len(messages), total_size, addr, port, dest['uuid'], dest['display_name']))
@@ -1699,7 +1743,11 @@ class Gossip(BaseManager):
         def agent_members():
             response.content_type = 'application/json'
             timeout = int(request.GET.get('timeout', '5'))
-            nodes = self.launch_gossip_detect_ping(timeout)
+            try:
+                nodes = self.launch_gossip_detect_ping(timeout)
+            except Exception:
+                logger.error('UDP detection fail: %s' % traceback.format_exc())
+                raise
             return jsoner.dumps(nodes)
         
         
