@@ -161,16 +161,16 @@ class Encrypter(object):
     
     
     def encrypt(self, data, dest_zone_name=None):
+        encryption_key = self._get_key_from_zone(dest_zone_name)
+        if encryption_key is None:  # we do not have valid key for this zone, cannot encrypt
+            return unicode_to_bytes(data)
+        
         AES = self.get_AES()
         
         # Be sure the data is x16 lenght
         if len(data) % 16 != 0:
             data += ' ' * (-len(data) % 16)
         # print('TO encrypt data size: %s' % len(data))
-        
-        encryption_key = self._get_key_from_zone(dest_zone_name)
-        if encryption_key is None:  # we do not have valid key for this zone, cannot encrypt
-            return data
         
         try:
             cypher = AES.new(encryption_key, AES.MODE_ECB)
