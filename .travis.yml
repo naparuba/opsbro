@@ -36,6 +36,9 @@ env:
 # This one is with 4 containers, in 3 zones, one is sub level of another
 - TEST_SUITE=COMPOSE-GOSSIP-ZONES-MULTI
 - TEST_SUITE=COMPOSE-GOSSIP-ZONES-MULTI-PYTHON3
+# The same, but with multi level encryption
+- TEST_SUITE=COMPOSE-GOSSIP-ZONES-MULTI-ENCRYPTED
+- TEST_SUITE=COMPOSE-GOSSIP-ZONES-MULTI-ENCRYPTED-PYTHON3
 # This one is with 2 containers, a node with events, joining another, and sync its events
 - TEST_SUITE=COMPOSE-GOSSIP-JOIN-SYNC-EVENTS
 - TEST_SUITE=COMPOSE-GOSSIP-JOIN-SYNC-EVENTS-PYTHON3
