@@ -30,6 +30,9 @@ env:
 # Some tests are with 2 docker that must run together. I hope it will be maintainable
 - TEST_SUITE=COMPOSE-GOSSIP-UDP-DETECT
 - TEST_SUITE=COMPOSE-GOSSIP-UDP-DETECT-PYTHON3
+# check that with different udp key, then cannot join (no clear message failback)
+- TEST_SUITE=COMPOSE-GOSSIP-UDP-DETECT-BAD-KEY
+- TEST_SUITE=COMPOSE-GOSSIP-UDP-DETECT-BAD-KEY-PYTHON3
 # This one is with 4 containers, in 2 zones, one is sub level of another
 - TEST_SUITE=COMPOSE-GOSSIP-ZONES
 - TEST_SUITE=COMPOSE-GOSSIP-ZONES-PYTHON3

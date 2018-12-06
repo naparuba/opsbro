@@ -1,0 +1,27 @@
+version: '2'
+services:
+  node1:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO10-udp-detect-bad-key-python3-node1.txt
+    networks:
+       - gossip-udp-detect-bad-key-python3
+    cap_add:
+       - ALL
+
+  node2:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO10-udp-detect-bad-key-python3-node2.txt
+    networks:
+       - gossip-udp-detect-bad-key-python3
+    cap_add:
+       - ALL
+
+
+
+
+networks:
+  gossip-udp-detect-bad-key-python3:
+      driver: bridge
+

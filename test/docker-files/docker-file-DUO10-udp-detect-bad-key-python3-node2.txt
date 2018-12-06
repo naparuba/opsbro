@@ -1,0 +1,17 @@
+FROM       naparuba/debian-9-python3
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+
+ADD        . /root/opsbro-oss
+WORKDIR       /root/opsbro-oss
+
+RUN       python setup.py install
+
+# Ask for an encrypted test
+RUN       echo -n "YzAzZTdjYmFmOTRmMTFlOA==" > /etc/opsbro/zone_keys/internet.key
+
+# IMPORTANT: the key is NOT the same than the node1, so the test must fail to join nodes :)
+
+# The node2 will just wait for node1 to connect
+ENTRYPOINT    test/test_duo10_udp_detect_bad_key.sh "NODE2"
