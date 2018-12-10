@@ -121,7 +121,9 @@ echo "Detected number of CPUs: $NB_CPUS"
 NB_DISTRIBUTED_LAUNCHS=1
 # On TRAVIS: 5 launchs
 if [ "X$TRAVIS" == "Xtrue" ]; then
-   NB_DISTRIBUTED_LAUNCHS=5
+   # NOTE: ask 5 runs each travis run is long, so i set 1 for normal commits, and before releases I'll set
+   # manually to 5
+   NB_DISTRIBUTED_LAUNCHS=1
 fi
 
 # On travis: pre-pull the base images so parallel docker build will already have a cache, and not
