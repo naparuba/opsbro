@@ -16,6 +16,8 @@ from .packer import packer
 logger = LoggerFactory.create_logger('configuration')
 
 
+ZONE_KEYS_DIRECTORY_NAME = 'zone_keys'
+
 class ConfigurationManager(object):
     # The parameter for the main cluster class is list here, and we will give back to it what we did read in the
     # local.yaml file (one set ones)
@@ -120,6 +122,8 @@ class ConfigurationManager(object):
     
     def load_main_cfg_dir(self, cfg_dir):
         self.main_cfg_directory = cfg_dir
+        # also compute other directories from this
+        self.zone_keys_directory = os.path.join(self.main_cfg_directory, ZONE_KEYS_DIRECTORY_NAME)
         self.load_cfg_dir(self.main_cfg_directory, load_focus='agent')
     
     
@@ -184,8 +188,7 @@ class ConfigurationManager(object):
         if 'zone' in o:
             zone = o['zone']
             zonemgr = self.get_zonemgr()
-            zone_keys_directory = os.path.join(self.main_cfg_directory, 'zone_keys')
-            zonemgr.add_zone(zone, zone_keys_directory)
+            zonemgr.add_zone(zone)
         
         # grok all others data so we can use them in our checks
         cluster_parameters = self.__class__.cluster_parameters

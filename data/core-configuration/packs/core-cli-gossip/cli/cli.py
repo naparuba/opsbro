@@ -5,9 +5,12 @@
 #    Gabes Jean, naparuba@gmail.com
 
 from __future__ import print_function
+import os
 import sys
 import time
 import itertools
+import uuid
+import base64
 
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger, sprintf
@@ -234,6 +237,65 @@ def do_zone_list():
             cprint(sub_zname, color='cyan')
 
 
+def _save_key(key_string, zone_name, key_path):
+    with open(key_path, 'wb') as f:
+        f.write(key_string)
+    
+    cprint('%s OK the key is saved as file %s' % (CHARACTERS.check, key_path))
+    
+    # Try to send the information to the agent, so it can reload the key
+    try:
+        get_opsbro_json('/agent/zones-keys/reload/%s' % zone_name)
+    except get_request_errors():
+        cprint('  | The agent seems to not be started. Skipping hot key reload.', color='grey')
+        return
+
+
+def do_zone_key_generate(zone, erase=False):
+    from opsbro.defaultpaths import DEFAULT_CFG_DIR
+    from opsbro.configurationmanager import ZONE_KEYS_DIRECTORY_NAME
+    print_h1('Generate a new key for the zone %s' % zone)
+    
+    key_path = os.path.join(DEFAULT_CFG_DIR, ZONE_KEYS_DIRECTORY_NAME, '%s.key' % zone)
+    
+    if os.path.exists(key_path) and not erase:
+        cprint('ERROR: the key %s is already existing', color='red')
+        cprint('  %s Note: You can use the --erase parameter to erase over an existing key' % (CHARACTERS.corner_bottom_left), color='grey')
+        sys.exit(2)
+    
+    k = uuid.uuid1().hex[:16]
+    b64_k = base64.b64encode(k)
+    cprint('Encryption key for the zone ', end='')
+    cprint(zone, color='magenta', end='')
+    cprint(' :', end='')
+    cprint(b64_k, color='green')
+    _save_key(b64_k, zone, key_path)
+
+
+def do_zone_key_import(zone, key, erase=False):
+    from opsbro.defaultpaths import DEFAULT_CFG_DIR
+    from opsbro.configurationmanager import ZONE_KEYS_DIRECTORY_NAME
+    
+    key_path = os.path.join(DEFAULT_CFG_DIR, ZONE_KEYS_DIRECTORY_NAME, '%s.key' % zone)
+    
+    if os.path.exists(key_path) and not erase:
+        cprint('ERROR: the key %s is already existing', color='red')
+        cprint('  %s Note: You can use the --erase parameter to erase over an existing key' % (CHARACTERS.corner_bottom_left), color='grey')
+        sys.exit(2)
+    # check key is base64(len16)
+    try:
+        raw_key = base64.b64decode(key)
+    except TypeError:  # bad key
+        cprint('ERROR: the key is not valid. (not base4 encoded)', color='red')
+        sys.exit(2)
+    if len(raw_key) != 16:
+        cprint('ERROR: the key is not valid. (not 128bits)', color='red')
+        sys.exit(2)
+    
+    # Note: key is the original b64 encoded one, we did check it
+    _save_key(key, zone, key_path)
+
+
 def __print_detection_spinner(timeout):
     spinners = itertools.cycle(CHARACTERS.spinners)
     start = time.time()
@@ -430,7 +492,7 @@ def do_wait_members(name='', display_name='', group='', count=1, timeout=30):
 
 
 exports = {
-    do_members         : {
+    do_members          : {
         'keywords'   : ['gossip', 'members'],
         'args'       : [
             {'name': '--detail', 'type': 'bool', 'default': False, 'description': 'Show detail mode for the cluster members'},
@@ -438,14 +500,14 @@ exports = {
         'description': 'List the cluster members'
     },
     
-    do_members_history : {
+    do_members_history  : {
         'keywords'   : ['gossip', 'history'],
         'args'       : [
         ],
         'description': 'Show the history of the gossip nodes'
     },
     
-    do_join            : {
+    do_join             : {
         'keywords'   : ['gossip', 'join'],
         'description': 'Join another node cluster',
         'args'       : [
@@ -453,7 +515,7 @@ exports = {
         ],
     },
     
-    do_leave           : {
+    do_leave            : {
         'keywords'   : ['gossip', 'leave'],
         'description': 'Put in leave a cluster node',
         'args'       : [
@@ -462,7 +524,7 @@ exports = {
         ],
     },
     
-    do_zone_change     : {
+    do_zone_change      : {
         'keywords'             : ['gossip', 'zone', 'change'],
         'args'                 : [
             {'name': 'name', 'default': '', 'description': 'Change to the zone'},
@@ -471,7 +533,7 @@ exports = {
         'description'          : 'Change the zone of the node'
     },
     
-    do_zone_list       : {
+    do_zone_list        : {
         'keywords'             : ['gossip', 'zone', 'list'],
         'args'                 : [
         ],
@@ -479,7 +541,26 @@ exports = {
         'description'          : 'List all known zones of the node'
     },
     
-    do_detect_nodes    : {
+    do_zone_key_generate: {
+        'keywords'   : ['gossip', 'zone', 'key', 'generate'],
+        'args'       : [
+            {'name': '--zone', 'description': 'Name of zone to generate a key for'},
+            {'name': '--erase', 'type': 'bool', 'default': False, 'description': 'Erase the key if already exiting.'},
+        ],
+        'description': 'Generate a gossip encryption key for the zone'
+    },
+    
+    do_zone_key_import  : {
+        'keywords'   : ['gossip', 'zone', 'key', 'import'],
+        'args'       : [
+            {'name': '--zone', 'description': 'Name of zone to import the key for'},
+            {'name': '--key', 'description': 'Key to import.'},
+            {'name': '--erase', 'type': 'bool', 'default': False, 'description': 'Erase the key if already exiting.'},
+        ],
+        'description': 'Import a gossip encryption key for the zone'
+    },
+    
+    do_detect_nodes     : {
         'keywords'   : ['gossip', 'detect'],
         'args'       : [
             {'name': '--auto-join', 'default': False, 'description': 'Try to join the first detected proxy node. If no proxy is founded, join the first one.', 'type': 'bool'},
@@ -488,7 +569,7 @@ exports = {
         'description': 'Try to detect (broadcast) others nodes in the network'
     },
     
-    do_wait_event      : {
+    do_wait_event       : {
         'keywords'   : ['gossip', 'events', 'wait'],
         'args'       : [
             {'name': 'event-type', 'description': 'Name of the event to wait for'},
@@ -497,7 +578,7 @@ exports = {
         'description': 'Wait until the event is detected'
     },
     
-    do_gossip_add_event: {
+    do_gossip_add_event : {
         'keywords'   : ['gossip', 'events', 'add'],
         'args'       : [
             {'name': 'event-type', 'description': 'Name of the event to add'},
@@ -505,7 +586,7 @@ exports = {
         'description': 'Add a event to the gossip members'
     },
     
-    do_wait_members    : {
+    do_wait_members     : {
         'keywords'   : ['gossip', 'wait-members'],
         'args'       : [
             {'name': '--name', 'description': 'Name of the members to wait for be alive'},

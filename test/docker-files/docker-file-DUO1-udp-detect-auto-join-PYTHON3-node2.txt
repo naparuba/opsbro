@@ -10,7 +10,7 @@ WORKDIR       /root/opsbro-oss
 RUN       python setup.py install
 
 # Ask for an encrypted test
-RUN       echo -n "NGNjZWI2ZmEyMzEyMTFlOA==" > /etc/opsbro/zone_keys/internet.key
+RUN       opsbro gossip zone key import --zone internet --key "NGNjZWI2ZmEyMzEyMTFlOA=="
 
 # The node2 will just wait for node1 to connect
 ENTRYPOINT    test/test_duo1_udp_auto_join.sh "NODE2"

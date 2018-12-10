@@ -20,7 +20,7 @@ WORKDIR       /root/opsbro-oss
 RUN       python setup.py install
 
 # Ask for an encrypted test
-RUN       echo -n "NGNjZWI2ZmEyMzEyMTFlOA==" > /etc/opsbro/zone_keys/internet.key
+RUN       opsbro gossip zone key import --zone internet --key "NGNjZWI2ZmEyMzEyMTFlOA=="
 
 
 RUN        opsbro  packs overload global.haproxy

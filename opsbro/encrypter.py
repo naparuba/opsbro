@@ -7,6 +7,7 @@ import struct
 
 from .log import LoggerFactory
 from .util import bytes_to_unicode, unicode_to_bytes
+from .library import libstore
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('gossip')
@@ -85,6 +86,22 @@ class Encrypter(object):
         self.fingerprints_from_zone[zone_name] = key_fingerprint  # for this zone
         self.zone_from_fingerprint[key_fingerprint] = zone_name
         logger.debug('Loading the encryption key %s for the zone %s' % (key_fingerprint, zone_name))
+    
+    
+    # We did load a zone, or maybe we need to check that the zone did not change it's key
+    # if so, reload it
+    def load_or_reload_key_for_zone_if_need(self, zone_name):
+        from .configurationmanager import configmgr
+        # If the zone have a key, load it into the encrypter so we will be
+        # able to use it to exchange with this zone
+        # The key can be a file in the zone key directory, with the name of the zone.key
+        zone_keys_directory = configmgr.zone_keys_directory
+        key_file = os.path.join(zone_keys_directory, '%s.key' % zone_name)
+        if os.path.exists(key_file):
+            logger.debug('The zone %s have a key file (%s)' % (zone_name, key_file))
+            with open(key_file, 'rb') as f:
+                encryption_key = f.read().strip()
+                self.load_zone_encryption_key(encryption_key, zone_name)
     
     
     def _get_key_from_zone(self, zone_name):

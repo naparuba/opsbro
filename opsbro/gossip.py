@@ -1773,6 +1773,14 @@ class Gossip(BaseManager):
             return jsoner.dumps(zonemgr.get_zones())
         
         
+        # Reload the key for the zone: zone_name
+        @http_export('/agent/zones-keys/reload/:zone_name', method='GET', protected=True)
+        def get_reload_zone_key(zone_name):
+            response.content_type = 'application/json'
+            encrypter = libstore.get_encrypter()
+            return jsoner.dumps(encrypter.load_or_reload_key_for_zone_if_need(zone_name))
+        
+        
         @http_export('/agent/event/:event_type', method='GET', protected=True)
         def get_event(event_type):
             response.content_type = 'application/json'
