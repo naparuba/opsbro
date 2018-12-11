@@ -26,12 +26,12 @@ RAFT_MINIMAL_MEMBERS_NB = 3
 
 
 class RAFT_MESSAGES:
-    WARN_OLD_ELECTION_TURN = 'raft-warn-old-election-turn'
-    VOTE = 'raft-vote'
-    ASK_VOTE = 'raft-ask-vote'
-    LEADER_ELECTED = 'raft-leader-elected'
-    LEADER_HEARTBEAT = 'raft-leader-heartbeat'
-    DUMMY = 'raft-dummy'
+    WARN_OLD_ELECTION_TURN = 'raft::warn-old-election-turn'
+    VOTE = 'raft::vote'
+    ASK_VOTE = 'raft::ask-vote'
+    LEADER_ELECTED = 'raft::leader-elected'
+    LEADER_HEARTBEAT = 'raft::leader-heartbeat'
+    DUMMY = 'raft::dummy'
 
 
 class RAFT_STATES:
@@ -55,13 +55,11 @@ RAFT_STATE_COLORS = {RAFT_STATES.DID_VOTE          : 'blue',
 FEATURE_FLAG_FROZEN = False
 FROZEN_TIME_RATIO = 5  # will wait 5s * frozen_number
 
-
 # If set (default True) will increase the time we will go candidate
 # to enlarge election period, and so have less candidates that runs for election
 # and make it fail
 # (bench: reach X
 FEATURE_ENLARGE_YOUR_ELECTION_TIMEOUT_BY_ELECTION_TURN = False
-
 
 # Late nodes that show it will send late messages to random other ones
 FEATURE_LATE_NODES_DOES_RELAY_MESSAGE = True

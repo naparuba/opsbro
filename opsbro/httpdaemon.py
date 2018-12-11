@@ -4,7 +4,7 @@ from .misc.bottle import run, request, abort, error, redirect, response, gserver
 from .misc.bottle import route as bottle_route
 import opsbro.misc.bottle as bottle
 
-bottle.debug(True)
+bottle.debug(False)
 
 from .log import logger
 from .jsonmgr import jsoner

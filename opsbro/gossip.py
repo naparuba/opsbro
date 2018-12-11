@@ -3,7 +3,6 @@ import time
 import random
 import math
 import copy
-import sys
 import bisect
 import threading
 from collections import deque
@@ -40,6 +39,22 @@ class NODE_STATES(object):
     SUSPECT = 'suspect'
     UNKNOWN = 'unknown'
 
+
+class PACKET_TYPES(object):
+    # ping and co
+    PING = 'gossip::ping'
+    PING_RELAY = 'gossip::ping-relay'
+    DETECT_PING = 'gossip::detect-ping'
+    DETECT_PONG = 'gossip::detect-pong'
+    ACK = 'gossip::ack'
+    
+    # with states
+    ALIVE = 'gossip::alive'
+    SUSPECT = 'gossip::suspect'
+    DEAD = 'gossip::dead'
+    LEAVE = 'gossip::leave'
+    
+    
 
 # Main class for a Gossip cluster
 class Gossip(BaseManager):
@@ -1017,7 +1032,7 @@ class Gossip(BaseManager):
         # If the other node is a top level one, we must use our own zone, because we don't have it's
         if zonemgr.is_top_zone_from(self.zone, other_zone_name):
             ping_zone = self.zone
-        ping_payload = {'type': 'ping', 'seqno': 0, 'node': other['uuid'], 'from_zone': self.zone, 'from': self.uuid}
+        ping_payload = {'type': PACKET_TYPES.PING, 'seqno': 0, 'node': other['uuid'], 'from_zone': self.zone, 'from': self.uuid}
         # print "PREPARE PING", ping_payload, other
         message = jsoner.dumps(ping_payload)
         encrypter = libstore.get_encrypter()
@@ -1061,7 +1076,7 @@ class Gossip(BaseManager):
             # Take at least 3 relays to ask ping
             relays = random.sample(possible_relays, min(len(possible_relays), 3))
             logger.debug('POSSIBLE RELAYS', relays)
-            ping_relay_payload = {'type': 'ping-relay', 'seqno': 0, 'tgt': other['uuid'], 'from': self.uuid, 'from_zone': self.zone}
+            ping_relay_payload = {'type': PACKET_TYPES.PING_RELAY, 'seqno': 0, 'tgt': other['uuid'], 'from': self.uuid, 'from_zone': self.zone}
             message = jsoner.dumps(ping_relay_payload)
             enc_message = encrypter.encrypt(message, dest_zone_name=ping_zone)  # relays are all in the other zone, so same as before
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
@@ -1117,7 +1132,7 @@ class Gossip(BaseManager):
         
         my_self = self._get_myself_read_only()
         my_node_data = self.create_alive_msg(my_self)
-        ack = {'type': 'ack', 'seqno': m['seqno'], 'node': my_node_data}
+        ack = {'type': PACKET_TYPES.ACK, 'seqno': m['seqno'], 'node': my_node_data}
         ret_msg = jsoner.dumps(ack)
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
         encrypter = libstore.get_encrypter()
@@ -1179,7 +1194,7 @@ class Gossip(BaseManager):
         if zonemgr.is_top_zone_from(self.zone, tgt_zone):
             tgt_zone = self.zone
         # Now do the real ping
-        ping_payload = {'type': 'ping', 'seqno': 0, 'node': ntgt['uuid'], 'from': self.uuid}
+        ping_payload = {'type': PACKET_TYPES.PING, 'seqno': 0, 'node': ntgt['uuid'], 'from': self.uuid}
         message = jsoner.dumps(ping_payload)
         encrypter = libstore.get_encrypter()
         enc_message = encrypter.encrypt(message, dest_zone_name=tgt_zone)
@@ -1195,7 +1210,7 @@ class Gossip(BaseManager):
             j_ret = jsoner.loads(uncrypted_ret)
             logger.info('PING (relay) got a return from %s' % ntgt['name'], j_ret)
             # An aswer? great it is alive! Let it know our _from node
-            ack = {'type': 'ack', 'seqno': 0, 'node': j_ret['node']}
+            ack = {'type': PACKET_TYPES.ACK, 'seqno': 0, 'node': j_ret['node']}
             ret_msg = jsoner.dumps(ack)
             nfrom_zone = nfrom['zone']
             # Same as before: cannot talk to higher zone
@@ -1228,7 +1243,7 @@ class Gossip(BaseManager):
         my_self = self._get_myself_read_only()
         my_node_data = self.create_alive_msg(my_self)
         
-        r = {'type': 'detect-pong', 'node': my_node_data}
+        r = {'type': PACKET_TYPES.DETECT_PONG, 'node': my_node_data}
         ret_msg = jsoner.dumps(r)
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
         encrypter = libstore.get_encrypter()
@@ -1251,7 +1266,7 @@ class Gossip(BaseManager):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         
-        p = '{"type":"detect-ping", "from_zone":"%s"}' % self.zone
+        p = '{"type":"%s", "from_zone":"%s"}' % (PACKET_TYPES.DETECT_PING, self.zone)
         encrypter = libstore.get_encrypter()
         enc_p = encrypter.encrypt(p, dest_zone_name=self.zone)
         s.sendto(enc_p, ('<broadcast>', 6768))
@@ -1287,7 +1302,7 @@ class Gossip(BaseManager):
             logger.info('UDP detected node: %s' % d)
             # if not a detect-pong package, I don't want it
             _type = d.get('type', '')
-            if _type != 'detect-pong':
+            if _type != PACKET_TYPES.DETECT_PONG:
                 continue
             # Skip if not node in it
             if 'node' not in d:
@@ -1563,7 +1578,7 @@ class Gossip(BaseManager):
     ########## Message managment
     def create_alive_msg(self, node):
         r = self.__get_node_basic_msg(node)
-        r['type'] = 'alive'
+        r['type'] = PACKET_TYPES.ALIVE
         r['state'] = NODE_STATES.ALIVE
         return r
     
@@ -1575,21 +1590,21 @@ class Gossip(BaseManager):
     
     def create_suspect_msg(self, node):
         r = self.__get_node_basic_msg(node)
-        r['type'] = 'suspect'
+        r['type'] = PACKET_TYPES.SUSPECT
         r['state'] = NODE_STATES.SUSPECT
         return r
     
     
     def create_dead_msg(self, node):
         r = self.__get_node_basic_msg(node)
-        r['type'] = 'dead'
+        r['type'] = PACKET_TYPES.DEAD
         r['state'] = NODE_STATES.DEAD
         return r
     
     
     def create_leave_msg(self, node):
         r = self.__get_node_basic_msg(node)
-        r['type'] = 'leave'
+        r['type'] = PACKET_TYPES.LEAVE
         r['state'] = NODE_STATES.LEAVE
         return r
     
