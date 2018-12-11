@@ -11,9 +11,16 @@ from .kv import kvmgr
 from .topic import topiker, TOPIC_CONFIGURATION_AUTOMATION
 from .jsonmgr import jsoner
 from .util import exec_command
+from .udprouter import udprouter
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('executer')
+
+
+class EXECUTER_PACKAGE_TYPES(object):
+    CHALLENGE_ASK = 'executor::challenge-ask'
+    CHALLENGE_RETURN = 'executor::challenge-return'
+    CHALLENGE_PROPOSAL = 'executor::challenge-proposal'
 
 
 class Executer(object):
@@ -22,11 +29,25 @@ class Executer(object):
         self.execs = {}
         # Challenge send so we can match the response when we will get them
         self.challenges = {}
+        # Set myself as master of the executor:: udp messages
+        udprouter.declare_handler('executor', self)
     
     
     def load(self, mfkey_pub, mfkey_priv):
         self.mfkey_pub = mfkey_pub
         self.mfkey_priv = mfkey_priv
+    
+    
+    def manage_message(self, message_type, message, source_addr):
+        # Someone is asking us a challenge, ok do it
+        if message_type == EXECUTER_PACKAGE_TYPES.CHALLENGE_ASK:
+            self.manage_exec_challenge_ask_message(message, source_addr)
+        
+        elif message_type == EXECUTER_PACKAGE_TYPES.CHALLENGE_RETURN:
+            self.manage_exec_challenge_return_message(message, source_addr)
+        
+        else:
+            logger.error('Someone did send us unknown UDP message: %s' % message_type)
     
     
     def manage_exec_challenge_ask_message(self, m, addr):
@@ -48,7 +69,7 @@ class Executer(object):
         RSA = encrypter.get_RSA()
         _c = RSA.encrypt(challenge, self.mfkey_pub)  # encrypt 0=dummy param not used
         echallenge = base64.b64encode(_c)
-        ping_payload = {'type': '/exec/challenge/proposal', 'fr': gossiper.uuid, 'challenge': echallenge, 'cid': cid}
+        ping_payload = {'type': EXECUTER_PACKAGE_TYPES.CHALLENGE_PROPOSAL, 'fr': gossiper.uuid, 'challenge': echallenge, 'cid': cid}
         message = jsoner.dumps(ping_payload)
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
         enc_message = encrypter.encrypt(message)
@@ -152,7 +173,7 @@ class Executer(object):
             e['res'][nuid] = d
             logger.debug('EXEC asking for node %s' % node['name'])
             
-            payload = {'type': '/exec/challenge/ask', 'fr': gossiper.uuid, 'exec_id': exec_id}
+            payload = {'type': EXECUTER_PACKAGE_TYPES.CHALLENGE_ASK, 'fr': gossiper.uuid, 'exec_id': exec_id}
             packet = jsoner.dumps(payload)
             encrypter = libstore.get_encrypter()
             enc_packet = encrypter.encrypt(packet)
@@ -206,7 +227,7 @@ class Executer(object):
                 d['state'] = 'error'
                 continue
             response64 = base64.b64encode(response)
-            payload = {'type': '/exec/challenge/return', 'fr': gossiper.uuid,
+            payload = {'type': EXECUTER_PACKAGE_TYPES.CHALLENGE_RETURN, 'fr': gossiper.uuid,
                        'cid' : cid, 'response': response64,
                        'cmd' : cmd}
             packet = jsoner.dumps(payload)

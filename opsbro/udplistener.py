@@ -14,9 +14,7 @@ from .stop import stopper
 from .library import libstore
 from .jsonmgr import jsoner
 from .gossip import gossiper
-from .ts import tsmgr
 from .kv import kvmgr
-from .executer import executer
 from .broadcast import broadcaster
 from .pubsub import pubsub
 from .util import copy_dir
@@ -51,19 +49,6 @@ class UDPListener(object):
         self.manage_message(msg, source_addr=None)
     
     
-    # Manage a udp message
-    def manage_message(self, m, source_addr):
-        logger.debug('MESSAGE', m)
-        t = m.get('type', None)
-        if t is None:  # bad message, skip it
-            return
-        
-        if t == 'event':
-            self.manage_event(m)
-        else:
-            udprouter.route_message(m, source_addr)
-    
-    
     def manage_event(self, m):
         eventid = m.get('eventid', '')
         payload = m.get('payload', {})
@@ -71,6 +56,7 @@ class UDPListener(object):
         with gossiper.events_lock:
             if not eventid or not payload or eventid in gossiper.events:
                 return
+        
         # ok new one, add a broadcast so we diffuse it, and manage it
         b = {'send': 0, 'msg': m}
         broadcaster.append(b)
@@ -194,26 +180,18 @@ class UDPListener(object):
                 if t is None:
                     continue
                 
-                if t == '/kv/put':
-                    k = m['k']
-                    v = m['v']
-                    fw = m.get('fw', False)
-                    # For perf data we allow the udp send
-                    kvmgr.put_key(k, v, allow_udp=True, fw=fw)
-                elif t == '/ts/new':
-                    key = m.get('key', '')
-                    # Skip this message for classic nodes
-                    if key == '':
-                        continue
-                    # if TS do not have it, it will propagate it
-                    tsmgr.set_name_if_unset(key)
-                # Someone is asking us a challenge, ok do it
-                elif t == '/exec/challenge/ask':
-                    executer.manage_exec_challenge_ask_message(m, addr)
-                elif t == '/exec/challenge/return':
-                    executer.manage_exec_challenge_return_message(m, addr)
+                # TODO: remove this
+                # if t == '/ts/new':
+                #     key = m.get('key', '')
+                #     # Skip this message for classic nodes
+                #     if key == '':
+                #         continue
+                #     # if TS do not have it, it will propagate it
+                #     tsmgr.set_name_if_unset(key)
+                if t == 'event':
+                    self.manage_event(m)
                 else:
-                    self.manage_message(m, addr)
+                    udprouter.route_message(m, addr)
     
     
     # Thread that will look for libexec/configuration change events,

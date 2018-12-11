@@ -1611,8 +1611,8 @@ class Gossip(BaseManager):
         return r
     
     
-    def create_new_ts_msg(self, key):
-        return {'type': '/ts/new', 'from': self.uuid, 'key': key}
+    # def create_new_ts_msg(self, key):
+    #     return {'type': '/ts/new', 'from': self.uuid, 'key': key}
     
     
     def stack_alive_broadcast(self, node):
@@ -1634,11 +1634,11 @@ class Gossip(BaseManager):
         return
     
     
-    def stack_new_ts_broadcast(self, key):
-        msg = self.create_new_ts_msg(key)
-        b = {'send': 0, 'msg': msg, 'groups': 'ts'}
-        broadcaster.append(b)
-        return
+    # def stack_new_ts_broadcast(self, key):
+    #     msg = self.create_new_ts_msg(key)
+    #     b = {'send': 0, 'msg': msg, 'groups': 'ts'}
+    #     broadcaster.append(b)
+    #     return
     
     
     def stack_suspect_broadcast(self, node):
