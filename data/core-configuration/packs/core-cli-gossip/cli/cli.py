@@ -20,7 +20,7 @@ from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, put_
 from opsbro.cli_display import print_h1, print_h2
 from opsbro.threadmgr import threader
 from opsbro.jsonmgr import jsoner
-from opsbro.util import my_sort, my_cmp
+from opsbro.util import my_sort, my_cmp, unicode_to_bytes
 from opsbro.gossip import NODE_STATES
 
 NO_ZONE_DEFAULT = '(no zone)'
@@ -239,7 +239,7 @@ def do_zone_list():
 
 def _save_key(key_string, zone_name, key_path):
     with open(key_path, 'wb') as f:
-        f.write(key_string)
+        f.write(unicode_to_bytes(key_string))
     
     cprint('%s OK the key is saved as file %s' % (CHARACTERS.check, key_path))
     
