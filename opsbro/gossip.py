@@ -23,6 +23,7 @@ from .topic import topiker, TOPIC_SERVICE_DISCOVERY
 from .basemanager import BaseManager
 from .jsonmgr import jsoner
 from .util import get_uuid
+from .udprouter import udprouter
 
 KGOSSIP = 10
 
@@ -53,8 +54,7 @@ class PACKET_TYPES(object):
     SUSPECT = 'gossip::suspect'
     DEAD = 'gossip::dead'
     LEAVE = 'gossip::leave'
-    
-    
+
 
 # Main class for a Gossip cluster
 class Gossip(BaseManager):
@@ -64,6 +64,8 @@ class Gossip(BaseManager):
     def __init__(self):
         super(Gossip, self).__init__()
         self.logger = logger
+        # Set myself as master of the gossip:: udp messages
+        udprouter.declare_handler('gossip', self)
     
     
     def init(self, nodes, nodes_lock, addr, port, name, display_name, incarnation, uuid, groups, seeds, bootstrap, zone, is_proxy):
@@ -1671,6 +1673,34 @@ class Gossip(BaseManager):
     @staticmethod
     def forward_to_websocket(msg):
         websocketmgr.forward({'channel': 'gossip', 'payload': msg})
+    
+    
+    # We did receive a UDP message from the listener, look for it
+    def manage_message(self, message_type, message, source_addr):
+        if message_type == PACKET_TYPES.PING:
+            gossiper.manage_ping_message(message, source_addr)
+        
+        elif message_type == PACKET_TYPES.PING_RELAY:
+            gossiper.manage_ping_relay_message(message, source_addr)
+        
+        elif message_type == PACKET_TYPES.DETECT_PING:
+            gossiper.manage_detect_ping_message(message, source_addr)
+        
+        elif message_type == PACKET_TYPES.ACK:
+            pass  # do nothing, wrong route but not a problem
+        
+        elif message_type == PACKET_TYPES.ALIVE:
+            gossiper.set_alive(message)
+        
+        # NOTE: the dead from other is changed into a suspect, so WE decide when it will be dead
+        elif message_type in (PACKET_TYPES.SUSPECT, PACKET_TYPES.DEAD):
+            gossiper.set_suspect(message)
+        
+        elif message_type == PACKET_TYPES.LEAVE:
+            gossiper.set_leave(message)
+        
+        else:
+            logger.error('UNKNOWN gossip message: %s' % message_type)
     
     
     ############## Http interface

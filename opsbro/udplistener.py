@@ -17,11 +17,10 @@ from .gossip import gossiper
 from .ts import tsmgr
 from .kv import kvmgr
 from .executer import executer
-from .raft import get_rafter
 from .broadcast import broadcaster
 from .pubsub import pubsub
 from .util import copy_dir
-from .gossip import PACKET_TYPES
+from .udprouter import udprouter
 
 logger = LoggerFactory.create_logger('daemon')
 logger_gossip = LoggerFactory.create_logger('gossip')
@@ -49,28 +48,20 @@ class UDPListener(object):
     def manage_message_pub(self, msg=None):
         if msg is None:
             return
-        self.manage_message(msg)
+        self.manage_message(msg, source_addr=None)
     
     
     # Manage a udp message
-    def manage_message(self, m):
+    def manage_message(self, m, source_addr):
         logger.debug('MESSAGE', m)
         t = m.get('type', None)
         if t is None:  # bad message, skip it
             return
-        if t == PACKET_TYPES.ACK:
-            logger.debug("GOT AN ACK?")
-        elif t == PACKET_TYPES.ALIVE:
-            gossiper.set_alive(m)
-        # NOTE: the dead from other is changed into a suspect, so WE decide when it will be dead
-        elif t in (PACKET_TYPES.SUSPECT, PACKET_TYPES.DEAD):
-            gossiper.set_suspect(m)
-        elif t == PACKET_TYPES.LEAVE:
-            gossiper.set_leave(m)
-        elif t == 'event':
+        
+        if t == 'event':
             self.manage_event(m)
         else:
-            logger.error('UNKNOWN MESSAGE', m)
+            udprouter.route_message(m, source_addr)
     
     
     def manage_event(self, m):
@@ -202,13 +193,8 @@ class UDPListener(object):
                 t = m.get('type', None)
                 if t is None:
                     continue
-                if t == PACKET_TYPES.PING:
-                    gossiper.manage_ping_message(m, addr)
-                elif t == PACKET_TYPES.PING_RELAY:
-                    gossiper.manage_ping_relay_message(m, addr)
-                elif t == PACKET_TYPES.DETECT_PING:
-                    gossiper.manage_detect_ping_message(m, addr)
-                elif t == '/kv/put':
+                
+                if t == '/kv/put':
                     k = m['k']
                     v = m['v']
                     fw = m.get('fw', False)
@@ -226,10 +212,8 @@ class UDPListener(object):
                     executer.manage_exec_challenge_ask_message(m, addr)
                 elif t == '/exec/challenge/return':
                     executer.manage_exec_challenge_return_message(m, addr)
-                elif t.startswith('raft::'):
-                    get_rafter().stack_message(m, addr)
                 else:
-                    self.manage_message(m)
+                    self.manage_message(m, addr)
     
     
     # Thread that will look for libexec/configuration change events,

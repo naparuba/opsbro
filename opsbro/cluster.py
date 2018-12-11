@@ -48,7 +48,7 @@ from .hostingdrivermanager import get_hostingdrivermgr
 from .topic import topiker, TOPIC_SERVICE_DISCOVERY, TOPIC_AUTOMATIC_DECTECTION, TOPIC_MONITORING, TOPIC_METROLOGY, TOPIC_CONFIGURATION_AUTOMATION, TOPIC_SYSTEM_COMPLIANCE
 from .packer import packer
 from .agentstates import AGENT_STATES
-from .udp_listener import get_udp_listener
+from .udplistener import get_udp_listener
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('daemon')

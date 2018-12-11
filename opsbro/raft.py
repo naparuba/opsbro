@@ -17,6 +17,7 @@ print_lock = threading.RLock()
 from .basemanager import BaseManager
 from .log import LoggerFactory
 from .jsonmgr import jsoner
+from .udprouter import udprouter
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('raft')
@@ -617,6 +618,8 @@ class RaftManager(BaseManager):
         self.logger = logger
         self.raft_layer = raft_layer
         self.raft_node = RaftNode(self.raft_layer)
+        # Set myself as master of the raft:: udp messages
+        udprouter.declare_handler('raft', self)
     
     
     def do_raft_thread(self):
@@ -625,6 +628,10 @@ class RaftManager(BaseManager):
     
     def stop(self):
         self.raft_node.stop()
+    
+    
+    def manage_message(self, message_type, message, source_addr):
+        return self.stack_message(message, source_addr)
     
     
     def stack_message(self, message, addr_from):
