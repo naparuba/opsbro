@@ -113,7 +113,7 @@ class Encrypter(object):
                 return None
         key_fingerprint = self.fingerprints_from_zone[zone_name]
         encryption_key = self.key_fingerprints[key_fingerprint]
-        logger.info('ENCRYPTION: founded the key %s for the zone %s' % (key_fingerprint, zone_name))
+        logger.debug('ENCRYPTION: founded the key %s for the zone %s' % (key_fingerprint, zone_name))
         return encryption_key
     
     
@@ -159,7 +159,7 @@ class Encrypter(object):
             
             # print('Key finger print %s' % key_fingerprint)
             
-            logger.info('DECRYPT: did receive a key %s from zone: %s' % (key_fingerprint, self.zone_from_fingerprint.get(key_fingerprint)))
+            logger.debug('DECRYPT: did receive a key %s from zone: %s' % (key_fingerprint, self.zone_from_fingerprint.get(key_fingerprint)))
             
             encryption_key = self.key_fingerprints.get(key_fingerprint, None)
             if encryption_key is None:

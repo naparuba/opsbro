@@ -1,0 +1,36 @@
+version: '2'
+services:
+  node1:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO11-executor-1.txt
+    networks:
+       - executor
+    cap_add:
+       - ALL
+
+
+  node2:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO11-executor-2.txt
+    networks:
+       - executor
+    cap_add:
+       - ALL
+
+
+  node3:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO11-executor-3.txt
+    networks:
+       - executor
+    cap_add:
+       - ALL
+
+
+networks:
+  executor:
+      driver: bridge
+

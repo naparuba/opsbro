@@ -1,0 +1,36 @@
+version: '2'
+services:
+  node1:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO11-executor-python3-1.txt
+    networks:
+       - executor-python3
+    cap_add:
+       - ALL
+
+
+  node2:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO11-executor-python3-2.txt
+    networks:
+       - executor-python3
+    cap_add:
+       - ALL
+
+
+  node3:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO11-executor-python3-3.txt
+    networks:
+       - executor-python3
+    cap_add:
+       - ALL
+
+
+networks:
+  executor-python3:
+      driver: bridge
+

@@ -365,7 +365,7 @@ class KVBackend:
             uri = 'http://%s:%s/kv/%s' % (n['addr'], n['port'], ukey)
             try:
                 logger.debug('KV: PUT asking %s: %s' % (n['name'], uri))
-                params = {'ttl': str(ttl)}
+                params = {'ttl': ttl}
                 httper.put(uri, data=value, params=params)
                 logger.debug('KV: PUT return')
                 return None

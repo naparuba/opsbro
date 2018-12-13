@@ -6,9 +6,12 @@ import opsbro.misc.bottle as bottle
 
 bottle.debug(False)
 
-from .log import logger
+from .log import logger, LoggerFactory
 from .jsonmgr import jsoner
 
+http_logger = LoggerFactory.create_logger('http_errors')
+
+# Global: keep a trace of the exported functions called by the routes
 exported_functions = {}
 
 
@@ -79,6 +82,25 @@ class ExternalHttpProtectionLookup(object):
         return _externalhttp_protection
 
 
+# We want the http daemon to be accessible from everywhere without issue
+class LogErrors(object):
+    name = 'log_errors'
+    api = 2
+    
+    
+    def apply(self, fn, context):
+        def _log_errors(*args, **kwargs):
+            try:
+                return fn(*args, **kwargs)
+            except Exception:
+                err = traceback.format_exc()
+                http_logger.error('The request %s/%s did raise an error: %s' % (request, context, err))
+                raise
+        
+        
+        return _log_errors
+
+
 # This class is the http daemon main interface
 # in a singleton mode so you can easily register new uri from other
 # part of the code, mainly by adding new route to bottle
@@ -95,6 +117,9 @@ class HttpDaemon(object):
         # Socket access got a root access, a direct one :)
         # but in the external should be an autorization
         bapp.install(ExternalHttpProtectionLookup())
+
+        # When call does crash, log them
+        bapp.install(LogErrors())
         
         if socket_path:
             # Will lock for in this

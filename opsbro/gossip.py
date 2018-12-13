@@ -1286,14 +1286,14 @@ class Gossip(BaseManager):
             # No more time: break
             if remaining_time < 0:
                 break
-            logger.info('UDP detection Remaining time: %.2f' % remaining_time)
+            logger.debug('UDP detection Remaining time: %.2f' % remaining_time)
             s.settimeout(remaining_time)
             try:
                 data, addr = s.recvfrom(65507)
             except socket.timeout:
                 logger.info('UDP detection: no response after: %.2f' % (time.time() - start))
                 continue
-            logger.info('RECEIVE detect-ping response: %s' % data)
+            logger.debug('RECEIVE detect-ping response: %s' % data)
             try:
                 d_str = encrypter.decrypt(data)
                 d = jsoner.loads(d_str)

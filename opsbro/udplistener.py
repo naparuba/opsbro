@@ -155,13 +155,13 @@ class UDPListener(object):
             encrypter = libstore.get_encrypter()
             data = encrypter.decrypt(data)
             
-            logger_gossip.info('Try to load package with zone %s' % gossiper.zone)
+            logger_gossip.debug('Try to load package with zone %s' % gossiper.zone)
             
             # Maybe the decryption failed?
             if data is None:
                 logger_gossip.error("UDP: received message with bad encryption key from %s" % str(addr))
                 continue
-            logger_gossip.info("UDP: received message:", data, 'from', addr)
+            logger_gossip.debug("UDP: received message:", data, 'from', addr)
             # Ok now we should have a json to parse :)
             try:
                 raw = jsoner.loads(data)

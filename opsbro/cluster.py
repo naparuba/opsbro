@@ -19,7 +19,7 @@ import copy
 
 from .log import LoggerFactory
 from .log import core_logger as raw_logger
-from .util import get_server_const_uuid, guess_server_const_uuid, get_cpu_consumption, get_memory_consumption
+from .util import get_server_const_uuid, guess_server_const_uuid, get_cpu_consumption, get_memory_consumption, unicode_to_bytes
 from .threadmgr import threader
 from .now import NOW
 from .httpclient import get_http_exceptions, httper
@@ -169,7 +169,7 @@ class Cluster(object):
                     sys.exit(2)
                 
                 with open(self.master_key_priv, 'r') as f:
-                    buf = f.read()
+                    buf = unicode_to_bytes(f.read())  # the RSA lib need binary
                 try:
                     self.mfkey_priv = RSA.PrivateKey.load_pkcs1(buf)
                 except Exception as exp:
@@ -190,7 +190,7 @@ class Cluster(object):
                     sys.exit(2)
                 # let's try to open the key so :)
                 with open(self.master_key_pub, 'r') as f:
-                    buf = f.read()
+                    buf = unicode_to_bytes(f.read())  # the RSA lib need binary
                 try:
                     self.mfkey_pub = RSA.PublicKey.load_pkcs1(buf)
                 except Exception as exp:
