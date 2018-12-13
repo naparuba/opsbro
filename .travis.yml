@@ -63,6 +63,9 @@ env:
 # This test is a 3 node RAFT test, just to see if we have a leader after a huge time
 - TEST_SUITE=COMPOSE-RAFT-INIT
 - TEST_SUITE=COMPOSE-RAFT-INIT-PYTHON3
+# This test suite is 3 members that one node run executor to the 2 others (encrypted)
+- TEST_SUITE=COMPOSE-EXECUTOR
+- TEST_SUITE=COMPOSE-EXECUTOR-PYTHON3
 ##### Then installation on various distros
 - TEST_SUITE=ALPINE
 - TEST_SUITE=AMAZONLINUX
