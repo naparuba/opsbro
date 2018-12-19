@@ -11,6 +11,7 @@ from .topic import topiker, TOPIC_CONFIGURATION_AUTOMATION
 from .jsonmgr import jsoner
 from .util import exec_command, get_uuid, unicode_to_bytes, bytes_to_unicode
 from .udprouter import udprouter
+from .encrypter import get_encrypter
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('executer')
@@ -32,11 +33,6 @@ class Executer(object):
         udprouter.declare_handler('executor', self)
     
     
-    def load(self, mfkey_pub, mfkey_priv):
-        self.mfkey_pub = mfkey_pub
-        self.mfkey_priv = mfkey_priv
-    
-    
     def manage_message(self, message_type, message, source_addr):
         # Someone is asking us a challenge, ok do it
         if message_type == EXECUTER_PACKAGE_TYPES.CHALLENGE_ASK:
@@ -50,8 +46,9 @@ class Executer(object):
     
     
     def manage_exec_challenge_ask_message(self, m, addr):
+        public_key = get_encrypter().get_mf_pub_key()
         # If we don't have the public key, bailing out now
-        if self.mfkey_pub is None:
+        if public_key is None:
             logger.debug('EXEC skipping exec call because we do not have a public key')
             return
         # get the with execution id from ask
@@ -63,10 +60,9 @@ class Executer(object):
         e = {'ctime': int(time.time()), 'challenge': challenge, 'exec_id': exec_id}
         self.challenges[cid] = e
         # return a tuple with only the first element useful (str)
-        # TOCLEAN:: _c = self.mfkey_pub.encrypt(challenge, 0)[0] # encrypt 0=dummy param not used
         encrypter = libstore.get_encrypter()
         RSA = encrypter.get_RSA()
-        _c = RSA.encrypt(unicode_to_bytes(challenge), self.mfkey_pub)  # encrypt 0=dummy param not used
+        _c = RSA.encrypt(unicode_to_bytes(challenge), public_key)  # encrypt 0=dummy param not used
         echallenge = bytes_to_unicode(base64.b64encode(_c))  # base64 returns bytes
         ping_payload = {'type': EXECUTER_PACKAGE_TYPES.CHALLENGE_PROPOSAL, 'fr': gossiper.uuid, 'challenge': echallenge, 'cid': cid}
         message = jsoner.dumps(ping_payload)
@@ -78,8 +74,9 @@ class Executer(object):
     
     
     def manage_exec_challenge_return_message(self, m, addr):
+        public_key = get_encrypter().get_mf_pub_key()
         # Don't even look at it if we do not have a public key....
-        if self.mfkey_pub is None:
+        if public_key is None:
             return
         cid = m.get('cid', '')
         response64 = m.get('response', '')
@@ -226,9 +223,9 @@ class Executer(object):
             # Now send back the challenge response # dumy: add real RSA cypher here of course :)
             logger.debug('EXEC got a return from challenge ask from %s: %s' % (node['name'], cid))
             try:
-                ##TOCLEAN:: response = self.mfkey_priv.decrypt(challenge)
+                private_key = get_encrypter().get_mf_priv_key()
                 RSA = encrypter.get_RSA()
-                response = RSA.decrypt(challenge, self.mfkey_priv)
+                response = RSA.decrypt(challenge, private_key)
             except Exception as exp:
                 logger.error('EXEC bad challenge encoding from %s:%s (challenge type:%s)' % (node['name'], exp, type(challenge)))
                 sock.close()
@@ -313,7 +310,8 @@ class Executer(object):
         @http_export('/exec/:group')
         def launch_exec(group='*'):
             response.content_type = 'application/json'
-            if self.mfkey_priv is None:
+            private_key = get_encrypter().get_mf_pub_key()
+            if private_key is None:
                 return abort(400, 'No master private key')
             if not topiker.is_topic_enabled(TOPIC_CONFIGURATION_AUTOMATION):
                 return abort(400, 'Configuration automation is not allowed for this node')
@@ -331,9 +329,7 @@ class Executer(object):
         @http_export('/exec-get/:exec_id')
         def get_exec(exec_id):
             response.content_type = 'application/json'
-            # v = kvmgr.get_key('__exec/%s' % exec_id)
             return self.execs[exec_id]
-            # return v  # can be None
 
 
 executer = Executer()

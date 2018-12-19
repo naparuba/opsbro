@@ -28,6 +28,18 @@ class Encrypter(object):
         self.key_fingerprints = {}  # finger print => key
         self.fingerprints_from_zone = {}  # zone name => key finger print
         self.zone_from_fingerprint = {}  # key finger print => zone name
+        
+        # MFK
+        self.mfkey_priv = None
+        self.mfkey_pub = None
+    
+    
+    def get_mf_priv_key(self):
+        return self.mfkey_priv
+    
+    
+    def get_mf_pub_key(self):
+        return self.mfkey_pub
     
     
     def get_RSA(self):
@@ -204,6 +216,49 @@ class Encrypter(object):
         except Exception as exp:
             logger.error('Encryption fail:', exp)
             return u''
+    
+    
+    def load_master_keys(self, master_key_priv, master_key_pub):
+        from .configurationmanager import configmgr
+        
+        RSA = self.get_RSA()
+        if RSA is None:
+            logger.error('You set a master private key but but cannot import python-rsa module, please install it. Exiting.')
+            sys.exit(2)
+        
+        # Same for master fucking key PRIVATE
+        if master_key_priv:
+            if not os.path.isabs(master_key_priv):
+                master_key_priv = os.path.join(configmgr.main_cfg_directory, master_key_priv)
+            if not os.path.exists(master_key_priv):
+                logger.error('Cannot find the master key private file at %s' % master_key_priv)
+                sys.exit(2)
+            
+            with open(master_key_priv, 'r') as f:
+                buf = unicode_to_bytes(f.read())  # the RSA lib need binary
+            try:
+                self.mfkey_priv = RSA.PrivateKey.load_pkcs1(buf)
+            except Exception as exp:
+                logger.error('Invalid master private key at %s. (%s) Exiting.' % (master_key_priv, exp))
+                sys.exit(2)
+            logger.info('Master private key file %s is loaded' % master_key_priv)
+        
+        # Same for master fucking key PUBLIC
+        if master_key_pub:
+            if not os.path.isabs(master_key_pub):
+                master_key_pub = os.path.join(configmgr.main_cfg_directory, master_key_pub)
+            if not os.path.exists(master_key_pub):
+                logger.error('Cannot find the master key public file at %s' % master_key_pub)
+            else:
+                # let's try to open the key so :)
+                with open(master_key_pub, 'r') as f:
+                    buf = unicode_to_bytes(f.read())  # the RSA lib need binary
+                try:
+                    self.mfkey_pub = RSA.PublicKey.load_pkcs1(buf)
+                except Exception as exp:
+                    logger.error('Invalid master public key at %s. (%s) Exiting.' % (master_key_pub, exp))
+                    sys.exit(2)
+                logger.info('Master public key file %s is loaded' % master_key_pub)
 
 
 encrypter = None

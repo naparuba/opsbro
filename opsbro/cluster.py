@@ -155,48 +155,7 @@ class Cluster(object):
         
         # Look if our encryption key is valid or not
         encrypter = libstore.get_encrypter()
-        
-        # Same for master fucking key PRIVATE
-        if self.master_key_priv:
-            if not os.path.isabs(self.master_key_priv):
-                self.master_key_priv = os.path.join(self.cfg_dir, self.master_key_priv)
-            if not os.path.exists(self.master_key_priv):
-                logger.error('Cannot find the master key private file at %s' % self.master_key_priv)
-            else:
-                RSA = encrypter.get_RSA()
-                if RSA is None:
-                    logger.error('You set a master private key but but cannot import python-rsa module, please install it. Exiting.')
-                    sys.exit(2)
-                
-                with open(self.master_key_priv, 'r') as f:
-                    buf = unicode_to_bytes(f.read())  # the RSA lib need binary
-                try:
-                    self.mfkey_priv = RSA.PrivateKey.load_pkcs1(buf)
-                except Exception as exp:
-                    logger.error('Invalid master private key at %s. (%s) Exiting.' % (self.master_key_priv, exp))
-                    sys.exit(2)
-                logger.info('Master private key file %s is loaded' % self.master_key_priv)
-        
-        # Same for master fucking key PUBLIC
-        if self.master_key_pub:
-            if not os.path.isabs(self.master_key_pub):
-                self.master_key_pub = os.path.join(self.cfg_dir, self.master_key_pub)
-            if not os.path.exists(self.master_key_pub):
-                logger.error('Cannot find the master key public file at %s' % self.master_key_pub)
-            else:
-                RSA = encrypter.get_RSA()
-                if RSA is None:
-                    logger.error('You set a master public key but but cannot import python-crypto module, please install it. Exiting.')
-                    sys.exit(2)
-                # let's try to open the key so :)
-                with open(self.master_key_pub, 'r') as f:
-                    buf = unicode_to_bytes(f.read())  # the RSA lib need binary
-                try:
-                    self.mfkey_pub = RSA.PublicKey.load_pkcs1(buf)
-                except Exception as exp:
-                    logger.error('Invalid master public key at %s. (%s) Exiting.' % (self.master_key_pub, exp))
-                    sys.exit(2)
-                logger.info('Master public key file %s is loaded' % self.master_key_pub)
+        encrypter.load_master_keys(self.master_key_priv, self.master_key_pub)
         
         # Open the retention data about our previous runs
         # but some are specific to this agent uuid
@@ -321,8 +280,7 @@ class Cluster(object):
         tsmgr.tsb.load(self.data_dir)
         tsmgr.tsb.export_http()
         
-        # Load key into the executor
-        executer.load(self.mfkey_pub, self.mfkey_priv)
+        # Executore interface
         executer.export_http()
         
         # the evaluater need us to grok into our cfg_data and such things
