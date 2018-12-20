@@ -21,6 +21,7 @@ class EXECUTER_PACKAGE_TYPES(object):
     CHALLENGE_ASK = 'executor::challenge-ask'
     CHALLENGE_RETURN = 'executor::challenge-return'
     CHALLENGE_PROPOSAL = 'executor::challenge-proposal'
+    EXECUTION_DONE = 'executor::execution-done'
 
 
 class Executer(object):
@@ -49,28 +50,37 @@ class Executer(object):
         public_key = get_encrypter().get_mf_pub_key()
         # If we don't have the public key, bailing out now
         if public_key is None:
-            logger.debug('EXEC skipping exec call because we do not have a public key')
+            logger.error('EXEC skipping exec call because we do not have a public key')
             return
+        requester_uuid = m['from']
+        requester_node = gossiper.get(requester_uuid, None)
+        if requester_node is None:
+            logger.error('A node is asking us to execute a command, but we do not known about it: %s(%s)' % (requester_uuid, addr))
+            return
+        
         # get the with execution id from ask
         exec_id = m.get('exec_id', None)
         if exec_id is None:
             return
         cid = get_uuid()  # challgenge id
         challenge = get_uuid()
-        e = {'ctime': int(time.time()), 'challenge': challenge, 'exec_id': exec_id}
+        e = {'ctime': int(time.time()), 'challenge': None, 'exec_id': exec_id}
         self.challenges[cid] = e
         # return a tuple with only the first element useful (str)
         encrypter = libstore.get_encrypter()
-        RSA = encrypter.get_RSA()
-        _c = RSA.encrypt(unicode_to_bytes(challenge), public_key)  # encrypt 0=dummy param not used
-        echallenge = bytes_to_unicode(base64.b64encode(_c))  # base64 returns bytes
-        ping_payload = {'type': EXECUTER_PACKAGE_TYPES.CHALLENGE_PROPOSAL, 'fr': gossiper.uuid, 'challenge': echallenge, 'cid': cid}
-        message = jsoner.dumps(ping_payload)
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
-        enc_message = encrypter.encrypt(message)
-        logger.debug('EXEC asking us a challenge, return %s(%s) to %s' % (challenge, echallenge, addr))
-        sock.sendto(enc_message, addr)
-        sock.close()
+        # As the encrypter to generate a challenge based on the zone public key that the asker
+        # will have to prove to solve thanks to the private key (that I do not have)
+        challenge_string, encrypted_challenge = encrypter.generate_challenge(gossiper.zone)  # TODO: check if we must send from our ouw zone or not
+        e['challenge'] = challenge_string
+        logger.debug('EXEC asking us a challenge, return %s(%s) to %s' % (challenge, encrypted_challenge, addr))
+        
+        challenge_payload = {'type'     : EXECUTER_PACKAGE_TYPES.CHALLENGE_PROPOSAL,
+                             'fr'       : gossiper.uuid,
+                             'challenge': encrypted_challenge,
+                             'cid'      : cid
+                             }
+        # NOTE: cannot talk to classic gossip port as the requestor is waiting in a specific port
+        gossiper.send_message_to_other(requester_uuid, challenge_payload, force_addr=addr)
     
     
     def manage_exec_challenge_return_message(self, m, addr):
@@ -127,7 +137,9 @@ class Executer(object):
         
         # Now send a finish to the asker
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        payload = {'type': '/exec/done', 'exec_id': exec_id, 'cid': cid}
+        payload = {'type'   : EXECUTER_PACKAGE_TYPES.EXECUTION_DONE,
+                   'exec_id': exec_id,
+                   'cid'    : cid}
         packet = jsoner.dumps(payload)
         encrypter = libstore.get_encrypter()
         enc_packet = encrypter.encrypt(packet)
@@ -151,7 +163,12 @@ class Executer(object):
                 exec_id = get_uuid()  # to get back execution id
                 all_uuids.append((uuid, exec_id))
         
-        e = {'cmd': cmd, 'group': group, 'thread': None, 'res': {}, 'nodes': all_uuids, 'ctime': int(time.time())}
+        e = {'cmd'   : cmd,
+             'group' : group,
+             'thread': None,
+             'res'   : {},
+             'nodes' : all_uuids,
+             'ctime' : int(time.time())}
         self.execs[uid] = e
         threader.create_and_launch(self.do_exec_thread, name='exec-%s' % uid, args=(e,), essential=True, part='executer')
         return uid
@@ -176,7 +193,9 @@ class Executer(object):
             e['res'][nuid] = d
             logger.debug('EXEC asking for node %s' % node['name'])
             
-            payload = {'type': EXECUTER_PACKAGE_TYPES.CHALLENGE_ASK, 'fr': gossiper.uuid, 'exec_id': exec_id}
+            payload = {'type'   : EXECUTER_PACKAGE_TYPES.CHALLENGE_ASK,
+                       'from'   : gossiper.uuid,
+                       'exec_id': exec_id}
             packet = jsoner.dumps(payload)
             encrypter = libstore.get_encrypter()
             enc_packet = encrypter.encrypt(packet)

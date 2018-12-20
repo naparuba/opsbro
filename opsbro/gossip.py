@@ -7,6 +7,7 @@ import bisect
 import threading
 from collections import deque
 import traceback
+from contextlib import closing as closing_context
 
 # some singleton :)
 from .log import LoggerFactory
@@ -1153,30 +1154,7 @@ class Gossip(BaseManager):
     
     
     def send_raft_message(self, dest_uuid, message):
-        if dest_uuid == self.uuid:  # me? skip this
-            return
-        
-        dest_node = self.nodes.get(dest_uuid, None)
-        # maybe the other node did disapear
-        if dest_node is None:
-            return
-        
-        dest_addr = dest_node['addr']
-        dest_port = dest_node['port']
-        dest_zone = dest_node['zone']
-        # If the other is in a top level, we don't have it's zone key, use our
-        if zonemgr.is_top_zone_from(self.zone, dest_zone):
-            dest_zone = self.zone
-        flat_message = jsoner.dumps(message)
-        try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
-            encrypter = libstore.get_encrypter()
-            encrypted_message = encrypter.encrypt(flat_message, dest_zone_name=dest_zone)
-            sock.sendto(encrypted_message, (dest_addr, dest_port))
-            sock.close()
-            logger.debug('Sending raft message to (%s) (type:%s)' % (dest_node['uuid'], message['type']))
-        except (socket.timeout, socket.gaierror) as exp:
-            logger.error('Cannot Send raft message to (%s) (type:%s): %s' % (dest_node['uuid'], message['type'], exp))
+        self.send_message_to_other(dest_uuid, message)  # raft is just a standard message
     
     
     # We are ask to do a indirect ping to tgt and return the ack to
@@ -1614,7 +1592,6 @@ class Gossip(BaseManager):
     # def create_new_ts_msg(self, key):
     #     return {'type': '/ts/new', 'from': self.uuid, 'key': key}
     
-    
     def stack_alive_broadcast(self, node):
         msg = self.create_alive_msg(node)
         # Node messages are before all others
@@ -1639,7 +1616,6 @@ class Gossip(BaseManager):
     #     b = {'send': 0, 'msg': msg, 'groups': 'ts'}
     #     broadcaster.append(b)
     #     return
-    
     
     def stack_suspect_broadcast(self, node):
         msg = self.create_suspect_msg(node)
@@ -1673,6 +1649,39 @@ class Gossip(BaseManager):
     @staticmethod
     def forward_to_websocket(msg):
         websocketmgr.forward({'channel': 'gossip', 'payload': msg})
+    
+    
+    # We want to send a generic message to an other node.
+    # we must know about it, and we must check which gossip key to
+    # use for this
+    # maybe we need to exchange to a specific port (like for executor)
+    def send_message_to_other(self, dest_uuid, message, force_addr=None):
+        if dest_uuid == self.uuid:  # me? skip this
+            return
+        
+        dest_node = self.nodes.get(dest_uuid, None)
+        # maybe the other node did disapear
+        if dest_node is None:
+            return
+        if not force_addr:
+            dest_addr = dest_node['addr']
+            dest_port = dest_node['port']
+        else:
+            dest_addr, dest_port = force_addr
+        dest_zone = dest_node['zone']
+        # If the other is in a top level, we don't have it's zone key, use our
+        if zonemgr.is_top_zone_from(self.zone, dest_zone):
+            dest_zone = self.zone
+        flat_message = jsoner.dumps(message)
+        try:
+            # Closing context: make a context that always exit when done
+            with closing_context(socket.socket(socket.AF_INET, socket.SOCK_DGRAM)) as sock:  # UDP
+                encrypter = libstore.get_encrypter()
+                encrypted_message = encrypter.encrypt(flat_message, dest_zone_name=dest_zone)
+                sock.sendto(encrypted_message, (dest_addr, dest_port))
+            logger.debug('Sending message to (%s) (type:%s)' % (dest_node['uuid'], message['type']))
+        except (socket.timeout, socket.gaierror) as exp:
+            logger.error('Cannot Send message to (%s) (type:%s): %s' % (dest_node['uuid'], message['type'], exp))
     
     
     # We did receive a UDP message from the listener, look for it

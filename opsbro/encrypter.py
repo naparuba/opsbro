@@ -6,7 +6,7 @@ import hashlib
 import struct
 
 from .log import LoggerFactory
-from .util import bytes_to_unicode, unicode_to_bytes
+from .util import bytes_to_unicode, unicode_to_bytes, get_uuid
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('gossip')
@@ -285,6 +285,15 @@ class Encrypter(object):
                 sys.exit(2)
             logger.info('Master public key file %s is loaded' % public_key_path)
 
+
+    def generate_challenge(self, zone_name):
+        challenge_string = get_uuid()
+        RSA = self.get_RSA()
+        public_key = self.get_mf_pub_key()
+        raw_encrypted_string = RSA.encrypt(unicode_to_bytes(challenge_string), public_key)  # encrypt 0=dummy param not used
+        encrypted_challenge = bytes_to_unicode(base64.b64encode(raw_encrypted_string))  # base64 returns bytes
+        return challenge_string, encrypted_challenge
+    
 
 encrypter = None
 
