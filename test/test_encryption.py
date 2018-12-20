@@ -32,12 +32,12 @@ class TestUDPEncrypter(OpsBroTest):
 class TestRSAEncrypter(OpsBroTest):
     def setUp(self):
         RSA = encrypter.get_RSA()
-        master_key_priv = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'test-files', 'test-executors', 'mfkey.priv')
+        master_key_priv = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'test-files', 'test-executors', 'internet.private.key')
         with open(master_key_priv, 'rb') as f:
             buf = unicode_to_bytes(f.read())
         self.mfkey_priv = RSA.PrivateKey.load_pkcs1(buf)
         
-        master_key_pub = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'test-files', 'test-executors', 'mfkey.pub')
+        master_key_pub = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'test-files', 'test-executors', 'internet.public.key')
         with open(master_key_pub, 'rb') as f:
             buf = unicode_to_bytes(f.read())
         self.mfkey_pub = RSA.PublicKey.load_pkcs1(buf)
