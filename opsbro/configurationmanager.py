@@ -15,8 +15,8 @@ from .packer import packer
 # Global logger for this part
 logger = LoggerFactory.create_logger('configuration')
 
-
 ZONE_KEYS_DIRECTORY_NAME = 'zone_keys'
+
 
 class ConfigurationManager(object):
     # The parameter for the main cluster class is list here, and we will give back to it what we did read in the
@@ -33,8 +33,6 @@ class ConfigurationManager(object):
         'bootstrap'                             : {'type': 'bool', 'mapto': 'bootstrap'},
         'seeds'                                 : {'type': 'list', 'mapto': 'seeds'},
         'groups'                                : {'type': 'list', 'mapto': 'groups'},
-        'master_key_priv'                       : {'type': 'string', 'mapto': 'master_key_priv'},
-        'master_key_pub'                        : {'type': 'string', 'mapto': 'master_key_pub'},
         'node-zone'                             : {'type': 'string', 'mapto': 'zone'},
         'proxy-node'                            : {'type': 'bool', 'mapto': 'is_proxy'},
         'service_discovery_topic_enabled'       : {'type': 'bool', 'mapto': 'service_discovery_topic_enabled'},
@@ -168,19 +166,15 @@ class ConfigurationManager(object):
     
     
     def __get_object_from_cfg_file(self, fp, force_document_comment_to_first_entry=False):
-        is_yaml = fp.endswith('.yml')
         with codecs.open(fp, 'r', 'utf8') as f:
             buf = f.read()
             try:
-                if is_yaml:
-                    o = yamler.loads(buf, force_document_comment_to_first_entry=force_document_comment_to_first_entry)
-                else:
-                    raise Exception('Unknown file extension: %s' % fp)
+                o = yamler.loads(buf, force_document_comment_to_first_entry=force_document_comment_to_first_entry)
+                logger.debug("Configuration, opening file data", o, fp)
+                return o
             except Exception as exp:
                 logger.error('ERROR: the configuration file %s malformed: %s' % (fp, exp))
                 sys.exit(2)
-        logger.debug("Configuration, opening file data", o, fp)
-        return o
     
     
     # pid, log & zones

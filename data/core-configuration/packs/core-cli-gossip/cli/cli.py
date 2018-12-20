@@ -254,9 +254,10 @@ def _save_key(key_string, zone_name, key_path):
 def do_zone_key_generate(zone, erase=False):
     from opsbro.defaultpaths import DEFAULT_CFG_DIR
     from opsbro.configurationmanager import ZONE_KEYS_DIRECTORY_NAME
+    from opsbro.encrypter import GOSSIP_KEY_FILE_FORMAT
     print_h1('Generate a new key for the zone %s' % zone)
     
-    key_path = os.path.join(DEFAULT_CFG_DIR, ZONE_KEYS_DIRECTORY_NAME, '%s.key' % zone)
+    key_path = os.path.join(DEFAULT_CFG_DIR, ZONE_KEYS_DIRECTORY_NAME, GOSSIP_KEY_FILE_FORMAT % zone)
     
     if os.path.exists(key_path) and not erase:
         cprint('ERROR: the key %s is already existing', color='red')
@@ -275,8 +276,9 @@ def do_zone_key_generate(zone, erase=False):
 def do_zone_key_import(zone, key, erase=False):
     from opsbro.defaultpaths import DEFAULT_CFG_DIR
     from opsbro.configurationmanager import ZONE_KEYS_DIRECTORY_NAME
+    from opsbro.encrypter import GOSSIP_KEY_FILE_FORMAT
     
-    key_path = os.path.join(DEFAULT_CFG_DIR, ZONE_KEYS_DIRECTORY_NAME, '%s.key' % zone)
+    key_path = os.path.join(DEFAULT_CFG_DIR, ZONE_KEYS_DIRECTORY_NAME, GOSSIP_KEY_FILE_FORMAT % zone)
     
     if os.path.exists(key_path) and not erase:
         cprint('ERROR: the key %s is already existing', color='red')

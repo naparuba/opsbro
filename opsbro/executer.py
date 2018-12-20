@@ -310,7 +310,7 @@ class Executer(object):
         @http_export('/exec/:group')
         def launch_exec(group='*'):
             response.content_type = 'application/json'
-            private_key = get_encrypter().get_mf_pub_key()
+            private_key = get_encrypter().get_mf_priv_key()
             if private_key is None:
                 return abort(400, 'No master private key')
             if not topiker.is_topic_enabled(TOPIC_CONFIGURATION_AUTOMATION):

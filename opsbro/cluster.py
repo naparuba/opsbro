@@ -30,7 +30,7 @@ from .raft import get_rafter
 from .configurationmanager import configmgr
 from .kv import kvmgr
 from .dockermanager import dockermgr
-from .library import libstore
+# from .library import libstore
 from .collectormanager import collectormgr
 from .info import VERSION
 from .stop import stopper
@@ -83,12 +83,6 @@ class Cluster(object):
         
         # Some default value that can be erased by the
         # main configuration file
-        # Same for public/priv for the master fucking key
-        self.master_key_priv = ''  # Paths
-        self.master_key_pub = ''
-        self.mfkey_priv = None  # real key objects
-        self.mfkey_pub = None
-        
         # By default, we are not a proxy, and with default port
         self.is_proxy = False
         self.port = 6768
@@ -152,10 +146,6 @@ class Cluster(object):
         topiker.set_topic_state(TOPIC_METROLOGY, self.metrology_topic_enabled)
         topiker.set_topic_state(TOPIC_CONFIGURATION_AUTOMATION, self.configuration_automation_topic_enabled)
         topiker.set_topic_state(TOPIC_SYSTEM_COMPLIANCE, self.system_compliance_topic_enabled)
-        
-        # Look if our encryption key is valid or not
-        encrypter = libstore.get_encrypter()
-        encrypter.load_master_keys(self.master_key_priv, self.master_key_pub)
         
         # Open the retention data about our previous runs
         # but some are specific to this agent uuid

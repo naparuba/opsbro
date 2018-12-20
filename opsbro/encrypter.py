@@ -7,7 +7,6 @@ import struct
 
 from .log import LoggerFactory
 from .util import bytes_to_unicode, unicode_to_bytes
-from .library import libstore
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('gossip')
@@ -20,26 +19,46 @@ KEY_FINGERPRINT_SIZE = 16  # size fo the key finger prints
 
 ENCRYPTED_PACKET_HEADER_SIZE = MAGIC_FLAG_SIZE + KEY_FINGERPRINT_SIZE
 
+GOSSIP_KEY_FILE_FORMAT = '%s.gossip.key'
+
+
+class RSAKeysPair(object):
+    def __init__(self):
+        self.private_key = None
+        self.public_key = None
+
 
 class Encrypter(object):
     def __init__(self):
         self.AES = None
-        self.RSA = None
-        self.key_fingerprints = {}  # finger print => key
-        self.fingerprints_from_zone = {}  # zone name => key finger print
-        self.zone_from_fingerprint = {}  # key finger print => zone name
+        self._gossip_key_fingerprints = {}  # finger print => key
+        self._gossip_fingerprints_from_zone = {}  # zone name => key finger print
+        self._gossip_zone_from_fingerprint = {}  # key finger print => zone name
         
         # MFK
-        self.mfkey_priv = None
-        self.mfkey_pub = None
+        self.RSA = None
+        self._rsa_keys = {}  # by zones
     
     
     def get_mf_priv_key(self):
-        return self.mfkey_priv
+        from .gossip import gossiper
+        zone_name = gossiper.zone
+        key_pair = self._rsa_keys.get(zone_name, None)
+        if key_pair is None:
+            return None
+        
+        return key_pair.private_key
     
     
     def get_mf_pub_key(self):
-        return self.mfkey_pub
+        from .gossip import gossiper
+        # TODO: do not only take our zone, but also others
+        zone_name = gossiper.zone
+        key_pair = self._rsa_keys.get(zone_name, None)
+        if key_pair is None:
+            return None
+        
+        return key_pair.public_key
     
     
     def get_RSA(self):
@@ -94,9 +113,9 @@ class Encrypter(object):
         zone_encryption_key = bytes_to_unicode(zone_encryption_key)
         
         key_fingerprint = self._get_finger_print_from_key(zone_encryption_key)
-        self.key_fingerprints[key_fingerprint] = zone_encryption_key  # so we can listen for packages from this zone
-        self.fingerprints_from_zone[zone_name] = key_fingerprint  # for this zone
-        self.zone_from_fingerprint[key_fingerprint] = zone_name
+        self._gossip_key_fingerprints[key_fingerprint] = zone_encryption_key  # so we can listen for packages from this zone
+        self._gossip_fingerprints_from_zone[zone_name] = key_fingerprint  # for this zone
+        self._gossip_zone_from_fingerprint[key_fingerprint] = zone_name
         logger.debug('Loading the encryption key %s for the zone %s' % (key_fingerprint, zone_name))
     
     
@@ -108,23 +127,25 @@ class Encrypter(object):
         # able to use it to exchange with this zone
         # The key can be a file in the zone key directory, with the name of the zone.key
         zone_keys_directory = configmgr.zone_keys_directory
-        key_file = os.path.join(zone_keys_directory, '%s.key' % zone_name)
+        key_file = os.path.join(zone_keys_directory, GOSSIP_KEY_FILE_FORMAT % zone_name)
         if os.path.exists(key_file):
             logger.debug('The zone %s have a key file (%s)' % (zone_name, key_file))
             with open(key_file, 'rb') as f:
                 encryption_key = f.read().strip()
                 self.load_zone_encryption_key(encryption_key, zone_name)
+        
+        self.load_master_keys_if_need(zone_name)
     
     
     def _get_key_from_zone(self, zone_name):
-        if zone_name is None or zone_name not in self.fingerprints_from_zone:
+        if zone_name is None or zone_name not in self._gossip_fingerprints_from_zone:
             from .gossip import gossiper
             zone_name = gossiper.zone
             # Maybe our own zone do not have any key, if so, skip encryption
-            if zone_name not in self.fingerprints_from_zone:
+            if zone_name not in self._gossip_fingerprints_from_zone:
                 return None
-        key_fingerprint = self.fingerprints_from_zone[zone_name]
-        encryption_key = self.key_fingerprints[key_fingerprint]
+        key_fingerprint = self._gossip_fingerprints_from_zone[zone_name]
+        encryption_key = self._gossip_key_fingerprints[key_fingerprint]
         logger.debug('ENCRYPTION: founded the key %s for the zone %s' % (key_fingerprint, zone_name))
         return encryption_key
     
@@ -132,7 +153,7 @@ class Encrypter(object):
     def _is_our_zone_have_a_key(self):
         from .gossip import gossiper
         zone_name = gossiper.zone
-        return zone_name in self.fingerprints_from_zone
+        return zone_name in self._gossip_fingerprints_from_zone
     
     
     # Decrypt did fail (not encrypted or malformed. If our zone
@@ -171,9 +192,9 @@ class Encrypter(object):
             
             # print('Key finger print %s' % key_fingerprint)
             
-            logger.debug('DECRYPT: did receive a key %s from zone: %s' % (key_fingerprint, self.zone_from_fingerprint.get(key_fingerprint)))
+            logger.debug('DECRYPT: did receive a key %s from zone: %s' % (key_fingerprint, self._gossip_zone_from_fingerprint.get(key_fingerprint)))
             
-            encryption_key = self.key_fingerprints.get(key_fingerprint, None)
+            encryption_key = self._gossip_key_fingerprints.get(key_fingerprint, None)
             if encryption_key is None:
                 logger.error('Decryption fail: the packet is valid, but we do not know about this key fingerprint (%s)' % key_fingerprint)
                 return None
@@ -218,47 +239,51 @@ class Encrypter(object):
             return u''
     
     
-    def load_master_keys(self, master_key_priv, master_key_pub):
+    def load_master_keys_if_need(self, zone_name):
         from .configurationmanager import configmgr
         
         RSA = self.get_RSA()
+        private_key_file = '%s.private.key' % zone_name
+        public_key_file = '%s.public.key' % zone_name
+        private_key_path = os.path.join(configmgr.zone_keys_directory, private_key_file)
+        public_key_path = os.path.join(configmgr.zone_keys_directory, public_key_file)
+        if not os.path.exists(private_key_path) and not os.path.exists(public_key_path):
+            return
+        
+        # Now we will need to load them
         if RSA is None:
-            logger.error('You set a master private key but but cannot import python-rsa module, please install it. Exiting.')
+            logger.error('You set a master public/private key but but cannot import python-rsa module, please install it. Exiting.')
             sys.exit(2)
         
+        if not zone_name in self._rsa_keys:
+            self._rsa_keys[zone_name] = RSAKeysPair()
+        
+        key_pair = self._rsa_keys[zone_name]
+        
         # Same for master fucking key PRIVATE
-        if master_key_priv:
-            if not os.path.isabs(master_key_priv):
-                master_key_priv = os.path.join(configmgr.main_cfg_directory, master_key_priv)
-            if not os.path.exists(master_key_priv):
-                logger.error('Cannot find the master key private file at %s' % master_key_priv)
-                sys.exit(2)
-            
-            with open(master_key_priv, 'r') as f:
+        if os.path.exists(private_key_path):
+            with open(private_key_path, 'r') as f:
                 buf = unicode_to_bytes(f.read())  # the RSA lib need binary
             try:
-                self.mfkey_priv = RSA.PrivateKey.load_pkcs1(buf)
+                mfkey_priv = RSA.PrivateKey.load_pkcs1(buf)
+                key_pair.private_key = mfkey_priv
             except Exception as exp:
-                logger.error('Invalid master private key at %s. (%s) Exiting.' % (master_key_priv, exp))
+                logger.error('Invalid master private key at %s. (%s) Exiting.' % (private_key_path, exp))
                 sys.exit(2)
-            logger.info('Master private key file %s is loaded' % master_key_priv)
+            logger.info('Master private key file %s is loaded for the zone %s' % (private_key_path, zone_name))
         
         # Same for master fucking key PUBLIC
-        if master_key_pub:
-            if not os.path.isabs(master_key_pub):
-                master_key_pub = os.path.join(configmgr.main_cfg_directory, master_key_pub)
-            if not os.path.exists(master_key_pub):
-                logger.error('Cannot find the master key public file at %s' % master_key_pub)
-            else:
-                # let's try to open the key so :)
-                with open(master_key_pub, 'r') as f:
-                    buf = unicode_to_bytes(f.read())  # the RSA lib need binary
-                try:
-                    self.mfkey_pub = RSA.PublicKey.load_pkcs1(buf)
-                except Exception as exp:
-                    logger.error('Invalid master public key at %s. (%s) Exiting.' % (master_key_pub, exp))
-                    sys.exit(2)
-                logger.info('Master public key file %s is loaded' % master_key_pub)
+        if os.path.exists(public_key_path):
+            # let's try to open the key so :)
+            with open(public_key_path, 'r') as f:
+                buf = unicode_to_bytes(f.read())  # the RSA lib need binary
+            try:
+                mfkey_pub = RSA.PublicKey.load_pkcs1(buf)
+                key_pair.public_key = mfkey_pub
+            except Exception as exp:
+                logger.error('Invalid master public key at %s. (%s) Exiting.' % (public_key_path, exp))
+                sys.exit(2)
+            logger.info('Master public key file %s is loaded' % public_key_path)
 
 
 encrypter = None
