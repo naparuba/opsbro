@@ -270,7 +270,7 @@ class Encrypter(object):
             except Exception as exp:
                 logger.error('Invalid master private key at %s. (%s) Exiting.' % (private_key_path, exp))
                 sys.exit(2)
-            logger.info('Master private key file %s is loaded for the zone %s' % (private_key_path, zone_name))
+            logger.debug('Master private key file %s is loaded for the zone %s' % (private_key_path, zone_name))
         
         # Same for master fucking key PUBLIC
         if os.path.exists(public_key_path):
@@ -283,9 +283,9 @@ class Encrypter(object):
             except Exception as exp:
                 logger.error('Invalid master public key at %s. (%s) Exiting.' % (public_key_path, exp))
                 sys.exit(2)
-            logger.info('Master public key file %s is loaded' % public_key_path)
-
-
+            logger.debug('Master public key file %s is loaded' % public_key_path)
+    
+    
     def generate_challenge(self, zone_name):
         challenge_string = get_uuid()
         RSA = self.get_RSA()
@@ -293,7 +293,7 @@ class Encrypter(object):
         raw_encrypted_string = RSA.encrypt(unicode_to_bytes(challenge_string), public_key)  # encrypt 0=dummy param not used
         encrypted_challenge = bytes_to_unicode(base64.b64encode(raw_encrypted_string))  # base64 returns bytes
         return challenge_string, encrypted_challenge
-    
+
 
 encrypter = None
 

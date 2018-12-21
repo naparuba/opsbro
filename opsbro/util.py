@@ -6,6 +6,7 @@ import socket
 import hashlib
 import time
 import uuid as libuuid
+import base64
 
 PY3 = sys.version_info >= (3,)
 if PY3:
@@ -14,6 +15,18 @@ if PY3:
 from .log import LoggerFactory
 
 logger = LoggerFactory.create_logger('daemon')
+
+
+def b64_into_unicode(b64_string):
+    return bytes_to_unicode(base64.b64decode(b64_string))
+
+
+def b64_into_bytes(b64_string):
+    return base64.b64decode(b64_string)  # base 64 already give bytes
+
+
+def string_to_b64unicode(s):
+    return bytes_to_unicode(base64.b64encode(s))
 
 
 # Make a directory with recursive creation if need

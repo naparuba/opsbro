@@ -1,6 +1,6 @@
 import socket
-import base64
 import time
+from contextlib import closing as closing_context
 
 from .library import libstore
 from .log import LoggerFactory
@@ -9,7 +9,7 @@ from .gossip import gossiper
 from .kv import kvmgr
 from .topic import topiker, TOPIC_CONFIGURATION_AUTOMATION
 from .jsonmgr import jsoner
-from .util import exec_command, get_uuid, unicode_to_bytes, bytes_to_unicode
+from .util import exec_command, get_uuid, unicode_to_bytes, b64_into_unicode, b64_into_bytes, string_to_b64unicode
 from .udprouter import udprouter
 from .encrypter import get_encrypter
 
@@ -57,7 +57,7 @@ class Executer(object):
         if requester_node is None:
             logger.error('A node is asking us to execute a command, but we do not known about it: %s(%s)' % (requester_uuid, addr))
             return
-        
+        logger.info('Did receive a challenge ask from requester: %s' % requester_node['name'])
         # get the with execution id from ask
         exec_id = m.get('exec_id', None)
         if exec_id is None:
@@ -72,7 +72,7 @@ class Executer(object):
         # will have to prove to solve thanks to the private key (that I do not have)
         challenge_string, encrypted_challenge = encrypter.generate_challenge(gossiper.zone)  # TODO: check if we must send from our ouw zone or not
         e['challenge'] = challenge_string
-        logger.debug('EXEC asking us a challenge, return %s(%s) to %s' % (challenge, encrypted_challenge, addr))
+        logger.info('EXEC asking us a challenge, return %s(%s) to %s' % (challenge, encrypted_challenge, addr))
         
         challenge_payload = {'type'     : EXECUTER_PACKAGE_TYPES.CHALLENGE_PROPOSAL,
                              'fr'       : gossiper.uuid,
@@ -102,12 +102,12 @@ class Executer(object):
         # We will have to save result in KV store
         exec_id = p['exec_id']
         try:
-            response = bytes_to_unicode(base64.b64decode(response64))  # base64 returns binary
+            response = b64_into_unicode(response64)
         except ValueError as exp:
             logger.error('EXEC invalid base64 response from %s: %s' % (addr, exp))
             return
         
-        logger.debug('EXEC got a challenge return from %s for %s:%s' % (_from, cid, response))
+        logger.info('EXEC got a challenge return from %s for %s:%s' % (_from, cid, response))
         
         if response != p['challenge']:
             logger.error('The received challenge (%s) is different than the store one (%s)' % (response, p['challenge']))
@@ -115,20 +115,20 @@ class Executer(object):
         
         # now try to decrypt the response of the other
         # This function take a tuple of size=2, but only look at the first...
-        logger.debug('EXEC GOT GOOD FROM A CHALLENGE, DECRYPTED DATA', cid, response, p['challenge'], response == p['challenge'])
+        logger.info('EXEC GOT GOOD FROM A CHALLENGE, DECRYPTED DATA', cid, response, p['challenge'], response == p['challenge'])
         threader.create_and_launch(self._do_launch_exec, name='do-launch-exec-%s' % exec_id, args=(cid, exec_id, cmd, addr), part='executer', essential=True)
     
     
     # Someone ask us to launch a new command (was already auth by RSA keys)
     def _do_launch_exec(self, cid, exec_id, cmd, addr):
-        logger.debug('EXEC launching a command %s' % cmd)
+        logger.info('EXEC launching a command %s' % cmd)
         try:
             rc, output, err = exec_command(cmd)
         except Exception as exp:
             rc = 2
             output = ''
             err = 'The command (%s) did raise an error: %s' % (cmd, exp)
-        logger.debug("EXEC RETURN for command %s : %s %s %s" % (cmd, rc, output, err))
+        logger.info("EXEC RETURN for command %s : %s %s %s" % (cmd, rc, output, err))
         o = {'output': output, 'rc': rc, 'err': err, 'cmd': cmd}
         j = jsoner.dumps(o)
         # Save the return and put it in the KV space
@@ -136,26 +136,25 @@ class Executer(object):
         kvmgr.put_key(key, unicode_to_bytes(j), ttl=3600)  # only one hour live is good :)
         
         # Now send a finish to the asker
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        payload = {'type'   : EXECUTER_PACKAGE_TYPES.EXECUTION_DONE,
-                   'exec_id': exec_id,
-                   'cid'    : cid}
-        packet = jsoner.dumps(payload)
-        encrypter = libstore.get_encrypter()
-        enc_packet = encrypter.encrypt(packet)
-        logger.debug('EXEC: sending a exec done packet to %s:%s' % addr)
-        logger.debug('EXEC: sending a exec done for the execution %s and the challenge id %s' % (exec_id, cid))
-        try:
-            sock.sendto(enc_packet, addr)
-            sock.close()
-        except Exception:
-            sock.close()
+        with closing_context(socket.socket(socket.AF_INET, socket.SOCK_DGRAM)) as sock:
+            payload = {'type'   : EXECUTER_PACKAGE_TYPES.EXECUTION_DONE,
+                       'exec_id': exec_id,
+                       'cid'    : cid}
+            packet = jsoner.dumps(payload)
+            encrypter = libstore.get_encrypter()
+            enc_packet = encrypter.encrypt(packet)
+            logger.info('EXEC: sending a exec done packet to %s:%s' % addr)
+            logger.info('EXEC: sending a exec done for the execution %s and the challenge id %s' % (exec_id, cid))
+            try:
+                sock.sendto(enc_packet, addr)
+            except Exception:
+                logger.error('Cannot return execution done to the node at %s' % str(addr))
     
     
     # Launch an exec thread and save its uuid so we can keep a look at it then
     def launch_exec(self, cmd, group):
         uid = get_uuid()
-        logger.debug('EXEC ask for launching command', cmd)
+        logger.info('EXEC ask for launching command', cmd)
         all_uuids = []
         
         for (uuid, n) in gossiper.nodes.items():
@@ -163,100 +162,109 @@ class Executer(object):
                 exec_id = get_uuid()  # to get back execution id
                 all_uuids.append((uuid, exec_id))
         
-        e = {'cmd'   : cmd,
-             'group' : group,
-             'thread': None,
-             'res'   : {},
-             'nodes' : all_uuids,
-             'ctime' : int(time.time())}
-        self.execs[uid] = e
-        threader.create_and_launch(self.do_exec_thread, name='exec-%s' % uid, args=(e,), essential=True, part='executer')
+        execution_ctx = {'cmd'   : cmd,
+                         'group' : group,
+                         'thread': None,
+                         'res'   : {},
+                         'nodes' : all_uuids,
+                         'ctime' : int(time.time())}
+        self.execs[uid] = execution_ctx
+        threader.create_and_launch(self._do_exec_thread, name='exec-%s' % uid, args=(execution_ctx,), essential=True, part='executer')
         return uid
     
     
     # Look at all nodes, ask them a challenge to manage with our priv key (they all got
     # our pub key)
-    def do_exec_thread(self, e):
+    def _do_exec_thread(self, execution_ctx):
         # first look at which command we need to run
-        cmd = e['cmd']
-        logger.debug('EXEC ask for launching command', cmd)
-        all_uuids = e['nodes']
-        logger.debug('WILL EXEC command for %s' % all_uuids)
+        cmd = execution_ctx['cmd']
+        logger.info('EXEC ask for launching command', cmd)
+        all_uuids = execution_ctx['nodes']
+        logger.info('WILL EXEC command for %s' % all_uuids)
         for (nuid, exec_id) in all_uuids:
-            node = gossiper.get(nuid)
-            logger.debug('WILL EXEC A NODE? %s' % node)
-            if node is None:  # was removed, don't play lotery today...
-                continue
-            # Get a socket to talk with this node
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            d = {'node': node, 'challenge': '', 'state': 'pending', 'rc': 3, 'output': '', 'err': '', 'cmd': cmd}
-            e['res'][nuid] = d
-            logger.debug('EXEC asking for node %s' % node['name'])
+            remote_execution = self._launch_execution_to_other_node(nuid, cmd, exec_id)
+            if remote_execution is not None:
+                execution_ctx['res'][nuid] = remote_execution
+    
+    
+    def _get_error_execution(self, execution_result, err):
+        logger.error(err)
+        execution_result['state'] = 'error'
+        execution_result['output'] = err
+        execution_result['err'] = err
+        return execution_result
+    
+    
+    def _launch_execution_to_other_node(self, node_uuid, command, execution_id):
+        node = gossiper.get(node_uuid)
+        logger.info('WILL EXEC A NODE? %s' % node)
+        if node is None:  # was removed, don't play lotery today...
+            return None
+        # Get a socket to talk with this node
+        with closing_context(socket.socket(socket.AF_INET, socket.SOCK_DGRAM)) as sock:  # auto close for this sock
+            execution_result = {'node': node, 'challenge': '', 'state': 'pending', 'rc': 3, 'output': '', 'err': '', 'cmd': command}
+            logger.info('EXEC asking for node %s' % node['name'])
             
             payload = {'type'   : EXECUTER_PACKAGE_TYPES.CHALLENGE_ASK,
                        'from'   : gossiper.uuid,
-                       'exec_id': exec_id}
+                       'exec_id': execution_id}
             packet = jsoner.dumps(payload)
             encrypter = libstore.get_encrypter()
             enc_packet = encrypter.encrypt(packet)
-            logger.debug('EXEC: sending a challenge request to %s' % node['name'])
+            logger.info('EXEC: sending a challenge request to %s' % node['name'])
             sock.sendto(enc_packet, (node['addr'], node['port']))
             # Now wait for a return
             sock.settimeout(5)
             try:
                 raw = sock.recv(1024)
             except socket.timeout as exp:
-                logger.error('EXEC challenge ask timeout from node %s : %s' % (node['name'], exp))
-                sock.close()
-                d['state'] = 'error'
-                continue
+                err = 'EXEC challenge ask timeout from node %s : %s' % (node['name'], exp)
+                return self._get_error_execution(execution_result, err)
             msg = encrypter.decrypt(raw)
             if msg is None:
-                logger.error('EXEC bad return from node %s' % node['name'])
-                sock.close()
-                d['state'] = 'error'
-                continue
+                err = 'EXEC bad return from node %s' % node['name']
+                return execution_result
             try:
                 ret = jsoner.loads(msg)
             except ValueError as exp:
-                logger.error('EXEC bad return from node %s : %s' % (node['name'], exp))
-                sock.close()
-                d['state'] = 'error'
-                continue
+                err = 'EXEC bad return from node %s : %s' % (node['name'], exp)
+                execution_result['state'] = 'error'
+                return execution_result
+            
             # TODO: check message type as return
             cid = ret.get('cid', '')  # challenge id
             challenge64 = ret.get('challenge', '')
             if not challenge64 or not cid:
-                logger.error('EXEC bad return from node %s : no challenge or challenge id' % node['name'])
-                sock.close()
-                d['state'] = 'error'
-                continue
+                err = 'EXEC bad return from node %s : no challenge or challenge id' % node['name']
+                execution_result['state'] = 'error'
+                return execution_result
             
             try:
-                challenge = base64.b64decode(challenge64)  # NOTE: need raw bytes as challenge is binary
+                challenge = b64_into_bytes(challenge64)  # NOTE: need raw bytes as challenge is binary
             except ValueError:
-                logger.error('EXEC bad return from node %s : invalid base64' % node['name'])
-                sock.close()
-                d['state'] = 'error'
-                continue
-            # Now send back the challenge response # dumy: add real RSA cypher here of course :)
-            logger.debug('EXEC got a return from challenge ask from %s: %s' % (node['name'], cid))
+                err = 'EXEC bad return from node %s : invalid base64' % node['name']
+                execution_result['state'] = 'error'
+                return execution_result
+            
+            # Now send back the challenge response
+            logger.info('EXEC got a return from challenge ask from %s: %s' % (node['name'], cid))
             try:
                 private_key = get_encrypter().get_mf_priv_key()
                 RSA = encrypter.get_RSA()
                 response = RSA.decrypt(challenge, private_key)
             except Exception as exp:
-                logger.error('EXEC bad challenge encoding from %s:%s (challenge type:%s)' % (node['name'], exp, type(challenge)))
-                sock.close()
-                d['state'] = 'error'
-                continue
-            response64 = bytes_to_unicode(base64.b64encode(response))
+                err = 'EXEC bad challenge encoding from %s:%s (challenge type:%s)' % (node['name'], exp, type(challenge))
+                execution_result['state'] = 'error'
+                return execution_result
+            
+            response64 = string_to_b64unicode(response)
             payload = {'type': EXECUTER_PACKAGE_TYPES.CHALLENGE_RETURN, 'fr': gossiper.uuid,
                        'cid' : cid, 'response': response64,
-                       'cmd' : cmd}
+                       'cmd' : command}
+            
             packet = jsoner.dumps(payload)
             enc_packet = encrypter.encrypt(packet)
-            logger.debug('EXEC: sending a challenge response to %s' % node['name'])
+            logger.info('EXEC: sending a challenge response to %s' % node['name'])
             sock.sendto(enc_packet, (node['addr'], node['port']))
             
             # Now wait a return from this node exec
@@ -264,60 +272,63 @@ class Executer(object):
             try:
                 raw = sock.recv(1024)
             except socket.timeout as exp:
-                logger.error('EXEC done return timeout from node %s : %s' % (node['name'], exp))
-                sock.close()
-                d['state'] = 'error'
+                logger.error('EXEC done return timeout from node %s : %s (after %ss)' % (node['name'], exp, 5))
+                execution_result['state'] = 'error'
                 err = '(timeout after %ss)' % 5
-                d['output'] = err
-                d['err'] = err
-                continue
+                execution_result['output'] = err
+                execution_result['err'] = err
+                return execution_result
+            
             msg = encrypter.decrypt(raw)
             if msg is None:
                 logger.error('EXEC bad return from node %s' % node['name'])
-                sock.close()
-                d['state'] = 'error'
+                execution_result['state'] = 'error'
                 err = '(node communication fail due to encryption error)'
-                d['output'] = err
-                d['err'] = err
-                continue
+                execution_result['output'] = err
+                execution_result['err'] = err
+                return execution_result
+            
             try:
                 ret = jsoner.loads(msg)
             except ValueError as exp:
                 logger.error('EXEC bad return from node %s : %s' % (node['name'], exp))
-                sock.close()
-                d['state'] = 'error'
+                execution_result['state'] = 'error'
                 err = '(node communication fail due to bad message: %s)' % msg
-                d['output'] = err
-                d['err'] = err
-                continue
+                execution_result['output'] = err
+                execution_result['err'] = err
+                return execution_result
+            
             cid = ret.get('cid', '')  # challenge id
             if not cid:  # bad return?
                 logger.error('EXEC bad return from node %s : no cid' % node['name'])
-                d['state'] = 'error'
-                continue
-            v = kvmgr.get_key('__exec/%s' % exec_id)
+                execution_result['state'] = 'error'
+                return execution_result
+            
+            v = kvmgr.get_key('__exec/%s' % execution_id)
             if v is None:
-                logger.error('EXEC void KV entry from return from %s and cid %s' % (node['name'], exec_id))
-                d['state'] = 'error'
+                logger.error('EXEC void KV entry from return from %s and cid %s' % (node['name'], execution_id))
+                execution_result['state'] = 'error'
                 err = '(error due to no returns from the other node)'
-                d['output'] = err
-                d['err'] = err
-                continue
+                execution_result['output'] = err
+                execution_result['err'] = err
+                return execution_result
             
             try:
                 t = jsoner.loads(v)
             except ValueError as exp:
                 logger.error('EXEC bad json entry return from %s and cid %s: %s' % (node['name'], cid, exp))
-                d['state'] = 'error'
+                execution_result['state'] = 'error'
                 err = '(error due to bad returns from the other node: %s)' % v
-                d['output'] = err
-                d['err'] = err
-                continue
-            logger.debug('EXEC GOT A RETURN! %s %s %s %s' % (node['name'], cid, t['rc'], t['output']))
-            d['state'] = 'done'
-            d['output'] = t['output']
-            d['err'] = t['err']
-            d['rc'] = t['rc']
+                execution_result['output'] = err
+                execution_result['err'] = err
+                return execution_result
+            
+            logger.info('EXEC GOT A RETURN! %s %s %s %s' % (node['name'], cid, t['rc'], t['output']))
+            execution_result['state'] = 'done'
+            execution_result['output'] = t['output']
+            execution_result['err'] = t['err']
+            execution_result['rc'] = t['rc']
+            return execution_result
     
     
     ############## Http interface
@@ -338,7 +349,7 @@ class Executer(object):
             if cmd_64 is None:
                 return abort(400, 'Missing parameter cmd')
             try:
-                cmd = bytes_to_unicode(base64.b64decode(cmd_64))  # base64 is giving bytes
+                cmd = b64_into_unicode(cmd_64)  # base64 is giving bytes
             except ValueError:
                 return abort(400, 'The parameter cmd is malformed, must be valid base64')
             uid = self.launch_exec(cmd, group)
