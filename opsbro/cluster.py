@@ -30,7 +30,7 @@ from .raft import get_rafter
 from .configurationmanager import configmgr
 from .kv import kvmgr
 from .dockermanager import dockermgr
-# from .library import libstore
+from .library import libstore
 from .collectormanager import collectormgr
 from .info import VERSION
 from .stop import stopper
@@ -426,8 +426,14 @@ class Cluster(object):
         def get_info():
             response.content_type = 'application/json'
             r = {'agent_state'       : self.agent_state,
-                 'logs'              : raw_logger.get_errors(), 'pid': os.getpid(), 'name': self.name, 'display_name': self.display_name,
-                 'port'              : self.port, 'local_addr': self.addr, 'public_addr': self.public_addr, 'socket': self.socket_path, 'zone': gossiper.zone,
+                 'logs'              : raw_logger.get_errors(),
+                 'pid'               : os.getpid(),
+                 'name'              : self.name,
+                 'display_name'      : self.display_name,
+                 'port'              : self.port, 'local_addr': self.addr, 'public_addr': self.public_addr,
+                 'socket'            : self.socket_path,
+                 'zone'              : gossiper.zone,
+                 'is_zone_protected' : libstore.get_encrypter().is_zone_have_key(gossiper.zone),
                  'uuid'              : gossiper.uuid,
                  'threads'           : threader.get_info(),
                  'version'           : VERSION, 'groups': gossiper.groups,

@@ -56,6 +56,10 @@ fi
 # If daemon is dead here, we have a problem and exit
 assert_no_crash
 
+# all node must have a encrypted zone
+assert_my_zone_is_encrypted
+
+
 opsbro gossip members --detail
 
 

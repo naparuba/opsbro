@@ -74,13 +74,16 @@ def __print_topic_picto(topic):
     cprint(' ', end='')
 
 
-def __print_key_val(key, value, color='green', topic=None):
+def __print_key_val(key, value, color='green', topic=None, end_line=True):
     if topic is None:
         cprint((' - %s: ' % key).ljust(DEFAULT_INFO_COL_SIZE), end='', color='blue')
     else:
         __print_topic_picto(topic)
         cprint(('%s: ' % key).ljust(DEFAULT_INFO_COL_SIZE - 2), end='', color='blue')
-    cprint(value, color=color)
+    if end_line:
+        cprint(value, color=color)
+    else:
+        cprint(value, color=color, end='')
 
 
 def __print_note(s):
@@ -116,6 +119,9 @@ def do_info(show_logs):
     if not zone:
         zone = NO_ZONE_DEFAULT
         zone_color = 'red'
+    
+    is_zone_protected = d.get('is_zone_protected')
+    is_zone_protected_display = ('%s zone have a gossip key' % CHARACTERS.check, 'green') if is_zone_protected else ('%s zone do not have a gossip key' % CHARACTERS.double_exclamation, 'yellow')
     
     nb_threads = d.get('threads')['nb_threads']
     hosting_drivers_state = d.get('hosting_drivers_state', [])
@@ -188,7 +194,8 @@ def do_info(show_logs):
     __print_topic_picto(TOPIC_SERVICE_DISCOVERY)
     __print_note('          Listen on the TCP port %s     Listen on the unix socket %s' % (port, socket_path))
     
-    __print_key_val('Zone', zone, color=zone_color, topic=TOPIC_SERVICE_DISCOVERY)
+    __print_key_val('Zone', zone, color=zone_color, topic=TOPIC_SERVICE_DISCOVERY, end_line=False)
+    cprint(' (%s)' % is_zone_protected_display[0], color=is_zone_protected_display[1])
     __print_topic_picto(TOPIC_SERVICE_DISCOVERY)
     __print_more('opsbro gossip members')
     

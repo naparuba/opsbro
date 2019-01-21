@@ -134,7 +134,7 @@ class Encrypter(object):
                 encryption_key = f.read().strip()
                 self.load_zone_encryption_key(encryption_key, zone_name)
         
-        self.load_master_keys_if_need(zone_name)
+        self._load_master_keys_if_need(zone_name)
     
     
     def _get_key_from_zone(self, zone_name):
@@ -153,6 +153,12 @@ class Encrypter(object):
     def _is_our_zone_have_a_key(self):
         from .gossip import gossiper
         zone_name = gossiper.zone
+        return self.is_zone_have_key(zone_name)
+    
+    
+    def is_zone_have_key(self, zone_name):
+        if not zone_name:
+            return False
         return zone_name in self._gossip_fingerprints_from_zone
     
     
@@ -239,7 +245,7 @@ class Encrypter(object):
             return u''
     
     
-    def load_master_keys_if_need(self, zone_name):
+    def _load_master_keys_if_need(self, zone_name):
         from .configurationmanager import configmgr
         
         RSA = self.get_RSA()

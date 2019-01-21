@@ -206,3 +206,19 @@ function assert_group {
        exit 2
    fi
 }
+
+
+function assert_my_zone_is_encrypted {
+   out=$(opsbro agent info)
+   if [ $? != 0 ];then
+      echo "CANNOT check that the zone is ecrypted, agent info did fail: $out"
+      exit 2
+   fi
+
+   echo "$out" | grep "zone have a gossip key"
+   if [ $? != 0 ];then
+       echo "Seems that your zone is NOT encrypted:"
+       echo "$out" | grep -i zone
+       exit 2
+   fi
+}
