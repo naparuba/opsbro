@@ -218,6 +218,79 @@ def do_zone_change(name=''):
     print(r)
 
 
+class _ZONE_TYPES:
+    OTHER = 0
+    OUR_ZONE = 1
+    HIGHER = 2
+    LOWER = 3
+
+
+_ALL_ZONE_TYPES = [_ZONE_TYPES.OTHER, _ZONE_TYPES.OUR_ZONE, _ZONE_TYPES.HIGHER, _ZONE_TYPES.LOWER]
+
+
+def _flag_top_lower_zone(zone, from_our_zone=False):
+    r = _ZONE_TYPES.OTHER
+    if zone['is_our_zone']:
+        zone['type'] = _ZONE_TYPES.OUR_ZONE
+        from_our_zone = True
+        r = _ZONE_TYPES.HIGHER
+    else:  # not our zone, so can be from it (we are lower)
+        if from_our_zone:
+            zone['type'] = _ZONE_TYPES.LOWER
+    
+    for sub_zone in zone['sub-zones'].values():
+        from_sub_zone = _flag_top_lower_zone(sub_zone, from_our_zone)
+        if from_sub_zone == _ZONE_TYPES.HIGHER:  # the sub zone say we are a higher level one
+            zone['type'] = _ZONE_TYPES.HIGHER
+            r = _ZONE_TYPES.HIGHER
+    
+    return r
+
+
+_ZONE_TYPE_COLORS = {
+    _ZONE_TYPES.OTHER   : 'grey',
+    _ZONE_TYPES.OUR_ZONE: 'magenta',
+    _ZONE_TYPES.HIGHER  : 'blue',
+    _ZONE_TYPES.LOWER   : 'green'}
+_ZONE_TYPE_LABEL = {
+    _ZONE_TYPES.OTHER   : 'Other zone',
+    _ZONE_TYPES.OUR_ZONE: 'Your zone',
+    _ZONE_TYPES.HIGHER  : 'Higher zone',
+    _ZONE_TYPES.LOWER   : 'Lower zone'
+}
+_ZONE_TYPE_DESCRIPTION = {
+    _ZONE_TYPES.OTHER   : 'Zone not in your higher or lower ones',
+    _ZONE_TYPES.OUR_ZONE: 'In your zone you known all nodes',
+    _ZONE_TYPES.HIGHER  : 'You only know about higher zone proxy nodes',
+    _ZONE_TYPES.LOWER   : 'You know all nodes in this lower zone'
+}
+
+
+# Do print the zone but at the level X
+def _print_zone(zname, zone, level):
+    cprint('  | ' * level, color='grey', end='')
+    cprint(' * ', end='')
+    cprint(zname, color='magenta', end='')
+    if zone['is_our_zone']:
+        cprint(' (this is your zone)', color='blue', end='')
+    if zone['have_gossip_key']:
+        cprint(' [ This zone have a gossip key ] ', color='blue', end='')
+    
+    zone_type = zone['type']
+    cprint(' ( %s ) ' % _ZONE_TYPE_LABEL[zone_type], color=_ZONE_TYPE_COLORS[zone_type])
+    
+    sub_zones = zone.get('sub-zones', {})
+    if not sub_zones:
+        return
+    cprint('  | ' * level, color='grey', end='')
+    cprint('  Sub zones:')
+    sub_znames = sub_zones.keys()
+    sub_znames.sort()
+    for sub_zname in sub_znames:
+        sub_zone = sub_zones[sub_zname]
+        _print_zone(sub_zname, sub_zone, level + 1)
+
+
 def do_zone_list():
     print_h1('Known zones')
     try:
@@ -225,16 +298,47 @@ def do_zone_list():
     except get_request_errors() as exp:
         logger.error(exp)
         return
+    
+    # We are building the zone tree, so link real object in other zone
+    for zone in zones.values():
+        sub_zones = {}
+        for sub_zone_name in zone.get('sub-zones', []):
+            sub_zone = zones.get(sub_zone_name, None)
+            sub_zones[sub_zone_name] = sub_zone
+        zone['sub-zones'] = sub_zones
+    
+    # Set if the zone is top/lower if not our own zone
+    for zone in zones.values():
+        zone['type'] = _ZONE_TYPES.OTHER
+    
+    # And finally delete the zone that are not in top level
+    to_del = []
     for (zname, zone) in zones.items():
-        cprint(' * ', end='')
-        cprint(zname, color='magenta')
-        sub_zones = zone.get('sub-zones', [])
-        if not sub_zones:
-            continue
-        cprint('  Sub zones:')
-        for sub_zname in sub_zones:
-            cprint('    - ', end='')
-            cprint(sub_zname, color='cyan')
+        for sub_zname in zone['sub-zones']:
+            to_del.append(sub_zname)
+    for zname in to_del:
+        del zones[zname]
+    
+    for zone in zones.values():
+        _flag_top_lower_zone(zone)
+    
+    # Now print it
+    zone_names = zones.keys()
+    zone_names.sort()
+    
+    for zname in zone_names:
+        zone = zones[zname]
+        _print_zone(zname, zone, 0)
+    
+    cprint('')
+    print_h1('Zones types legend')
+    for zone_type in _ALL_ZONE_TYPES:
+        label = _ZONE_TYPE_LABEL[zone_type]
+        color = _ZONE_TYPE_COLORS[zone_type]
+        description = _ZONE_TYPE_DESCRIPTION[zone_type]
+        cprint(' - ', end='')
+        cprint('%-15s' % label, color=color, end='')
+        cprint(' : %s' % description)
 
 
 def _save_key(key_string, zone_name, key_path):

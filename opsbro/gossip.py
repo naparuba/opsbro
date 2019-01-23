@@ -1824,7 +1824,12 @@ class Gossip(BaseManager):
         @http_export('/agent/zones', method='GET', protected=True)
         def get_zones():
             response.content_type = 'application/json'
-            return jsoner.dumps(zonemgr.get_zones())
+            r = copy.deepcopy(zonemgr.get_zones())
+            for zname, zone in r.items():
+                zone['is_our_zone'] = (zname == self.zone)
+                zone['have_gossip_key'] = libstore.get_encrypter().is_zone_have_key(zname)
+            
+            return jsoner.dumps(r)
         
         
         # Reload the key for the zone: zone_name
