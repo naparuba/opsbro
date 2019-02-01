@@ -54,6 +54,19 @@ class SystemPacketMgr(object):
                 distname = inf['ID'].lower().strip()
                 distversion = inf['VERSION_ID'].lower().strip()
                 distid = inf['ID'].lower().strip()
+            elif os.path.exists('/etc.defaults/VERSION'):  # synology linux
+                with open('/etc.defaults/VERSION') as f:
+                    inf = {}
+                    for line in f:
+                        k, v = line.rstrip().split("=")
+                        # .strip('"') will remove if there or else do nothing
+                        inf[k] = v.strip('"')
+                distname = 'synology'
+                distversion = inf['productversion'].lower().strip()
+                distid = 'synology'
+            else:
+                distname = 'unknown'
+                distversion = 'unknown'
         
         # Raw string is used by setup for display
         self.raw_distname = distname

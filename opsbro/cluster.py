@@ -425,28 +425,37 @@ class Cluster(object):
         @http_export('/agent/info')
         def get_info():
             response.content_type = 'application/json'
-            r = {'agent_state'       : self.agent_state,
-                 'logs'              : raw_logger.get_errors(),
-                 'pid'               : os.getpid(),
-                 'name'              : self.name,
-                 'display_name'      : self.display_name,
-                 'port'              : self.port, 'local_addr': self.addr, 'public_addr': self.public_addr,
-                 'socket'            : self.socket_path,
-                 'zone'              : gossiper.zone,
-                 'is_zone_protected' : libstore.get_encrypter().is_zone_have_key(gossiper.zone),
-                 'uuid'              : gossiper.uuid,
-                 'threads'           : threader.get_info(),
-                 'version'           : VERSION, 'groups': gossiper.groups,
-                 'docker'            : dockermgr.get_info(),
-                 'collectors'        : collectormgr.get_info(),
-                 'kv'                : kvmgr.get_info(),
-                 'hosting_driver'    : get_hostingdrivermgr().get_driver_name(), 'hosting_drivers_state': get_hostingdrivermgr().get_drivers_state(),
-                 'topics'            : topiker.get_topic_states(),
-                 'monitoring'        : monitoringmgr.get_infos(),
-                 'compliance'        : compliancemgr.get_infos(),
-                 'cpu_consumption'   : get_cpu_consumption(),
-                 'memory_consumption': get_memory_consumption(),
-                 'generators'        : generatormgr.get_infos(),
+            
+            from opsbro.systempacketmanager import get_systepacketmgr
+            
+            systepacketmgr = get_systepacketmgr()
+            system_distro, system_distroversion, _ = systepacketmgr.get_distro()
+
+            r = {'agent_state'         : self.agent_state,
+                 'logs'                : raw_logger.get_errors(),
+                 'pid'                 : os.getpid(),
+                 'name'                : self.name,
+                 'display_name'        : self.display_name,
+                 'port'                : self.port, 'local_addr': self.addr, 'public_addr': self.public_addr,
+                 'socket'              : self.socket_path,
+                 'zone'                : gossiper.zone,
+                 'is_zone_protected'   : libstore.get_encrypter().is_zone_have_key(gossiper.zone),
+                 'uuid'                : gossiper.uuid,
+                 'threads'             : threader.get_info(),
+                 'version'             : VERSION, 'groups': gossiper.groups,
+                 'docker'              : dockermgr.get_info(),
+                 'collectors'          : collectormgr.get_info(),
+                 'kv'                  : kvmgr.get_info(),
+                 'hosting_driver'      : get_hostingdrivermgr().get_driver_name(), 'hosting_drivers_state': get_hostingdrivermgr().get_drivers_state(),
+                 'topics'              : topiker.get_topic_states(),
+                 'monitoring'          : monitoringmgr.get_infos(),
+                 'compliance'          : compliancemgr.get_infos(),
+                 'cpu_consumption'     : get_cpu_consumption(),
+                 'memory_consumption'  : get_memory_consumption(),
+                 'generators'          : generatormgr.get_infos(),
+                 'is_managed_system'   : systepacketmgr.is_managed_system(),
+                 'system_distro'       : system_distro,
+                 'system_distroversion': system_distroversion,
                  }
             
             # Update the infos with modules ones

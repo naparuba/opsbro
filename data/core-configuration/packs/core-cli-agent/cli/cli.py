@@ -120,6 +120,10 @@ def do_info(show_logs):
         zone = NO_ZONE_DEFAULT
         zone_color = 'red'
     
+    is_managed_system = d.get('is_managed_system')
+    system_distro = d.get('system_distro')
+    system_distroversion = d.get('system_distroversion')
+    
     is_zone_protected = d.get('is_zone_protected')
     is_zone_protected_display = ('%s zone have a gossip key' % CHARACTERS.check, 'green') if is_zone_protected else ('%s zone do not have a gossip key' % CHARACTERS.double_exclamation, 'yellow')
     
@@ -148,6 +152,13 @@ def do_info(show_logs):
     __print_key_val('Name', name, topic=TOPIC_GENERIC)
     display_name_color = 'green' if (name != display_name) else 'grey'
     __print_key_val('Display name', display_name, color=display_name_color, topic=TOPIC_GENERIC)
+
+    __print_key_val('System', '%s (version %s) ' % (system_distro, system_distroversion), color='green', topic=TOPIC_GENERIC, end_line='')
+    if is_managed_system:
+        cprint(' %s managed' % CHARACTERS.check, color='grey')
+    else:
+        cprint(' %s this system is not managed' % CHARACTERS.double_exclamation,color='yellow')
+        __print_more(' Not managed means that configuration automation & system compliance will not be available')
     
     # We will print modules by modules types
     # cprint(' - Modules: '.ljust(DEFAULT_INFO_COL_SIZE), end='', color='blue')
