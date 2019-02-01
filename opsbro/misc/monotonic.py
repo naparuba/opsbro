@@ -148,7 +148,7 @@ except AttributeError:
                         clib_path = os.path.basename(clib_path)
                     # NOTE: if none, will get libc :)
                     clock_gettime = ctypes.CDLL(clib_path, use_errno=True).clock_gettime
-                except AttributeError:
+                except (RuntimeError, AttributeError):  # Exception can very based on system and python compilation
                     rt_path = ctypes.util.find_library('rt')
                     if rt_path is None:
                         raise Exception('The system rt librairy is missing, please install it')
@@ -186,4 +186,7 @@ except AttributeError:
                 raise ValueError('monotonic() is not monotonic!')
         
         except Exception as exp:
-            raise RuntimeError('No suitable implementation of a monotonic clock for this system (%s)' % exp)
+            from opsbro.log import logger
+            
+            logger.debug('DEV-WARNING: No suitable implementation of a monotonic clock for this system (%s:%s), using standard time' % (type(exp), exp))
+            monotonic = time.time

@@ -163,7 +163,7 @@ class DBWrapper(object):
             try:
                 from .misc.internalleveldb import leveldb
                 failback_leveldb_lib = leveldb
-            except ImportError:
+            except (ImportError, RuntimeError):  # some system raise a RuntimeError when lib is not founded
                 failback_leveldb_lib = None
         if failback_leveldb_lib:
             return FailbackLevelDBBackend(path)

@@ -98,7 +98,11 @@ elif sys.platform.startswith("linux"):
         except ImportError:
             return
         import threading
-        libpthread_path = ctypes.util.find_library("pthread")
+        try:
+            libpthread_path = ctypes.util.find_library("pthread")
+        except RuntimeError:  # not found error on some system
+            return
+        # And some other returns None when not founded
         if not libpthread_path:
             return
         libpthread = ctypes.CDLL(libpthread_path)
