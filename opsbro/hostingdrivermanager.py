@@ -195,8 +195,12 @@ class InterfaceHostingDriver(object):
         if os.path.exists(product_uuid_p) and not os.path.exists('/.dockerenv'):
             with open(product_uuid_p, 'r') as f:
                 buf = f.read().strip()
-            self.logger.info('[SERVER-UUID] using the DMI (bios) uuid as server unique UUID: %s' % buf.lower())
-            return buf
+            # some manufacturers fake bios uuid, by starting with 12345678, if so, cannot use it, and prefer a local file uuid
+            if buf.startswith('12345678'):
+                self.logger.warning('[SERVER-UUID] we cannot use the the DMI (bios) uuid as server unique UUID because it seems it is a fake one: %s' % buf.lower())
+            else:  # OK looks as a valid uuid
+                self.logger.info('[SERVER-UUID] using the DMI (bios) uuid as server unique UUID: %s' % buf.lower())
+                return buf
         
         # windows: we ask to WMI for the baord serial number
         if os.name == 'nt':
