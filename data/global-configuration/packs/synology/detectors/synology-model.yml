@@ -1,0 +1,5 @@
+detector:
+    add_groups:
+        - 'model::{{collector.synology.model}}'
+    apply_if: "hosting_driver_is_active('synology')"
+    interval: "86400s"

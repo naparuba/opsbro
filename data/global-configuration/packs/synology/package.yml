@@ -1,0 +1,19 @@
+name: synology
+topics:
+    - automatic detection
+types:
+    - pack
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description: Look if we are running on a synology device
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - synology
+    - nas
+dependencies:
+    core: ">=1.0"
+license: ""
