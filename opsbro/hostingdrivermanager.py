@@ -3,6 +3,7 @@ import glob
 import imp
 import socket
 import sys
+import time
 
 try:
     import fcntl
@@ -63,6 +64,9 @@ class InterfaceHostingDriver(object):
     
     def __init__(self):
         self.logger = logger
+        # tuning: we want to avoid to call
+        self._hostname_i_execution_fail = 0.0
+        self._hostname_i_execution_period = 300  # if the hostname execution call did fail, do not allow it until this seconds
     
     
     def is_active(self):
@@ -80,19 +84,25 @@ class InterfaceHostingDriver(object):
     
     
     def _get_linux_local_addresses(self):
-        try:
-            rc, stdout, stderr = exec_command('hostname -I')
-        except Exception as exp:
-            logger.info('Cannot use the hostname -I call for linux (%s), trying to guess local addresses' % exp)
-            stdout = ''
-        buf = string_decode(stdout).strip()
-        res = [s.strip() for s in buf.split(' ') if s.strip()]
+        res = []
+        now = time.time()
+        # If hostname -I command did fail before, we should not hammer it (some system like alpine or embedded
+        # do not have the -I option)
+        if now > self._hostname_i_execution_fail + self._hostname_i_execution_period:
+            try:
+                rc, stdout, stderr = exec_command('hostname -I')
+                self._hostname_i_execution_fail = 0.0
+            except Exception as exp:
+                logger.info('Cannot use the hostname -I call for linux (%s), trying to guess local addresses' % exp)
+                stdout = ''
+                self._hostname_i_execution_fail = now
+            buf = string_decode(stdout).strip()
+            res = [s.strip() for s in buf.split(' ') if s.strip()]
         
-        # Some system like in alpine linux that don't have hostname -I call
-        # so try to guess
+        # Some system like in alpine linux that don't have hostname -I call so try to guess
         if len(res) == 0:
-            logger.info('Cannot use the hostname -I call for linux, trying to guess local addresses')
-            for prefi in ['bond', 'eth', 'venet', 'wlan']:
+            logger.debug('Cannot use the hostname -I call for linux, trying to guess local addresses')
+            for prefi in ('bond', 'eth', 'venet', 'wlan'):
                 for i in range(0, 10):
                     ifname = '%s%d' % (prefi, i)
                     try:
