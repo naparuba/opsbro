@@ -14,6 +14,7 @@ opsbro detectors wait-group $GROUP --timeout=60
 
 if [ $? != 0 ]; then
    echo "ERROR: cannot check group is agent is not started or stable"
+   opsbro agent info
    exit 2
 fi
 
