@@ -152,12 +152,12 @@ def do_info(show_logs):
     __print_key_val('Name', name, topic=TOPIC_GENERIC)
     display_name_color = 'green' if (name != display_name) else 'grey'
     __print_key_val('Display name', display_name, color=display_name_color, topic=TOPIC_GENERIC)
-
+    
     __print_key_val('System', '%s (version %s) ' % (system_distro, system_distroversion), color='green', topic=TOPIC_GENERIC, end_line='')
     if is_managed_system:
         cprint(' %s managed' % CHARACTERS.check, color='grey')
     else:
-        cprint(' %s this system is not managed' % CHARACTERS.double_exclamation,color='yellow')
+        cprint(' %s this system is not managed' % CHARACTERS.double_exclamation, color='yellow')
         __print_more(' Not managed means that configuration automation & system compliance will not be available')
     
     # We will print modules by modules types
@@ -446,7 +446,7 @@ def do_modules_state():
 
 
 # Main daemon function. Currently in blocking mode only
-def do_start(daemon, cfg_dir, one_shot):
+def do_start(daemon, cfg_dir, one_shot, auto_detect):
     if daemon and one_shot:
         logger.error('The parameters --daemon and --one-shot are not compatible.')
         sys.exit(2)
@@ -459,10 +459,8 @@ def do_start(daemon, cfg_dir, one_shot):
     l.finish_to_load_configuration_and_objects()
     
     # If we must go daemon and manage process things, do it now
-    l.do_daemon_init_and_start(is_daemon=daemon)
-    
-    # Here only the last son process reach this
-    l.main(one_shot=one_shot)
+    # NOTE: only the last son process reach the start/main function
+    l.do_daemon_init_and_start(is_daemon=daemon, one_shot=one_shot, force_wait_proxy=auto_detect)
 
 
 def do_stop():
@@ -812,6 +810,7 @@ exports = {
             {'name': '--daemon', 'type': 'bool', 'default': False, 'description': 'Start opsbro into the background'},
             {'name': '--cfg-dir', 'default': '/etc/opsbro', 'description': 'Set a specifc configuration file'},
             {'name': '--one-shot', 'type': 'bool', 'default': False, 'description': 'Execute the agent but without slaying alive. It just execute its jobs once, and then exit. Is not compatible with the --daemon parameter.'},
+            {'name': '--auto-detect', 'default': False, 'description': 'Lock the daemon startup until at least one proxy node is join. If none is available, loop for auto-detect until a proxy node is detected.', 'type': 'bool'},
         ],
         'description': 'Start the opsbro daemon'
     },

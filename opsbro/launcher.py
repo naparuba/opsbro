@@ -213,7 +213,7 @@ class Launcher(object):
             self.__find_and_set_higer_system_limit(res, res_name)
     
     
-    def do_daemon_init_and_start(self, is_daemon=False):
+    def do_daemon_init_and_start(self, is_daemon=False, one_shot=False, force_wait_proxy=False, before_start_callback=None):
         self.__change_to_workdir()
         self.__check_parallel_run()
         
@@ -231,18 +231,20 @@ class Launcher(object):
         
         # Now we are started, try to raise system limits to the maximum allowed
         self.__find_and_set_higer_system_limits()
+        
+        # Windows call have a special thread to start, but on the final process only
+        if before_start_callback is not None:
+            before_start_callback()
+        
+        # Main locking function, will LOCK here until the daemon is dead/killed/whatever
+        from .cluster import Cluster  # lazy load, it's a huge one
+        c = Cluster(cfg_dir=self.cfg_dir)
+        
+        # Blocking function here
+        c.main(one_shot=one_shot, force_wait_proxy=force_wait_proxy)
     
     
     # To boost CLI we did not loaded all configuration and objects
     # so now we need to launch the agent, we must to it now
     def finish_to_load_configuration_and_objects(self):
         configmgr.finish_to_load_configuration_and_objects()
-    
-    
-    # Main locking function, will LOCK here until the daemon is dead/killed/whatever
-    def main(self, one_shot=False):
-        from .cluster import Cluster  # lazy load, it's a huge one
-        c = Cluster(cfg_dir=self.cfg_dir)
-        
-        # Blocking function here
-        c.main(one_shot=one_shot)

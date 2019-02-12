@@ -1379,27 +1379,28 @@ class Gossip(BaseManager):
             pass
     
     
-    # Will try to join a node cluster and do a push-pull with at least one of them
-    def join(self):
-        logger.log("We will try to join our seeds members", self.seeds)
-        tmp = self.seeds
-        others = []
-        if not len(self.seeds):
+    def _get_seeds_nodes(self):
+        if len(self.seeds) == 0:
             logger.info("We do not have any seeds to join at startup.")
-            return
+            return None
         
-        for e in tmp:
+        res = []
+        for e in self.seeds:
             elts = e.split(':')
             addr = elts[0]
             port = self.port
             if len(elts) > 1:
                 port = int(elts[1])
-            others.append((addr, port))
-        random.shuffle(others)
+            res.append((addr, port))
+        
+        return res
+    
+    
+    def _wait_join_nodes(self, other_nodes):
         while not stopper.is_stop():
-            logger.log('JOINING myself %s is joining %s nodes' % (self.name, others))
+            logger.log('JOINING myself %s is joining %s nodes' % (self.name, other_nodes))
             nb = 0
-            for other in others:
+            for other in other_nodes:
                 nb += 1
                 r = self.do_push_pull(other)
                 
@@ -1411,6 +1412,36 @@ class Gossip(BaseManager):
                 return
             # Do not hummer the cpu....
             time.sleep(0.1)
+    
+    
+    # Will try to join a node cluster and do a push-pull with at least one of them
+    def join_bootstrap(self, force_wait_proxy):
+        # If we have seeds nodes, respect them
+        seeds_nodes = self._get_seeds_nodes()
+        if seeds_nodes is not None:
+            logger.info('We have seeds nodes that we need to join before start')
+            self._wait_join_nodes(seeds_nodes)
+            return
+        
+        # If we do not have seeds, maybe we are asked to auto-detect nodes
+        # and then join them
+        if force_wait_proxy:
+            if self.is_proxy:
+                logger.info('We skip the auto-detect joining phase as we are ourselve a proxy node')
+                return
+            logger.info('We are asked to auto-detect others nodes before start')
+            # Wait un til we listen about at least one proxy node
+            while not stopper.is_stop():
+                detected_nodes = self.launch_gossip_detect_ping(5)  # wait 5s to get return, plenty time
+                # we sort to be sure all nodes will join the same node, and so join alltogether
+                proxy_detected = sorted([node for node in detected_nodes if node['is_proxy']], key=lambda n: n['uuid'])
+                if proxy_detected:
+                    logger.info('Did founded %s proxy nodes, trying to join them' % (len(proxy_detected)))
+                    # the wait join only need (addr, port)
+                    proxy_nodes_extract = [(node['addr'], node['port']) for node in proxy_detected]
+                    self._wait_join_nodes(proxy_nodes_extract)
+                    return
+                time.sleep(0.1)
     
     
     # Go launch a push-pull to another node. We will sync all our nodes
@@ -1794,7 +1825,7 @@ class Gossip(BaseManager):
         
         
         @http_export('/agent/detect', protected=True)
-        def agent_members():
+        def agent_detect():
             response.content_type = 'application/json'
             timeout = int(request.GET.get('timeout', '5'))
             try:

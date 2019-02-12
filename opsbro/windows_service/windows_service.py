@@ -54,6 +54,11 @@ class Service(win32serviceutil.ServiceFramework):
         sys.stdout = sys.stderr = NullWriter()
     
     
+    # Before launch the main/start, we need to have a stopper thread
+    def _before_start_callback(self):
+        threader.create_and_launch(self.__check_for_hWaitStop, (), name='Windows service stopper', essential=True, part='agent')
+    
+    
     def SvcDoRun(self):
         try:
             LOG('SvcDoRun')
@@ -81,17 +86,13 @@ class Service(win32serviceutil.ServiceFramework):
             
             # Load config
             CLI = CLICommander(CONFIG, None)
-
+            
             LOG('CLI LOADED')
             l = Launcher(cfg_dir='c:\\opsbro\\etc')
-            LOG('LAUNCHER created')
-            l.do_daemon_init_and_start(is_daemon=False)
+            LOG('LAUNCHER created, launching init & main')
+            # Note: before launch the start/main, we need to start a stopper thread (on the main process)
+            l.do_daemon_init_and_start(is_daemon=False, before_start_callback=self._before_start_callback)
             LOG('LAUNCHER init')
-            # Start the stopper threads
-            threader.create_and_launch(self.__check_for_hWaitStop, (), name='Windows service stopper', essential=True, part='agent')
-            LOG('LAUNCHER call main')
-            # Here only the last son reach this
-            l.main()
             # called when we're being shut down
         except Exception:
             err = traceback.format_exc()

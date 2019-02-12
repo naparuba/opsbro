@@ -55,6 +55,7 @@ SYSTEMCTL_SKIP_REDIRECT=1
 
 # default
 DEBUG=false
+AUTO_DETECT=false
 
 ## This permits to overhidde the current values (PATH or things like this)
 OPSBRO_DEFAULT_FILE="/etc/default/opsbro"
@@ -67,13 +68,18 @@ usage() {
     cat << END
 Usage: $NAME [ --debug ] {start|stop|status|restart|reload|force-reload}
 
- --debug  start the daemon in debug mode, only useful with start|restart
-
+ --debug        start the daemon in debug mode, only useful with start|restart
+ --auto-detect  start the daemon in auto detection of a proxy node
 END
 }
 
 if [ "$1" = "--debug" ]; then
     DEBUG="1"
+    shift
+fi
+
+if [ "$1" = "--auto-detect" ]; then
+    AUTO_DETECT="1"
     shift
 fi
 
@@ -277,7 +283,9 @@ do_start_() {
 
     # START
     [ "$DEBUG" = 1 ] && DEBUGCMD="--debug "
-    output=$(opsbro $DEBUGCMD agent start --daemon  2>&1)
+    [ "$AUTO_DETECT" = 1 ] && AUTO_DETECTCMD="--auto-detect "
+
+    output=$(opsbro $DEBUGCMD agent start --daemon $AUTO_DETECTCMD  2>&1)
     rc=$?
 
     if [ $rc != 0 ]; then
@@ -287,7 +295,7 @@ do_start_() {
     fi
 
     opsbro agent wait-initialized --timeout 60 --show-init-header
-    return 0
+    return $?
 }
 
 
@@ -313,7 +321,7 @@ do_stop_() {
 do_restart_() {
     printf "$COLOR_MAGENTA""Restarting$COLOR_RESET $OPSBRO_COLOR: "
     stopoutput=$(do_stop)
-    startoutput=$(do_start)
+    startoutput=$(do_start_)
     rc=$?
     if [ $rc -eq 0 ]; then
         echo_started
@@ -331,8 +339,8 @@ do_force-reload_() {
 do_reload_() {
     mod="$1"
     printf "$COLOR_MAGENTA""Reloading$COLOR_RESET $OPSBRO_COLOR: "
-    stopoutput=$(do_stop)
-    startoutput=$(do_start)
+    stopoutput=$(do_stop_)
+    startoutput=$(do_start_)
     rc=$?
     if [ $rc -eq 0 ]; then
         echo_started

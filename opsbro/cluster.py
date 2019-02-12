@@ -744,9 +744,9 @@ class Cluster(object):
     
     # We are joining the seed members and lock until we reach at least one
     @staticmethod
-    def join():
+    def _join(force_wait_proxy):
         if topiker.is_topic_enabled(TOPIC_SERVICE_DISCOVERY):
-            gossiper.join()
+            gossiper.join_bootstrap(force_wait_proxy)
     
     
     @staticmethod
@@ -838,7 +838,7 @@ class Cluster(object):
     # Guess what? yes, it is the main function
     # One shot option is for an execution that is just doing some stuff and then exit
     # so without having to start all the listening part
-    def main(self, one_shot=False):
+    def main(self, one_shot=False, force_wait_proxy=False):
         # gossip UDP and the whole HTTP part is useless in a oneshot execution
         if not one_shot:
             logger.info('Launching listeners')
@@ -852,7 +852,7 @@ class Cluster(object):
         # joining is for gossip part, useless in a oneshot run
         if not one_shot:
             logger.info('Joining seeds nodes')
-            self.join()
+            self._join(force_wait_proxy)
         
         logger.info('Starting check, collector and generator threads')
         

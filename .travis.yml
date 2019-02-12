@@ -66,6 +66,9 @@ env:
 # This test suite is 3 members that one node run executor to the 2 others (encrypted)
 - TEST_SUITE=COMPOSE-EXECUTOR
 - TEST_SUITE=COMPOSE-EXECUTOR-PYTHON3
+# Test about auto discovery with a init.d script (easy setup).
+- TEST_SUITE=COMPOSE-GOSSIP-UDP-DETECT-AT-BOOT
+- TEST_SUITE=COMPOSE-GOSSIP-UDP-DETECT-AT-BOOT-PYTHON3
 ##### Then installation on various distros
 - TEST_SUITE=ALPINE
 - TEST_SUITE=AMAZONLINUX
