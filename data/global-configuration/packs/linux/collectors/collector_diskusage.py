@@ -14,10 +14,16 @@ class DiskUsage(Collector):
             self.set_not_eligible('This collector is not availabe on windows currently.')
             return False
         
+        # We are asking for calling the df call but there is a trap:
+        # * classic linux, manage -x
+        # * embedded and co, cannot manage -x
         _cmd = 'df -k -x smbfs -x tmpfs -x cifs -x iso9660 -x udf -x nfsv4 -x udev -x devtmpfs'
-        df = self.execute_shell(_cmd)
+        df = self.execute_shell(_cmd, if_fail_set_error=False)
         if not df:
-            return False
+            _cmd = 'df -k'
+            df = self.execute_shell(_cmd, if_fail_set_error=False)
+            if not df:
+                return False
         
         # logger.debug('getDiskUsage: Popen success, start parsing')
         
