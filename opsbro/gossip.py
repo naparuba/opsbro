@@ -335,6 +335,17 @@ class Gossip(BaseManager):
         return nodes
     
     
+    # find all nearly alive nodes with a specific name or display_name
+    def find_nodes_by_name_or_display_name(self, name):
+        nodes = []
+        for (uuid, node) in self.nodes.items():
+            if node['state'] in [NODE_STATES.DEAD, NODE_STATES.LEAVE]:
+                continue
+            if name == node.get('name') or name == node.get('display_name'):
+                nodes.append(uuid)
+        return nodes
+    
+    
     # find the good ring node for a group and for a key
     def find_group_node(self, group, hkey):
         group_nodes = self.find_group_nodes(group)

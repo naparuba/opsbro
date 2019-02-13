@@ -6,7 +6,56 @@ MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 
 
+function test_dns_query {
+    QUERY="$1"
+    MATCH_IP="$2"
+
+    # linux is detected, so should return
+    echo "Looking for the $MATCH_IP with the query $QUERY"
+    OUT=$(dig -p 6766  @127.0.0.1 $QUERY)
+    printf "$OUT" | grep "$MATCH_IP"
+    if [ $? != 0 ]; then
+        echo "The DNS module do not seems to result"
+        printf "$OUT"
+        opsbro agent info
+        cat /var/log/opsbro/module.dns-listener.log
+        opsbro agent modules state
+        hostname
+        ip addr show
+        ping -c 1 `hostname`
+        exit 2
+    fi
+
+
+    # Also the local dsnmasq
+    echo "Looking for the $MATCH_IP with the query $QUERY but with the system DNS"
+    OUT=$(dig $QUERY)
+    printf "$OUT" | grep "$MATCH_IP"
+    if [ $? != 0 ]; then
+        echo "The DNS module do not seems to result"
+        printf "$OUT"
+        opsbro agent info
+        opsbro compliance history
+        cat /var/log/opsbro/module.dns-listener.log
+        opsbro agent modules state
+        hostname
+        ping -c 1 `hostname`
+        cat /etc/resolv.conf
+        cat /etc/dnsmasq.d/opsbro.conf
+        ps axjf
+        netstat -laputen | grep LISTEN
+        exit 2
+    fi
+
+}
+
+
 print_header "Starting to test DNS module"
+
+
+# Set a valid display name for debug
+opsbro agent parameters set display_name "node-dns-listener"
+
 
 # Start it
 /etc/init.d/opsbro --debug start
@@ -36,39 +85,15 @@ if [ "X$ADDR" == "X" ];then
    exit 2
 fi
 
-# linux is detected, so should return
-echo "Looking for my own entry $ADDR directly on daemon"
-OUT=$(dig -p 6766  @127.0.0.1 linux.group.local.opsbro)
-printf "$OUT" | grep "$ADDR"
-if [ $? != 0 ]; then
-    echo "The DNS module do not seems to result"
-    printf "$OUT"
-    opsbro agent info
-    cat /var/log/opsbro/module.dns.log
-    hostname
-    ip addr show
-    ping -c 1 `hostname`
-    exit 2
-fi
 
+print_header "Testing Name DNS queries"
 
-# Also the local dsnmasq
-echo "Looking for my own entry $ADDR but in the system DNS"
-OUT=$(dig linux.group.local.opsbro)
-printf "$OUT" | grep "$ADDR"
-if [ $? != 0 ]; then
-    echo "The DNS module do not seems to result"
-    printf "$OUT"
-    opsbro agent info
-    opsbro compliance history
-    cat /var/log/opsbro/module.dns.log
-    hostname
-    ping -c 1 `hostname`
-    cat /etc/resolv.conf
-    cat /etc/dnsmasq.d/opsbro.conf
-    ps axjf
-    netstat -laputen | grep LISTEN
-    exit 2
-fi
+echo "Looking for my own entry $ADDR directly on daemon with a name query"
+test_dns_query "node-dns-listener.name.local.opsbro" "$ADDR"
+
+print_header "Testing GROUP DNS queries"
+echo "Looking for my own entry $ADDR directly on daemon with a group query"
+test_dns_query "linux.group.local.opsbro" "$ADDR"
+
 
 exit_if_no_crash "opsbro DNS module is OK"
