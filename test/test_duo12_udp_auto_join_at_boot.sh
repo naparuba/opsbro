@@ -46,6 +46,9 @@ if [ $CASE == "NODE2" ]; then
     printf "Node2 gossip view\n"
     opsbro gossip members
 
+    # Let the history beeing written
+    sleep 5
+
     print_header "Check history"
     HISTORY=$(opsbro gossip history)
     echo "$HISTORY" | grep NODE1
@@ -91,6 +94,9 @@ if [ $? != 0 ]; then
    cat /var/log/opsbro/crash.log 2>/dev/null
    exit 2
 fi
+
+# Let the history beeing written
+sleep 5
 
 print_header "Check history"
 HISTORY=$(opsbro gossip history)

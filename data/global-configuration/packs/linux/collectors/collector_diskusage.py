@@ -60,7 +60,7 @@ class DiskUsage(Collector):
                 previousVolume = volume[0]  # We store it, then continue the for
                 continue
             
-            if previousVolume != None:  # If the previousVolume was set (above) during the last loop
+            if previousVolume is not None:  # If the previousVolume was set (above) during the last loop
                 volume.insert(0, previousVolume)  # then we need to insert it into the volume
                 previousVolume = None  # then reset so we don't use it again
             
