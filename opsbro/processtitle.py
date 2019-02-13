@@ -18,7 +18,7 @@ class ProcessTitleManager(object):
     def _refresh(self):
         if self.name is None:
             return
-        keys = self.keys.keys()
+        keys = list(self.keys.keys())  # list for python3
         keys.sort()
         process_name = '%s %s' % (self.name, ' '.join(['%s=%s' % (key, self.keys[key]) for key in keys]))
         self._set_process_name(process_name)
