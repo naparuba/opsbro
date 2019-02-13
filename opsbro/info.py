@@ -8,6 +8,7 @@ from .log import sprintf
 from .cli_display import get_terminal_size
 
 VERSION = '0.5'
+PROJECT_NAME = 'opsbro'
 
 _txt_topics = u' Topics:\n%s' % ('\n'.join([' - %s (%s)' % (TOPICS_LABELS[t].ljust(MAX_TOPICS_LABEL_SIZE), TOPICS_SUB_TITLES[t]) for t in TOPICS]))
 

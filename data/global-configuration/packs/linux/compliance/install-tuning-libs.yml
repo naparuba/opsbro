@@ -31,6 +31,7 @@ compliance:
                 - python-devel
                 - python-pip
                 - python-simplejson
+                - python-setproctitle
            post_commands:
               - pip install leveldb
 
@@ -46,6 +47,7 @@ compliance:
                 - python-devel
                 - python2-pip
                 - python2-simplejson
+                - python-setproctitle
            post_commands:
               - pip install leveldb
 
@@ -65,6 +67,7 @@ compliance:
              packages:
                 - python-leveldb
                 - python-simplejson
+                - python-setproctitle
 
 
          # like debian6, cannot reach pypi
@@ -81,6 +84,7 @@ compliance:
              packages:
                 - python-leveldb
                 - python-simplejson
+                - python-setproctitle
 
 
          - name: fedora26_and_more
@@ -139,6 +143,7 @@ compliance:
                  - python-dev
                  - py-pip
                  - py-simplejson
+                 - py-setproctitle
            post_commands:
               - pip2 install leveldb
 
@@ -156,6 +161,7 @@ compliance:
                  - python2-dev
                  - py2-pip
                  - py2-simplejson
+                 - py2-setproctitle
            post_commands:
               - pip2 install leveldb
 

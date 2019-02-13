@@ -7,14 +7,23 @@ class LibraryStore(object):
         self.__pygments = None
         self.__StringIO = None
         self.__StringIO_unicode = None  # unicode compliant version
+        self._processtitler = None
     
     
     def get_encrypter(self):
         if self.__encrypter is not None:
             return self.__encrypter
-        from opsbro.encrypter import get_encrypter
+        from .encrypter import get_encrypter
         self.__encrypter = get_encrypter()
         return self.__encrypter
+    
+    
+    def get_processtitler(self):
+        if self._processtitler is not None:
+            return self._processtitler
+        from .processtitle import get_processtitler
+        self._processtitler = get_processtitler()
+        return self._processtitler
     
     
     def get_requests(self):

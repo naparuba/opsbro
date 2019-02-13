@@ -14,6 +14,11 @@ groups: []
 display_name: ""
 
 
+# By default the process name will be opsbro. If you want to set another name, you can
+# note: you need the setproctitle lib for this to be available (cf the install-tuningèlib compliance rule)
+process_name: "opsbro"
+
+
 # In which zone to set the element
 node-zone: internet
 

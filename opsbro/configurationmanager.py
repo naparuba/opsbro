@@ -23,6 +23,7 @@ class ConfigurationManager(object):
     # local.yaml file (one set ones)
     cluster_parameters = {
         'display_name'                          : {'type': 'string', 'mapto': 'display_name'},
+        'process_name'                          : {'type': 'string', 'mapto': 'process_name'},
         'port'                                  : {'type': 'int', 'mapto': 'port'},
         'data'                                  : {'type': 'path', 'mapto': 'data_dir'},
         'libexec'                               : {'type': 'path', 'mapto': 'libexec_dir'},

@@ -32,7 +32,7 @@ from .kv import kvmgr
 from .dockermanager import dockermgr
 from .library import libstore
 from .collectormanager import collectormgr
-from .info import VERSION
+from .info import VERSION, PROJECT_NAME
 from .stop import stopper
 from .evaluater import evaluater
 from .detectormgr import detecter
@@ -54,11 +54,6 @@ from .udplistener import get_udp_listener
 logger = LoggerFactory.create_logger('daemon')
 logger_gossip = LoggerFactory.create_logger('gossip')
 
-# TODO: use the AGENT_STATES averywhere
-AGENT_STATE_INITIALIZING = AGENT_STATES.AGENT_STATE_INITIALIZING
-AGENT_STATE_OK = AGENT_STATES.AGENT_STATE_OK
-AGENT_STATE_STOPPED = AGENT_STATES.AGENT_STATE_STOPPED
-
 
 class Cluster(object):
     def __init__(self, cfg_dir='', libexec_dir=''):
@@ -68,7 +63,7 @@ class Cluster(object):
         # * initializing= not all threads did loop once
         # * ok= all threads did loop
         # * stopping= stop in progress
-        self.agent_state = AGENT_STATE_INITIALIZING
+        self._set_agent_state(AGENT_STATES.AGENT_STATE_INITIALIZING)
         
         # Launch the now-update thread
         NOW.launch()
@@ -88,6 +83,7 @@ class Cluster(object):
         self.port = 6768
         self.name = ''
         self.display_name = ''
+        self.process_name = PROJECT_NAME  # by default the process name will be opsbro but can be override by the conf
         self.hostname = socket.gethostname()
         if not self.name:
             self.name = '%s' % self.hostname
@@ -314,6 +310,21 @@ class Cluster(object):
         
         # Be sure that the udp listener object is created
         udp_listener = get_udp_listener()
+        
+        # Let the process title be the valid one (can be set by the configuration)
+        libstore.get_processtitler().set_name(self.process_name)
+    
+    
+    # We update the global agent state so other known about it, and also the user via the process name
+    def _set_agent_state(self, state):
+        self.agent_state = state
+        processtitler = libstore.get_processtitler()
+        display_states = {
+            AGENT_STATES.AGENT_STATE_INITIALIZING: 'initializing',
+            AGENT_STATES.AGENT_STATE_OK          : 'running',
+            AGENT_STATES.AGENT_STATE_STOPPED     : 'stopping',
+        }
+        processtitler.set_key('agent', display_states.get(state, 'unknown'))
     
     
     # Load raw results of collectors, and give them to the
@@ -430,7 +441,7 @@ class Cluster(object):
             
             systepacketmgr = get_systepacketmgr()
             system_distro, system_distroversion, _ = systepacketmgr.get_distro()
-
+            
             r = {'agent_state'         : self.agent_state,
                  'logs'                : raw_logger.get_errors(),
                  'pid'                 : os.getpid(),
@@ -791,14 +802,14 @@ class Cluster(object):
     
     
     def update_agent_state(self):
-        if self.agent_state == AGENT_STATE_INITIALIZING:
+        if self.agent_state == AGENT_STATES.AGENT_STATE_INITIALIZING:
             b = True
             b &= collectormgr.did_run
             b &= detecter.did_run
             b &= generatormgr.did_run
             b &= compliancemgr.did_run
             if b:
-                self.agent_state = AGENT_STATE_OK
+                self._set_agent_state(AGENT_STATES.AGENT_STATE_OK)
     
     
     # In one shot mode, we want to be sure the theses parts did run at least once:
@@ -807,7 +818,7 @@ class Cluster(object):
     # generator
     # compliance
     def wait_one_shot_end(self):
-        while self.agent_state == AGENT_STATE_INITIALIZING:
+        while self.agent_state == AGENT_STATES.AGENT_STATE_INITIALIZING:
             self.update_agent_state()
             time.sleep(0.1)
         
@@ -821,7 +832,7 @@ class Cluster(object):
     
     def __exit_path(self):
         # Change the agent_state to stopped
-        self.agent_state = AGENT_STATE_STOPPED
+        self._set_agent_state(AGENT_STATES.AGENT_STATE_STOPPED)
         
         # Maybe the modules want a special call
         modulemanager.stopping_agent()
