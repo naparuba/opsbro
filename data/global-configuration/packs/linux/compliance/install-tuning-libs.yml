@@ -143,7 +143,7 @@ compliance:
                  - python-dev
                  - py-pip
                  - py-simplejson
-                 - py-setproctitle
+                 # py-setproctitle is nto available for alpine <= 3.4
            post_commands:
               - pip2 install leveldb
 
