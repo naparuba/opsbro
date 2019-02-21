@@ -92,15 +92,6 @@ CMD=$1
 
 
 
-# Load the VERBOSE setting and other rcS variables
-[ -f /etc/default/rcS ] && . /etc/default/rcS
-
-# Source function library.
-[ -f /etc/rc.d/init.d/functions ] && . /etc/rc.d/init.d/functions
-
-[ -f /lib/lsb/init-functions ] && . /lib/lsb/init-functions
-
-
 OPSBRO_COLOR="\\033[94mOps\\033[0;39m*\\033[91mBro\\033[0;39m"
 
 COLOR_MAGENTA="\\033[95m"
