@@ -1519,8 +1519,6 @@ class Gossip(BaseManager):
         # Same zone: give all we know about
         if other_node_zone == self.zone:
             logger.debug('PUSH-PULL same zone ask us, give back all we know about')
-            # with self.nodes_lock:
-            #    nodes = copy.copy(self.nodes)
             nodes = self.nodes
             return nodes
         

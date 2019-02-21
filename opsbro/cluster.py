@@ -284,7 +284,7 @@ class Cluster(object):
         dockermgr.export_http()
         
         # Our main object for gossip managment
-        gossiper.init(nodes, nodes_lock, self.addr, self.port, self.name, self.display_name, self.incarnation, self.uuid, self.groups, self.seeds, self.bootstrap, self.zone, self.is_proxy)
+        gossiper.init(nodes, nodes_lock, self.public_addr, self.port, self.name, self.display_name, self.incarnation, self.uuid, self.groups, self.seeds, self.bootstrap, self.zone, self.is_proxy)
         
         # About detecting groups and such things
         detecter.export_http()
