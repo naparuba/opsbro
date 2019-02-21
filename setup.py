@@ -329,22 +329,27 @@ else:
 scripts = [s for s in glob('bin/opsbro*') if not s.endswith('.py')]
 data_files.append((default_paths['bin'], scripts))
 
+
+def _get_all_from_directory(dirname, path_key, filter_dir=None):
+    rename_patern_string = r"^(%s\/|%s$)" % (dirname, dirname)
+    rename_patern = re.compile(rename_patern_string)
+    directory = dirname
+    if filter_dir:
+        directory = os.path.join(dirname, filter_dir)
+    for path, subdirs, files in os.walk(directory):
+        dest_path = os.path.join(default_paths[path_key], rename_patern.sub("", path))
+        # for void directories
+        if len(files) == 0:
+            configuration_files.append((dest_path, []))
+        for name in files:
+            configuration_files.append((dest_path, [os.path.join(path, name)]))
+
+
 if not is_update:
-    ## get all files + under-files in etc/ except daemons folder
-    for path, subdirs, files in os.walk('etc'):
-        # for void directories
-        if len(files) == 0:
-            configuration_files.append((os.path.join(default_paths['etc'], re.sub(r"^(etc\/|etc$)", "", path)), []))
-        for name in files:
-            configuration_files.append((os.path.join(default_paths['etc'], re.sub(r"^(etc\/|etc$)", "", path)),
-                                        [os.path.join(path, name)]))
-    ## get all files + under-files in etc/ except daemons folder
-    for path, subdirs, files in os.walk('data'):
-        # for void directories
-        if len(files) == 0:
-            configuration_files.append((os.path.join(default_paths['var'], re.sub(r"^(data\/|data$)", "", path)), []))
-        for name in files:
-            configuration_files.append((os.path.join(default_paths['var'], re.sub(r"^(data\/|data$)", "", path)), [os.path.join(path, name)]))
+    _get_all_from_directory('etc', 'etc')
+    _get_all_from_directory('data', 'var')
+else:  # only take core directory for update
+    _get_all_from_directory('data', 'var', filter_dir='core-configuration')
 
 # Libexec is always installed
 for path, subdirs, files in os.walk('libexec'):
@@ -521,16 +526,6 @@ for (m, d) in mod_need.items():
                     cprint('\n'.join(['%s%s' % (_prefix, s) for s in str(exp).splitlines()]), color='grey')
                     
                     install_from_pip.append(pip_failback)
-                    # Disabling, currently no packages need it anymore (was for leveldb)
-                    # all_pip_packages = d.get('pip_packages', {})
-                    # pip_packages = all_pip_packages.get(system_distro, [])
-                    # for pip_pkg in pip_packages:
-                    #    try:
-                    #        cprint('   - Install from system package the python lib dependency: ', color='grey', end='')
-                    #        cprint(pip_pkg)
-                    #        systepacketmgr.update_or_install(pip_pkg)
-                    #    except Exception as exp:
-                    #        cprint('    - WARNING: cannot install python lib dependency: %s : %s' % (pip_pkg, exp))
 
 if allow_black_magic:
     distro_specific_packages = distro_prerequites.get(system_distro, [])
@@ -791,6 +786,13 @@ if not root and is_install and allow_black_magic:
         shutil.copy('bash_completion/opsbro', dest)
         _chmodplusx(dest)
         __print_sub_install_part('bash completion rule')
+
+if not root and is_update and allow_black_magic:
+    cprint(' * Updating core configuration files')
+    __print_sub_install_part('Core packs')
+    core_configuration_dir = os.path.join(default_paths['var'], 'core-configuration')
+    shutil.rmtree(core_configuration_dir)
+    __do_install_files(configuration_files)
 
 if allow_black_magic:
     print('')
