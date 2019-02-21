@@ -32,6 +32,7 @@ compliance:
                 - python-pip
                 - python-simplejson
                 - python-setproctitle
+                - python-psutil
            post_commands:
               - pip install leveldb
 
@@ -48,6 +49,7 @@ compliance:
                 - python2-pip
                 - python2-simplejson
                 - python-setproctitle
+                - python2-psutil
            post_commands:
               - pip install leveldb
 
@@ -68,6 +70,7 @@ compliance:
                 - python-leveldb
                 - python-simplejson
                 - python-setproctitle
+                - python-psutil
 
 
          # like debian6, cannot reach pypi
@@ -85,6 +88,7 @@ compliance:
                 - python-leveldb
                 - python-simplejson
                 - python-setproctitle
+                - python-psutil
 
 
          - name: fedora26_and_more
