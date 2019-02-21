@@ -154,11 +154,12 @@ class Logger(object):
         self.current_lock_pid = os.getpid()
     
     
-    # ~Get (NOT aquire) current lock, but beware: if we did change process, recreate it
+    # Get (NOT aquire) current lock, but beware: if we did change process, recreate it
     def _get_lock(self):
         cur_pid = os.getpid()
         if self.log_lock is None or self.current_lock_pid != cur_pid:
             self.log_lock = ThreadLock()
+            self.current_lock_pid = os.getpid()
         return self.log_lock
     
     
