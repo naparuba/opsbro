@@ -4,7 +4,7 @@ compliance:
 #   verify_if:   "is_in_group('kv-store-backend:leveldb')"
    mode: enforcing
    interval: 1s
-   note: This installer will install the tuning libs (leveldb & simplejson)
+   note: This installer will install the tuning libs (leveldb, simplejson, setproctitle & psutil)
    rule:
       type: package-install
       # You can set variables in order to not repeat yourself in the if rules
