@@ -180,7 +180,6 @@ class Gossip(BaseManager):
                         continue  # you are saved
                     # you are not saved ^^
                     to_del.append(nuuid)
-                # TODO: manage multi zone layer
                 # Other zone, or unknown
                 else:
                     to_del.append(nuuid)
@@ -1509,7 +1508,7 @@ class Gossip(BaseManager):
     # but now we should give back only nodes that the other zone
     # have the right:
     # * same zone as us: give all we know about
-    # * top zone: CANNOT  be the case, because only lower zone ask upper zones
+    # * top zone: can be the case if the top try to join us, in normal cases only lower zone ask upper zones (give all)
     # * sub zones: give only our zone proxy nodes
     #   * no the other nodes of my zones, they don't have to know my zone detail
     #   * not my top zones of course, same reason, even proxy nodes, they need to talk to me only
@@ -1522,18 +1521,24 @@ class Gossip(BaseManager):
             nodes = self.nodes
             return nodes
         
+        # Top zones can see all of us
+        top_zones = zonemgr.get_top_zones_from(self.zone)
+        if other_node_zone in top_zones:
+            nodes = self.nodes
+            return nodes
+        
         # Ok look if in sub zones: if found, all they need to know is
         # my realm proxy nodes
         sub_zones = zonemgr.get_sub_zones_from(self.zone)
         if other_node_zone in sub_zones:
             only_my_zone_proxies = {}
-            # with self.nodes_lock:
             for (nuuid, node) in self.nodes.items():
                 if node['is_proxy'] and node['zone'] == self.zone:
                     only_my_zone_proxies[nuuid] = node
                     logger.debug('PUSH-PULL: give back data about proxy node: %s' % node['name'])
             return only_my_zone_proxies
         
+        # Other level (brother like zones)
         logger.warning('SECURITY: a node from an unallowed zone %s did ask us push_pull' % other_node_zone)
         return {}
     
