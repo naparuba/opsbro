@@ -173,6 +173,13 @@ try:
     
     prev_path = os.path.dirname(opsbro_test_import.__file__)
     del opsbro_test_import
+    # But to be sure future opsbro import will load the new one, we need to
+    # first hard unload the opsbro modules from python
+    # NOTE: this is only ok because we are in the setup.py, don't do this outside this scope!
+    all_modules = list(sys.modules.keys())
+    for modname in all_modules:
+        if modname == 'opsbro' or modname.startswith('opsbro.'):
+            del sys.modules[modname]
 except ImportError as exp:  # great, first install so
     pass
 
