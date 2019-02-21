@@ -312,10 +312,10 @@ def do_zone_list():
         zone['type'] = _ZONE_TYPES.OTHER
     
     # And finally delete the zone that are not in top level
-    to_del = []
+    to_del = set()
     for (zname, zone) in zones.items():
         for sub_zname in zone['sub-zones']:
-            to_del.append(sub_zname)
+            to_del.add(sub_zname)
     for zname in to_del:
         del zones[zname]
     
