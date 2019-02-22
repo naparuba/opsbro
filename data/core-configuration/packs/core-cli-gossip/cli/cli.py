@@ -208,7 +208,7 @@ def do_zone_change(name=''):
         cprint("Need a zone name")
         return
     
-    cprint("Switching to zone", name)
+    cprint("Switching to zone %s" % name)
     try:
         r = put_opsbro_json('/agent/zone', name)
     except get_request_errors() as exp:
