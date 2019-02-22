@@ -1513,6 +1513,7 @@ class Gossip(BaseManager):
     #   * no the other nodes of my zones, they don't have to know my zone detail
     #   * not my top zones of course, same reason, even proxy nodes, they need to talk to me only
     #   * not the other sub zones of my, because they don't have to see which who I am linked (can be an other customer for example)
+    #     * but if the sub-zone is their own, then ok give it
     def get_nodes_for_push_pull_response(self, other_node_zone):
         logger.debug('PUSH-PULL: get a push pull from a node zone: %s' % other_node_zone)
         # Same zone: give all we know about
@@ -1527,16 +1528,21 @@ class Gossip(BaseManager):
             nodes = self.nodes
             return nodes
         
-        # Ok look if in sub zones: if found, all they need to know is
+        # Ok look if in sub zones: if found, all they need to know is:
         # my realm proxy nodes
         sub_zones = zonemgr.get_sub_zones_from(self.zone)
         if other_node_zone in sub_zones:
-            only_my_zone_proxies = {}
+            my_zone_proxies_and_its_zone = {}
             for (nuuid, node) in self.nodes.items():
                 if node['is_proxy'] and node['zone'] == self.zone:
-                    only_my_zone_proxies[nuuid] = node
-                    logger.debug('PUSH-PULL: give back data about proxy node: %s' % node['name'])
-            return only_my_zone_proxies
+                    my_zone_proxies_and_its_zone[nuuid] = node
+                    logger.debug('PUSH-PULL: give back data about proxy node of my own zone: %s' % node['name'])
+                    continue
+                if node['zone'] == other_node_zone:
+                    my_zone_proxies_and_its_zone[nuuid] = node
+                    logger.debug('PUSH-PULL: give back data about a node of the caller zone: %s' % node['name'])
+                    continue
+            return my_zone_proxies_and_its_zone
         
         # Other level (brother like zones)
         logger.warning('SECURITY: a node from an unallowed zone %s did ask us push_pull' % other_node_zone)
