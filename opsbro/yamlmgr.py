@@ -88,7 +88,7 @@ class YamlMgr(object):
     
     
     def set_value_in_parameter_file(self, parameters_file_path, parameter_name, python_value, str_value, change_type='SET'):
-        o = self.get_object_from_parameter_file(parameters_file_path, suffix=ENDING_SUFFIX)
+        o = self.get_object_from_parameter_file(parameters_file_path, suffix=ENDING_SUFFIX, with_comments=True)
         
         # Set the value into the original object
         o[parameter_name] = python_value
