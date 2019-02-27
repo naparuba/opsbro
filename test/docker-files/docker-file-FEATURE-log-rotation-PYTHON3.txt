@@ -1,0 +1,18 @@
+FROM       naparuba/debian-9-python3
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+
+
+# We need to faketime to force day end in the container
+RUN        /apt_get_install   faketime libfaketime
+
+ADD        . /root/opsbro-oss
+
+
+WORKDIR    /root/opsbro-oss
+
+RUN        python setup.py install
+
+
+ENTRYPOINT     test/test_feature_log_rotation.sh
