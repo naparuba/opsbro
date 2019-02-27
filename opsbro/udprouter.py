@@ -1,6 +1,6 @@
-from .log import LoggerFactory
+from .log import LoggerFactory, DEFAULT_LOG_PART
 
-logger = LoggerFactory.create_logger('daemon')
+logger = LoggerFactory.create_logger(DEFAULT_LOG_PART)
 
 
 class UDPRouting(object):

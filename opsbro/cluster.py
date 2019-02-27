@@ -17,7 +17,7 @@ import copy
 # sysctl -w net.core.rmem_max=26214400
 
 
-from .log import LoggerFactory
+from .log import LoggerFactory, DEFAULT_LOG_PART
 from .log import core_logger as raw_logger
 from .util import get_server_const_uuid, guess_server_const_uuid, get_cpu_consumption, get_memory_consumption, unicode_to_bytes
 from .threadmgr import threader
@@ -51,7 +51,7 @@ from .agentstates import AGENT_STATES
 from .udplistener import get_udp_listener
 
 # Global logger for this part
-logger = LoggerFactory.create_logger('daemon')
+logger = LoggerFactory.create_logger(DEFAULT_LOG_PART)
 logger_gossip = LoggerFactory.create_logger('gossip')
 
 

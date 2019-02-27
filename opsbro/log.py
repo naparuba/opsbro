@@ -28,6 +28,12 @@ bytes_to_unicode = None
 # Keep 7 days of logs
 LOG_ROTATION_KEEP = 7 + 1
 
+# For testing purpuse, we prefer to have lower value here
+if 'FORCE_LOG_ROTATION_PERIOD' in os.environ:
+    LOG_ROTATION_KEEP = int(os.environ['FORCE_LOG_ROTATION_PERIOD'])
+
+DEFAULT_LOG_PART = 'daemon'
+
 
 def is_tty():
     # TODO: what about windows? how to have beautiful & Windows?
@@ -130,7 +136,6 @@ loggers = {}
 class Logger(object):
     def __init__(self):
         self.data_dir = ''
-        self.log_file = None
         self.name = ''
         self.logs = {}
         self.registered_parts = {}
@@ -185,7 +190,9 @@ class Logger(object):
     
     
     def _get_log_open(self, fname):
-        return codecs.open(self._get_log_file_path(fname), 'ab', encoding="utf-8")
+        full_path = self._get_log_file_path(fname)
+        fd = codecs.open(full_path, 'ab', encoding="utf-8")
+        return fd
     
     
     def load(self, data_dir, name):
@@ -194,7 +201,7 @@ class Logger(object):
         # We can start with a void data dir
         if not os.path.exists(self.data_dir):
             os.mkdir(self.data_dir)
-        self.log_file = self._get_log_open('daemon.log')
+        self._get_log_file_and_rotate_it_if_need(part=DEFAULT_LOG_PART)  # create default part as daemon.log
     
     
     # If a level is set to force, a not foce setting is not taken
@@ -258,8 +265,6 @@ class Logger(object):
         for (part, f) in self.logs.items():
             f.close()
         self.logs.clear()
-        self.log_file.close()
-        self.log_file = None
         
         # ok need to rotate
         in_yesterday = (current_day_nb * 86400) - 1
@@ -268,32 +273,36 @@ class Logger(object):
         # At which time the file is too old to be kept?
         too_old_limit = (current_day_nb * 86400) - (LOG_ROTATION_KEEP * 86400)  # today minus - days
         
-        all_log_files = glob(os.path.join(self.data_dir, '*.log'))
-        for file_path in all_log_files:
+        # Current logs: move to old day
+        current_logs = glob(os.path.join(self.data_dir, '*.log'))
+        for file_path in current_logs:
             # Maybe the file is too old, if so, delete it
-            if os.stat(file_path).st_mtime < too_old_limit:
+            
+            self._do_rotate_one_log(file_path, yesterday_string)
+        old_log_files = glob(os.path.join(self.data_dir, '*.log.*'))
+        for file_path in old_log_files:
+            # Maybe the file is too old, if so, delete it
+            date = os.stat(file_path).st_mtime
+            if date < too_old_limit:
                 try:
                     os.unlink(file_path)
                 except OSError:  # oups, cannot remove, but we are the log, cannot log this...
                     pass
-                continue
-            self._do_rotate_one_log(file_path, yesterday_string)
     
     
     @staticmethod
     def _do_rotate_one_log(base_full_path, yesterday_string):
         if os.path.exists(base_full_path):
-            shutil.move(base_full_path, base_full_path + '.' + yesterday_string)
+            dest_path = base_full_path + '.' + yesterday_string
+            shutil.move(base_full_path, dest_path)
+            # note that under docker if you change the container date, the file will be the host
+            # time, so will fail to detect file rotation so we force our time for this file
+            now = int(time.time())
+            os.utime(dest_path, (now, now))  # note: if using times = None, will set real time in docker
     
     
     def _get_log_file_and_rotate_it_if_need(self, part):
         self._check_log_rotation()
-        
-        # core daemon.log
-        if part == '':
-            if self.log_file is None:  # was rotated
-                self.log_file = self._get_log_open('daemon.log')
-            return self.log_file
         
         # classic part log
         f = self.logs.get(part, None)
@@ -307,7 +316,7 @@ class Logger(object):
     def log(self, *args, **kwargs):
         # We must protect logs against thread access, and even sub-process ones
         with self._get_lock():
-            part = kwargs.get('part', '')
+            part = kwargs.get('part', DEFAULT_LOG_PART)
             s_part = '' if not part else '[%s]' % part.upper()
             
             d_display = self.__get_time_display()
@@ -454,4 +463,4 @@ class LoggerFactory(object):
         return loggers[part]
 
 
-logger = LoggerFactory.create_logger('daemon')
+logger = LoggerFactory.create_logger(DEFAULT_LOG_PART)

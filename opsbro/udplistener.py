@@ -8,7 +8,7 @@ import base64
 import shutil
 import zlib
 
-from .log import LoggerFactory
+from .log import LoggerFactory, DEFAULT_LOG_PART
 from .topic import topiker, TOPIC_SERVICE_DISCOVERY
 from .stop import stopper
 from .library import libstore
@@ -20,7 +20,7 @@ from .pubsub import pubsub
 from .util import copy_dir
 from .udprouter import udprouter
 
-logger = LoggerFactory.create_logger('daemon')
+logger = LoggerFactory.create_logger(DEFAULT_LOG_PART)
 logger_gossip = LoggerFactory.create_logger('gossip')
 
 

@@ -12,9 +12,9 @@ PY3 = sys.version_info >= (3,)
 if PY3:
     basestring = str
 
-from .log import LoggerFactory
+from .log import LoggerFactory, DEFAULT_LOG_PART
 
-logger = LoggerFactory.create_logger('daemon')
+logger = LoggerFactory.create_logger(DEFAULT_LOG_PART)
 
 
 def b64_into_unicode(b64_string):

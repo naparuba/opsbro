@@ -145,10 +145,10 @@ elif sys.platform.startswith("linux"):
 def w(d, f, name, is_essential, args):
     import traceback
     import time
-    from opsbro.log import LoggerFactory
+    from opsbro.log import LoggerFactory, DEFAULT_LOG_PART
     from opsbro.stop import stopper
     
-    daemon_logger = LoggerFactory.create_logger('daemon')
+    daemon_logger = LoggerFactory.create_logger(DEFAULT_LOG_PART)
     
     tid = 0
     if libc:
