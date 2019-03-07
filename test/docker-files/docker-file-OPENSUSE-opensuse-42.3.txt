@@ -1,4 +1,4 @@
-FROM opensuse:42.3
+FROM opensuse/leap:42.3
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 ADD        test/docker-helper/  /
@@ -9,5 +9,5 @@ ADD        . /root/opsbro-oss
 WORKDIR       /root/opsbro-oss
 
 # TODO: get back this, cannot skip systemd in this docker container and so no dbus=error
-ENTRYPOINT    exit 0;/bin/bash test/test_one_linux_installation.sh  && test/assert_group.sh "opensuse"
+ENTRYPOINT    /bin/bash test/test_one_linux_installation.sh  && test/assert_group.sh "opensuse"
 

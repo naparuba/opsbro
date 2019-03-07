@@ -1,4 +1,4 @@
-FROM opensuse:42.2
+FROM opensuse/leap:15.1
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 ADD        test/docker-helper/  /
