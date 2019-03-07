@@ -170,6 +170,16 @@ compliance:
               - pip2 install leveldb
 
 
+         # Open suse 15 have specific packages names
+         - name: opensuse_15
+           if: "{{variables.is_opensuse}} and {{collector.system.os.linux.major_version}} == 15"
+           parameters:
+             packages:
+                - python2-leveldb
+                - python2-simplejson
+
+
+        # Older open source (42.x)
          - name: opensuse
            if: "{{variables.is_opensuse}}"
            parameters:
