@@ -1,0 +1,26 @@
+FROM naparuba/debian-9
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+
+RUN        /apt_get_install curl
+RUN        /apt_get_install vim
+RUN        /apt_get_install procps
+RUN        /apt_get_install wget
+RUN        /apt_get_install net-tools
+RUN        /apt_get_install dnsutils
+RUN        /apt_get_install strace
+RUN        /apt_get_install less
+RUN        /apt_get_install locales
+RUN        /apt_get_install python3-pkg-resources
+
+RUN        /apt_get_install snmpd
+RUN        /apt_get_install snmp
+
+ADD        . /root/opsbro-oss
+WORKDIR       /root/opsbro-oss
+
+RUN       python setup.py install
+
+
+ENTRYPOINT      /bin/bash
