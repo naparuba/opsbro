@@ -1,0 +1,14 @@
+
+# Is the synology module is enabled
+# default to false
+enabled: false
+
+# Which uri to export data
+export_uri:    http://92.222.35.193:8080/synology
+
+# Customer key
+customer_key:  XXXXXXXXXXX
+
+# Inventory number
+inventory_number: XXXXXXXX
+
