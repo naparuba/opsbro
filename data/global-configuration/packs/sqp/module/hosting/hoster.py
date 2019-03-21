@@ -1,5 +1,37 @@
+import os
 import json
-from bottle import route, run, request
+from bottle import route, run, request, static_file
+import tarfile
+import tempfile
+
+
+def make_tarfile(output_filename, source_dir):
+    with tarfile.open(output_filename, "w:gz") as tar:
+        tar.add(source_dir, arcname=os.path.basename(source_dir))
+
+
+my_dir = os.path.dirname(os.path.abspath(__file__))
+
+
+@route('/version', method='GET')
+def get_version():
+    version_file = os.path.join(my_dir, 'monitoring_pack', 'version')
+    with open(version_file, 'r') as f:
+        version = f.read().strip()
+    return version
+
+
+tmp_file_fd, tmp_file_pth = tempfile.mkstemp()
+os.close(tmp_file_fd)
+
+
+@route('/monitoring_pack.tar.gz')
+def get_monitoring_pack():
+    global tmp_file_pth
+    # TODO: manage a lock for this or better do in memory and cache it
+    print "CREATING TAR GZ ON", tmp_file_pth
+    make_tarfile(tmp_file_pth, os.path.join(my_dir, 'monitoring_pack'))
+    return static_file(os.path.basename(tmp_file_pth), root=os.path.dirname(tmp_file_pth))
 
 
 @route('/sqp', method='POST')

@@ -1,6 +1,8 @@
 from __future__ import print_function
 import time
 import base64
+import os
+import tempfile
 
 from opsbro.threadmgr import threader
 from opsbro.module import ListenerModule
@@ -18,7 +20,7 @@ class SQPModule(ListenerModule):
     
     parameters = {
         'enabled'          : BoolParameter(default=False),
-        'export_uri'       : StringParameter(default='http://92.222.35.193:8080/sqp'),
+        'export_uri'       : StringParameter(default='http://92.222.35.193:8080'),
         'customer_key'     : StringParameter(default=''),
         'inventory_number' : StringParameter(default=''),
         
@@ -98,6 +100,74 @@ class SQPModule(ListenerModule):
             self.logger.error('Cannot connect to listener: %s' % exp)
     
     
+    def _get_my_module_dir(self):
+        return os.path.dirname(os.path.abspath(__file__))
+    
+    
+    def _get_monitoring_pack_dir(self):
+        my_dir = self._get_my_module_dir()
+        return os.path.join(my_dir, 'monitoring_pack')
+    
+    
+    def _download_and_untar_monitoring_pack(self):
+        import tarfile  # lasy load
+        
+        self.logger.info('Downloading monitoring pack')
+        try:
+            monitoring_pack_tar_gz = httper.get(self.export_uri + '/monitoring_pack.tar.gz')
+        except get_http_exceptions() as exp:
+            self.logger.error('Cannot get the monitoring pack from server: %s' % exp)
+            return False
+        self.logger.info('Getting monitoring pack: %s' % len(monitoring_pack_tar_gz))
+        tmp_file_fd, tmp_file_pth = tempfile.mkstemp()
+        os.close(tmp_file_fd)
+        with open(tmp_file_pth, 'wb') as f:
+            f.write(monitoring_pack_tar_gz)
+        tar = tarfile.open(tmp_file_pth)
+        tar.extractall(path=self._get_my_module_dir())  # untar file into same directory
+        tar.close()
+        self.logger.info('Extracted')
+        return True
+    
+    
+    def _unregister_current_checks(self):
+        return
+    
+    
+    def _load_and_register_pack_checks(self):
+        return
+    
+    
+    def _force_refresh_monitoring_pack(self):
+        ok = self._download_and_untar_monitoring_pack()
+        if not ok:
+            return
+        self._unregister_current_checks()
+        self._load_and_register_pack_checks()
+    
+    
+    def _check_for_up_to_date_monitoring_pack(self):
+        self.logger.info('Checling for up to date monitoring pack')
+        pack_dir = self._get_monitoring_pack_dir()
+        if not os.path.exists(pack_dir):
+            self._force_refresh_monitoring_pack()
+            return
+        
+        # exists, but maybe not in the good version
+        current_version_pth = os.path.join(pack_dir, 'version')
+        with open(current_version_pth, 'r') as f:
+            current_version = f.read().strip()
+        
+        try:
+            server_version = httper.get(self.export_uri + '/version')
+        except get_http_exceptions() as exp:
+            self.logger.error('Cannot connect to version server: %s' % exp)
+            return
+        self.logger.info('Current version: %s   Server Version: %s' % (current_version, server_version))
+        if server_version != current_version:
+            self._force_refresh_monitoring_pack()
+    
+    
     # Thread for listening to the graphite port in UDP (2003)
     def launch_main(self):
         while not stopper.is_stop():
@@ -121,6 +191,8 @@ class SQPModule(ListenerModule):
                 time.sleep(1)
                 continue
             
+            self._check_for_up_to_date_monitoring_pack()
+            
             syno_collector = collectormgr.collectors.get('synology', None)
             if syno_collector is None:
                 self.logger.error('The synology collector is missing')
@@ -135,11 +207,12 @@ class SQPModule(ListenerModule):
             
             # send raw data to the data handler
             try:
-                r = httper.post(self.export_uri, params={'uuid'            : gossiper.uuid,
-                                                         'customer_key'    : self.customer_key,
-                                                         'inventory_number': self.inventory_number,
-                                                         'results'         : results}, headers={})
+                r = httper.post(self.export_uri + '/sqp', params={'uuid'            : gossiper.uuid,
+                                                                  'customer_key'    : self.customer_key,
+                                                                  'inventory_number': self.inventory_number,
+                                                                  'results'         : results}, headers={})
                 self.logger.debug("Result insert", r)
             except get_http_exceptions() as exp:
                 self.logger.warning('Cannot connect to export uri datasources: %s' % exp)
+            
             time.sleep(1)
