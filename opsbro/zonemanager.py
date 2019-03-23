@@ -115,6 +115,10 @@ class ZoneManager(object):
     
     def get_zones(self):
         return self.zones
+    
+    
+    def have_zone(self, zname):
+        return zname in self.zones
 
 
 zonemgr = ZoneManager()

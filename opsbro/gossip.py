@@ -472,6 +472,8 @@ class Gossip(BaseManager):
         if self.zone == zname:
             return
         logger.info('Switching to zone: %s' % zname)
+        if not zonemgr.have_zone(zname):
+            raise ValueError('No such zone')
         self.zone = zname
         # Simple string change, we can change both write and read node
         self._set_myself_atomic_property('zone', zname)

@@ -630,10 +630,13 @@ class Cluster(object):
             
             nzone = request.body.getvalue()
             logger.debug("HTTP: /agent/zone put %s" % nzone)
-            gossiper.change_zone(nzone)
+            try:
+                gossiper.change_zone(nzone)
+            except ValueError:  # no such zone
+                return json.dumps({'success': False, 'text': 'The zone %s does not exist' % nzone})
             with open(self.zone_file, 'w') as f:
                 f.write(nzone)
-            return json.dumps(True)
+            return json.dumps({'success': True, 'text': 'The node change to zone %s' % nzone})
         
         
         @http_export('/stop', protected=True)

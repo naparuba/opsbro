@@ -215,7 +215,14 @@ def do_zone_change(name=''):
         logger.error(exp)
         return
     print_info_title('Result')
-    print(r)
+    success = r['success']
+    text = r['text']
+    if success:
+        cprint(text, color='green')
+        sys.exit(0)
+    else:
+        cprint(text, color='red')
+        sys.exit(2)
 
 
 class _ZONE_TYPES:
