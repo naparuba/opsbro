@@ -14,8 +14,6 @@ RUN        /apt_get_install less
 RUN        /apt_get_install locales
 RUN        /apt_get_install python3-pkg-resources
 
-RUN        /apt_get_install snmpd
-RUN        /apt_get_install snmp
 
 ADD        . /root/opsbro-oss
 WORKDIR       /root/opsbro-oss

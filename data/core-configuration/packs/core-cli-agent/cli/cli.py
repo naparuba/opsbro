@@ -339,6 +339,9 @@ def do_info(show_logs):
         cprint('    - size: '.ljust(DEFAULT_INFO_COL_SIZE), end='', color='blue')
         cprint('%.2fMB' % (kv_store['stats']['size'] / 1024.0 / 1024.0), color='green')
         
+        if kv_store_backend['name'] != 'leveldb':
+            __print_note('You do not have the fastest lib/backend. Please launch the command: opsbro compliance launch "Install tuning libs"')
+        
         kv_store_error = kv_store['stats']['error']
         if kv_store_error != '':
             cprint('    - error: '.ljust(DEFAULT_INFO_COL_SIZE), color='blue', end='')
