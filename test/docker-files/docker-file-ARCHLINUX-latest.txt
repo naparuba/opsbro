@@ -1,0 +1,12 @@
+FROM archlinux/base
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+RUN        /pacman_add bash
+RUN        /pacman_add python
+
+
+ADD        . /root/opsbro-oss
+
+WORKDIR       /root/opsbro-oss
+ENTRYPOINT    test/test_one_linux_installation.sh  && test/assert_group.sh "archlinux"
