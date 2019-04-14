@@ -173,7 +173,7 @@ class Encrypter(object):
     # We received data from UDP, if we are set to encrypt, decrypt it
     def decrypt(self, raw_data):
         if not raw_data.startswith(MAGIC_FLAG):
-            logger.info('Package do not seems to be encrypted: %s' % raw_data)
+            logger.debug('Package do not seems to be encrypted: %s' % raw_data)
             # Give uncrypted data only if our zone is not encrypted
             return self._give_failback_raw_data_is_possible(raw_data)
         

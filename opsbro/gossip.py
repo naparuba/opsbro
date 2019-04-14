@@ -17,7 +17,6 @@ from .websocketmanager import websocketmgr
 from .pubsub import pubsub
 from .library import libstore
 from .httpclient import get_http_exceptions, httper
-from .zonemanager import zonemgr
 from .stop import stopper
 from .handlermgr import handlermgr
 from .topic import topiker, TOPIC_SERVICE_DISCOVERY
@@ -25,6 +24,7 @@ from .basemanager import BaseManager
 from .jsonmgr import jsoner
 from .util import get_uuid
 from .udprouter import udprouter
+from .zonemanager import zonemgr
 
 KGOSSIP = 10
 
@@ -816,6 +816,8 @@ class Gossip(BaseManager):
     
     
     # Someone send us it's nodes, we are merging it with ours
+    # but we will drop the one we should not see (like if a top node
+    # send nodes it should not)
     def merge_nodes(self, nodes):
         for (k, node) in nodes.items():
             # Maybe it's me? bail out
@@ -823,6 +825,17 @@ class Gossip(BaseManager):
                 logger.debug('SKIPPING myself node entry in merge nodes')
                 continue
             
+            logger.info('SOMEONE GIVE A NODE: %s' % node)
+            node_zone = node.get('zone', None)
+            if node_zone is None:
+                continue
+            if node_zone != self.zone:
+                # sub zone are accepted, but top zone should be only one
+                # level high, not too much (should not have this)
+                if zonemgr.is_top_zone_from(self.zone, node_zone):
+                    if not zonemgr.is_direct_sub_zone_from(node_zone, self.zone):  # too high
+                        logger.debug('SKIPPING node because it is from a too high zone: %s' % node_zone)
+                        continue
             state = node['state']
             
             # Try to incorporate it
@@ -1230,25 +1243,48 @@ class Gossip(BaseManager):
     
     
     # A node did send us a discovery message but with the valid network key of course.
-    # If so, give back our node informations
+    # If so, give back our node informations:
+    # * if same zone or top zone: give our informations
+    # * if directly lower zone: give us only if we are a proxy
+    # * lower 2 or less zones: give nothing
     def manage_detect_ping_message(self, m, addr):
+        requestor_zone = m.get('from_zone', None)
+        if requestor_zone is None:
+            return
+        
         my_self = self._get_myself_read_only()
         my_node_data = self.create_alive_msg(my_self)
         
-        r = {'type': PACKET_TYPES.DETECT_PONG, 'node': my_node_data}
+        r = {'type': PACKET_TYPES.DETECT_PONG, 'node': my_node_data, 'from_zone': self.zone}
         ret_msg = jsoner.dumps(r)
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
         encrypter = libstore.get_encrypter()
-        from_zone = m.get('from_zone', self.zone)
+        
+        answer_allowed = False
+        # Look if we should answer or not
+        if requestor_zone == self.zone:
+            answer_allowed = True
+        else:
+            if zonemgr.is_top_zone_from(self.zone, requestor_zone):
+                answer_allowed = True
+            else:  # Lower zone: only if we are a proxy and from a directly lower zone
+                if self.is_proxy:
+                    answer_allowed = zonemgr.is_direct_sub_zone_from(self.zone, requestor_zone)
+        
+        if not answer_allowed:
+            logger.info('Will not answer to node %s' % m)
+            return
+        
+        response_zone = requestor_zone
         # If the zone from the other side is too high for us, we mustch switch to our own zone
         # instead
         # if it's lower, keep the other zone, as our own won't be available for him
-        if zonemgr.is_top_zone_from(self.zone, from_zone):
-            from_zone = self.zone
-        enc_ret_msg = encrypter.encrypt(ret_msg, dest_zone_name=from_zone)
+        if zonemgr.is_top_zone_from(self.zone, requestor_zone):
+            response_zone = self.zone
+        enc_ret_msg = encrypter.encrypt(ret_msg, dest_zone_name=response_zone)
         sock.sendto(enc_ret_msg, addr)
         sock.close()
-        logger.info("Detect back: return back message (from %s)", ret_msg, m)
+        logger.info("Detect back: return back message (from %s): %s" % (ret_msg, m))
     
     
     # launch a broadcast (UDP) and wait 5s for returns, and give all answers from others daemons
@@ -1413,9 +1449,9 @@ class Gossip(BaseManager):
             logger.log('JOINING myself %s is joining %s nodes' % (self.name, other_nodes))
             nb = 0
             for other in other_nodes:
-                nb += 1
                 r = self.do_push_pull(other)
-                
+                if r:
+                    nb += 1
                 # Do not merge with more than KGOSSIP distant nodes
                 if nb > KGOSSIP:
                     continue
@@ -1494,6 +1530,10 @@ class Gossip(BaseManager):
             except ValueError as exp:
                 logger.error('ERROR CONNECTING TO %s:%s' % other, exp)
                 return False
+            # Maybe we were not autorized
+            if 'error' in back:
+                logger.error('Cannot push/pull with node %s: %s' % (addr, back['error']))
+                return False
             logger.debug('do_push_pull: get return from %s:%s' % (other[0], back))
             if 'nodes' not in back:
                 logger.error('do_push_pull: back message do not have nodes entry: %s' % back)
@@ -1511,11 +1551,12 @@ class Gossip(BaseManager):
     # have the right:
     # * same zone as us: give all we know about
     # * top zone: can be the case if the top try to join us, in normal cases only lower zone ask upper zones (give all)
-    # * sub zones: give only our zone proxy nodes
+    # * direct sub zones: give only our zone proxy nodes
     #   * no the other nodes of my zones, they don't have to know my zone detail
     #   * not my top zones of course, same reason, even proxy nodes, they need to talk to me only
     #   * not the other sub zones of my, because they don't have to see which who I am linked (can be an other customer for example)
     #     * but if the sub-zone is their own, then ok give it
+    # * too much sub zones: give nothing
     def get_nodes_for_push_pull_response(self, other_node_zone):
         logger.debug('PUSH-PULL: get a push pull from a node zone: %s' % other_node_zone)
         # Same zone: give all we know about
@@ -1526,14 +1567,19 @@ class Gossip(BaseManager):
         
         # Top zones can see all of us
         top_zones = zonemgr.get_top_zones_from(self.zone)
+        logger.debug('PUSH-PULL: MY TOP ZONE (from %s) : %s' % (self.zone, top_zones))
         if other_node_zone in top_zones:
             nodes = self.nodes
             return nodes
         
-        # Ok look if in sub zones: if found, all they need to know is:
-        # my realm proxy nodes
-        sub_zones = zonemgr.get_sub_zones_from(self.zone)
-        if other_node_zone in sub_zones:
+        # Not my zone and not a top zone, so lower zone. Must be a proxy to allow to give some infos
+        if not self.is_proxy:
+            logger.info('PUSH-PULL: another node ask us a push_pull from a not my zone or top zone: %s' % other_node_zone)
+            return None
+        
+        # But only answer if it's from a directly sub zone (low-low zone should not see us)
+        # give my zone proxy nodes
+        if zonemgr.is_direct_sub_zone_from(self.zone, other_node_zone):
             my_zone_proxies_and_its_zone = {}
             for (nuuid, node) in self.nodes.items():
                 if node['is_proxy'] and node['zone'] == self.zone:
@@ -1546,9 +1592,9 @@ class Gossip(BaseManager):
                     continue
             return my_zone_proxies_and_its_zone
         
-        # Other level (brother like zones)
+        # Other level (brother like zones or sub-sub zones)
         logger.warning('SECURITY: a node from an unallowed zone %s did ask us push_pull' % other_node_zone)
-        return {}
+        return None
     
     
     # suspect nodes are set with a suspect_time entry. If it's too old,
@@ -1839,6 +1885,10 @@ class Gossip(BaseManager):
             # And look where does the message came from: if it's the same
             # zone: we can give all, but it it's a lower zone, only give our proxy nodes informations
             nodes = self.get_nodes_for_push_pull_response(msg['ask-from-zone'])
+            if nodes is None:
+                return jsoner.dumps({'error': 'You are not from a valid zone'})
+            
+            logger.debug('ASK from zone: %s and give: %s' % (msg['ask-from-zone'], nodes))
             with self.events_lock:
                 events = copy.deepcopy(self.events)
             m = {'type': 'push-pull-msg', 'nodes': nodes, 'events': events}

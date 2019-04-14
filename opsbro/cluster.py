@@ -49,6 +49,7 @@ from .topic import topiker, TOPIC_SERVICE_DISCOVERY, TOPIC_AUTOMATIC_DECTECTION,
 from .packer import packer
 from .agentstates import AGENT_STATES
 from .udplistener import get_udp_listener
+from .zonemanager import zonemgr
 
 # Global logger for this part
 logger = LoggerFactory.create_logger(DEFAULT_LOG_PART)
@@ -238,6 +239,10 @@ class Cluster(object):
         if os.path.exists(self.zone_file):
             with open(self.zone_file, 'r') as f:
                 self.zone = f.read().strip()
+        
+        if not zonemgr.have_zone(self.zone):
+            logger.error('The zone %s is unknown. Please change your configuration.' % self.zone)
+            sys.exit(2)
         
         # Try to clean libexec and configuration directories
         self.libexec_dir = libexec_dir

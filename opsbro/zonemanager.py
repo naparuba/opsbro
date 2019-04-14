@@ -113,6 +113,13 @@ class ZoneManager(object):
         return checked_zone in sub_zones
     
     
+    def is_direct_sub_zone_from(self, from_zone_name, checked_zone_name):
+        from_zone = self.zones.get(from_zone_name, None)
+        if from_zone is None:
+            return False
+        sub_zones = from_zone.get('sub-zones', [])
+        return checked_zone_name in sub_zones
+    
     def get_zones(self):
         return self.zones
     

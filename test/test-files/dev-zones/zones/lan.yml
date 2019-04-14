@@ -1,0 +1,5 @@
+zone:
+    name: lan
+    sub-zones:
+        - internal-1
+        - internal-2
