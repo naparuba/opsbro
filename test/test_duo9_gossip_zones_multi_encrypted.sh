@@ -115,7 +115,7 @@ function assert_not_member {
 # node1 => every one
 # node2 => every one
 # node3 => 1,3,4 (only the proxy of a higer zone)
-# node4 => 1,3,4 (only the proxy of a higer zone)
+# node4 => 3,4 (only the proxy of a directly higer zone)
 if [ "$NODE_NB" == "1" ]; then
    assert_member "node-1" "lan"
    #wait_event_with_timeout "node-1-EVENT" 60
@@ -167,9 +167,9 @@ if [ "$NODE_NB" == "3" ]; then
    exit_if_no_crash "Node 3 exit"
 fi
 
-# node4 customer-1=> 1,3,4 (only the proxy of a higer zone)
+# node4 customer-1=> 3,4 (only the proxy of a direct higer zone)
 if [ "$NODE_NB" == "4" ]; then
-   assert_member "node-1" "lan"
+   assert_not_member "node-1"
    assert_not_member "node-2"
    assert_member "node-3" "internet"
    # Do not have access to higher events

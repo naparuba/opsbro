@@ -356,7 +356,6 @@ class Gossip(BaseManager):
         group_nodes.sort()
         
         idx = bisect.bisect_right(group_nodes, hkey) - 1
-        # logger.debug("IDX %d" % idx, hkey, kv_nodes, len(kv_nodes))
         nuuid = group_nodes[idx]
         return nuuid
     
@@ -686,6 +685,18 @@ class Gossip(BaseManager):
         self.stack_suspect_broadcast(node)
     
     
+    # Define a function that will wait 10s to let the others nodes know that we did leave
+    # and then ask for a clean stop of the daemon
+    @staticmethod
+    def _bailout_after_leave():
+        wait_time = 10
+        logger.info('Waiting out %s seconds before exiting as we are set in leave state' % wait_time)
+        time.sleep(10)
+        logger.info('Exiting from a self leave message')
+        # Will set self.interrupted = True to every thread that loop
+        stopper.do_stop('Exiting from a leave massage')
+    
+    
     # Someone ask us about a leave node, so believe it
     # Leave node are about all states, so we don't filter by current state
     # if the incarnation is ok, we believe it
@@ -739,19 +750,7 @@ class Gossip(BaseManager):
                 self._set_myself_atomic_property('state', state)
                 self.increase_incarnation_and_broadcast()
                 
-                
-                # Define a function that will wait 10s to let the others nodes know that we did leave
-                # and then ask for a clean stop of the daemon
-                def bailout_after_leave(self):
-                    wait_time = 10
-                    logger.info('Waiting out %s seconds before exiting as we are set in leave state' % wait_time)
-                    time.sleep(10)
-                    logger.info('Exiting from a self leave message')
-                    # Will set self.interrupted = True to every thread that loop
-                    stopper.do_stop('Exiting from a leave massage')
-                
-                
-                threader.create_and_launch(bailout_after_leave, args=(self,), name='Exiting agent after set to leave', part='agent')
+                threader.create_and_launch(self._bailout_after_leave, name='Exiting agent after set to leave', part='agent')
                 return
         
         logger.info('LEAVING: The node %s is leaving' % node['name'])
@@ -1026,12 +1025,6 @@ class Gossip(BaseManager):
     # but talk to us
     # also exclude leave node, because thay said they are not here anymore ^^
     def ping_another(self):
-        # Only launch one parallel ping in the same time, max2 if we have thread
-        # that mess up with this flag :)
-        # if self.ping_another_in_progress:
-        #    return
-        # self.ping_another_in_progress = True
-        
         possible_nodes = self.__get_valid_nodes_to_ping()
         
         # first previously deads
@@ -1048,7 +1041,6 @@ class Gossip(BaseManager):
             other = random.choice(possible_nodes)
             self.__do_ping(other)
             # Ok we did finish to ping another
-            # self.ping_another_in_progress = False
     
     
     # Launch a ping to another node and if fail set it as suspect
@@ -1061,7 +1053,6 @@ class Gossip(BaseManager):
         if zonemgr.is_top_zone_from(self.zone, other_zone_name):
             ping_zone = self.zone
         ping_payload = {'type': PACKET_TYPES.PING, 'seqno': 0, 'node': other['uuid'], 'from_zone': self.zone, 'from': self.uuid}
-        # print "PREPARE PING", ping_payload, other
         message = jsoner.dumps(ping_payload)
         encrypter = libstore.get_encrypter()
         enc_message = encrypter.encrypt(message, dest_zone_name=ping_zone)
@@ -1090,7 +1081,6 @@ class Gossip(BaseManager):
                 self.set_suspect(other)
         except (socket.timeout, socket.gaierror) as exp:
             logger.info("PING: error joining the other node %s:%s : %s. Switching to a indirect ping mode." % (addr, port, exp))
-            # with self.nodes_lock:
             possible_relays = [n for n in self.nodes.values() if
                                n['uuid'] != self.uuid
                                and n != other
@@ -1222,7 +1212,6 @@ class Gossip(BaseManager):
             if zonemgr.is_top_zone_from(self.zone, nfrom_zone):
                 nfrom_zone = self.zone
             enc_ret_msg = encrypter.encrypt(ret_msg, dest_zone_name=nfrom_zone)
-            # sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
             sock.sendto(enc_ret_msg, addr)
             sock.close()
         except (socket.timeout, socket.gaierror) as exp:
@@ -1601,16 +1590,13 @@ class Gossip(BaseManager):
     # set the node as dead, and broadcast the information to everyone
     def look_at_deads(self):
         # suspect a node for 5 * log(n+1) * interval
-        # with self.nodes_lock:
         node_scale = math.ceil(math.log10(float(len(self.nodes) + 1)))
         probe_interval = 1
         suspicion_mult = 5
         suspect_timeout = suspicion_mult * node_scale * probe_interval
         leave_timeout = suspect_timeout * 30  # something like 300s
         
-        # print "SUSPECT timeout", suspect_timeout
         now = int(time.time())
-        # with self.nodes_lock:
         for node in self.nodes.values():
             # Only look at suspect nodes of course...
             if node['state'] != NODE_STATES.SUSPECT:
@@ -1688,9 +1674,6 @@ class Gossip(BaseManager):
         return r
     
     
-    # def create_new_ts_msg(self, key):
-    #     return {'type': '/ts/new', 'from': self.uuid, 'key': key}
-    
     def stack_alive_broadcast(self, node):
         msg = self.create_alive_msg(node)
         # Node messages are before all others
@@ -1709,12 +1692,6 @@ class Gossip(BaseManager):
         self.add_event(msg)
         return
     
-    
-    # def stack_new_ts_broadcast(self, key):
-    #     msg = self.create_new_ts_msg(key)
-    #     b = {'send': 0, 'msg': msg, 'groups': 'ts'}
-    #     broadcaster.append(b)
-    #     return
     
     def stack_suspect_broadcast(self, node):
         msg = self.create_suspect_msg(node)
@@ -1829,7 +1806,6 @@ class Gossip(BaseManager):
         
         @http_export('/agent/leave/:nuuid', protected=True)
         def set_node_leave(nuuid):
-            # with self.nodes_lock:
             node = self.nodes.get(nuuid, None)
             if node is None:
                 logger.error('Asking us to set as leave the node %s but we cannot find it' % (nuuid))
@@ -1841,8 +1817,6 @@ class Gossip(BaseManager):
         @http_export('/agent/members')
         def agent_members():
             response.content_type = 'application/json'
-            # with self.nodes_lock:
-            #    nodes = copy.copy(self.nodes)
             return self.nodes
         
         
