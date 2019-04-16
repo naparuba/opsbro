@@ -451,12 +451,28 @@ setuptools_package_exceptions = {
     'amazon-linux2': 'python2-setuptools',
 }
 
+
+# Centos 7.0 and 7.1 have issues to access to the epel release (due to certificates)
+# and I don't find how to fix unless remove the https access to it
+# if someone have a better solution, with only packages update, I take :)
+def _fix_centos_7_epel_no_https():
+    epel = '/etc/yum.repos.d/epel.repo'
+    if os.path.exists(epel):
+        with open(epel, 'r') as f:
+            lines = f.readlines()
+        # sed 'mirrorlist=https:' into 'mirrorlist=http:'
+        new_file = ''.join([line.replace('metalink=https:', 'metalink=http:') for line in lines])
+        with open(epel, 'w') as f:
+            f.write(new_file)
+
+
 # Some distro have specific dependencies
 distro_prerequites = {
     'alpine': [{'package_name': 'musl-dev'}],  # monotonic clock
     'centos': [
         {'package_name': 'libgomp'},  # monotonic clock
-        {'package_name': 'epel-release', 'only_for': ['7.0', '7.1']},  # need for leveldb
+        {'package_name': 'nss', 'only_for': ['6.6', '6.7', '7.0', '7.1'], 'force_update': True},  # force update of nss for connect to up to date HTTPS, especialy epel
+        {'package_name': 'epel-release', 'only_for': ['7.0', '7.1'], 'post_fix': _fix_centos_7_epel_no_https},  # need for leveldb
         {'package_name': 'leveldb', 'only_for': ['7.0', '7.1']},  # sqlite on old centos is broken
     ],
 }
@@ -542,6 +558,8 @@ if allow_black_magic:
                     match_version = True
             if not match_version:
                 continue
+        force_update = package.get('force_update', False)  # should be updated even if already installed
+        post_fix = package.get('post_fix', None)  # function called AFTER the package installation, to fix something
         cprint('   - Prerequite for ', color='grey', end='')
         cprint(system_distro, color='magenta', end='')
         cprint(' : ', color='grey', end='')
@@ -549,8 +567,10 @@ if allow_black_magic:
         cprint('       from system packages  : ', color='grey', end='')
         sys.stdout.flush()
         try:
-            if not systepacketmgr.has_package(package_name):
+            if not systepacketmgr.has_package(package_name) or force_update:
                 systepacketmgr.update_or_install(package_name)
+                if post_fix:
+                    post_fix()
             cprint('%s' % CHARACTERS.check, color='green')
         except Exception as exp:
             cprint('   - ERROR: cannot install the prerequite %s from the system. Please install it manually' % package_name, color='red')
