@@ -68,7 +68,6 @@ fi
 
 
 if [ "$NODE_NB" == "2" ]; then
-   #sleep 10
    opsbro gossip events add 'NODE2-LEAVING'
    wait_event_with_timeout 'NODE3-RECEIVE-LEAVING' 20
 

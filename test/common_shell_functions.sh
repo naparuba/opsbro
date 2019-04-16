@@ -222,3 +222,26 @@ function assert_my_zone_is_encrypted {
        exit 2
    fi
 }
+
+
+function assert_ping_node {
+    NODE="$1"
+    out=$(opsbro gossip ping $NODE)
+    if [ $? != 0 ];then
+       echo "ERROR: ping node $NODE did fail"
+       echo "$out"
+       exit 2
+    fi
+    echo "$out"
+}
+
+function assert_ping_fail_node {
+    NODE="$1"
+    out=$(opsbro gossip ping $NODE)
+    if [ $? == 0 ];then
+       echo "ERROR: CAN ping node $NODE and should NOT"
+       echo "$out"
+       exit 2
+    fi
+    echo "$out"
+}
