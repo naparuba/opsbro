@@ -461,7 +461,8 @@ def _fix_centos_7_epel_no_https():
         with open(epel, 'r') as f:
             lines = f.readlines()
         # sed 'mirrorlist=https:' into 'mirrorlist=http:'
-        new_file = ''.join([line.replace('metalink=https:', 'metalink=http:') for line in lines])
+        # and mirrorlist=https: into mirrorlist=https: (centos 6)
+        new_file = ''.join([line.replace('metalink=https:', 'metalink=http:').replace('mirrorlist=https:', 'mirrorlist=http:') for line in lines])
         with open(epel, 'w') as f:
             f.write(new_file)
 
@@ -472,7 +473,7 @@ distro_prerequites = {
     'centos': [
         {'package_name': 'libgomp'},  # monotonic clock
         {'package_name': 'nss', 'only_for': ['6.6', '6.7', '7.0', '7.1'], 'force_update': True},  # force update of nss for connect to up to date HTTPS, especialy epel
-        {'package_name': 'epel-release', 'only_for': ['7.0', '7.1'], 'post_fix': _fix_centos_7_epel_no_https},  # need for leveldb
+        {'package_name': 'epel-release', 'only_for': ['6.7', '7.0', '7.1'], 'post_fix': _fix_centos_7_epel_no_https},  # need for leveldb, and post_fix is need for 6.7
         {'package_name': 'leveldb', 'only_for': ['7.0', '7.1']},  # sqlite on old centos is broken
     ],
 }
