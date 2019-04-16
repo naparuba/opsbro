@@ -1917,6 +1917,26 @@ class Gossip(BaseManager):
             return jsoner.dumps(encrypter.load_or_reload_key_for_zone_if_need(zone_name))
         
         
+        @http_export('/agent/query/guess/:name_or_uuid', method='GET', protected=True)
+        def get_query_by_name(name_or_uuid):
+            response.content_type = 'application/json'
+            for node in self.nodes.values():
+                if node['uuid'] == name_or_uuid or node['name'] == name_or_uuid or node['display_name'] == name_or_uuid:
+                    return node
+            return None
+        
+        
+        @http_export('/agent/ping/:node_uuid', method='GET', protected=True)
+        def get_ping_node(node_uuid):
+            response.content_type = 'application/json'
+            node = self.get(node_uuid)
+            if node is None:
+                return {'error': 'No such node %s' % node_uuid}
+            self.__do_ping(node)
+            logger.info('NODE STATE: %s' % node['state'])
+            return {'state': node['state']}
+        
+        
         @http_export('/agent/event/:event_type', method='GET', protected=True)
         def get_event(event_type):
             response.content_type = 'application/json'

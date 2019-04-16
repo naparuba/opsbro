@@ -31,6 +31,7 @@ NODE_STATE_COLORS = {NODE_STATES.ALIVE  : 'green',
                      NODE_STATES.LEAVE  : 'cyan',
                      NODE_STATES.UNKNOWN: 'grey',
                      }
+
 NODE_STATE_PREFIXS = {NODE_STATES.ALIVE  : CHARACTERS.check,
                       NODE_STATES.DEAD   : CHARACTERS.cross,
                       NODE_STATES.SUSPECT: CHARACTERS.double_exclamation,
@@ -201,6 +202,45 @@ def do_join(seed=''):
         cprint('OK', color='green')
     else:
         cprint('FAILED', color='red')
+
+
+def do_ping(node):
+    # The information is available only if the agent is started
+    wait_for_agent_started(visual_wait=True)
+    
+    try:
+        node_obj = get_opsbro_json('/agent/query/guess/%s' % node)
+    except get_request_errors() as exp:
+        logger.error('Cannot query the node: %s' % exp)
+        sys.exit(2)
+    if node_obj is None:
+        cprint('FAILED: cannot find the node %s' % node, color='red')
+        sys.exit(2)
+    node_uuid = node_obj['uuid']
+    
+    try:
+        ping_result = get_opsbro_json('/agent/ping/%s' % node_uuid)
+    except get_request_errors() as exp:
+        logger.error('Cannot launch the node ping: %s' % exp)
+        sys.exit(2)
+    if 'error' in ping_result:
+        cprint('FAILED: %s' % ping_result['error'], color='red')
+        sys.exit(2)
+    node_state = ping_result['state']
+    display_name = node_obj['display_name']
+    if not display_name:
+        display_name = node_obj['name']
+    
+    state_color = NODE_STATE_COLORS.get(node_state)
+    state_char = NODE_STATE_PREFIXS.get(node_state)
+    cprint(' %s ' % state_char, color=state_color, end='')
+    cprint('%-15s ' % display_name, color='magenta', end='')
+    cprint('is: ', end='')
+    cprint(node_state, color=state_color)
+    
+    # If not alive, it's an error
+    if node_state != NODE_STATES.ALIVE:
+        sys.exit(2)
 
 
 def do_zone_change(name=''):
@@ -625,6 +665,14 @@ exports = {
         'description': 'Join another node cluster',
         'args'       : [
             {'name': 'seed', 'default': '', 'description': 'Other node to join. For example 192.168.0.1:6768'},
+        ],
+    },
+    
+    do_ping             : {
+        'keywords'   : ['gossip', 'ping'],
+        'description': 'Ping another node of the cluster',
+        'args'       : [
+            {'name': 'node', 'default': '', 'description': 'uuid, name or display name of the node to ping'},
         ],
     },
     
