@@ -495,9 +495,11 @@ class CLICommander(object):
     def one_loop(self, command_args):
         logger.debug("ARGS: %s" % command_args)
         
+        first_keyword = command_args[0]
+        
         entry = self._get_cli_entry_from_args(command_args)
         if entry is None:
-            self.print_list(command_args[0])
+            self.print_list(first_keyword)
             sys.exit(2)
         
         command_args = self.clean_command_args(command_args)
@@ -505,6 +507,11 @@ class CLICommander(object):
         # Now prepare a new parser, for the command call this time
         command_parser = optparse.OptionParser('', version="%prog " + VERSION)
         command_parser.prog = ''
+        
+        # Maybe it's not a end node, and we are in the middle, like "opsbro gossip zone"
+        if not isinstance(entry, CLIEntry):
+            self.print_list(first_keyword)
+            sys.exit(2)
         
         for a in entry.args:
             n = a.get('name', None)
