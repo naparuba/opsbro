@@ -16,7 +16,7 @@ fi
 if [ $TEST_SUITE == "WINDOWS" ];then
    # Windows need to directly launch the bin/opsbro
    cd ..
-   test./test_installation_windows.sh
+   test/test_installation_windows.sh
 fi
 
 print_header "Launching installations tests for SUITE: $TEST_SUITE"
