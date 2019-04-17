@@ -105,7 +105,7 @@ function launch_docker_file {
 
 export -f launch_docker_file
 
-NB_CPUS=`python -c "import multiprocessing;print multiprocessing.cpu_count()"`
+NB_CPUS=`python -c "import multiprocessing;print(multiprocessing.cpu_count())"`
 echo "Detected number of CPUs: $NB_CPUS"
 # Travis: be sure to use the 2 CPU available, and in fact to allow // connections so we keep the test time bellow the limit
 #if [ "X$TRAVIS" == "Xtrue" ]; then
@@ -186,6 +186,9 @@ if [[ $TEST_SUITE == COMPOSE* ]];then
    exit 0
 fi
 
+uname -a
+
+docker --help
 
 # Only do the test suite we must do
 DOCKER_FILES=`ls -1 test/docker-files/docker-file-$TEST_SUITE-*txt`
