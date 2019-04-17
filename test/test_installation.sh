@@ -14,7 +14,9 @@ fi
 
 # Travis windows: launch a specific shell
 if [ $TEST_SUITE == "WINDOWS" ];then
-   ./test_installation_windows.sh
+   # Windows need to directly launch the bin/opsbro
+   cd ..
+   test./test_installation_windows.sh
 fi
 
 print_header "Launching installations tests for SUITE: $TEST_SUITE"
