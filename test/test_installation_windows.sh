@@ -1,5 +1,11 @@
 #!/bin/bash
 
+pwd
+
+ls
+
+ls -la
+
 python bin/opsbro
 
 python bin\opsbro agent start --one-shot
@@ -31,3 +37,6 @@ python c:/opsbro/bin/opsbro monitoring state
 python c:/opsbro/bin/opsbro compliance state
 python c:/opsbro/bin/opsbro collectors show
 sc stop OpsBro
+
+
+exit 0
