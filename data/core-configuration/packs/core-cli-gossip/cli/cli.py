@@ -126,7 +126,7 @@ def _get_zone_tree():
 
 
 def _get_zone_from_tree(zones, search_zone_name):
-    for zone_name, zone in zones.iteritems():
+    for zone_name, zone in zones.items():
         if zone_name == search_zone_name:
             return zone
         zone = _get_zone_from_tree(zone['sub-zones'], search_zone_name)
