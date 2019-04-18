@@ -40,6 +40,41 @@ NODE_STATE_PREFIXS = {NODE_STATES.ALIVE  : CHARACTERS.check,
                       }
 
 
+class _ZONE_TYPES:
+    OTHER = 0
+    OUR_ZONE = 1
+    HIGHER = 2
+    LOWER = 3
+    TOO_HIGH = 4
+
+
+_ALL_ZONE_TYPES = [_ZONE_TYPES.OTHER, _ZONE_TYPES.OUR_ZONE, _ZONE_TYPES.HIGHER, _ZONE_TYPES.LOWER, _ZONE_TYPES.TOO_HIGH]
+
+_ZONE_TYPE_COLORS = {
+    _ZONE_TYPES.OTHER   : 'grey',
+    _ZONE_TYPES.OUR_ZONE: 'magenta',
+    _ZONE_TYPES.HIGHER  : 'blue',
+    _ZONE_TYPES.LOWER   : 'green',
+    _ZONE_TYPES.TOO_HIGH: 'grey',
+}
+
+_ZONE_TYPE_LABEL = {
+    _ZONE_TYPES.OTHER   : 'Other zone',
+    _ZONE_TYPES.OUR_ZONE: 'Your zone',
+    _ZONE_TYPES.HIGHER  : 'Higher zone',
+    _ZONE_TYPES.LOWER   : 'Lower zone',
+    _ZONE_TYPES.TOO_HIGH: 'Too high zone',
+}
+
+_ZONE_TYPE_DESCRIPTION = {
+    _ZONE_TYPES.OTHER   : 'Zone not in your higher or lower ones',
+    _ZONE_TYPES.OUR_ZONE: 'In your zone you known all nodes',
+    _ZONE_TYPES.HIGHER  : 'You only know about higher zone proxy nodes',
+    _ZONE_TYPES.LOWER   : 'You know all nodes in this lower zone',
+    _ZONE_TYPES.TOO_HIGH: 'You know nothing about too high zone',
+}
+
+
 ############# ********************        MEMBERS management          ****************###########
 
 def __sorted_members(m1, m2):
@@ -52,68 +87,147 @@ def __sorted_members(m1, m2):
     return my_cmp(n1, n2)
 
 
+def _get_zone_tree():
+    try:
+        zones = get_opsbro_json('/agent/zones')
+    except get_request_errors() as exp:
+        logger.error(exp)
+        return
+    
+    all_zones = list(zones.values())
+    zones_tree = zones
+    
+    # We are building the zone tree, so link real object in other zone
+    for zone in zones_tree.values():
+        sub_zones = {}
+        for sub_zone_name in zone.get('sub-zones', []):
+            sub_zone = zones_tree.get(sub_zone_name, None)
+            sub_zones[sub_zone_name] = sub_zone
+        zone['sub-zones'] = sub_zones
+        zone['members'] = []  # repare a list for the members we can add inside
+        zone['distance_from_my_zone'] = 999
+    
+    # Set if the zone is top/lower if not our own zone
+    for zone in zones_tree.values():
+        zone['type'] = _ZONE_TYPES.OTHER
+    
+    # And finally delete the zone that are not in top level
+    to_del = set()
+    for (zname, zone) in zones_tree.items():
+        for sub_zname in zone['sub-zones']:
+            to_del.add(sub_zname)
+    for zname in to_del:
+        del zones_tree[zname]
+    
+    for zone in zones_tree.values():
+        _flag_top_lower_zone(zone)
+    
+    return zones_tree, all_zones
+
+
+def _get_zone_from_tree(zones, search_zone_name):
+    for zone_name, zone in zones.iteritems():
+        if zone_name == search_zone_name:
+            return zone
+        zone = _get_zone_from_tree(zone['sub-zones'], search_zone_name)
+        if zone is not None:
+            return zone
+    return None
+
+
+def _do_print_zone_members(zone, show_detail, max_name_size=15, max_addr_size=15, level=0):
+    zone_name = zone['name']
+    z_display = zone_name
+    if not zone_name:
+        z_display = NO_ZONE_DEFAULT
+    z_display = z_display.ljust(15)
+    cprint('  | ' * level, color='grey', end='')
+    cprint(' - ', color='grey', end='')
+    
+    zone_type = zone['type']
+    label = _ZONE_TYPE_LABEL[zone_type]
+    color = _ZONE_TYPE_COLORS[zone_type]
+    cprint(z_display, color=color, end='')
+    cprint(' (%s) ' % label, color=color)
+    
+    # title_s = '%s: %s' % (sprintf('Zone', color='yellow', end=''), sprintf(z_display, color='blue', end=''))
+    # print_h1(title_s, raw_title=True)
+    members = zone['members']
+    for m in members:
+        name = m['name']
+        if m.get('display_name', ''):
+            name = '[ ' + m.get('display_name') + ' ]'
+        groups = m.get('groups', [])
+        groups.sort()
+        port = m['port']
+        addr = m['addr']
+        state = m['state']
+        is_proxy = m.get('is_proxy', False)
+        cprint('  | ' * level, color='grey', end='')
+        if not show_detail:
+            cprint('  %s ' % CHARACTERS.corner_bottom_left, end='')
+            cprint('%s  ' % name.ljust(max_name_size), color='magenta', end='')
+        else:
+            cprint(' %s  %s  ' % (m['uuid'], name.ljust(max_name_size)), end='')
+        c = NODE_STATE_COLORS.get(state, 'cyan')
+        state_prefix = NODE_STATE_PREFIXS.get(state, CHARACTERS.double_exclamation)
+        cprint(('%s %s' % (state_prefix, state)).ljust(9), color=c, end='')  # 7 for the maximum state string + 2 for prefix
+        s = ' %s:%s ' % (addr, port)
+        s = s.ljust(max_addr_size + 2)  # +2 for the spaces
+        cprint(s, end='')
+        if is_proxy:
+            cprint('proxy ', end='')
+        else:
+            cprint('      ', end='')
+        if show_detail:
+            cprint('%5d' % m['incarnation'], end='')
+        cprint(' %s ' % ','.join(groups))
+    
+    for sub_zone in zone['sub-zones'].values():
+        _do_print_zone_members(sub_zone, show_detail=show_detail, max_name_size=max_name_size, max_addr_size=max_addr_size, level=level + 1)
+
+
 def do_members(detail=False):
+    pprint = libstore.get_pprint()
     # The information is available only if the agent is started
     wait_for_agent_started(visual_wait=True)
     
+    zones_tree, all_zones = _get_zone_tree()
+    
+    # print("ZONE TREE: %s" % zones_tree)
+    
     try:
-        members = get_opsbro_json('/agent/members').values()
+        all_members = get_opsbro_json('/agent/members').values()
     except get_request_errors() as exp:
         logger.error('Cannot join opsbro agent to list members: %s' % exp)
         sys.exit(1)
-    members = my_sort(members, cmp_f=__sorted_members)
-    pprint = libstore.get_pprint()
-    logger.debug('Raw members: %s' % (pprint.pformat(members)))
+    
+    for member in all_members:
+        member_zone = member['zone']
+        zone = _get_zone_from_tree(zones_tree, member_zone)
+        # print("IN ZONE: %s" % zone)
+        zone['members'].append(member)
+    
+    # zones = set()
+    # for m in members:
+    #     mzone = m.get('zone', '')
+    #     if mzone == '':
+    #         mzone = NO_ZONE_DEFAULT
+    #     m['zone'] = mzone  # be sure to fix broken zones
+    #     zones.add(mzone)
+    
+    # print('ALL ZONES: %s' % all_zones)
+    for zone in all_zones:
+        zone['members'] = my_sort(zone['members'], cmp_f=__sorted_members)
+        
+        logger.debug('Raw members: %s' % (pprint.pformat(zone['members'])))
+    
     # If there is a display_name, use it
-    max_name_size = max([max(len(m['name']), len(m.get('display_name', '')) + 4) for m in members])
-    max_addr_size = max([len(m['addr']) + len(str(m['port'])) + 1 for m in members])
-    zones = set()
-    for m in members:
-        mzone = m.get('zone', '')
-        if mzone == '':
-            mzone = NO_ZONE_DEFAULT
-        m['zone'] = mzone  # be sure to fix broken zones
-        zones.add(mzone)
-    zones = list(zones)
-    zones.sort()
-    for z in zones:
-        z_display = z
-        if not z:
-            z_display = NO_ZONE_DEFAULT
-        z_display = z_display.ljust(15)
-        title_s = '%s: %s' % (sprintf('Zone', color='yellow', end=''), sprintf(z_display, color='blue', end=''))
-        print_h1(title_s, raw_title=True)
-        for m in members:
-            zone = m.get('zone', NO_ZONE_DEFAULT)
-            if zone != z:
-                continue
-            name = m['name']
-            if m.get('display_name', ''):
-                name = '[ ' + m.get('display_name') + ' ]'
-            groups = m.get('groups', [])
-            groups.sort()
-            port = m['port']
-            addr = m['addr']
-            state = m['state']
-            is_proxy = m.get('is_proxy', False)
-            if not detail:
-                cprint('  - %s > ' % zone, color='blue', end='')
-                cprint('%s  ' % name.ljust(max_name_size), color='magenta', end='')
-            else:
-                cprint(' %s  %s  ' % (m['uuid'], name.ljust(max_name_size)), end='')
-            c = NODE_STATE_COLORS.get(state, 'cyan')
-            state_prefix = NODE_STATE_PREFIXS.get(state, CHARACTERS.double_exclamation)
-            cprint(('%s %s' % (state_prefix, state)).ljust(9), color=c, end='')  # 7 for the maximum state string + 2 for prefix
-            s = ' %s:%s ' % (addr, port)
-            s = s.ljust(max_addr_size + 2)  # +2 for the spaces
-            cprint(s, end='')
-            if is_proxy:
-                cprint('proxy ', end='')
-            else:
-                cprint('      ', end='')
-            if detail:
-                cprint('%5d' % m['incarnation'], end='')
-            cprint(' %s ' % ','.join(groups))
+    max_name_size = max([max(len(m['name']), len(m.get('display_name', '')) + 4) for m in all_members])
+    max_addr_size = max([len(m['addr']) + len(str(m['port'])) + 1 for m in all_members])
+    
+    for zone in zones_tree.values():
+        _do_print_zone_members(zone, show_detail=detail, max_name_size=max_name_size, max_addr_size=max_addr_size, level=0)
 
 
 def do_members_history():
@@ -265,52 +379,32 @@ def do_zone_change(name=''):
         sys.exit(2)
 
 
-class _ZONE_TYPES:
-    OTHER = 0
-    OUR_ZONE = 1
-    HIGHER = 2
-    LOWER = 3
-
-
-_ALL_ZONE_TYPES = [_ZONE_TYPES.OTHER, _ZONE_TYPES.OUR_ZONE, _ZONE_TYPES.HIGHER, _ZONE_TYPES.LOWER]
-
-
-def _flag_top_lower_zone(zone, from_our_zone=False):
+def _flag_top_lower_zone(zone, from_our_zone=False, distance_from_my_zone=999):
     r = _ZONE_TYPES.OTHER
     if zone['is_our_zone']:
         zone['type'] = _ZONE_TYPES.OUR_ZONE
         from_our_zone = True
         r = _ZONE_TYPES.HIGHER
+        distance_from_my_zone = 0
+        zone['distance_from_my_zone'] = distance_from_my_zone
     else:  # not our zone, so can be from it (we are lower)
         if from_our_zone:
             zone['type'] = _ZONE_TYPES.LOWER
+            distance_from_my_zone += 1
+            zone['distance_from_my_zone'] = distance_from_my_zone
     
     for sub_zone in zone['sub-zones'].values():
-        from_sub_zone = _flag_top_lower_zone(sub_zone, from_our_zone)
+        from_sub_zone, distance_from_my_zone = _flag_top_lower_zone(sub_zone, from_our_zone, distance_from_my_zone=distance_from_my_zone)
         if from_sub_zone == _ZONE_TYPES.HIGHER:  # the sub zone say we are a higher level one
-            zone['type'] = _ZONE_TYPES.HIGHER
             r = _ZONE_TYPES.HIGHER
+            distance_from_my_zone -= 1
+            zone['distance_from_my_zone'] = distance_from_my_zone
+            if abs(zone['distance_from_my_zone']) >= 2:
+                zone['type'] = _ZONE_TYPES.TOO_HIGH
+            else:
+                zone['type'] = _ZONE_TYPES.HIGHER
     
-    return r
-
-
-_ZONE_TYPE_COLORS = {
-    _ZONE_TYPES.OTHER   : 'grey',
-    _ZONE_TYPES.OUR_ZONE: 'magenta',
-    _ZONE_TYPES.HIGHER  : 'blue',
-    _ZONE_TYPES.LOWER   : 'green'}
-_ZONE_TYPE_LABEL = {
-    _ZONE_TYPES.OTHER   : 'Other zone',
-    _ZONE_TYPES.OUR_ZONE: 'Your zone',
-    _ZONE_TYPES.HIGHER  : 'Higher zone',
-    _ZONE_TYPES.LOWER   : 'Lower zone'
-}
-_ZONE_TYPE_DESCRIPTION = {
-    _ZONE_TYPES.OTHER   : 'Zone not in your higher or lower ones',
-    _ZONE_TYPES.OUR_ZONE: 'In your zone you known all nodes',
-    _ZONE_TYPES.HIGHER  : 'You only know about higher zone proxy nodes',
-    _ZONE_TYPES.LOWER   : 'You know all nodes in this lower zone'
-}
+    return r, zone['distance_from_my_zone']
 
 
 # Do print the zone but at the level X
@@ -318,8 +412,7 @@ def _print_zone(zname, zone, level):
     cprint('  | ' * level, color='grey', end='')
     cprint(' * ', end='')
     cprint(zname, color='magenta', end='')
-    if zone['is_our_zone']:
-        cprint(' (this is your zone)', color='blue', end='')
+    
     if zone['have_gossip_key']:
         cprint(' [ This zone have a gossip key ] ', color='blue', end='')
     
@@ -340,41 +433,14 @@ def _print_zone(zname, zone, level):
 
 def do_zone_list():
     print_h1('Known zones')
-    try:
-        zones = get_opsbro_json('/agent/zones')
-    except get_request_errors() as exp:
-        logger.error(exp)
-        return
-    
-    # We are building the zone tree, so link real object in other zone
-    for zone in zones.values():
-        sub_zones = {}
-        for sub_zone_name in zone.get('sub-zones', []):
-            sub_zone = zones.get(sub_zone_name, None)
-            sub_zones[sub_zone_name] = sub_zone
-        zone['sub-zones'] = sub_zones
-    
-    # Set if the zone is top/lower if not our own zone
-    for zone in zones.values():
-        zone['type'] = _ZONE_TYPES.OTHER
-    
-    # And finally delete the zone that are not in top level
-    to_del = set()
-    for (zname, zone) in zones.items():
-        for sub_zname in zone['sub-zones']:
-            to_del.add(sub_zname)
-    for zname in to_del:
-        del zones[zname]
-    
-    for zone in zones.values():
-        _flag_top_lower_zone(zone)
+    zones_tree, all_zones = _get_zone_tree()
     
     # Now print it
-    zone_names = zones.keys()
+    zone_names = zones_tree.keys()
     zone_names.sort()
     
     for zname in zone_names:
-        zone = zones[zname]
+        zone = zones_tree[zname]
         _print_zone(zname, zone, 0)
     
     cprint('')
