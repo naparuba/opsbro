@@ -126,27 +126,13 @@ if __name__ == '__main__':
     if bash_completion_mode:
         CLI.print_completion(args)
         sys.exit(0)
-    
-    if do_help:
-        if len(command_args) == 0:
-            print_full_help()
-            sys.exit(0)
-        if len(command_args) == 1:
-            sub_cmd = 'global'
-        else:
-            sub_cmd = command_args.pop(0)
-        a = command_args.pop(0)
-        if a not in CLI.keywords[sub_cmd]:
-            logger.error("Cannot find any help for %s" % a)
-            sys.exit(1)
-        cprint('%s' % a, 'green')
-        for arg in CLI.keywords[sub_cmd][a].args:
-            n = arg.get('name', '')
-            desc = arg.get('description', '')
-            cprint('\t%s' % n.ljust(10), 'green', end='')
-            cprint(': %s' % desc)
-        
+
+    if len(command_args) == 0:
+        print_full_help()
         sys.exit(0)
+        
+    if do_help:
+        CLI.print_help_from_command(command_args)
     
     # Maybe he/she just want to list our commands?
     if do_list:
@@ -154,13 +140,13 @@ if __name__ == '__main__':
         sys.exit(0)
     
     # if no matching commands, can e=be just void (print help) or a unknown command (error)
-    if len(command_args) == 0:
-        print_full_help()
-        # not matching command? error
-        if len(sys.argv) != 0:
-            logger.error('Unknown arguments: %s' % (' '.join(sys.argv)))
-            sys.exit(2)
-        sys.exit(0)
+    # if len(command_args) == 0:
+    #     print_full_help()
+    #     # not matching command? error
+    #     if len(sys.argv) != 0:
+    #         logger.error('Unknown arguments: %s' % (' '.join(sys.argv)))
+    #         sys.exit(2)
+    #     sys.exit(0)
     
     # If it's just a one call shot, do it!
     CLI.one_loop(command_args)

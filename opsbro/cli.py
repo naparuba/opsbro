@@ -281,13 +281,14 @@ class Dummy():
 
 
 class CLIEntry(object):
-    def __init__(self, f, args, description, allow_temporary_agent, topic, need_full_configuration):
+    def __init__(self, f, args, description, allow_temporary_agent, topic, need_full_configuration, keywords):
         self.f = f
         self.args = args
         self.description = description
         self.allow_temporary_agent = allow_temporary_agent
         self.topic = topic
         self.need_full_configuration = need_full_configuration
+        self.keywords = keywords
 
 
 # Commander is the main class for managing the CLI session and behavior
@@ -402,7 +403,7 @@ class CLICommander(object):
         description = raw_entry.get('description', '')
         allow_temporary_agent = raw_entry.get('allow_temporary_agent', None)
         need_full_configuration = raw_entry.get('need_full_configuration', False)
-        e = CLIEntry(f, args, description, allow_temporary_agent, main_topic, need_full_configuration)
+        e = CLIEntry(f, args, description, allow_temporary_agent, main_topic, need_full_configuration, m_keywords)
         # Finally save it
         self._insert_keywords_entry(m_keywords, e)
     
@@ -491,6 +492,39 @@ class CLICommander(object):
         return NoContextClass()
     
     
+    @staticmethod
+    def print_fatal_error(err):
+        cprint('%s%s Fatal Error %s%s' % (CHARACTERS.corner_top_left, CHARACTERS.hbar * 40, CHARACTERS.hbar * 40, CHARACTERS.corner_top_right), color='red')
+        cprint('  %s %s' % (CHARACTERS.arrow_left, err), color='red')
+        cprint('%s%s%s' % (CHARACTERS.corner_bottom_left, CHARACTERS.hbar * 93, CHARACTERS.corner_bottom_right), color='red')
+        logger.error('ERROR: fatal error: %s' % err, do_print=False)
+    
+    
+    def print_help_from_command(self, command_args):
+        first_keyword = command_args[0]
+        
+        entry = self._get_cli_entry_from_args(command_args)
+        if entry is None:
+            self.print_list(first_keyword)
+            sys.exit(2)
+        self._print_help_from_cli_entry(entry)
+    
+    
+    def _print_help_from_cli_entry(self, entry):
+        keyword_string = ' '.join(entry.keywords)
+        cprint('%s' % keyword_string, color='green')
+        description = entry.description
+        if description:
+            cprint('  | %s' % description, color='grey')
+        for arg in entry.args:
+            n = arg.get('name', '')
+            desc = arg.get('description', '')
+            cprint('\t%s' % n.ljust(10), 'magenta', end='')
+            cprint(': %s' % desc)
+        
+        sys.exit(0)
+    
+    
     # Execute a function based on the command line
     def one_loop(self, command_args):
         logger.debug("ARGS: %s" % command_args)
@@ -513,6 +547,7 @@ class CLICommander(object):
             self.print_list(first_keyword)
             sys.exit(2)
         
+        mandatary_parameters = []
         for a in entry.args:
             n = a.get('name', None)
             if n is None:
@@ -539,12 +574,25 @@ class CLICommander(object):
                     d['type'] = 'float'
                 
                 # and if we got a real default, use it
-                if not isinstance(default, Dummy):
-                    d['default'] = default
+                d['default'] = default
+                if isinstance(default, Dummy):  # we will have a Dummy as value, so let try to detect it as mandatory parameter
+                    mandatary_parameters.append((dest, n))
                 command_parser.add_option(n, **d)
         
         cmd_opts, cmd_args = command_parser.parse_args(command_args)
         f = entry.f
+        
+        # Look at missing parameter (was set tu Dummy as default value)
+        missing_parameters = []
+        for strip_parameter, original_parameter in mandatary_parameters:
+            value = getattr(cmd_opts, strip_parameter)  # must exist as we did put a default
+            if isinstance(value, Dummy):
+                missing_parameters.append(original_parameter)
+        if missing_parameters:
+            self.print_fatal_error('Missing parameter(s): %s' % (' '.join(missing_parameters)))
+            self._print_help_from_cli_entry(entry)
+            sys.exit(2)
+        
         logger.debug("CALLING " + str(f) + " WITH " + str(cmd_args) + " and " + str(cmd_opts))
         
         # Maybe the entry need to finish the loading to run (like dump configuration or such things)
@@ -565,10 +613,16 @@ class CLICommander(object):
             try:
                 f(*cmd_args, **cmd_opts.__dict__)
             except TypeError as exp:
-                logger.error('Bad call: missing or too much arguments: %s (%s)' % (exp, str(traceback.print_exc())))
+                logger.debug('Cannot launch function: %s' % str(traceback.format_exc()))
+                err = 'Bad arguments'
+                self.print_fatal_error(err)
+                self._print_help_from_cli_entry(entry)
                 sys.exit(2)
             except Exception:
-                logger.error('The call did fail: %s' % (str(traceback.print_exc())))
+                logger.debug('Cannot launch function: %s' % str(traceback.format_exc()))
+                err = 'The call did crash: %s.\nPlease fill a bug report about it.' % str(traceback.format_exc())
+                self.print_fatal_error(err)
+                self._print_help_from_cli_entry(entry)
                 sys.exit(2)
     
     

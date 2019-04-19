@@ -162,12 +162,8 @@ def w(d, f, name, is_essential, args):
         f(*args)
     except Exception:
         logger_crash = LoggerFactory.create_logger('crash')
-        StringIO = libstore.get_StringIO()
-        output = StringIO()
-        traceback.print_exc(file=output)
-        err = "Thread %s is exiting on error. Back trace of this error: %s" % (name, output.getvalue())
+        err = "Thread %s is exiting on error. Back trace of this error: %s" % (name, traceback.format_exc())
         daemon_logger.error(err)
-        output.close()
         
         if is_essential:
             # Maybe the thread WAS an essential one (like http thread or something like this), if so

@@ -44,7 +44,7 @@ class ModuleManager(object):
                 else:
                     imp.load_compiled(short_mod_name, mod_file)
             except Exception:
-                logger.error('The module %s did fail to be imported: %s' % (dirname, str(traceback.print_exc())))
+                logger.error('The module %s did fail to be imported: %s' % (dirname, str(traceback.format_exc())))
                 sys.exit(2)
             
             # remove the module dir from sys.path, it's not need anymore
@@ -60,7 +60,7 @@ class ModuleManager(object):
                 logger.debug('[module] %s (from pack=%s and pack level=%s) did load' % (mod, mod.pack_name, mod.pack_level))
                 self.modules.append(mod)
             except Exception:
-                logger.error('The module %s did fail to create: %s' % (cls, str(traceback.print_exc())))
+                logger.error('The module %s did fail to create: %s' % (cls, str(traceback.format_exc())))
                 sys.exit(2)
     
     
@@ -74,7 +74,7 @@ class ModuleManager(object):
             try:
                 mod.prepare()
             except Exception:
-                logger.error('The module %s did fail to prepare: %s' % (mod, str(traceback.print_exc())))
+                logger.error('The module %s did fail to prepare: %s' % (mod, str(traceback.format_exc())))
                 sys.exit(2)
     
     
@@ -87,7 +87,7 @@ class ModuleManager(object):
             try:
                 mod.export_http()
             except Exception:
-                logger.error('The module %s did fail to export the HTTP API: %s' % (mod, str(traceback.print_exc())))
+                logger.error('The module %s did fail to export the HTTP API: %s' % (mod, str(traceback.format_exc())))
                 sys.exit(2)
     
     
@@ -100,7 +100,7 @@ class ModuleManager(object):
             try:
                 mod.launch()
             except Exception:
-                logger.error('Cannot launch module %s: %s' % (mod, str(traceback.print_exc())))
+                logger.error('Cannot launch module %s: %s' % (mod, str(traceback.format_exc())))
                 sys.exit(2)
     
     
