@@ -642,7 +642,7 @@ def do_gossip_add_event(event_type):
     cprint('added', color='green')
 
 
-def do_wait_members(name='', display_name='', group='', count=1, timeout=30):
+def do_wait_members(name=None, display_name=None, group=None, count=1, timeout=30):
     # The information is available only if the agent is started
     wait_for_agent_started(visual_wait=True)
     
@@ -816,10 +816,10 @@ exports = {
     do_wait_members     : {
         'keywords'   : ['gossip', 'wait-members'],
         'args'       : [
-            {'name': '--name', 'description': 'Name of the members to wait for be alive'},
-            {'name': '--display-name', 'description': 'Display name of the members to wait for be alive'},
-            {'name': '--group', 'description': 'Group of the members to wait for be alive'},
-            {'name': '--count', 'description': 'Number of alive member of the group to wait for'},
+            {'name': '--name', 'default': None, 'description': 'Name of the members to wait for be alive'},
+            {'name': '--display-name', 'default': None, 'description': 'Display name of the members to wait for be alive'},
+            {'name': '--group', 'default': None, 'description': 'Group of the members to wait for be alive'},
+            {'name': '--count', 'type': 'int', 'default': 1, 'description': 'Number of alive member of the group to wait for'},
             {'name': '--timeout', 'type': 'int', 'default': 30, 'description': 'Timeout to let the initialization'},
         ],
         'description': 'Wait until alive members are detected based on name, display name or group'
