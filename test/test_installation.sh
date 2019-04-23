@@ -136,6 +136,11 @@ fi
 # For compose, we are asking to docker-compose to build and run
 if [[ $TEST_SUITE == COMPOSE* ]];then
 
+   # Show various informations
+   echo " * docker compose version"
+   docker-compose version
+   echo " ----"
+
    # Compose should be run numerous time to be sure they are stable
    for ii in `seq 1 $NB_DISTRIBUTED_LAUNCHS`; do
        # In compose, we MUST be sure we are the only launched instance with no state before us
