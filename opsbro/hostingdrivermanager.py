@@ -166,22 +166,39 @@ class InterfaceHostingDriver(object):
         return 0
     
     
-    # If we do not have a specific hoster, we look at the most
-    # important interface, by avoiding useless interfaces like
-    # locals or dhcp not active
-    def get_local_address(self):
+    @staticmethod
+    def _match_mask(ip, mask_filter):
+        logger.info('DO MATCH? %s %s' % (ip, mask_filter))
+        if mask_filter:
+            return ip in mask_filter
+        return True
+    
+    
+    def _get_address(self, ip_mask):
+        mask_filter = None
+        if ip_mask is not None:
+            from opsbro.misc.IPy import IP
+            try:
+                mask_filter = IP(ip_mask)
+            except Exception as exp:
+                logger.error('Cannot load the ip mask: %s: %s. Exiting' % (ip_mask, exp))
+                # TODO: clean error
+                sys.exit(2)
+        
         # If I am in the DNS or in my /etc/hosts, I win
         try:
             addr = socket.gethostbyname(socket.gethostname())
-            if self._is_valid_local_addr(addr):
+            if self._is_valid_local_addr(addr) and self._match_mask(addr, mask_filter):
                 return addr
         except Exception as exp:
             pass
         
         if sys.platform.startswith('linux'):  # linux2 for python2, linux for python3
             addrs = self._get_linux_local_addresses()
-            if len(addrs) > 0:
-                return addrs[0]
+            # Return the first that match mask_filter, or just the first
+            for addr in addrs:
+                if self._match_mask(addr, mask_filter):
+                    return addr
         
         # On windows also loop over the interfaces
         if os.name == 'nt':
@@ -193,9 +210,18 @@ class InterfaceHostingDriver(object):
         return None
     
     
+    # If we do not have a specific hoster, we look at the most
+    # important interface, by avoiding useless interfaces like
+    # locals or dhcp not active
+    def get_local_address(self):
+        ip_mask = os.environ.get('OPSBRO_LOCAL_NETWORK', None)
+        return self._get_address(ip_mask)
+    
+    
     # If we are not in a cloud or something, our public == best local address
     def get_public_address(self):
-        return self.get_local_address()
+        ip_mask = os.environ.get('OPSBRO_PUBLIC_NETWORK', None)
+        return self._get_address(ip_mask)
     
     
     def get_unique_uuid(self):

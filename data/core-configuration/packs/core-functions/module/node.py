@@ -106,3 +106,23 @@ def compliance_get_state_of_rule(rule_name):
     """
     from opsbro.compliancemgr import compliancemgr
     return compliancemgr.get_rule_state(rule_name)
+
+
+@export_evaluater_function(function_group=FUNCTION_GROUP)
+def get_other_node_address(other_node_name_or_uuid):
+    """**get_other_node_address(other_node_name_or_uuid)** -> return as string the address of the other node
+
+ * other_node_name_or_uuid: (string) name, display name or uuid of the other node to query. If wrong, address will be ''
+
+
+<code>
+    Example:
+        get_other_node_address('node-1')
+    Returns:
+        '192.168.0.1'
+</code>
+    """
+    node = gossiper.query_by_name_or_uuid(other_node_name_or_uuid)
+    if node is None:
+        return ''
+    return node['addr']

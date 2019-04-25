@@ -1,0 +1,22 @@
+FROM       naparuba/debian-9
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+
+
+ADD        . /root/opsbro-oss
+WORKDIR       /root/opsbro-oss
+
+RUN       python setup.py install
+
+
+RUN       rm -fr /etc/opsbro/zones/*
+ADD       test/test-files/test-public-private-addr/   /etc/opsbro/
+
+# private network: 10.10.10.0/24
+# public network : 192.168.100.0/24
+ENV       OPSBRO_LOCAL_NETWORK=10.10.10.0/24
+ENV       OPSBRO_PUBLIC_NETWORK=192.168.100.0/24
+
+# The node2: public& private, higher zone
+ENTRYPOINT    test/test_duo13_gossip_public_private_addr.sh "2"

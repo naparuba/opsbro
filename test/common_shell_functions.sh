@@ -245,3 +245,51 @@ function assert_ping_fail_node {
     fi
     echo "$out"
 }
+
+
+function assert_public_addr_range {
+    RANGE=$1
+    my_public_ip=$(opsbro agent print public-addr)
+    out=$(opsbro evaluator wait-eval-true "ip_is_in_range('$my_public_ip', '$RANGE')" --timeout=10)
+    if [ $? != 0 ];then
+       echo "ERROR: our public IP $my_public_ip is not in the good range $RANGE"
+       echo "$out"
+       exit 2
+    fi
+    echo "OK: our public IP $my_public_ip is in the good range $RANGE"
+}
+
+function assert_local_addr_range {
+    RANGE=$1
+    my_local_ip=$(opsbro agent print local-addr)
+    out=$(opsbro evaluator wait-eval-true "ip_is_in_range('$my_local_ip', '$RANGE')" --timeout=10)
+    if [ $? != 0 ];then
+       echo "ERROR: our local IP $my_local_ip is not in the good range $RANGE"
+       echo "$out"
+       exit 2
+    fi
+    echo "OK: our local IP $my_local_ip is in the good range $RANGE"
+}
+
+
+function get_other_node_addr {
+   OTHER="$1"
+   opsbro evaluator eval "get_other_node_address('$OTHER')" --short
+   if [ $? != 0 ];then
+       echo "ERROR: cannot find the other node $OTHER address"
+       exit 2
+    fi
+}
+
+function assert_addr_in_range {
+    ADDR="$1"
+    RANGE="$2"
+    echo "EVAL: ip_is_in_range('$ADDR', '$RANGE')"
+    out=$(opsbro evaluator wait-eval-true "ip_is_in_range('$ADDR', '$RANGE')" --timeout=10)
+    if [ $? != 0 ];then
+       echo "ERROR: the address $ADDR is not in the good range $RANGE"
+       echo "$out"
+       exit 2
+    fi
+    echo "OK: The address $ADDR is in the good range $RANGE"
+}

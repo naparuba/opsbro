@@ -74,7 +74,7 @@ def do_evaluator_list(details=False):
                 cprint(doc, color='grey')
 
 
-def do_evaluator_eval(expr):
+def do_evaluator_eval(expr, short):
     expr = string_encode(expr)
     expr_64 = base64.b64encode(expr)
     try:
@@ -82,8 +82,10 @@ def do_evaluator_eval(expr):
     except Exception as exp:
         logger.error(exp)
         sys.exit(2)
-    
-    print_info_title('Result')
+    if not short:
+        print_info_title('Result')
+    if isinstance(r, basestring):
+        r = r.strip()
     cprint(r)
 
 
@@ -132,6 +134,8 @@ exports = {
     do_evaluator_eval          : {
         'keywords'             : ['evaluator', 'eval'],
         'args'                 : [
+            {'name': 'expr', 'description': 'Expression to evaluate'},
+            {'name': '--short', 'type': 'bool', 'default': False, 'description': 'If set, only print the raw result'},
         ],
         'allow_temporary_agent': {'enabled': True, },
         'description'          : 'Evaluate an expression'

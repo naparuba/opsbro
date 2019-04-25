@@ -1788,6 +1788,13 @@ class Gossip(BaseManager):
             logger.error('UNKNOWN gossip message: %s' % message_type)
     
     
+    def query_by_name_or_uuid(self, name_or_uuid):
+        for node in self.nodes.values():
+            if node['uuid'] == name_or_uuid or node['name'] == name_or_uuid or node['display_name'] == name_or_uuid:
+                return node
+        return None
+    
+    
     ############## Http interface
     # We must create http callbacks in running because
     # we must have the self object
@@ -1920,10 +1927,7 @@ class Gossip(BaseManager):
         @http_export('/agent/query/guess/:name_or_uuid', method='GET', protected=True)
         def get_query_by_name(name_or_uuid):
             response.content_type = 'application/json'
-            for node in self.nodes.values():
-                if node['uuid'] == name_or_uuid or node['name'] == name_or_uuid or node['display_name'] == name_or_uuid:
-                    return node
-            return None
+            return self.query_by_name_or_uuid(name_or_uuid)
         
         
         @http_export('/agent/ping/:node_uuid', method='GET', protected=True)

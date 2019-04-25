@@ -141,6 +141,10 @@ if [[ $TEST_SUITE == COMPOSE* ]];then
    docker-compose version
    echo " ----"
 
+   # Be sure to clean all networks before launch, as we can maybe recreate some of them
+   # with new parameters
+   docker network prune -f
+
    # Compose should be run numerous time to be sure they are stable
    for ii in `seq 1 $NB_DISTRIBUTED_LAUNCHS`; do
        # In compose, we MUST be sure we are the only launched instance with no state before us

@@ -150,7 +150,7 @@ def get_json(uri, local_socket='', params={}, multi=False, method='GET', timeout
     
     if r == '':
         return r
-    logger.debug("local unix get json raw return", r)
+    #logger.debug("local unix get json raw return %s" % r)
     
     if multi and "}{" in r:  # docker api sometimes returns juxtaposed json dictionaries
         r = "[{0}]".format(r.replace("}{", "},{"))

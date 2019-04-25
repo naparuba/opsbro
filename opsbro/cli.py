@@ -223,6 +223,7 @@ def wait_for_agent_started(timeout=30, visual_wait=False, exit_if_stopped=False,
     spinners = itertools.cycle(CHARACTERS.spinners)
     start = NOW.monotonic()  # note: thanks to monotonic, we don't care about the system get back in time during this loop
     agent_state = 'unknown'
+    did_print = False  # used to clean but only if we did print before
     while NOW.monotonic() - start < timeout:
         try:
             agent_state = get_opsbro_json('/agent/state')
@@ -244,8 +245,9 @@ def wait_for_agent_started(timeout=30, visual_wait=False, exit_if_stopped=False,
             cprint('initializing', color='yellow', end='')
             cprint(' (collector, detector,... are not finish)', end='')
             sys.stdout.flush()
+            did_print = True
         time.sleep(0.1)
-    if visual_wait:
+    if visual_wait and did_print:
         # Clean what we did put before
         cprint('\r', end='')
         cprint(' ' * 100, end='')

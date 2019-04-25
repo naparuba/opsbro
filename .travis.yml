@@ -69,6 +69,9 @@ env:
 # Test about auto discovery with a init.d script (easy setup).
 - TEST_SUITE=COMPOSE-GOSSIP-UDP-DETECT-AT-BOOT
 - TEST_SUITE=COMPOSE-GOSSIP-UDP-DETECT-AT-BOOT-PYTHON3
+# Test about differences between zones for public/private addr (same zone = private, other=public)
+- TEST=COMPOSE-GOSSIP-PUBLIC-PRIVATE-ADDR
+- TEST=COMPOSE-GOSSIP-PUBLIC-PRIVATE-ADDR-PYTHON3
 ##### Then installation on various distros
 - TEST_SUITE=ALPINE
 - TEST_SUITE=AMAZONLINUX
