@@ -199,7 +199,7 @@ class ShinkenModule(ConnectorModule):
             retry_interval                  1
             max_check_attempts              2
         \n}\n
-        \n%s\n''' % (n['uuid'], n['name'], n['addr'], use_value, '\n'.join([buf_service % (n['uuid'], self.sanatize_check_name(cname)) for cname in cnames]))
+        \n%s\n''' % (n['uuid'], n['name'], n['public_addr'], use_value, '\n'.join([buf_service % (n['uuid'], self.sanatize_check_name(cname)) for cname in cnames]))
         buf_sha = get_sha1_hash(buf)
         
         # if it the same as before?

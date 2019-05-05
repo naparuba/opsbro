@@ -637,7 +637,7 @@ class MonitoringManager(BaseManager):
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             for packet in packets:
                 # do NOT use the node['port'], it's the internal communication, not the graphite one!
-                sock.sendto(packet, (node['addr'], 2003))
+                sock.sendto(packet, (node['public_addr'], 2003))
             sock.close()
     
     

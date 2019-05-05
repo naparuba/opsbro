@@ -170,7 +170,7 @@ class ImraneModule(ListenerModule):
                 time.sleep(1)
                 continue
             
-            address = agregator_node['addr']
+            address = agregator_node['public_addr']
             port = agregator_node['port']
             display_name = agregator_node['display_name']
             self.logger.info('IMRANE: did choose %s (%s:%s) for sending' % (display_name, address, port))

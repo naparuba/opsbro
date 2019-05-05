@@ -42,7 +42,7 @@ class GrafanaModule(ConnectorModule):
         if node is None:
             return
         name = node['name']
-        addr = node['addr']
+        addr = node['public_addr']
         port = node['port']
         data_source_name = "%s--opsbro--%s" % (name, nuuid)
         entry = {"name": data_source_name, "type": "graphite", "url": "http://%s:%d" % (addr, port), "access": "proxy"}

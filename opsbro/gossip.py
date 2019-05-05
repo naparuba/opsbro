@@ -1,4 +1,5 @@
 import socket
+import os
 import time
 import random
 import math
@@ -7,6 +8,7 @@ import bisect
 import threading
 from collections import deque
 import traceback
+import shutil
 from contextlib import closing as closing_context
 
 # some singleton :)
@@ -25,6 +27,8 @@ from .jsonmgr import jsoner
 from .util import get_uuid
 from .udprouter import udprouter
 from .zonemanager import zonemgr
+
+_64K = 65535
 
 KGOSSIP = 10
 
@@ -67,18 +71,20 @@ class Gossip(BaseManager):
         self.logger = logger
         # Set myself as master of the gossip:: udp messages
         udprouter.declare_handler('gossip', self)
+        # We must protect the nodes with a lock
+        self.nodes_lock = threading.RLock()
     
     
-    def init(self, nodes, nodes_lock, addr, port, name, display_name, incarnation, uuid, groups, seeds, bootstrap, zone, is_proxy):
-        self.nodes_lock = nodes_lock
-        self._nodes_writing = nodes
-        self.__refresh_read_only_nodes()  # Create the self.nodes
-        self.addr = addr
+    def init(self, nodes_file, local_addr, public_addr, port, name, display_name, incarnation, uuid, groups, seeds, bootstrap, zone, is_proxy):
+        self.uuid = uuid
+        self._nodes_file = nodes_file
+        self.local_addr = local_addr
+        self.public_addr = public_addr
         self.port = port
         self.name = name
         self.display_name = display_name
         self.incarnation = incarnation
-        self.uuid = uuid
+        
         self.groups = groups  # finally computed groups
         self.detected_groups = set()  # groups from detectors, used to detect which to add/remove
         self.seeds = seeds
@@ -93,6 +99,9 @@ class Gossip(BaseManager):
         self.events_lock = threading.RLock()
         self.events = {}
         self.max_event_age = 300
+        
+        self._load_nodes()
+        self.__refresh_read_only_nodes()  # Create the self.nodes
         
         # We update our nodes list based on our current zone. We keep our zone, only proxy from top zone
         # and all the sub zones
@@ -110,6 +119,40 @@ class Gossip(BaseManager):
     
     def __getitem__(self, uuid):
         return self.nodes[uuid]
+    
+    
+    def save_retention(self):
+        with open(self._nodes_file + '.tmp', 'w') as f:
+            with self.nodes_lock:
+                nodes = copy.copy(self.nodes)
+            f.write(jsoner.dumps(nodes))
+        # now more the tmp file into the real one
+        shutil.move(self._nodes_file + '.tmp', self._nodes_file)
+    
+    
+    def _load_nodes(self):
+        # Now load nodes to do not start from zero, but not ourselves (we will regenerate it with a new incarnation number and
+        # up to date info)
+        nodes = {}
+        if self._nodes_file and os.path.exists(self._nodes_file):
+            with open(self._nodes_file, 'r') as f:
+                nodes = jsoner.loads(f.read())
+                # If we were in nodes, remove it, we will refresh it
+                if self.uuid in nodes:
+                    del nodes[self.uuid]
+        # Beware about old retention files, previous to 0.5 that do not have local/public address
+        for node in nodes:
+            public_addr = node.get('public_addr', None)
+            if public_addr is None:
+                node['public_addr'] = node['addr']
+                node['local_addr'] = node['addr']
+                del node['addr']
+        
+        # For each nodes we must compute the addr from our point of view
+        for node in nodes:
+            self._compute_node_address(node)
+        
+        self._nodes_writing = nodes
     
     
     # each second we look for all old events in order to clean and delete them :)
@@ -499,7 +542,8 @@ class Gossip(BaseManager):
     
     # get my own node entry
     def __get_boostrap_node(self):
-        node = {'addr'       : self.addr, 'port': self.port, 'name': self.name, 'display_name': self.display_name,
+        node = {'public_addr': self.public_addr, 'local_addr': self.local_addr,
+                'port'       : self.port, 'name': self.name, 'display_name': self.display_name,
                 'incarnation': self.incarnation, 'uuid': self.uuid, 'state': NODE_STATES.ALIVE, 'groups': self.groups,
                 'services'   : {}, 'checks': {}, 'zone': self.zone, 'is_proxy': self.is_proxy}
         return node
@@ -533,6 +577,17 @@ class Gossip(BaseManager):
                 self.__refresh_read_only_nodes()
     
     
+    # For a node we store the address we should communicate with:
+    # * same zone: local address
+    # * other zone: public address only
+    def _compute_node_address(self, node):
+        node_zone = node['zone']
+        if node_zone != self.zone:
+            node['addr'] = node['public_addr']
+        else:
+            node['addr'] = node['local_addr']
+    
+    
     # Got a new node, great! Warn others about this
     # but if it's a bootstrap, only change memory, do not export to other nodes
     def __add_new_node(self, node, bootstrap=False):
@@ -550,10 +605,15 @@ class Gossip(BaseManager):
                     logger.info('A node from a top zone cannot be inserted unless is it a proxy node. Skiping the node %s' % nuuid)
                     return
         
+        # we should compute the addr we should consider for this node
+        # from our point of view
+        self._compute_node_address(node)
+        
         # Add the node but in a protected mode
         with self.nodes_lock:
             self._nodes_writing[nuuid] = node
             self.__refresh_read_only_nodes()
+        
         # if bootstrap, do not export to other nodes or modules
         if bootstrap:
             return
@@ -892,7 +952,7 @@ class Gossip(BaseManager):
                 if nzone not in top_zones:
                     continue
             # Ok you match dear node ^^
-            possible_nodes.append((n['addr'], n['port']))
+            possible_nodes.append((n['public_addr'], n['port']))
         return possible_nodes
     
     
@@ -1045,7 +1105,7 @@ class Gossip(BaseManager):
     
     # Launch a ping to another node and if fail set it as suspect
     def __do_ping(self, other):
-        addr = other['addr']
+        addr = other['public_addr']
         port = other['port']
         other_zone_name = other['zone']
         ping_zone = other_zone_name
@@ -1062,7 +1122,7 @@ class Gossip(BaseManager):
             logger.debug('PING waiting %s ack message' % other['name'])
             # Allow 3s to get an answer
             sock.settimeout(3)
-            ret = sock.recv(65535)
+            ret = sock.recv(_64K)
             uncrypted_ret = encrypter.decrypt(ret)
             logger.debug('RECEIVING PING RESPONSE: %s' % uncrypted_ret)
             try:
@@ -1100,14 +1160,14 @@ class Gossip(BaseManager):
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
             for r in relays:
                 try:
-                    sock.sendto(enc_message, (r['addr'], r['port']))
+                    sock.sendto(enc_message, (r['public_addr'], r['port']))
                     logger.info('PING waiting ack message from relay %s about node %s' % (r['display_name'], other['display_name']))
                 except socket.error as exp:
-                    logger.error('Cannot send a ping relay to %s:%s' % (r['addr'], r['port']))
+                    logger.error('Cannot send a ping relay to %s:%s' % (r['public_addr'], r['port']))
             # Allow 3s to get an answer from whatever relays got it
             sock.settimeout(3 * 2)
             try:
-                ret = sock.recv(65535)
+                ret = sock.recv(_64K)
             except socket.timeout:
                 logger.info('PING RELAY: no response from relays about node %s' % other['display_name'])
                 # still noone succed to ping it? I suspect it
@@ -1182,7 +1242,7 @@ class Gossip(BaseManager):
         if not ntgt or not nfrom:
             logger.info('PING: asking for a ping relay for a node I dont know about: about %s from %s' % (ntgt, nfrom))
             return
-        tgtaddr = ntgt['addr']
+        tgtaddr = ntgt['public_addr']
         tgtport = ntgt['port']
         tgt_zone = ntgt['zone']
         # Maybe the target zone is too high, if so we don't have it's key, so use our own
@@ -1389,7 +1449,7 @@ class Gossip(BaseManager):
             for b in to_del:
                 broadcaster.broadcasts.remove(b)
         
-        addr = dest['addr']
+        addr = dest['public_addr']
         port = dest['port']
         zone_name = dest['zone']
         # if the other node is from a higher realm, we cannot talk to it with it's own key (we don't have it)
@@ -1475,7 +1535,7 @@ class Gossip(BaseManager):
                 if proxy_detected:
                     logger.info('Did founded %s proxy nodes, trying to join them' % (len(proxy_detected)))
                     # the wait join only need (addr, port)
-                    proxy_nodes_extract = [(node['addr'], node['port']) for node in proxy_detected]
+                    proxy_nodes_extract = [(node['public_addr'], node['port']) for node in proxy_detected]
                     self._wait_join_nodes(proxy_nodes_extract)
                     return
                 time.sleep(0.1)
@@ -1633,7 +1693,7 @@ class Gossip(BaseManager):
     def __get_node_basic_msg(node):
         return {
             'name'       : node['name'], 'display_name': node.get('display_name', ''),
-            'addr'       : node['addr'], 'port': node['port'], 'uuid': node['uuid'],
+            'public_addr': node['public_addr'], 'port': node['port'], 'uuid': node['uuid'],
             'incarnation': node['incarnation'], 'groups': node.get('groups', []),
             'services'   : node['services'], 'checks': node['checks'],
             'zone'       : node.get('zone', ''), 'is_proxy': node.get('is_proxy', False),
@@ -1740,7 +1800,7 @@ class Gossip(BaseManager):
         if dest_node is None:
             return
         if not force_addr:
-            dest_addr = dest_node['addr']
+            dest_addr = dest_node['public_addr']
             dest_port = dest_node['port']
         else:
             dest_addr, dest_port = force_addr

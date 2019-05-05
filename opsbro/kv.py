@@ -265,7 +265,7 @@ class KVBackend:
             # Maybe someone delete my node, it's not fair :)
             if n is None:
                 return None
-            uri = 'http://%s:%s/kv/%s' % (n['addr'], n['port'], ukey)
+            uri = 'http://%s:%s/kv/%s' % (n['public_addr'], n['port'], ukey)
             try:
                 logger.debug('KV: DELETE relaying to %s: %s' % (n['name'], uri))
                 httper.delete(uri)
@@ -294,7 +294,7 @@ class KVBackend:
             # Maybe the node disapears, if so bailout and say we got no luck
             if n is None:
                 return None
-            uri = 'http://%s:%s/kv/%s' % (n['addr'], n['port'], ukey)
+            uri = 'http://%s:%s/kv/%s' % (n['public_addr'], n['port'], ukey)
             try:
                 logger.info('KV: (get) relaying to %s: %s' % (n['name'], uri))
                 status_code, r = httper.get(uri, with_status_code=True)
@@ -353,16 +353,16 @@ class KVBackend:
                     packet = jsoner.dumps(payload)
                     encrypter = libstore.get_encrypter()
                     enc_packet = encrypter.encrypt(packet)
-                    logger.debug('KV: PUT(udp) asking %s: %s:%s' % (n['name'], n['addr'], n['port']))
+                    logger.debug('KV: PUT(udp) asking %s: %s:%s' % (n['name'], n['public_addr'], n['port']))
                     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                    sock.sendto(enc_packet, (n['addr'], n['port']))
+                    sock.sendto(enc_packet, (n['public_addr'], n['port']))
                     sock.close()
                     return None
                 except Exception as exp:
                     logger.debug('KV: PUT (udp) error asking to %s: %s' % (n['name'], str(exp)))
                     return None
             # ok no allow udp here, so we switch to a classic HTTP mode :)
-            uri = 'http://%s:%s/kv/%s' % (n['addr'], n['port'], ukey)
+            uri = 'http://%s:%s/kv/%s' % (n['public_addr'], n['port'], ukey)
             try:
                 logger.debug('KV: PUT asking %s: %s' % (n['name'], uri))
                 params = {'ttl': ttl}
@@ -429,7 +429,7 @@ class KVBackend:
                     
                     # Now send it :)
                     n = _node
-                    uri = 'http://%s:%s/kv/%s' % (n['addr'], n['port'], ukey)
+                    uri = 'http://%s:%s/kv/%s' % (n['public_addr'], n['port'], ukey)
                     try:
                         logger.debug('KV: PUT(force) asking %s: %s' % (n['name'], uri))
                         params = {'force': True, 'meta': jsoner.dumps(bl['meta'])}

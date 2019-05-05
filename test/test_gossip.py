@@ -14,7 +14,7 @@ class TestGossip(OpsBroTest):
         # We need to have a valid path for data
         from opsbro.configurationmanager import configmgr
         configmgr.data_dir = tempfile.gettempdir()
-        gossiper.init({}, threading.RLock(), '127.0.0.1', 6768, 'testing', 'super testing', 1, 'QQQQQQQQQQQQQQQQQQ', [], [], False, 'private', True)
+        gossiper.init(None, '127.0.0.1', '127.0.0.1', 6768, 'testing', 'super testing', 1, 'QQQQQQQQQQQQQQQQQQ', [], [], False, 'private', True)
     
     
     def test_gossip(self):

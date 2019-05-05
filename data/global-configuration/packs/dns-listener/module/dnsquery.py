@@ -56,7 +56,7 @@ class DNSQuery:
     
     # TODO: add a cache
     def _get_node_ip(self, node):
-        addr = node['addr']
+        addr = node['public_addr']
         # If already an ip, add it
         if ipv4pattern.match(addr):
             return addr

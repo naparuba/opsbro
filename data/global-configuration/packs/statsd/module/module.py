@@ -278,7 +278,7 @@ class StatsdModule(ListenerModule):
                     # TODO: do bulk send of this, like for graphite
                     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                     # do NOT use the node['port'], it's the internal communication, not the graphite one!
-                    sock.sendto(line, (node['addr'], self.statsd_port))
+                    sock.sendto(line, (node['public_addr'], self.statsd_port))
                     sock.close()
                     continue
                 

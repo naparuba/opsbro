@@ -2,7 +2,6 @@ import os
 import sys
 import socket
 import json
-import threading
 import time
 import hashlib
 import signal
@@ -11,7 +10,6 @@ import tarfile
 import base64
 import shutil
 import zlib
-import copy
 
 # DO NOT FORGET:
 # sysctl -w net.core.rmem_max=26214400
@@ -106,7 +104,7 @@ class Cluster(object):
         # network interface: EC2 and scaleway are example of public ip -> NAT -> private one and
         # the linux do not even know it
         hosttingdrvmgr = get_hostingdrivermgr()
-        self.addr = hosttingdrvmgr.get_local_address()
+        self.local_addr = hosttingdrvmgr.get_local_address()
         self.public_addr = hosttingdrvmgr.get_public_address()  # can be different for cloud based env
         
         self.listening_addr = '0.0.0.0'
@@ -194,19 +192,6 @@ class Cluster(object):
         self.service_retention = os.path.join(self.agent_instance_dir, 'services.dat')
         self.collector_retention = os.path.join(self.agent_instance_dir, 'collectors.dat')
         
-        # Now load nodes to do not start from zero, but not ourselves (we will regenerate it with a new incarnation number and
-        # up to date info)
-        if os.path.exists(self.nodes_file):
-            with open(self.nodes_file, 'r') as f:
-                nodes = jsoner.loads(f.read())
-                # If we were in nodes, remove it, we will refresh it
-                if self.uuid in nodes:
-                    del nodes[self.uuid]
-        else:
-            nodes = {}
-        # We must protect the nodes with a lock
-        nodes_lock = threading.RLock()
-        
         # Load some files, like the old incarnation file
         if os.path.exists(self.incarnation_file):
             with open(self.incarnation_file, 'r') as f:
@@ -289,7 +274,7 @@ class Cluster(object):
         dockermgr.export_http()
         
         # Our main object for gossip managment
-        gossiper.init(nodes, nodes_lock, self.public_addr, self.port, self.name, self.display_name, self.incarnation, self.uuid, self.groups, self.seeds, self.bootstrap, self.zone, self.is_proxy)
+        gossiper.init(self.nodes_file, self.local_addr, self.public_addr, self.port, self.name, self.display_name, self.incarnation, self.uuid, self.groups, self.seeds, self.bootstrap, self.zone, self.is_proxy)
         
         # About detecting groups and such things
         detecter.export_http()
@@ -452,7 +437,7 @@ class Cluster(object):
                  'pid'                 : os.getpid(),
                  'name'                : self.name,
                  'display_name'        : self.display_name,
-                 'port'                : self.port, 'local_addr': self.addr, 'public_addr': self.public_addr,
+                 'port'                : self.port, 'local_addr': self.local_addr, 'public_addr': self.public_addr,
                  'socket'              : self.socket_path,
                  'zone'                : gossiper.zone,
                  'is_zone_protected'   : libstore.get_encrypter().is_zone_have_key(gossiper.zone),
@@ -687,7 +672,7 @@ class Cluster(object):
                 # Maybe someone just delete my node, if so skip it
                 if repl is None:
                     continue
-                addr = repl['addr']
+                addr = repl['public_addr']
                 port = repl['port']
                 logger.info('SYNC try to sync from %s since the time %s' % (repl['name'], self.last_alive))
                 uri = 'http://%s:%s/kv-meta/changed/%d' % (addr, port, self.last_alive)
@@ -715,12 +700,7 @@ class Cluster(object):
         
         now = int(time.time())
         if force or (now - 60 > self.last_retention_write):
-            with open(self.nodes_file + '.tmp', 'w') as f:
-                with gossiper.nodes_lock:
-                    nodes = copy.copy(gossiper.nodes)
-                f.write(jsoner.dumps(nodes))
-            # now more the tmp file into the real one
-            shutil.move(self.nodes_file + '.tmp', self.nodes_file)
+            gossiper.save_retention()
             
             # Same for the incarnation data!
             with open(self.incarnation_file + '.tmp', 'w') as f:
@@ -861,7 +841,7 @@ class Cluster(object):
         # gossip UDP and the whole HTTP part is useless in a oneshot execution
         if not one_shot:
             logger.info('Launching listeners')
-            get_udp_listener().launch_gossip_listener(self.addr, self.listening_addr, self.port)
+            get_udp_listener().launch_gossip_listener(self.local_addr, self.listening_addr, self.port)
             self.launch_http_listeners()
             # We need to have modules if need, maybe one of them can do something when exiting
             # but in one shot we only call them at the stop, without allow them to spawn their thread

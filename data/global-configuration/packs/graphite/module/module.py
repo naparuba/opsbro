@@ -213,13 +213,13 @@ class GraphiteModule(ListenerModule):
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             for packet in packets:
                 # do NOT use the node['port'], it's the internal communication, not the graphite one!
-                sock.sendto(packet, (node['addr'], self.graphite_port))
+                sock.sendto(packet, (node['public_addr'], self.graphite_port))
             sock.close()
             
             '''
             # TCP mode
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.connect( (node['addr'], self.graphite_port) )
+            sock.connect( (node['public_addr'], self.graphite_port) )
             for packet in packets:
                sock.sendall(packet)
             sock.close()
@@ -408,7 +408,7 @@ class GraphiteModule(ListenerModule):
                     # Now build the final thing
                     res.append({"target": target, "datapoints": r})
                 else:  # someone else job, rely the question
-                    uri = 'http://%s:%s/render/?target=%s&from=%s' % (n['addr'], n['port'], target, _from)
+                    uri = 'http://%s:%s/render/?target=%s&from=%s' % (n['public_addr'], n['port'], target, _from)
                     try:
                         self.logger.debug('TS: (get /render) relaying to %s: %s' % (n['name'], uri))
                         r = httper.get(uri)

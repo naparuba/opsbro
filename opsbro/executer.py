@@ -212,7 +212,7 @@ class Executer(object):
             encrypter = libstore.get_encrypter()
             enc_packet = encrypter.encrypt(packet)
             logger.info('EXEC: sending a challenge request to %s' % node['name'])
-            sock.sendto(enc_packet, (node['addr'], node['port']))
+            sock.sendto(enc_packet, (node['public_addr'], node['port']))
             # Now wait for a return
             sock.settimeout(5)
             try:
@@ -265,7 +265,7 @@ class Executer(object):
             packet = jsoner.dumps(payload)
             enc_packet = encrypter.encrypt(packet)
             logger.info('EXEC: sending a challenge response to %s' % node['name'])
-            sock.sendto(enc_packet, (node['addr'], node['port']))
+            sock.sendto(enc_packet, (node['public_addr'], node['port']))
             
             # Now wait a return from this node exec
             sock.settimeout(5)

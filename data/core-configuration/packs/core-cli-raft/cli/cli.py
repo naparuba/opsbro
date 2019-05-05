@@ -46,7 +46,7 @@ def do_raft_state():
         name = leader['display_name']
         if not name:
             name = leader['name']
-        addr = leader['addr']
+        addr = leader['public_addr']
         cprint('Current RAFT leader: ', end='')
         cprint(name, color='magenta', end='')
         cprint(' ( ', end='')
@@ -79,7 +79,7 @@ def do_raft_wait_leader(timeout=30):
             name = leader['display_name']
             if not name:
                 name = leader['name']
-            addr = leader['addr']
+            addr = leader['public_addr']
             cprint('\n %s ' % CHARACTERS.arrow_left, color='grey', end='')
             cprint('%s ' % CHARACTERS.check, color='green', end='')
             cprint('The RAFT leader is ', end='')

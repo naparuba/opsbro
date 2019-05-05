@@ -224,7 +224,7 @@ def do_members(detail=False):
     
     # If there is a display_name, use it
     max_name_size = max([max(len(m['name']), len(m.get('display_name', '')) + 4) for m in all_members])
-    max_addr_size = max([len(m['addr']) + len(str(m['port'])) + 1 for m in all_members])
+    max_addr_size = max([len(m['public_addr']) + len(str(m['port'])) + 1 for m in all_members])
     
     for zone in zones_tree.values():
         _do_print_zone_members(zone, show_detail=detail, max_name_size=max_name_size, max_addr_size=max_addr_size, level=0)
@@ -562,7 +562,7 @@ def do_detect_nodes(auto_join, timeout=5):
     cprint("Other network nodes detected on this network:")
     cprint('  Name                                 Zone        Address:port          Proxy    Groups')
     for node in network_nodes:
-        cprint('  %-35s  %-10s  %s:%d  %5s     %s' % (node['name'], node['zone'], node['addr'], node['port'], node['is_proxy'], ','.join(node['groups'])))
+        cprint('  %-35s  %-10s  %s:%d  %5s     %s' % (node['name'], node['zone'], node['public_addr'], node['port'], node['is_proxy'], ','.join(node['groups'])))
     if not auto_join:
         cprint('NOTICE: ', color='blue', end='')
         cprint("Auto join (--auto-join) is not enabled, so don't try to join theses nodes")
@@ -575,12 +575,12 @@ def do_detect_nodes(auto_join, timeout=5):
     not_proxys = sorted([node for node in network_nodes if not node['is_proxy']], key=lambda n: n['uuid'])
     if all_proxys:
         node = all_proxys.pop()
-        cprint("A proxy node is detected, using it: %s (%s:%d)" % (node['name'], node['addr'], node['port']))
-        to_connect = '%s:%d' % (node['addr'], node['port'])
+        cprint("A proxy node is detected, using it: %s (%s:%d)" % (node['name'], node['public_addr'], node['port']))
+        to_connect = '%s:%d' % (node['public_addr'], node['port'])
     else:
         node = not_proxys.pop()
-        cprint("No proxy node detected. Using a standard one: %s (%s:%d)" % (node['name'], node['addr'], node['port']))
-        to_connect = '%s:%d' % (node['addr'], node['port'])
+        cprint("No proxy node detected. Using a standard one: %s (%s:%d)" % (node['name'], node['public_addr'], node['port']))
+        to_connect = '%s:%d' % (node['public_addr'], node['port'])
     do_join(to_connect)
 
 
