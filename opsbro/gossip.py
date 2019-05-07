@@ -101,7 +101,6 @@ class Gossip(BaseManager):
         self.max_event_age = 300
         
         self._load_nodes()
-        self.__refresh_read_only_nodes()  # Create the self.nodes
         
         # We update our nodes list based on our current zone. We keep our zone, only proxy from top zone
         # and all the sub zones
@@ -141,18 +140,19 @@ class Gossip(BaseManager):
                 if self.uuid in nodes:
                     del nodes[self.uuid]
         # Beware about old retention files, previous to 0.5 that do not have local/public address
-        for node in nodes:
+        for node in nodes.values():
             public_addr = node.get('public_addr', None)
             if public_addr is None:
                 node['public_addr'] = node['addr']
                 node['local_addr'] = node['addr']
-                del node['addr']
         
         # For each nodes we must compute the addr from our point of view
-        for node in nodes:
+        for node in nodes.values():
             self._compute_node_address(node)
         
         self._nodes_writing = nodes
+        
+        self.__refresh_read_only_nodes()  # Create the self.nodes
     
     
     # each second we look for all old events in order to clean and delete them :)
@@ -249,17 +249,23 @@ class Gossip(BaseManager):
     
     # Inserting a new node
     def __setitem__(self, uuid, new_node):
+        raise Exception('This method is not allowed')
+    
+    
+    def _set_or_update_node(self, nuuid, new_node):
+        # The node came from a gossip mesage, so we need to:
+        # * compute the addr property from our point of view
+        # * clean the 'type' entry that came from the gossip message
+        self._compute_node_address(new_node)
+        if 'type' in new_node:
+            del new_node['type']
         with self.nodes_lock:
-            self._nodes_writing[uuid] = new_node
+            self._nodes_writing[nuuid] = new_node
             self.__refresh_read_only_nodes()
     
     
     def __delitem__(self, node_uuid):
-        with self.nodes_lock:
-            if node_uuid not in self._nodes_writing:
-                return
-            del self._nodes_writing[node_uuid]
-            self.__refresh_read_only_nodes()
+        raise Exception('This method is not allowed')
     
     
     # We did change nodes so we are updating the read only copy with the new nodes DICT
@@ -610,9 +616,7 @@ class Gossip(BaseManager):
         self._compute_node_address(node)
         
         # Add the node but in a protected mode
-        with self.nodes_lock:
-            self._nodes_writing[nuuid] = node
-            self.__refresh_read_only_nodes()
+        self._set_or_update_node(nuuid, node)
         
         # if bootstrap, do not export to other nodes or modules
         if bootstrap:
@@ -678,9 +682,7 @@ class Gossip(BaseManager):
         # only react to the new data if they are really new :)
         if strong or incarnation > prev['incarnation']:
             # protect the nodes access with the lock so others threads are happy :)
-            with self.nodes_lock:
-                self._nodes_writing[uuid] = node
-                self.__refresh_read_only_nodes()
+            self._set_or_update_node(uuid, node)
             
             # Only broadcast if it's a new data from somewhere else
             if (strong and change_state) or incarnation > prev['incarnation']:
