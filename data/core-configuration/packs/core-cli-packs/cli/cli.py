@@ -9,7 +9,8 @@ import os
 
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, sprintf, logger
-from opsbro.cli_display import print_h1, print_h2, print_h3, print_element_breadcumb, yml_parameter_get, yml_parameter_set
+from opsbro.cli_display import print_h1, print_h2, print_element_breadcumb
+from opsbro.yamleditor import yml_parameter_get, yml_parameter_set
 from opsbro.packer import packer
 from opsbro.misc.lolcat import lolcat
 from opsbro.topic import topiker, VERY_ALL_TOPICS, TOPICS_LABELS

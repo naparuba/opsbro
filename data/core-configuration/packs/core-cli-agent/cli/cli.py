@@ -21,7 +21,8 @@ from opsbro.misc.lolcat import lolcat
 from opsbro.launcher import Launcher
 from opsbro.unixclient import get_request_errors
 from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, print_2tab, CONFIG, wait_for_agent_started, DEFAULT_INFO_COL_SIZE
-from opsbro.cli_display import print_h1, yml_parameter_set, yml_parameter_get, yml_parameter_add, yml_parameter_remove
+from opsbro.cli_display import print_h1
+from opsbro.yamleditor import yml_parameter_get, parameter_add_to_main_yml, parameter_remove_to_main_yml, parameter_set_to_main_yml
 from opsbro.defaultpaths import DEFAULT_LOCK_PATH, DEFAULT_CFG_FILE
 from opsbro.configurationmanager import configmgr
 from opsbro.collectormanager import COLLECTORS_STATE_COLORS, COLLECTORS_STATES
@@ -676,18 +677,8 @@ def do_agent_parameters_show():
         cprint('%s\n' % v, color='green', end='')
 
 
-# some parameters cannot be "set", only add/remove
-list_type_parameters = ('groups', 'seeds')
-
-
 def do_agent_parameters_set(parameter_name, str_value):
-    if parameter_name in list_type_parameters:
-        cprint('Error: the parameter %s is a list. Cannot use the set. Please use add/remove instead' % parameter_name)
-        sys.exit(2)
-    parameters_file_path = DEFAULT_CFG_FILE
-    
-    yml_parameter_set(parameters_file_path, parameter_name, str_value, file_display='agent.%s' % parameter_name)
-    return
+    parameter_set_to_main_yml(parameter_name, str_value)
 
 
 def do_agent_parameters_get(parameter_name):
@@ -699,43 +690,11 @@ def do_agent_parameters_get(parameter_name):
 
 
 def do_agent_parameters_add(parameter_name, str_value):
-    if parameter_name not in list_type_parameters:
-        cprint('Error: the parameter %s is not a list. Cannot use the add/remove. Please use set instead' % parameter_name)
-        sys.exit(2)
-    parameters_file_path = DEFAULT_CFG_FILE
-    yml_parameter_add(parameters_file_path, parameter_name, str_value, file_display='agent.%s' % parameter_name)
-    # Groups is a bit special as it can be load directly by the agent
-    if parameter_name == 'groups':
-        try:
-            did_change = get_opsbro_json('/agent/parameters/add/groups/%s' % str_value)
-        except get_request_errors():
-            cprint('  | The agent seems to not be started. Skipping hot group addition.', color='grey')
-            return
-        if did_change:
-            cprint("  | The agent groups are updated too. You don't need to restart your daemon.", color='grey')
-        return
-    cprint('NOTE: only the yml configuration file is modified. You need to restart your agent to use this modification', color='grey')
-    return
+    parameter_add_to_main_yml(parameter_name, str_value)
 
 
 def do_agent_parameters_remove(parameter_name, str_value):
-    if parameter_name not in list_type_parameters:
-        cprint('Error: the parameter %s is not a list. Cannot use the add/remove. Please use set instead' % parameter_name)
-        sys.exit(2)
-    parameters_file_path = DEFAULT_CFG_FILE
-    yml_parameter_remove(parameters_file_path, parameter_name, str_value, file_display='agent.%s' % parameter_name)
-    # Groups is a bit special as it can be load directly by the agent
-    if parameter_name == 'groups':
-        try:
-            did_change = get_opsbro_json('/agent/parameters/remove/groups/%s' % str_value)
-        except get_request_errors():
-            cprint('  | The agent seems to not be started. Skipping hot group removing.', color='grey')
-            return
-        if did_change:
-            cprint("  | The agent groups are updated too. You don't need to restart your daemon.", color='grey')
-        return
-    cprint('NOTE: only the yml configuration file is modified. You need to restart your agent to use this modification', color='grey')
-    return
+    parameter_remove_to_main_yml(parameter_name, str_value)
 
 
 def _show_init_d_label():

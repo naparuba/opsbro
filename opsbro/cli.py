@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 from __future__ import print_function
 import os
 import imp
@@ -19,14 +20,13 @@ from .unixclient import get_json, get_local, get_request_errors
 from .httpclient import httper
 from .log import cprint, logger, sprintf, is_tty
 from .defaultpaths import DEFAULT_LOG_DIR, DEFAULT_CFG_DIR, DEFAULT_DATA_DIR, DEFAULT_SOCK_PATH
-from .info import VERSION
-from .cli_display import print_h1, get_terminal_size
 from .topic import topiker
 from .characters import CHARACTERS
 from .misc.lolcat import lolcat
 from .agentstates import AGENT_STATES
 from .now import NOW
 from .jsonmgr import jsoner
+from .cli_display import print_h1
 
 # Will be populated by the opsbro CLI command
 CONFIG = None
@@ -529,6 +529,8 @@ class CLICommander(object):
     
     # Execute a function based on the command line
     def one_loop(self, command_args):
+        from .info import VERSION  # lazy load, avoid loop
+        
         logger.debug("ARGS: %s" % command_args)
         
         first_keyword = command_args[0]
@@ -769,6 +771,7 @@ class CLICommander(object):
     
     @staticmethod
     def __get_terminal_size():
+        from .cli_display import get_terminal_size
         try:
             height, width = get_terminal_size()
         except:

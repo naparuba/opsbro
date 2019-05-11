@@ -9,9 +9,8 @@ except ImportError:  # on windows: cannot have this
 import struct
 import sys
 
-from .log import cprint, logger, sprintf
+from .log import cprint, sprintf
 from .characters import CHARACTERS
-from .yamlmgr import yamler
 from .misc.lolcat import lolcat
 from .colorpalette import colorpalette, COLOR_PACK_CITRON_TO_VIOLET
 
@@ -73,136 +72,6 @@ def print_element_breadcumb(pack_name, pack_level, what, name='', set_pack_color
     if name:
         cprint(' > ', end='')
         cprint(name, color='magenta', end='')
-
-
-def __assert_pname_in_obj(pname, o, parameters_file_path):
-    if pname not in o:
-        err = 'Cannot find the parameter %s in the parameters file %s' % (pname, parameters_file_path)
-        logger.error(err)
-        raise Exception(err)
-
-
-def yml_parameter_get(parameters_file_path, parameter_name, file_display=None):
-    if file_display is None:
-        file_display = parameters_file_path
-    o = yamler.get_object_from_parameter_file(parameters_file_path, with_comments=True)  # in CLI comments are importants
-    
-    # Error if the parameter is not present
-    __assert_pname_in_obj(parameter_name, o, parameters_file_path)
-    
-    # yaml.dumps is putting us a ugly '...' as last line, remove it
-    lines = yamler.dumps(o[parameter_name]).splitlines()
-    if '...' in lines:
-        lines.remove('...')
-    
-    value_string = '\n'.join(lines)
-    cprint('%s' % file_display, color='magenta', end='')
-    cprint(' %s ' % CHARACTERS.arrow_left, end='')
-    cprint(value_string, color='green')
-    
-    # Now if there are, get the comments
-    comment = yamler.get_key_comment(o, parameter_name)
-    if comment is not None:
-        lines = comment.splitlines()
-        for line in lines:
-            cprint('  | %s' % line, color='grey')
-
-
-def __get_and_assert_valid_to_yaml_value(str_value):
-    try:
-        python_value = yamler.loads('%s' % str_value)
-    except Exception as exp:
-        err = 'Cannot load the value %s as a valid parameter: %s' % (str_value, exp)
-        logger.error(err)
-        raise Exception(err)
-    return python_value
-
-
-def yml_parameter_set(parameters_file_path, parameter_name, str_value, file_display=None):
-    python_value = __get_and_assert_valid_to_yaml_value(str_value)
-    
-    if file_display is None:
-        file_display = parameters_file_path
-    
-    # Ok write it
-    yamler.set_value_in_parameter_file(parameters_file_path, parameter_name, python_value, str_value)
-    
-    cprint('OK: ', color='green', end='')
-    cprint('%s (%s)' % (file_display, parameters_file_path), color='magenta', end='')
-    cprint(' SET ', end='')
-    cprint(parameter_name, color='magenta', end='')
-    cprint(' %s ' % CHARACTERS.arrow_left, end='')
-    cprint(str_value, color='green')
-
-
-def yml_parameter_add(parameters_file_path, parameter_name, str_value, file_display=None):
-    python_value = __get_and_assert_valid_to_yaml_value(str_value)
-    
-    if file_display is None:
-        file_display = parameters_file_path
-    
-    # First get the value
-    o = yamler.get_object_from_parameter_file(parameters_file_path, with_comments=True)  # in CLI comments are importants
-    # Error if the parameter is not present
-    __assert_pname_in_obj(parameter_name, o, parameters_file_path)
-    
-    current_value = o[parameter_name]
-    
-    if not isinstance(current_value, list):
-        err = 'Error: the property %s is not a list. Cannot add a value to it. (current value=%s)' % (parameter_name, current_value)
-        raise Exception(err)
-    
-    # Maybe it's not need
-    if python_value not in current_value:
-        # Update the current_value in place, not a problem
-        current_value.append(python_value)
-        # Ok write it
-        yamler.set_value_in_parameter_file(parameters_file_path, parameter_name, current_value, str_value, change_type='ADD')
-        state = 'OK'
-    else:
-        state = 'OK(already set)'
-    
-    cprint('%s: ' % state, color='green', end='')
-    cprint('%s (%s)' % (file_display, parameters_file_path), color='magenta', end='')
-    cprint(' ADD ', end='')
-    cprint(parameter_name, color='magenta', end='')
-    cprint(' %s ' % CHARACTERS.arrow_left, end='')
-    cprint(str_value, color='green')
-
-
-def yml_parameter_remove(parameters_file_path, parameter_name, str_value, file_display=None):
-    python_value = __get_and_assert_valid_to_yaml_value(str_value)
-    
-    if file_display is None:
-        file_display = parameters_file_path
-    
-    # First get the value
-    o = yamler.get_object_from_parameter_file(parameters_file_path, with_comments=True)  # in CLI comments are importants
-    # Error if the parameter is not present
-    __assert_pname_in_obj(parameter_name, o, parameters_file_path)
-    
-    current_value = o[parameter_name]
-    
-    if not isinstance(current_value, list):
-        err = 'Error: the property %s is not a list. Cannot remove a value to it. (current value=%s)' % (parameter_name, current_value)
-        raise Exception(err)
-    
-    # Maybe it was not in it, not a real problem in fact
-    
-    if python_value in current_value:
-        current_value.remove(python_value)
-        # Ok write it
-        yamler.set_value_in_parameter_file(parameters_file_path, parameter_name, current_value, str_value, change_type='ADD')
-        state = 'OK'
-    else:
-        state = 'OK(was not set)'
-    
-    cprint('%s: ' % state, color='green', end='')
-    cprint('%s (%s)' % (file_display, parameters_file_path), color='magenta', end='')
-    cprint(' REMOVE ', end='')
-    cprint(parameter_name, color='magenta', end='')
-    cprint(' %s ' % CHARACTERS.arrow_left, end='')
-    cprint(str_value, color='green')
 
 
 def get_terminal_size():
