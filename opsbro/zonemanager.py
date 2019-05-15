@@ -126,7 +126,7 @@ class ZoneManager(object):
     
     
     def get_zones_names(self):
-        return self.zones.keys()
+        return list(self.zones.keys())  # note: warn about python3
     
     
     def have_zone(self, zname):
