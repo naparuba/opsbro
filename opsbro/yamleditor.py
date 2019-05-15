@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 
+import sys
+
 from .log import cprint, logger
 from .characters import CHARACTERS
 from .yamlmgr import yamler
 from .defaultpaths import DEFAULT_CFG_FILE
-from .cli import get_opsbro_json
+from .cli import get_opsbro_json, put_opsbro_json
 from .unixclient import get_request_errors
 
 # some parameters cannot be "set", only add/remove
@@ -115,7 +117,35 @@ def parameter_set_to_main_yml(parameter_name, str_value):
         sys.exit(2)
     parameters_file_path = DEFAULT_CFG_FILE
     
+    # Maybe the parameter can be wrong (based on the current configuration)
+    if parameter_name == 'node-zone':
+        from .zonemanager import zonemgr
+        zones_names = zonemgr.get_zones_names()
+        zones_names.sort()
+        if str_value not in zones_names:
+            cprint('ERROR: The zone %s is unknown. The known zones are: %s' % (str_value, ','.join(zones_names)), color='red')
+            sys.exit(2)
+    
+    # If ok can be set
     yml_parameter_set(parameters_file_path, parameter_name, str_value, file_display='agent.%s' % parameter_name)
+    
+    # Zone can be hot changed
+    if parameter_name == 'node-zone':
+        cprint("Switching to zone %s" % str_value)
+        try:
+            r = put_opsbro_json('/agent/zone', str_value)
+        except get_request_errors():
+            cprint('  | The agent seems to not be started. Skipping hot zone change.', color='grey')
+            return
+        if not r['success']:
+            cprint('ERROR: %s' % r['text'], color='red')
+            sys.exit(2)
+        did_change = r['did_change']
+        if did_change:
+            cprint("  | The agent zone is updated too. You don't need to restart your daemon.", color='grey')
+        return
+    
+    cprint('NOTE: only the yml configuration file is modified. You need to restart your agent to use this modification', color='grey')
 
 
 def yml_parameter_add(parameters_file_path, parameter_name, str_value, file_display=None):

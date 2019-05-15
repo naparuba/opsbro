@@ -120,8 +120,13 @@ class ZoneManager(object):
         sub_zones = from_zone.get('sub-zones', [])
         return checked_zone_name in sub_zones
     
+    
     def get_zones(self):
         return self.zones
+    
+    
+    def get_zones_names(self):
+        return self.zones.keys()
     
     
     def have_zone(self, zname):

@@ -13,10 +13,11 @@ import uuid
 import base64
 
 from opsbro.characters import CHARACTERS
-from opsbro.log import cprint, logger, sprintf
+from opsbro.log import cprint, logger
 from opsbro.library import libstore
 from opsbro.unixclient import get_request_errors, get_not_critical_request_errors
-from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, put_opsbro_json, wait_for_agent_started, post_opsbro_json
+from opsbro.cli import get_opsbro_json, get_opsbro_local, wait_for_agent_started, post_opsbro_json
+from opsbro.yamleditor import parameter_set_to_main_yml
 from opsbro.cli_display import print_h1, print_h2
 from opsbro.threadmgr import threader
 from opsbro.jsonmgr import jsoner
@@ -362,21 +363,8 @@ def do_zone_change(name=''):
         cprint("Need a zone name")
         return
     
-    cprint("Switching to zone %s" % name)
-    try:
-        r = put_opsbro_json('/agent/zone', name)
-    except get_request_errors() as exp:
-        logger.error(exp)
-        return
-    print_info_title('Result')
-    success = r['success']
-    text = r['text']
-    if success:
-        cprint(text, color='green')
-        sys.exit(0)
-    else:
-        cprint(text, color='red')
-        sys.exit(2)
+    # Directly change into the main file, and it the daemon is up, change it too
+    parameter_set_to_main_yml('node-zone', name)
 
 
 def _flag_top_lower_zone(zone, from_our_zone=False, distance_from_my_zone=999):
@@ -752,12 +740,11 @@ exports = {
     },
     
     do_zone_change      : {
-        'keywords'             : ['gossip', 'zone', 'change'],
-        'args'                 : [
-            {'name': 'name', 'default': '', 'description': 'Change to the zone'},
+        'keywords'   : ['gossip', 'zone', 'change'],
+        'args'       : [
+            {'name': 'name', 'default': '', 'description': 'Change to the zone '},
         ],
-        'allow_temporary_agent': {'enabled': True, },
-        'description'          : 'Change the zone of the node'
+        'description': 'Change the zone of the node in the configuration and in the running agent if started'
     },
     
     do_zone_list        : {

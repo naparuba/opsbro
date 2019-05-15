@@ -516,9 +516,10 @@ class Gossip(BaseManager):
         logger.info('Did have to send a new incarnation node for myself. New incarnation=%d new-node=%s' % (self.incarnation, myself_read_only))
     
     
+    # Hot zone change, and return if did changed
     def change_zone(self, zname):
         if self.zone == zname:
-            return
+            return False
         logger.info('Switching to zone: %s' % zname)
         if not zonemgr.have_zone(zname):
             raise ValueError('No such zone')
@@ -529,6 +530,7 @@ class Gossip(BaseManager):
         self.increase_incarnation_and_broadcast()
         # As we did change, we need to update our own node list to keep only what we should
         self.clean_nodes_from_zone()
+        return True
     
     
     def get_zone_from_node(self, node_uuid=''):

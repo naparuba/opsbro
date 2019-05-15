@@ -147,7 +147,6 @@ class Cluster(object):
         self.server_key_file = os.path.join(self.data_dir, 'server.key')
         self.last_alive_file = os.path.join(self.data_dir, 'last_alive')
         self.hostname_file = os.path.join(self.data_dir, 'last_hostname')
-        self.zone_file = os.path.join(self.data_dir, 'current_zone')
         
         # Our cluster need a unique uuid, so try to guess a unique one from Hardware
         # To get a UUID that will be unique to this instance:
@@ -219,11 +218,6 @@ class Cluster(object):
                 self.last_alive = jsoner.loads(f.read())
         else:
             self.last_alive = int(time.time())
-        
-        # Load previous zone if available
-        if os.path.exists(self.zone_file):
-            with open(self.zone_file, 'r') as f:
-                self.zone = f.read().strip()
         
         if not zonemgr.have_zone(self.zone):
             logger.error('The zone %s is unknown. Please change your configuration.' % self.zone)
@@ -621,12 +615,10 @@ class Cluster(object):
             nzone = request.body.getvalue()
             logger.debug("HTTP: /agent/zone put %s" % nzone)
             try:
-                gossiper.change_zone(nzone)
+                did_change = gossiper.change_zone(nzone)
             except ValueError:  # no such zone
                 return json.dumps({'success': False, 'text': 'The zone %s does not exist' % nzone})
-            with open(self.zone_file, 'w') as f:
-                f.write(nzone)
-            return json.dumps({'success': True, 'text': 'The node change to zone %s' % nzone})
+            return json.dumps({'success': True, 'did_change': did_change})
         
         
         @http_export('/stop', protected=True)
