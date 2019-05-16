@@ -118,7 +118,7 @@ def parameter_set_to_main_yml(parameter_name, str_value):
     parameters_file_path = DEFAULT_CFG_FILE
     
     # Maybe the parameter can be wrong (based on the current configuration)
-    if parameter_name == 'node-zone':
+    if parameter_name == 'zone':
         from .zonemanager import zonemgr
         zones_names = zonemgr.get_zones_names()
         zones_names.sort()
@@ -130,7 +130,7 @@ def parameter_set_to_main_yml(parameter_name, str_value):
     yml_parameter_set(parameters_file_path, parameter_name, str_value, file_display='agent.%s' % parameter_name)
     
     # Zone can be hot changed
-    if parameter_name == 'node-zone':
+    if parameter_name == 'zone':
         cprint("Switching to zone %s" % str_value)
         try:
             r = put_opsbro_json('/agent/zone', str_value)

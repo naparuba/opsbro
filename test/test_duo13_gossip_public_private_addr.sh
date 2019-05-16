@@ -27,21 +27,21 @@ opsbro agent parameters set display_name "node-$NODE_NB"
 
 if [ "$NODE_NB" == "1" ]; then
     opsbro agent parameters set proxy-node true
-    opsbro agent parameters set node-zone  lan
+    opsbro agent parameters set zone  lan
     /etc/init.d/opsbro start
     opsbro detectors wait-group 'zone::lan'
 fi
 
 if [ "$NODE_NB" == "2" ]; then
     opsbro agent parameters set proxy-node true
-    opsbro agent parameters set node-zone  lan
+    opsbro agent parameters set zone  lan
     /etc/init.d/opsbro start
     opsbro detectors wait-group 'zone::lan'
 fi
 
 if [ "$NODE_NB" == "3" ]; then
     opsbro agent parameters set proxy-node true
-    opsbro agent parameters set node-zone  internet
+    opsbro agent parameters set zone  internet
     /etc/init.d/opsbro start
     opsbro detectors wait-group 'zone::internet'
 fi

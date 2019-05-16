@@ -364,7 +364,7 @@ def do_zone_change(name=''):
         return
     
     # Directly change into the main file, and it the daemon is up, change it too
-    parameter_set_to_main_yml('node-zone', name)
+    parameter_set_to_main_yml('zone', name)
 
 
 def _flag_top_lower_zone(zone, from_our_zone=False, distance_from_my_zone=999):
