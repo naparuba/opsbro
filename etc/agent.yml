@@ -20,7 +20,8 @@ process_name: "opsbro"
 
 
 # In which zone to set the element
-node-zone: internet
+zone: internet
+
 
 proxy-node: false
 
@@ -33,8 +34,10 @@ master_key_pub: ""
 ############################# Startup
 bootstrap: false
 
+
 # If set, at startup the node will try to join/synchronize with theses nodes
 seeds: []
+
 
 # Port to listen for UDP/HTTP connections
 port: 6768
@@ -98,6 +101,7 @@ metrology_topic_enabled: true
 # Configuration Automation:
 #
 configuration_automation_topic_enabled: true
+
 
 # System compliance:
 # Will launch compliance rule that will check at various rules and can:

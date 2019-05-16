@@ -9,7 +9,7 @@ print_header "Setting values in the agent file"
 # Set a valid display name for debug
 opsbro agent parameters set display_name "node-1"
 opsbro agent parameters set proxy-node true
-opsbro agent parameters set node-zone  gabes-home
+opsbro agent parameters set zone  gabes-home
 
 AGENT_FILE=/etc/opsbro/agent.yml
 
@@ -21,8 +21,8 @@ print_header "Checking values"
 assert_in_file 'display_name: node-1'      $AGENT_FILE
 assert_in_file 'SET display_name → node-1' $AGENT_FILE
 
-assert_in_file 'node-zone: gabes-home'            $AGENT_FILE
-assert_in_file 'SET node-zone → gabes-home'       $AGENT_FILE
+assert_in_file 'zone: gabes-home'            $AGENT_FILE
+assert_in_file 'SET zone → gabes-home'       $AGENT_FILE
 
 assert_in_file 'proxy-node: true'          $AGENT_FILE
 assert_in_file 'SET proxy-node → true'     $AGENT_FILE

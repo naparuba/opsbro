@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import os
 import sys
 import codecs
@@ -15,6 +17,7 @@ from .packer import packer
 # Global logger for this part
 logger = LoggerFactory.create_logger('configuration')
 
+ZONES_DIRECTORY_NAME = 'zones'
 ZONE_KEYS_DIRECTORY_NAME = 'zone_keys'
 
 
@@ -34,7 +37,7 @@ class ConfigurationManager(object):
         'bootstrap'                             : {'type': 'bool', 'mapto': 'bootstrap'},
         'seeds'                                 : {'type': 'list', 'mapto': 'seeds'},
         'groups'                                : {'type': 'list', 'mapto': 'groups'},
-        'node-zone'                             : {'type': 'string', 'mapto': 'zone'},
+        'zone'                                  : {'type': 'string', 'mapto': 'zone'},
         'proxy-node'                            : {'type': 'bool', 'mapto': 'is_proxy'},
         'service_discovery_topic_enabled'       : {'type': 'bool', 'mapto': 'service_discovery_topic_enabled'},
         'automatic_detection_topic_enabled'     : {'type': 'bool', 'mapto': 'automatic_detection_topic_enabled'},
@@ -46,10 +49,6 @@ class ConfigurationManager(object):
     
     
     def __init__(self):
-        # Keep a list of the knowns cfg objects type we will encounter
-        # NOTE: will be extend once with the modules types
-        self.known_types = set(['check', 'service', 'compliance', 'generator', 'zone', 'tutorial'])
-        
         # The cluster starts with defualt parameters, but of course configuration can set them too
         # so we will load them (in the local.yaml file) and give it back to the cluster when it will need it
         self.parameters_for_cluster_from_configuration = {}
@@ -123,15 +122,21 @@ class ConfigurationManager(object):
         self.main_cfg_directory = cfg_dir
         # also compute other directories from this
         self.zone_keys_directory = os.path.join(self.main_cfg_directory, ZONE_KEYS_DIRECTORY_NAME)
-        self.load_cfg_dir(self.main_cfg_directory, load_focus='agent')
+        self.zones_directory = os.path.join(self.main_cfg_directory, ZONES_DIRECTORY_NAME)
+        # First load zones
+        self.load_cfg_dir(self.zones_directory, load_focus='zone')
+        # And then the agent.yml file (that will set our zone)
+        self.load_cfg_dir(self.main_cfg_directory, load_focus='agent', filter_file_name='agent.yml')
     
     
-    def load_cfg_dir(self, cfg_dir, load_focus, pack_name='', pack_level=''):
+    def load_cfg_dir(self, cfg_dir, load_focus, pack_name='', pack_level='', filter_file_name=None):
         if not os.path.exists(cfg_dir):
             logger.error('ERROR: the configuration directory %s is missing' % cfg_dir)
             return
         for root, dirs, files in os.walk(cfg_dir):
             for name in files:
+                if filter_file_name is not None and name != filter_file_name:
+                    continue
                 fp = os.path.join(root, name)
                 # Only yml are interesting
                 if not name.endswith('.yml'):
@@ -148,6 +153,8 @@ class ConfigurationManager(object):
                 # and zones
                 if load_focus == 'agent':
                     self.load_agent_parameters(obj)
+                elif load_focus == 'zone':
+                    self.load_zone_parameters(obj)
                 elif load_focus == 'monitoring':
                     self.load_monitoring_object(obj, fp, pack_name=pack_name, pack_level=pack_level)
                 elif load_focus == 'generator':
@@ -179,19 +186,18 @@ class ConfigurationManager(object):
     
     
     # pid, log & zones
-    def load_agent_parameters(self, o):
+    def load_zone_parameters(self, o):
         if 'zone' in o:
             zone = o['zone']
             zonemgr = self.get_zonemgr()
             zonemgr.add_zone(zone)
-        
+    
+    
+    # pid, log & zones
+    def load_agent_parameters(self, o):
         # grok all others data so we can use them in our checks
         cluster_parameters = self.__class__.cluster_parameters
         for (k, v) in o.items():
-            # check, service, ... are already managed
-            if k in self.known_types:
-                continue
-            
             # if k is not a internal parameters, use it in the cfg_data part
             if k not in cluster_parameters:
                 logger.debug("Setting raw variable/value from file: %s=>%s" % (k, v))

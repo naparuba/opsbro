@@ -17,7 +17,7 @@ ADD       test/test-files/dev-zones/zones/*   /etc/opsbro/zones/
 #NODE1 = top level
 RUN       opsbro agent parameters set display_name  NODE-1
 RUN       opsbro agent parameters set proxy-node    true
-RUN       opsbro agent parameters set node-zone     internet
+RUN       opsbro agent parameters set zone     internet
 
 
 ENTRYPOINT    /etc/init.d/opsbro start;opsbro gossip detect --auto-join; opsbro gossip members; /bin/bash

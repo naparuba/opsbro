@@ -27,28 +27,28 @@ opsbro agent parameters set display_name "node-$NODE_NB"
 # 4: customer-1 & proxy
 if [ "$NODE_NB" == "1" ]; then
     opsbro agent parameters set proxy-node true
-    opsbro agent parameters set node-zone  lan
+    opsbro agent parameters set zone  lan
     /etc/init.d/opsbro start
     assert_group 'zone::lan'
 fi
 
 if [ "$NODE_NB" == "2" ]; then
     opsbro agent parameters set proxy-node false
-    opsbro agent parameters set node-zone  lan
+    opsbro agent parameters set zone  lan
     /etc/init.d/opsbro start
     assert_group 'zone::lan'
 fi
 
 if [ "$NODE_NB" == "3" ]; then
     opsbro agent parameters set proxy-node true
-    opsbro agent parameters set node-zone  internet
+    opsbro agent parameters set zone  internet
     /etc/init.d/opsbro start
     assert_group 'zone::internet'
 fi
 
 if [ "$NODE_NB" == "4" ]; then
     opsbro agent parameters set proxy-node true
-    opsbro agent parameters set node-zone  customer-1
+    opsbro agent parameters set zone  customer-1
     /etc/init.d/opsbro start
     assert_group 'zone::customer-1'
 fi
