@@ -1,10 +1,14 @@
 import threading
 
 from .util import my_sort, my_cmp
-
+from .now import NOW
 
 # TODO: use the lock for every call
 # TODO: when stacking a message for a specific group, first check if there is a node which such a group
+
+
+_MAX_MESSAGE_AGE = 900  # do not keep messages more than 15 minutes
+
 
 # This will manage all broadcasts
 class Broadcaster(object):
@@ -27,12 +31,17 @@ class Broadcaster(object):
     
     def append(self, msg):
         with self.broadcasts_lock:
+            msg['ctime'] = int(NOW.monotonic())
             self.broadcasts.append(msg)
     
     
-    def sort(self):
+    def clean_and_sort(self):
         with self.broadcasts_lock:
-            self.broadcasts = my_sort(self.broadcasts, cmp_f=self.__sort_function)
+            # First remove messages that are too old
+            too_old_limit = int(NOW.monotonic()) - _MAX_MESSAGE_AGE
+            recent_messages = [msg for msg in self.broadcasts if msg['ctime'] < too_old_limit]
+            # Now sort them
+            self.broadcasts = my_sort(recent_messages, cmp_f=self.__sort_function)
 
 
 broadcaster = Broadcaster()

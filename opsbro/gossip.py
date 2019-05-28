@@ -1411,7 +1411,7 @@ class Gossip(BaseManager):
         # Be sure we will have first:
         # * prioritary messages
         # * less send first
-        broadcaster.sort()
+        broadcaster.clean_and_sort()
         with broadcaster.broadcasts_lock:
             for b in broadcaster.broadcasts:
                 # not a valid node for this message, skip it
