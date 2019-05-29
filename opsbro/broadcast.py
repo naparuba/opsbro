@@ -39,7 +39,7 @@ class Broadcaster(object):
         with self.broadcasts_lock:
             # First remove messages that are too old
             too_old_limit = int(NOW.monotonic()) - _MAX_MESSAGE_AGE
-            recent_messages = [msg for msg in self.broadcasts if msg['ctime'] < too_old_limit]
+            recent_messages = [msg for msg in self.broadcasts if msg['ctime'] > too_old_limit]
             # Now sort them
             self.broadcasts = my_sort(recent_messages, cmp_f=self.__sort_function)
 
