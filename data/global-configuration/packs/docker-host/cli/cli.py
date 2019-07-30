@@ -13,15 +13,15 @@ try:
 except ImportError:
     pygments = None
 
-from opsbro.log import cprint, logger
-from opsbro.cli import get_opsbro_json, get_opsbro_local, print_info_title, print_2tab
+from opsbro.log import cprint
+from opsbro.cli import get_opsbro_json, print_info_title, print_2tab
 
 
 def do_docker_show():
     d = get_opsbro_json('/docker/stats')
     scontainers = d.get('containers')
     simages = d.get('images')
-
+    
     print_info_title('Docker Stats')
     if not scontainers:
         cprint("No running containers", color='grey')
@@ -33,10 +33,10 @@ def do_docker_show():
         for k in keys:
             sd = stats[k]
             e.append((k, sd['value']))
-
+        
         # Normal agent information
         print_2tab(e, capitalize=False, col_size=30)
-
+    
     for (cid, stats) in simages.items():
         print_info_title('Image:%s (sum)' % cid)
         keys = stats.keys()
@@ -45,17 +45,18 @@ def do_docker_show():
         for k in keys:
             sd = stats[k]
             e.append((k, sd['value']))
-
+        
         # Normal agent information
         print_2tab(e, capitalize=False, col_size=30)
 
 
 exports = {
-
+    
     do_docker_show: {
-        'keywords'   : ['docker', 'show'],
-        'args'       : [],
-        'description': 'Show stats from docker containers and images'
+        'keywords'             : ['docker', 'show'],
+        'args'                 : [],
+        'description'          : 'Show stats from docker containers and images',
+        'allow_temporary_agent': {'enabled': True, },
     },
-
+    
 }
