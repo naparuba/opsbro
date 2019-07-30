@@ -195,7 +195,18 @@ exports = {
             {'name': '--all', 'default': False, 'description': 'Show all collectors, even diabled one', 'type': 'bool'},
         ],
         'allow_temporary_agent': {'enabled': True, },
-        'description'          : 'Show collectors informations'
+        'description'          : 'Show collectors informations',
+        'examples'             : [
+            {
+                'title': 'Show all collectors',
+                'args' : ['collectors', 'show'],
+            },
+            {
+                'title': 'Show only the system collectors',
+                'args' : ['collectors', 'show', 'system'],
+            },
+        
+        ],
     },
     
     do_collectors_state  : {

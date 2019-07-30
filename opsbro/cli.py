@@ -26,7 +26,7 @@ from .misc.lolcat import lolcat
 from .agentstates import AGENT_STATES
 from .now import NOW
 from .jsonmgr import jsoner
-from .cli_display import print_h1
+from .cli_display import print_h1, print_h2, print_h3
 
 # Will be populated by the opsbro CLI command
 CONFIG = None
@@ -283,7 +283,7 @@ class Dummy():
 
 
 class CLIEntry(object):
-    def __init__(self, f, args, description, allow_temporary_agent, topic, need_full_configuration, keywords):
+    def __init__(self, f, args, description, allow_temporary_agent, topic, need_full_configuration, keywords, examples):
         self.f = f
         self.args = args
         self.description = description
@@ -291,6 +291,54 @@ class CLIEntry(object):
         self.topic = topic
         self.need_full_configuration = need_full_configuration
         self.keywords = keywords
+        self.examples = examples
+    
+    
+    def _print_default_value(self, arg):
+        default_value = arg.get('default', None)
+        arg_type = arg.get('type', None)
+        if arg_type is 'bool':
+            if default_value:
+                cprint('[default=set]    ', color='white', end='')
+            else:
+                cprint('[default=not set]', color='grey', end='')
+            return
+        else:
+            cprint('     ', end='')
+    
+    
+    def _print_examples(self):
+        if not self.examples:
+            return
+        cprint('')
+        print_h2('Examples')
+        for example in self.examples:
+            title = example['title']
+            args = example['args']
+            print_h3(title)
+            cprint('  > ' + ' '.join(['opsbro'] + args), color='green')
+            cprint('')
+    
+    
+    def print_help(self):
+        keyword_string = ' '.join(self.keywords)
+        cprint('%s' % keyword_string, color='green')
+        description = self.description
+        if description:
+            cprint('  | Description: %s' % description, color='grey')
+        for arg in self.args:
+            arg_name = arg.get('name', '')
+            
+            arg_desc = arg.get('description', '')
+            cprint('   %-15s' % arg_name, 'magenta', end='')
+            
+            cprint(' ', end='')
+            self._print_default_value(arg)
+            cprint(' %s' % arg_desc)
+        
+        self._print_examples()
+        
+        sys.exit(0)
 
 
 # Commander is the main class for managing the CLI session and behavior
@@ -405,7 +453,8 @@ class CLICommander(object):
         description = raw_entry.get('description', '')
         allow_temporary_agent = raw_entry.get('allow_temporary_agent', None)
         need_full_configuration = raw_entry.get('need_full_configuration', False)
-        e = CLIEntry(f, args, description, allow_temporary_agent, main_topic, need_full_configuration, m_keywords)
+        examples = raw_entry.get('examples', [])
+        e = CLIEntry(f, args, description, allow_temporary_agent, main_topic, need_full_configuration, m_keywords, examples)
         # Finally save it
         self._insert_keywords_entry(m_keywords, e)
     
@@ -509,7 +558,8 @@ class CLICommander(object):
         if entry is None:
             self.print_list(first_keyword)
             sys.exit(2)
-        self._print_help_from_cli_entry(entry)
+        entry.print_help()
+        sys.exit(0)
     
     
     def _print_help_from_cli_entry(self, entry):

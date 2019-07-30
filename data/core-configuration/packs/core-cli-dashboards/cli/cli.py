@@ -198,6 +198,12 @@ exports = {
         'allow_temporary_agent'  : {'enabled': True, },
         'description'            : 'Show a specific dashboard',
         'need_full_configuration': True,
+        'examples'               : [
+            {
+                'title': 'Display the linux dashboard (cpu, ram, ...)',
+                'args' : ['dashboards', 'show', 'linux'],
+            },
+        ],
     },
     
     do_dashboards_list: {

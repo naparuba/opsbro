@@ -744,7 +744,7 @@ def do_agent_wait_full_initialized(timeout=30, show_init_header=False):
             elif agent_state in [AGENT_STATES.AGENT_STATE_STOPPED, AGENT_STATES.AGENT_STATE_INITIALIZING]:
                 continue
             else:
-                cprint('ERROR: the agent state: %s is not managed', color='red')
+                cprint('ERROR: the agent state: %s is not managed' % agent_state, color='red')
                 sys.exit(2)
         # Oups, timeout reached, still not initialized after this
         _show_init_d_label()
@@ -774,7 +774,13 @@ exports = {
             {'name': '--one-shot', 'type': 'bool', 'default': False, 'description': 'Execute the agent but without slaying alive. It just execute its jobs once, and then exit. Is not compatible with the --daemon parameter.'},
             {'name': '--auto-detect', 'default': False, 'description': 'Lock the daemon startup until at least one proxy node is join. If none is available, loop for auto-detect until a proxy node is detected.', 'type': 'bool'},
         ],
-        'description': 'Start the opsbro daemon'
+        'description': 'Start the opsbro daemon',
+        'examples'   : [
+            {
+                'title': 'Start as foreground in the shell',
+                'args' : ['agent', 'start'],
+            },
+        ],
     },
     
     do_stop                       : {
@@ -786,13 +792,25 @@ exports = {
     do_service_install            : {
         'keywords'   : ['agent', 'windows', 'service-install'],
         'args'       : [],
-        'description': 'Install windows service'
+        'description': 'Install windows service',
+        'examples'   : [
+            {
+                'title': 'Declare the agent as a windows service',
+                'args' : ['agent', 'windows', 'service-install'],
+            },
+        ],
     },
     
     do_service_remove             : {
         'keywords'   : ['agent', 'windows', 'service-remove'],
         'args'       : [],
-        'description': 'Remove windows service'
+        'description': 'Remove windows service',
+        'examples'   : [
+            {
+                'title': 'Remove the agent as a windows service',
+                'args' : ['agent', 'windows', 'service-remove'],
+            },
+        ],
     },
     
     do_info                       : {
@@ -800,7 +818,13 @@ exports = {
         'args'       : [
             {'name': '--show-logs', 'default': False, 'description': 'Dump last warning & error logs', 'type': 'bool'},
         ],
-        'description': 'Show info af a daemon'
+        'description': 'Show info af a daemon',
+        'examples'   : [
+            {
+                'title': 'Show main information about the running agent',
+                'args' : ['agent', 'info'],
+            },
+        ],
     },
     
     do_node_uuid                  : {
@@ -816,6 +840,7 @@ exports = {
         ],
         'description': 'Print the node local address'
     },
+    
     do_node_public_addr           : {
         'keywords'   : ['agent', 'print', 'public-addr'],
         'args'       : [
@@ -847,7 +872,13 @@ exports = {
         'args'       : [
             {'name': 'part', 'default': '', 'description': 'Follow log part (with debug)'},
         ],
-        'description': 'Show info af a daemon'
+        'description': 'Show info af a daemon',
+        'examples'   : [
+            {
+                'title': 'Declare the agent as a windows service',
+                'args' : ['agent', 'log', 'follow', 'gossip'],
+            },
+        ],
     },
     
     do_list_follow_log            : {
@@ -870,7 +901,13 @@ exports = {
             {'name': 'parameter_name', 'description': 'Parameter name to set'},
             {'name': 'value', 'description': 'Value to set for this parameter'},
         ],
-        'description': 'Set a new value to the agent parameter'
+        'description': 'Set a new value to the agent parameter',
+        'examples'   : [
+            {
+                'title': 'Set the node name that will be used by other nodes',
+                'args' : ['agent', 'parameters', 'set', 'display_name', 'my-server'],
+            },
+        ],
     },
     
     do_agent_parameters_get       : {
@@ -887,7 +924,13 @@ exports = {
             {'name': 'parameter_name', 'description': 'Parameter name to add a new value'},
             {'name': 'value', 'description': 'Value to set for this parameter'},
         ],
-        'description': 'Add a new value to a agent parameter value (must be a list)'
+        'description': 'Add a new value to a agent parameter value (must be a list)',
+        'examples'   : [
+            {
+                'title': 'Set the node in the production group',
+                'args' : ['agent', 'parameters', 'add', 'group', 'production'],
+            },
+        ],
     },
     
     do_agent_parameters_remove    : {
