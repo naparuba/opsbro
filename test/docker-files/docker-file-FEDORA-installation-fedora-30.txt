@@ -1,0 +1,11 @@
+FROM fedora:30
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+RUN        /dnf_install python
+
+
+ADD        . /root/opsbro-oss
+
+ENTRYPOINT    test/test_one_linux_installation.sh  && test/assert_group.sh "fedora"
+WORKDIR       /root/opsbro-oss

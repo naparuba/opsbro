@@ -11,7 +11,6 @@ function show_my_system_ip {
 }
 
 
-
 # Count the number of members in a STATE and check if they are NB==$2
 function assert_state_count {
    STATS="$3"
