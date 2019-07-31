@@ -60,6 +60,10 @@ class CollectorManager(BaseManager):
         self.logger = logger
         
         self.cur_launchs = {}
+        
+        # We need to know if we are in the daemon run, or outside (cli) run
+        # that will call us
+        self._was_started = False
     
     
     def load_directory(self, directory, pack_name='', pack_level=''):
@@ -199,6 +203,11 @@ class CollectorManager(BaseManager):
         col['metrics'] = metrics
         col['active'] = True
         
+        # Maybe a collector did send us results, but we are outside the daemon, so we don't add metrics into db
+        if not self._was_started:
+            logger.debug('[collector] skipping putting results as it seems we are outside the daemon run')
+            return
+        
         timestamp = NOW.now
         for (mname, value) in metrics:
             key = '%s.%s.%s' % (gossiper.name, cname, mname)
@@ -236,6 +245,7 @@ class CollectorManager(BaseManager):
     # Main thread for launching collectors
     def do_collector_thread(self):
         logger.log('COLLECTOR thread launched')
+        self._was_started = True
         # Before run, be sure we have a history directory ready
         self.prepare_history_directory()
         while not stopper.is_stop():

@@ -34,8 +34,10 @@ def _extract_data_from_results(d, prefix, res):
 
 def pretty_print(d):
     results = d.get('results')
-    del d['results']
-    del d['metrics']
+    if 'results' in d:
+        del d['results']
+    if 'metrics' in d:
+        del d['metrics']
     
     flat_results = []
     _extract_data_from_results(results, '', flat_results)
@@ -105,7 +107,7 @@ def do_collectors_state():
 
 
 def do_collectors_run(name):
-    collectormgr.load_collectors({})
+    collectormgr.load_collectors()
     for (colname, e) in collectormgr.collectors.items():
         colname = e['name']
         if colname != name:
@@ -114,7 +116,10 @@ def do_collectors_run(name):
         inst = e['inst']
         logger.debug('COLLECTOR: launching collector %s' % colname)
         inst.main()
-        pretty_print(e['results'])
+        logger.debug('COLLECTOR: collector run: %s' % e)
+        # The  print function need state to be set in the dict
+        e['state'] = inst.state
+        pretty_print(e)
 
 
 def do_collectors_wait_ok(collector_name, timeout=30):

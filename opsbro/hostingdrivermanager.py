@@ -168,7 +168,6 @@ class InterfaceHostingDriver(object):
     
     @staticmethod
     def _match_mask(ip, mask_filter):
-        logger.info('DO MATCH? %s %s' % (ip, mask_filter))
         if mask_filter:
             return ip in mask_filter
         return True

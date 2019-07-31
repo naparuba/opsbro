@@ -531,6 +531,15 @@ def do_show_threads():
     process = data['process']
     age = data['age']
     
+    got_values = False
+    for t in all_threads:
+        if t['user_time'] != -1:
+            got_values = True
+    
+    if not got_values:
+        __print_note('You do not have the psutil lib installed. Please launch the command: opsbro compliance launch "Install tuning libs"')
+        sys.exit(2)
+    
     # Cut the threads into 2 lists: always here, and the others
     all_daemon_threads = [t for t in all_threads if t['essential']]
     all_not_daemon_threads = [t for t in all_threads if not t['essential']]
@@ -627,31 +636,35 @@ def do_follow_log(part=''):
     colors = {'DEBUG': 'magenta', 'INFO': 'blue', 'WARNING': 'yellow', 'ERROR': 'red'}
     try:
         w = 0.001
-        while True:
-            with open(p, 'rb', 0) as fifo:
-                fd = fifo.fileno()
-                flag = fcntl.fcntl(fd, fcntl.F_GETFD)
-                fcntl.fcntl(fd, fcntl.F_SETFL, flag | os.O_NONBLOCK)
-                while True:
-                    try:
-                        data = fifo.read()
-                    except IOError:
-                        w *= 2
-                        w = min(w, 0.1)
-                        time.sleep(w)
-                        continue
-                    if len(data) == 0:
-                        break
-                    w = 0.001
-                    for line in data.splitlines():
-                        already_print = False
-                        for (k, color) in colors.items():
-                            if k in line:
-                                cprint(line, color=color)
-                                already_print = True
-                                break
-                        if not already_print:
-                            cprint(line)
+        must_loop = True
+        while must_loop:
+            try:
+                with open(p, 'rb', 0) as fifo:
+                    fd = fifo.fileno()
+                    flag = fcntl.fcntl(fd, fcntl.F_GETFD)
+                    fcntl.fcntl(fd, fcntl.F_SETFL, flag | os.O_NONBLOCK)
+                    while True:
+                        try:
+                            data = fifo.read()
+                        except IOError:
+                            w *= 2
+                            w = min(w, 0.1)
+                            time.sleep(w)
+                            continue
+                        if len(data) == 0:
+                            break
+                        w = 0.001
+                        for line in data.splitlines():
+                            already_print = False
+                            for (k, color) in colors.items():
+                                if k in line:
+                                    cprint(line, color=color)
+                                    already_print = True
+                                    break
+                            if not already_print:
+                                cprint(line)
+            except KeyboardInterrupt:
+                must_loop = False
     finally:
         try:
             cprint("\nDisabling log dumping for the part %s" % part)
@@ -824,6 +837,11 @@ exports = {
                 'title': 'Show main information about the running agent',
                 'args' : ['agent', 'info'],
             },
+            {
+                'title': 'Show info and also last 20 warning and error logs',
+                'args' : ['agent', 'info', '--show-logs'],
+            },
+        
         ],
     },
     
@@ -915,7 +933,14 @@ exports = {
         'args'       : [
             {'name': 'parameter_name', 'description': 'Parameter name to get'},
         ],
-        'description': 'Get a value from the agent parameter'
+        'description': 'Get a value from the agent parameter',
+        'examples'   : [
+            {
+                'title': 'Get in whiwh zone the node is',
+                'args' : ['agent', 'parameters', 'get', 'zone'],
+            },
+        ],
+        
     },
     
     do_agent_parameters_add       : {
