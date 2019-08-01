@@ -109,15 +109,15 @@ class LevelDBBackend(object):
     
     
     def Get(self, key, fill_cache=False):
-        return self.db.Get(key, fill_cache=fill_cache)
+        return self.db.Get(unicode_to_bytes(key), fill_cache=fill_cache)
     
     
     def Put(self, key, value):
-        self.db.Put(key, value)
+        self.db.Put(unicode_to_bytes(key), unicode_to_bytes(value))
     
     
     def Delete(self, key):
-        self.db.Delete(key)
+        self.db.Delete(unicode_to_bytes(key))
     
     
     def __get_size(self):
