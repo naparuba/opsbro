@@ -32,7 +32,7 @@ from opsbro.topic import TOPICS, TOPICS_LABELS, TOPICS_LABEL_BANNER, MAX_TOPICS_
 from opsbro.monitoring import CHECK_STATES, STATE_ID_COLORS, STATE_COLORS
 from opsbro.compliancemgr import ALL_COMPLIANCE_STATES, COMPLIANCE_STATE_COLORS
 from opsbro.generator import GENERATOR_STATES, GENERATOR_STATE_COLORS
-from opsbro.util import my_cmp
+from opsbro.util import my_cmp, my_sort
 
 NO_ZONE_DEFAULT = '(no zone)'
 
@@ -341,7 +341,7 @@ def do_info(show_logs):
         cprint('%.2fMB' % (kv_store['stats']['size'] / 1024.0 / 1024.0), color='green')
         
         if kv_store_backend['name'] != 'leveldb':
-            __print_note('You do not have the fastest lib/backend. Please launch the command: opsbro compliance launch "Install tuning libs"')
+            __print_note('You do not have the fastest lib/backend. Please launch the command: opsbro compliance launch "Install tuning libs" --timeout 120')
         
         kv_store_error = kv_store['stats']['error']
         if kv_store_error != '':
@@ -537,7 +537,7 @@ def do_show_threads():
             got_values = True
     
     if not got_values:
-        __print_note('You do not have the psutil lib installed. Please launch the command: opsbro compliance launch "Install tuning libs"')
+        __print_note('You do not have the psutil lib installed. Please launch the command: opsbro compliance launch "Install tuning libs" --timeout 120')
         sys.exit(2)
     
     # Cut the threads into 2 lists: always here, and the others
@@ -559,7 +559,7 @@ def do_show_threads():
     
     # Sort threads inside the parts
     for (pname, e) in threads_into_parts.items():
-        e['threads'].sort(_sort_threads)
+        e['threads'] = my_sort(e['threads'], cmp_f=_sort_threads)
     
     # Now have parts sort by their times (from bigger to min)
     parts_sorts_by_cpu_usage = threads_into_parts.values()
@@ -569,9 +569,8 @@ def do_show_threads():
     parts_sorts_by_name = threads_into_parts.values()
     parts_sorts_by_name = sorted(parts_sorts_by_name, key=lambda e: e['name'])
     
-    all_daemon_threads.sort(_sort_threads)
+    all_not_daemon_threads = my_sort(all_not_daemon_threads, cmp_f=_sort_threads)
     
-    all_not_daemon_threads.sort(_sort_threads)
     upercent, syspercent = __get_cpu_time_percent_display(process, age)
     cprint('Total process CPU consumption:  ', color='blue', end='')
     cprint('cpu(user):%s%%  ' % upercent, color='magenta', end='')
