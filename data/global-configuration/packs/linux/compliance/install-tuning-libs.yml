@@ -64,7 +64,7 @@ compliance:
 
 
          - name: debian
-           if: "{{variables.is_debian}}"
+           if: "{{variables.is_debian}} and system_is_python_2()"
            parameters:
              packages:
                 - python-leveldb
@@ -72,6 +72,15 @@ compliance:
                 - python-setproctitle
                 - python-psutil
 
+
+         - name: debian_python3
+           if: "{{variables.is_debian}} and system_is_python_3()"
+           parameters:
+             packages:
+                - python3-leveldb
+                - python3-simplejson
+                - python3-setproctitle
+                - python3-psutil
 
          # like debian6, cannot reach pypi
          - name: ubuntu12
