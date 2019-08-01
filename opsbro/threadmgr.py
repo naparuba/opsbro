@@ -16,12 +16,6 @@ try:
 except Exception:
     libc = None
 
-# TODO: remove psutil and direct look into /proc
-try:
-    import psutil
-except ImportError:
-    psutil = None
-
 # Hook threading to allow thread renaming
 if sys.platform.startswith("win"):
     def namer():
@@ -220,6 +214,10 @@ class ThreadMgr(object):
             # Look at CPU usage for threads if we have access to this
             perfs = {}
             our_process = None
+            try:
+                import psutil
+            except ImportError:
+                psutil = None
             if psutil:
                 # NOTE: os.getpid() need by old psutil versions
                 our_process = psutil.Process(os.getpid())
