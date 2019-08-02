@@ -154,7 +154,7 @@ def string_decode(s):
 def bytes_to_unicode(s):
     if isinstance(s, str) and not PY3:  # python3 already is unicode in str
         return s.decode('utf8', 'ignore')
-    if PY3 and isinstance(s, bytes):
+    if PY3 and (isinstance(s, bytes) or isinstance(s, bytearray)):  # bytearray is bytes that can mutate
         return s.decode('utf8', 'ignore')
     return s
 

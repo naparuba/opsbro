@@ -208,7 +208,9 @@ function test_key_store {
     GET_GREP=$(echo $GET | grep $VALUE)
     if [ $? != 0 ];then
        echo "There should be key $KEY $VALUE"
-       echo $GET_GREP
+       opsbro --debug kv-store get $KEY
+       cat /var/log/opsbro/key-value.log
+       cat /var/log/opsbro/crash.log 2>/dev/null
        exit 2
     fi
 

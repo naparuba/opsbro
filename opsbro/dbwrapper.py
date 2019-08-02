@@ -1,7 +1,9 @@
 import os
 
-from .log import logger
-from .util import unicode_to_bytes
+from .util import unicode_to_bytes, bytes_to_unicode
+from .log import LoggerFactory
+
+logger = LoggerFactory.create_logger('key-value')
 
 leveldb_lib = None
 failback_leveldb_lib = None
@@ -109,7 +111,9 @@ class LevelDBBackend(object):
     
     
     def Get(self, key, fill_cache=False):
-        return self.db.Get(unicode_to_bytes(key), fill_cache=fill_cache)
+        v = self.db.Get(unicode_to_bytes(key), fill_cache=fill_cache)
+        v_as_unicode = bytes_to_unicode(v)
+        return v_as_unicode
     
     
     def Put(self, key, value):
@@ -126,7 +130,7 @@ class LevelDBBackend(object):
             for f in filenames:
                 fp = os.path.join(dirpath, f)
                 total_size += os.path.getsize(fp)
-                logger.info('ADD: %s %d' % (fp, os.path.getsize(fp)))
+                logger.debug('[leveldb] adding for get size: %s %d' % (fp, os.path.getsize(fp)))
         return total_size
     
     
