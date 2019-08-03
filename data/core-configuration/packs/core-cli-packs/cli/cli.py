@@ -247,8 +247,12 @@ def do_packs_show():
             cprint('')
 
 
-def do_packs_list():
+def do_packs_list(only_overloads=False, keyword_filter=''):
     from opsbro.packer import packer
+    
+    only_verloads = only_overloads
+    keyword_filter = keyword_filter.lower()
+    
     packs = packer.get_packs()
     all_pack_names = set()
     for (level, packs_in_level) in packs.items():
@@ -267,18 +271,69 @@ def do_packs_list():
     
     pnames = list(all_pack_names)
     pnames.sort()
+    
+    # If we want only overloads, we will have to parse and have a list of
+    # only overloads packs
+    overloads_packs = set()
+    if only_overloads:
+        for pname in pnames:
+            present_before = False
+            for level in ('core', 'global', 'zone', 'local'):
+                if pname in packs[level]:
+                    (pack, _) = packs[level][pname]
+                    if present_before:
+                        overloads_packs.add(pname)
+                    present_before = True
+
+    # Filter by keyword, with a sub-string+lower rule
+    keyword_filter_packs = set()
+    if keyword_filter:
+        for pname in pnames:
+            for level in ('core', 'global', 'zone', 'local'):
+                if pname in packs[level]:
+                    (pack, _) = packs[level][pname]
+                    keywords = pack['keywords']
+                    for p_keyword in keywords:
+                        if keyword_filter in p_keyword.lower():
+                            keyword_filter_packs.add(pname)
+    
+    total_number_of_packs = len(pnames)
+    nb_printed = 0
     for pname in pnames:
         present_before = False
         keywords = []  # useless but make lint code check happy
+        printed = True
         for level in ('core', 'global', 'zone', 'local'):
             if pname in packs[level]:
+                # Maybe we want only overloads packs
+                if only_overloads and pname not in overloads_packs:
+                    printed = False
+                    continue
+                # Also filter by keyword
+                if keyword_filter and not pname in keyword_filter_packs:
+                    printed = False
+                    continue
                 (pack, _) = packs[level][pname]
                 if present_before:
                     cprint('(overloaded by %s) ' % CHARACTERS.arrow_left, color='green', end='')
                 __print_pack_breadcumb(pname, level, end='', topic_picto='small')
                 keywords = pack['keywords']
-            present_before = True
-        cprint('[keywords: %s]' % (','.join(keywords)), color='magenta')
+                present_before = True
+        if printed:
+            cprint(' [keywords: %s]' % (','.join(keywords)), color='magenta')
+            nb_printed += 1
+    
+    if nb_printed == 0:
+        cprint(' %s %s ' % (CHARACTERS.check, CHARACTERS.arrow_left), color='green', end='')
+        cprint('No packs matchs the request on a total of ', end='')
+        cprint('%d' % total_number_of_packs, color='magenta', end='')
+        cprint(' packs.')
+    else:
+        cprint(' %s %s ' % (CHARACTERS.check, CHARACTERS.arrow_left), color='green', end='')
+        cprint('%d' % nb_printed, color='magenta', end='')
+        cprint(' packs were shown on a total of ', end='')
+        cprint('%d' % total_number_of_packs, color='magenta', end='')
+        cprint(' packs.')
 
 
 def do_overload(pack_full_id, to_level='local'):
@@ -349,8 +404,11 @@ exports = {
     
     do_packs_list    : {
         'keywords'   : ['packs', 'list'],
-        'args'       : [],
-        'description': 'List packs'
+        'args'       : [
+            {'name': '--only-overloads', 'default': False, 'type': 'bool', 'description': 'Only show overloaded packs.'},
+            {'name': '--keyword-filter', 'default': '', 'description': 'Only show packs with this keyword'},
+        ],
+        'description': 'List packs on this server'
     },
     
     do_overload      : {

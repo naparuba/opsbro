@@ -11,4 +11,4 @@ WORKDIR    /root/opsbro-oss
 RUN        python setup.py install
 
 
-ENTRYPOINT     test/test_feature_config_edit.sh
+ENTRYPOINT     test/test_feature_cli_agent_parameters_set.sh

@@ -33,6 +33,8 @@ echo $VALUE | grep -v ERROR
 RES=$?
 echo "::"
 
+opsbro agent info
+
 if [ $RES != 0 ];then
    echo "ERROR: the VALUE seems void (res=$RES)"
    echo $VALUE

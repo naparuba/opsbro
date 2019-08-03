@@ -11,4 +11,4 @@ WORKDIR    /root/opsbro-oss
 RUN        python setup.py install
 
 
-ENTRYPOINT     test/test_feature_kv_store.sh
+ENTRYPOINT     test/test_feature_cli_kv_store.sh

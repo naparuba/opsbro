@@ -1,4 +1,4 @@
-FROM       naparuba/debian-9
+FROM       naparuba/debian-9-python3
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 ADD        test/docker-helper/  /
@@ -11,4 +11,4 @@ WORKDIR    /root/opsbro-oss
 RUN        python setup.py install
 
 
-ENTRYPOINT     test/test_feature_cli_kv_store.sh
+ENTRYPOINT     test/test_feature_cli_packs.sh
