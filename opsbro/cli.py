@@ -856,4 +856,10 @@ class CLICommander(object):
             cprint(' (topic%s: %s)' % (numerical, ', '.join([topic_string for topic_string in topics_strings])), color='grey')
             self.__print_sub_level_tree(d, prefix, first_level=True)
             cprint('')
+        
+        # If we are in the global run, add a note about the help
+        if keyword == '':
+            cprint(' %s Note: you can have more help by adding the --help. Example:' % (CHARACTERS.arrow_left), color='grey')
+            cprint('   opsbro gossip members --help.', color='grey')
+        
         return

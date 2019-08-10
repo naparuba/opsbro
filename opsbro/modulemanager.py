@@ -110,6 +110,13 @@ class ModuleManager(object):
             mod.get_parameters_from_pack()
     
     
+    def get_module_from_pack(self, pack_name):
+        for module in self.modules:
+            if module.pack_name == pack_name:
+                return module
+        return None
+    
+    
     def get_infos(self):
         r = {}
         for mod in self.modules:

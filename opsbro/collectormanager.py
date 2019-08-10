@@ -130,6 +130,15 @@ class CollectorManager(BaseManager):
             e['inst'].get_parameters_from_pack()
     
     
+    def get_collectors_from_pack(self, pack_name):
+        pack_collectors = []
+        for (cname, e) in self.collectors.items():
+            inst = e['inst']
+            if inst.pack_name == pack_name:
+                pack_collectors.append(inst)
+        return pack_collectors
+    
+    
     def load_collectors(self):
         get_collectors(self)
     

@@ -41,12 +41,16 @@ class ParameterBasedType(object):
         return self.__state == 'ERROR'
     
     
+    def get_parameters_and_types(self):
+        return self.parameters.items()
+    
+    
     def get_parameters_from_pack(self):
         from .configurationmanager import configmgr
         pack_parameters = configmgr.get_parameters_from_pack(self.pack_name)
         
         # We prepare the config
-        for (prop, property) in self.parameters.items():
+        for (prop, property) in self.get_parameters_and_types():
             # Maybe the property is not defined in the yml
             if prop not in pack_parameters:
                 if property.have_default():
@@ -71,7 +75,7 @@ class ParameterBasedType(object):
         pack_parameters = configmgr.get_parameters_from_pack(self.pack_name)
         
         r = {'state': self.__state, 'errors': self.__configuration_error, 'parameters': {}}
-        for (prop, property) in self.parameters.items():
+        for (prop, property) in self.get_parameters_and_types():
             value = None
             is_missing = False
             is_valid = True
@@ -118,6 +122,14 @@ class Parameter(object):
         if not isinstance(self.default, NotExitingDefault):
             r['default'] = self.default
         return r
+    
+    
+    def is_valid(self, v):
+        raise NotImplemented()
+    
+    
+    def get_my_type(self):
+        return self.type
 
 
 class StringParameter(Parameter):

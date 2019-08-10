@@ -10,7 +10,7 @@ import os
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, sprintf, logger
 from opsbro.cli_display import print_h1, print_h2, print_element_breadcumb
-from opsbro.yamleditor import yml_parameter_get, yml_parameter_set
+from opsbro.yamleditor import yml_parameter_get, yml_parameter_set, get_and_assert_valid_to_yaml_value
 from opsbro.packer import packer
 from opsbro.misc.lolcat import lolcat
 from opsbro.topic import topiker, VERY_ALL_TOPICS, TOPICS_LABELS
@@ -110,10 +110,12 @@ def __print_line_header(main_topic_color):
     cprint(lolcat.get_line(CHARACTERS.vbar, main_topic_color, spread=None), end='')
 
 
-def do_packs_show():
+def do_packs_show(name=''):
     logger.setLevel('ERROR')
     # We should already have load the configuration, so just dump it
     # now we read them, set it in our object
+    
+    pack_to_filter = name
     
     from opsbro.packer import packer
     packs = {'core': {}, 'global': {}, 'zone': {}, 'local': {}}
@@ -159,6 +161,8 @@ def do_packs_show():
             cprint('  No packs are available at the level %s' % level, color='grey')
             continue
         for pack_name in pack_names:
+            if pack_to_filter and pack_name != pack_to_filter:
+                continue
             pack_entry = packs[level][pack_name]
             pack_breadcumb_s = __get_pack_breadcumb(pack_name, level)
             cprint(pack_breadcumb_s)
@@ -166,7 +170,6 @@ def do_packs_show():
             main_topic, secondary_topics = packer.get_pack_main_and_secondary_topics(pack_name)
             main_topic_color = topiker.get_color_id_by_topic_string(main_topic)
             if main_topic != 'generic':
-                
                 __print_line_header(main_topic_color)
                 cprint(u' * Main topic: ', color='grey', end='')
                 s = lolcat.get_line(main_topic, main_topic_color, spread=None)
@@ -189,7 +192,7 @@ def do_packs_show():
                 no_such_objects.append('checks')
             else:
                 __print_line_header(main_topic_color)
-                print_element_breadcumb(pack_name, pack_level, 'checks')
+                print_element_breadcumb(pack_name, level, 'checks')
                 cprint(' (%d)' % len(checks), color='magenta')
                 for cname, check in checks.items():
                     __print_line_header(main_topic_color)
@@ -203,11 +206,11 @@ def do_packs_show():
                 no_such_objects.append('module')
             else:
                 __print_line_header(main_topic_color)
-                print_element_breadcumb(pack_name, pack_level, 'module')
+                print_element_breadcumb(pack_name, level, 'module')
                 # cprint(' : configuration=', end='')
                 cprint('')
                 offset = 0
-                __print_element_parameters(module, pack_name, pack_level, main_topic_color, 'parameters', offset)
+                __print_element_parameters(module, pack_name, level, main_topic_color, 'parameters', offset)
             
             # collectors
             collectors = pack_entry['collectors']
@@ -215,7 +218,7 @@ def do_packs_show():
                 no_such_objects.append('collectors')
             else:
                 __print_line_header(main_topic_color)
-                print_element_breadcumb(pack_name, pack_level, 'collectors')
+                print_element_breadcumb(pack_name, level, 'collectors')
                 cprint(' (%d)' % len(collectors), color='magenta')
                 for colname, collector_d in collectors.items():
                     __print_line_header(main_topic_color)
@@ -224,7 +227,7 @@ def do_packs_show():
                     cprint('collectors > %-15s' % colname, end='', color='cyan')
                     cprint('')
                     offset = 1
-                    __print_element_parameters(collector, pack_name, pack_level, main_topic_color, 'parameters', offset)
+                    __print_element_parameters(collector, pack_name, level, main_topic_color, 'parameters', offset)
             
             # generators
             generators = pack_entry['generators']
@@ -232,7 +235,7 @@ def do_packs_show():
                 no_such_objects.append('generators')
             else:
                 __print_line_header(main_topic_color)
-                print_element_breadcumb(pack_name, pack_level, 'generators')
+                print_element_breadcumb(pack_name, level, 'generators')
                 cprint(' (%d)' % len(generators), color='magenta')
                 for gname, generator in generators.items():
                     __print_line_header(main_topic_color)
@@ -284,7 +287,7 @@ def do_packs_list(only_overloads=False, keyword_filter=''):
                     if present_before:
                         overloads_packs.add(pname)
                     present_before = True
-
+    
     # Filter by keyword, with a sub-string+lower rule
     keyword_filter_packs = set()
     if keyword_filter:
@@ -341,7 +344,11 @@ def do_overload(pack_full_id, to_level='local'):
     packs = packer.get_packs()
     pack_level, pack_name = __split_pack_full_id(pack_full_id)
     
-    if pack_level not in ['core', 'global', 'zone']:
+    if pack_level == 'core':
+        cprint('ERROR: the core level is not authorized to be overload.')
+        sys.exit(2)
+    
+    if pack_level not in ['global', 'zone']:
         logger.error('The pack level %s is not valid for the pack overload.' % pack_level)
         sys.exit(2)
     packs_from_level = packs[pack_level]
@@ -376,20 +383,44 @@ def __get_path_pname_from_parameter_full_path(parameter_full_path):
     pack_level, pack_name, parameter_name = __split_parameter_full_path(parameter_full_path)
     pack_root_dir = __get_pack_directory(pack_level, pack_name)
     parameters_file_path = os.path.join(pack_root_dir, 'parameters', 'parameters.yml')
-    return parameters_file_path, parameter_name
+    
+    return parameters_file_path, pack_name, parameter_name
+
+
+def _assert_value_is_valid_for_pack_parameter(value, pack_name, parameter_name):
+    from opsbro.configurationmanager import configmgr
+    is_valid, error = configmgr.check_is_valid_for_pack_parameter_value(pack_name, parameter_name, value)
+    if not is_valid:
+        cprint('Error: %s' % error, color='red')
+        sys.exit(2)
 
 
 def do_parameters_set(parameter_full_path, str_value):
-    parameters_file_path, parameter_name = __get_path_pname_from_parameter_full_path(parameter_full_path)
+    parameters_file_path, pack_name, parameter_name = __get_path_pname_from_parameter_full_path(parameter_full_path)
+    
+    # Get the value as a python object from a yaml string value
+    try:
+        value = get_and_assert_valid_to_yaml_value(str_value)
+    except Exception as exp:
+        cprint('Error: %s' % exp, color='red')
+        sys.exit(2)
+    
+    # First look if the value type is OK for this parameter
+    _assert_value_is_valid_for_pack_parameter(value, pack_name, parameter_name)
     
     yml_parameter_set(parameters_file_path, parameter_name, str_value, file_display=parameter_full_path)
     return
 
 
 def do_parameters_get(parameter_full_path):
-    parameters_file_path, parameter_name = __get_path_pname_from_parameter_full_path(parameter_full_path)
-    
-    yml_parameter_get(parameters_file_path, parameter_name, file_display=parameter_full_path)
+    parameters_file_path, pack_name, parameter_name = __get_path_pname_from_parameter_full_path(parameter_full_path)
+    try:
+        yml_parameter_get(parameters_file_path, parameter_name, file_display=parameter_full_path)
+    except Exception as exp:
+        cprint('Error: %s' % exp, color='red')
+        sys.exit(2)
+        
+        
     return
 
 
@@ -397,7 +428,9 @@ exports = {
     
     do_packs_show    : {
         'keywords'               : ['packs', 'show'],
-        'args'                   : [],
+        'args'                   : [
+            {'name': 'name', 'default': '', 'description': 'Name of the pack to show. If missing, will show all packs.'},
+        ],
         'description'            : 'Print pack informations & contents',
         'need_full_configuration': True,
     },

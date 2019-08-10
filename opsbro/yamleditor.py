@@ -15,7 +15,7 @@ list_type_parameters = ('groups', 'seeds')
 
 def __assert_pname_in_obj(pname, o, parameters_file_path):
     if pname not in o:
-        err = 'Cannot find the parameter %s in the parameters file %s' % (pname, parameters_file_path)
+        err = 'Cannot find the parameter "%s" in the parameters file "%s"' % (pname, parameters_file_path)
         logger.error(err)
         raise Exception(err)
 
@@ -46,7 +46,7 @@ def yml_parameter_get(parameters_file_path, parameter_name, file_display=None):
             cprint('  | %s' % line, color='grey')
 
 
-def __get_and_assert_valid_to_yaml_value(str_value):
+def get_and_assert_valid_to_yaml_value(str_value):
     try:
         python_value = yamler.loads('%s' % str_value)
     except Exception as exp:
@@ -57,7 +57,7 @@ def __get_and_assert_valid_to_yaml_value(str_value):
 
 
 def yml_parameter_set(parameters_file_path, parameter_name, str_value, file_display=None):
-    python_value = __get_and_assert_valid_to_yaml_value(str_value)
+    python_value = get_and_assert_valid_to_yaml_value(str_value)
     
     if file_display is None:
         file_display = parameters_file_path
@@ -149,7 +149,7 @@ def parameter_set_to_main_yml(parameter_name, str_value):
 
 
 def yml_parameter_add(parameters_file_path, parameter_name, str_value, file_display=None):
-    python_value = __get_and_assert_valid_to_yaml_value(str_value)
+    python_value = get_and_assert_valid_to_yaml_value(str_value)
     
     if file_display is None:
         file_display = parameters_file_path
@@ -184,7 +184,7 @@ def yml_parameter_add(parameters_file_path, parameter_name, str_value, file_disp
 
 
 def yml_parameter_remove(parameters_file_path, parameter_name, str_value, file_display=None):
-    python_value = __get_and_assert_valid_to_yaml_value(str_value)
+    python_value = get_and_assert_valid_to_yaml_value(str_value)
     
     if file_display is None:
         file_display = parameters_file_path

@@ -13,6 +13,7 @@ from .defaultpaths import DEFAULT_DATA_DIR
 from .log import LoggerFactory
 from .yamlmgr import yamler
 from .packer import packer
+from .parameters import Parameter
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('configuration')
@@ -408,6 +409,46 @@ class ConfigurationManager(object):
         
         # now hosting driver class are loaded, we can load all
         compliancemgr.load_backends()
+    
+    
+    def _get_collectors_from_pack(self, pack_name):
+        from .collectormanager import collectormgr
+        collectors_from_pack = collectormgr.get_collectors_from_pack(pack_name)
+        return collectors_from_pack
+    
+    
+    def _get_module_from_pack(self, pack_name):
+        from .modulemanager import modulemanager
+        module_from_pack = modulemanager.get_module_from_pack(pack_name)
+        return module_from_pack
+    
+    
+    def get_parameters_and_types_from_pack(self, pack_name):
+        collectors_from_pack = self._get_collectors_from_pack(pack_name)
+        parameters = {}
+        for collector in collectors_from_pack:
+            for pname, property_type in collector.get_parameters_and_types():
+                parameters[pname] = property_type
+                logger.debug('The parameter %s from the pack %s (collector) is of type %s' % (pname, pack_name, property_type))
+        
+        module_from_pack = self._get_module_from_pack(pack_name)
+        if module_from_pack is not None:
+            for pname, property_type in module_from_pack.get_parameters_and_types():
+                parameters[pname] = property_type
+                logger.debug('The parameter %s from the pack %s (module) is of type %s' % (pname, pack_name, property_type))
+        
+        return parameters
+    
+    
+    def check_is_valid_for_pack_parameter_value(self, pack_name, parameter_name, value):
+        pack_parameters = self.get_parameters_and_types_from_pack(pack_name)
+        parameter = pack_parameters.get(parameter_name, None)  # type: Parameter
+        if parameter is None:
+            return False, 'The parameter %s is not declared by the pack %s' % (parameter_name, pack_name)
+        is_valid = parameter.is_valid(value)
+        if not is_valid:
+            return False, "The parameter '%s' of the pack %s cannot accept the value '%s' as it's not of type '%s'." % (parameter_name, pack_name, value, parameter.get_my_type())
+        return True, 'no error'
     
     
     def finish_to_load_configuration_and_objects(self):
