@@ -19,7 +19,7 @@ class Geoloc(Collector):
         try:
             data = httper.get('http://ipinfo.io/json', timeout=3)
         except get_http_exceptions() as exp:
-            self.set_not_eligible("Cannot contact ipinfo.io: %s. This server seems to have access to internet." % exp)
+            self.set_not_eligible("Cannot contact ipinfo.io: %s. This server does not seems to have access to internet." % exp)
             return False
         
         self.logger.debug('RAW geoloc data', data)
