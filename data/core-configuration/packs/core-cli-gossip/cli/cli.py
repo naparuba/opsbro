@@ -191,7 +191,7 @@ def _do_print_zone_members(zone, show_detail, max_name_size=15, max_addr_size=15
 def do_members(detail=False):
     pprint = libstore.get_pprint()
     # The information is available only if the agent is started
-    wait_for_agent_started(visual_wait=True)
+    wait_for_agent_started(visual_wait=True, exit_if_stopped=True)
     
     zones_tree, all_zones = _get_zone_tree()
     

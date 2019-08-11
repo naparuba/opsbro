@@ -10,12 +10,19 @@ PY3 = sys.version_info >= (3,)
 from .characters import CHARACTERS
 import opsbro.misc
 from .library import libstore
+from .log import LoggerFactory
+from .util import bytes_to_unicode
 
 ruamel_yaml = None
+
+# One logger for the lib loading, an other for the yaml editing part
+perf_logger = LoggerFactory.create_logger('performance')
+logger = LoggerFactory.create_logger('yaml')
 
 
 def get_ruamel_yaml():
     global ruamel_yaml
+    perf_logger.debug('[yaml] Loading the ruamel yaml lib. it is slower than the simple yaml, but need for editing the configuration.')
     p = os.path.join(os.path.dirname(opsbro.misc.__file__), 'internalyaml')
     sys.path.insert(0, p)
     import ruamel.yaml as ruamel_yaml
@@ -34,14 +41,10 @@ def get_simple_yaml():
         import yaml as simple_yaml
         from yaml import CLoader as simple_yaml_loader
     except ImportError:  # oups not founded, take the internal one
+        perf_logger.debug('[yaml] Cannot import simple yaml lib. Switching to the full embedded ruamel lib instead. Will be slower.')
         simple_yaml = get_ruamel_yaml()
     return simple_yaml
 
-
-from .log import LoggerFactory
-from .util import bytes_to_unicode
-
-logger = LoggerFactory.create_logger('yaml')
 
 ENDING_SUFFIX = '#___ENDING___'
 

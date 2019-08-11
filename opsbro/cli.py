@@ -233,7 +233,8 @@ def wait_for_agent_started(timeout=30, visual_wait=False, exit_if_stopped=False,
             # Maybe we need to exit of the daemon is stopped
             if exit_if_stopped:
                 cprint('\r', end='')
-                logger.error('The agent is stopped')
+                cprint(' %s This command need the agent data but the agent is stopped. You can launch it with:' % CHARACTERS.cross, color='red')
+                cprint('   /etc/init.d/opsbro start', color='magenta')
                 sys.exit(2)
             if not wait_for_spawn:
                 break
