@@ -419,8 +419,7 @@ def do_parameters_get(parameter_full_path):
     except Exception as exp:
         cprint('Error: %s' % exp, color='red')
         sys.exit(2)
-        
-        
+    
     return
 
 
@@ -433,6 +432,14 @@ exports = {
         ],
         'description'            : 'Print pack informations & contents',
         'need_full_configuration': True,
+        'examples'               : [
+            {
+                'title': 'Only show the mysql pack',
+                'args' : ['packs', 'show', 'mysql'],
+            },
+        
+        ],
+        
     },
     
     do_packs_list    : {
@@ -441,16 +448,36 @@ exports = {
             {'name': '--only-overloads', 'default': False, 'type': 'bool', 'description': 'Only show overloaded packs.'},
             {'name': '--keyword-filter', 'default': '', 'description': 'Only show packs with this keyword'},
         ],
-        'description': 'List packs on this server'
+        'description': 'List packs on this server',
+        'examples'   : [
+            {
+                'title': 'Only list packs that have a zone or local overload ',
+                'args' : ['packs', 'list', '--only-overloads'],
+            },
+            {
+                'title': 'Only list packs that have "win" in a keyword',
+                'args' : ['packs', 'list', '--keyword-filter', 'win'],
+            },
+        
+        ],
+        
     },
     
     do_overload      : {
         'keywords'   : ['packs', 'overload'],
         'args'       : [
-            {'name': 'pack_full_id', 'description': 'Pack full id (of the form LEVEL.pack_name, for example global.dns) that will be overload to a lower level'},
+            {'name': 'pack_full_id', 'description': 'Pack full id (of the form LEVEL.pack_name, for example global.dns-listener) that will be overload to a lower level'},
             {'name': '--to-level', 'default': 'local', 'description': 'Level to overload the pack, local or zone, default to local.'},
         ],
-        'description': 'Overload (copy in a more priority pack level) a pack. For example copy a pack from the global level to the local one.'
+        'description': 'Overload (copy in a more priority pack level) a pack. For example copy a pack from the global level to the local one. Note that core packs cannot be overload.',
+        
+        'examples'   : [
+            {
+                'title': 'Overload the dns-listener packs from global (all your servers) to the local level (only this server)',
+                'args' : ['packs', 'overload', 'global.dns-listener'],
+            },
+        ],
+        
     },
     
     do_parameters_set: {
