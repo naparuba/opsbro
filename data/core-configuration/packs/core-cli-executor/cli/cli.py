@@ -64,6 +64,7 @@ exports = {
             {'name': 'group', 'default': '', 'description': 'Name of the node group to execute command on'},
             {'name': 'cmd', 'default': 'uname -a', 'description': 'Command to run on the nodes'},
         ],
+        'need_agent' : True,
         'description': 'Execute a command (default to uname -a) on a group of node of the good group (default to all)'
     },
     

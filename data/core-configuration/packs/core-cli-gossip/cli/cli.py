@@ -191,7 +191,7 @@ def _do_print_zone_members(zone, show_detail, max_name_size=15, max_addr_size=15
 def do_members(detail=False):
     pprint = libstore.get_pprint()
     # The information is available only if the agent is started
-    wait_for_agent_started(visual_wait=True, exit_if_stopped=True)
+    # wait_for_agent_started(visual_wait=True, exit_if_stopped=True)
     
     zones_tree, all_zones = _get_zone_tree()
     
@@ -704,14 +704,16 @@ exports = {
         'args'       : [
             {'name': '--detail', 'type': 'bool', 'default': False, 'description': 'Show detail mode for the cluster members'},
         ],
-        'description': 'List the cluster members'
+        'description': 'List the cluster members',
+        'need_agent' : True,
     },
     
     do_members_history  : {
         'keywords'   : ['gossip', 'history'],
         'args'       : [
         ],
-        'description': 'Show the history of the gossip nodes'
+        'description': 'Show the history of the gossip nodes',
+        'need_agent' : True,
     },
     
     do_join             : {
@@ -720,6 +722,7 @@ exports = {
         'args'       : [
             {'name': 'seed', 'default': '', 'description': 'Other node to join. For example 192.168.0.1:6768'},
         ],
+        'need_agent' : True,
     },
     
     do_ping             : {
@@ -728,6 +731,7 @@ exports = {
         'args'       : [
             {'name': 'node', 'default': '', 'description': 'uuid, name or display name of the node to ping'},
         ],
+        'need_agent' : True,
     },
     
     do_leave            : {
@@ -737,6 +741,7 @@ exports = {
             {'name'       : 'name', 'default': '',
              'description': 'UUID of the node to force leave. If void, leave our local node'},
         ],
+        'need_agent' : True,
     },
     
     do_zone_change      : {
@@ -744,7 +749,8 @@ exports = {
         'args'       : [
             {'name': 'name', 'default': '', 'description': 'Change to the zone '},
         ],
-        'description': 'Change the zone of the node in the configuration and in the running agent if started'
+        'description': 'Change the zone of the node in the configuration and in the running agent if started',
+        
     },
     
     do_zone_list        : {
@@ -761,7 +767,8 @@ exports = {
             {'name': '--zone', 'description': 'Name of zone to generate a key for'},
             {'name': '--erase', 'type': 'bool', 'default': False, 'description': 'Erase the key if already exiting.'},
         ],
-        'description': 'Generate a gossip encryption key for the zone'
+        'description': 'Generate a gossip encryption key for the zone',
+        
     },
     
     do_zone_key_import  : {
@@ -780,7 +787,8 @@ exports = {
             {'name': '--auto-join', 'default': False, 'description': 'Try to join the first detected proxy node. If no proxy is founded, join the first one.', 'type': 'bool'},
             {'name': '--timeout', 'type': 'int', 'default': 5, 'description': 'Timeout used for the discovery'},
         ],
-        'description': 'Try to detect (broadcast) others nodes in the network'
+        'description': 'Try to detect (broadcast) others nodes in the network',
+        'need_agent' : True,
     },
     
     do_wait_event       : {
@@ -789,7 +797,8 @@ exports = {
             {'name': 'event-type', 'description': 'Name of the event to wait for'},
             {'name': '--timeout', 'type': 'int', 'default': 30, 'description': 'Timeout to let the initialization'},
         ],
-        'description': 'Wait until the event is detected'
+        'description': 'Wait until the event is detected',
+        'need_agent' : True,
     },
     
     do_gossip_add_event : {
@@ -797,7 +806,8 @@ exports = {
         'args'       : [
             {'name': 'event-type', 'description': 'Name of the event to add'},
         ],
-        'description': 'Add a event to the gossip members'
+        'description': 'Add a event to the gossip members',
+        'need_agent' : True,
     },
     
     do_wait_members     : {
@@ -811,5 +821,5 @@ exports = {
         ],
         'description': 'Wait until alive members are detected based on name, display name or group'
     },
-    
+    'need_agent'        : True,
 }

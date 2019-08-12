@@ -243,6 +243,7 @@ exports = {
     
     do_collectors_history: {
         'keywords'   : ['collectors', 'history'],
+        'need_agent' : True,
         'description': 'Print the history of the collectors states',
         'args'       : [],
     },

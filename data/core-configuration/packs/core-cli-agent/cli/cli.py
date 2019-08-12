@@ -830,6 +830,7 @@ exports = {
         'args'       : [
             {'name': '--show-logs', 'default': False, 'description': 'Dump last warning & error logs', 'type': 'bool'},
         ],
+        'need_agent' : True,
         'description': 'Show info af a daemon',
         'examples'   : [
             {
@@ -848,6 +849,7 @@ exports = {
         'keywords'   : ['agent', 'print', 'uuid'],
         'args'       : [
         ],
+        'need_agent' : True,
         'description': 'Print the node uniq uuid'
     },
     
@@ -855,6 +857,7 @@ exports = {
         'keywords'   : ['agent', 'print', 'local-addr'],
         'args'       : [
         ],
+        'need_agent' : True,
         'description': 'Print the node local address'
     },
     
@@ -862,6 +865,7 @@ exports = {
         'keywords'   : ['agent', 'print', 'public-addr'],
         'args'       : [
         ],
+        'need_agent' : True,
         'description': 'Print the node public address'
     },
     
@@ -869,6 +873,7 @@ exports = {
         'keywords'   : ['agent', 'modules', 'state'],
         'args'       : [
         ],
+        'need_agent' : True,
         'description': 'Show the current state of daemon modules.'
     },
     
@@ -881,6 +886,7 @@ exports = {
     do_show_threads               : {
         'keywords'   : ['agent', 'internal', 'show-threads'],
         'args'       : [],
+        'need_agent' : True,
         'description': 'List all internal threads of the agent.'
     },
     
@@ -889,6 +895,7 @@ exports = {
         'args'       : [
             {'name': 'part', 'default': '', 'description': 'Follow log part (with debug)'},
         ],
+        'need_agent' : True,
         'description': 'Show info af a daemon',
         'examples'   : [
             {
@@ -902,6 +909,7 @@ exports = {
         'keywords'   : ['agent', 'log', 'list'],
         'args'       : [
         ],
+        'need_agent' : True,
         'description': 'List available logs parts to follow'
     },
     

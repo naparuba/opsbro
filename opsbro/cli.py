@@ -120,6 +120,16 @@ class NoContextClass(object):
         pass
 
 
+class NeedAgentContextClass(object):
+    def __enter__(self):
+        # The information is available only if the agent is started
+        wait_for_agent_started(visual_wait=True, exit_if_stopped=True)
+    
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+
 class AnyAgent(object):
     def __init__(self):
         self.did_start_a_tmp_agent = False
@@ -284,11 +294,12 @@ class Dummy():
 
 
 class CLIEntry(object):
-    def __init__(self, f, args, description, allow_temporary_agent, topic, need_full_configuration, keywords, examples):
+    def __init__(self, f, args, description, allow_temporary_agent, need_agent, topic, need_full_configuration, keywords, examples):
         self.f = f
         self.args = args
         self.description = description
         self.allow_temporary_agent = allow_temporary_agent
+        self.need_agent = need_agent
         self.topic = topic
         self.need_full_configuration = need_full_configuration
         self.keywords = keywords
@@ -454,8 +465,9 @@ class CLICommander(object):
         description = raw_entry.get('description', '')
         allow_temporary_agent = raw_entry.get('allow_temporary_agent', None)
         need_full_configuration = raw_entry.get('need_full_configuration', False)
+        need_agent = raw_entry.get('need_agent', False)
         examples = raw_entry.get('examples', [])
-        e = CLIEntry(f, args, description, allow_temporary_agent, main_topic, need_full_configuration, m_keywords, examples)
+        e = CLIEntry(f, args, description, allow_temporary_agent, need_agent, main_topic, need_full_configuration, m_keywords, examples)
         # Finally save it
         self._insert_keywords_entry(m_keywords, e)
     
@@ -537,10 +549,10 @@ class CLICommander(object):
     @staticmethod
     def __get_execution_context(entry):
         temp_agent = entry.allow_temporary_agent
-        if temp_agent is None:
-            return NoContextClass()
-        if temp_agent.get('enabled', False):
+        if temp_agent is not None and temp_agent.get('enabled', False):
             return AnyAgent()
+        if entry.need_agent:
+            return NeedAgentContextClass()
         return NoContextClass()
     
     

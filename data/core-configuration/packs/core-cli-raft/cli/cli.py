@@ -104,6 +104,7 @@ exports = {
     do_raft_state      : {
         'keywords'   : ['raft', 'state'],
         'args'       : [],
+        'need_agent' : True,
         'description': 'Show the state of the internal RAFT cluster of your nodes'
     },
     
