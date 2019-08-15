@@ -819,7 +819,7 @@ exports = {
             {'name': '--count', 'type': 'int', 'default': 1, 'description': 'Number of alive member of the group to wait for'},
             {'name': '--timeout', 'type': 'int', 'default': 30, 'description': 'Timeout to let the initialization'},
         ],
-        'description': 'Wait until alive members are detected based on name, display name or group'
+        'description': 'Wait until alive members are detected based on name, display name or group',
+        'need_agent': True,
     },
-    'need_agent'        : True,
 }
