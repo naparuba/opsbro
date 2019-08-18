@@ -12,6 +12,8 @@ if [ "X$TRAVIS_PYTHON_VERSION" == "X2.6" ]; then
    exit 0
 fi
 
+
+
 print_header "Launching installations tests for SUITE: $TEST_SUITE"
 
 cd ..
@@ -27,6 +29,14 @@ function print_color {
 }
 
 export -f print_color
+
+# By default we are not asking for python3 version
+IS_PYTHON3="FALSE"
+if [ "X$TEST_PYTHON_VERSION" == "XPYTHON3" ];then
+   print_color "Asking for python3 build\n" "yellow"
+   export IS_PYTHON3="YES"
+fi
+
 
 function get_var_name {
    II=$1
@@ -47,12 +57,18 @@ function launch_docker_file {
    FULL_PATH=$1
    DO_WHAT=$2
 
+   # If we are with python3, we are adding a new parameter for building
+   export ADD_BUILDS_ARGS=""
+   if [ "X$IS_PYTHON3" == "XYES" ];then
+       export ADD_BUILDS_ARGS=" --build-arg=MY_PYTHON_VERSION=-python3 "
+   fi
+
    DOCKER_FILE=`basename $FULL_PATH`
    NOW=$(date +"%H:%M:%S")
-   print_color "$DO_WHAT  $DOCKER_FILE : BUILD starting at $NOW \n" "magenta"
+   print_color "$DO_WHAT  $DOCKER_FILE : BUILD starting at $NOW (Python3=$IS_PYTHON3)\n" "magenta"
    LOG=/tmp/build-and-run.$DOCKER_FILE.log
    rm -fr $LOG
-   BUILD=$(docker build --quiet -f $FULL_PATH .  2>&1)
+   BUILD=$(docker build $ADD_BUILDS_ARGS --quiet -f $FULL_PATH .  2>&1)
    if [ $? != 0 ]; then
        echo "$BUILD" > $LOG
        FAIL="TRUE"
@@ -62,7 +78,7 @@ function launch_docker_file {
        if [ $? == 0 ];then
           echo "RESTART BUILD"
           > $LOG
-          BUILD=$(docker build --quiet -f $FULL_PATH .  2>&1)
+          BUILD=$(docker build $ADD_BUILDS_ARGS --quiet -f $FULL_PATH .  2>&1)
           if [ $? == 0 ]; then
              # OK back to OK
              FAIL="FALSE"
