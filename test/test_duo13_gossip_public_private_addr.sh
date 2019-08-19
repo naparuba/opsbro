@@ -9,7 +9,7 @@ test/set_network_simulated_type "WAN"
 NODE_NB=$1
 
 # We only want to test gossip here
-set_to_minimal_gossip_core
+set_to_only_gossip_and_detection
 
 hostname -I
 
