@@ -9,6 +9,8 @@ MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 CASE=$1
 
+python --version
+
 ping -c 1 http1
 ping -c 1 http2
 ping -c 1 haproxy

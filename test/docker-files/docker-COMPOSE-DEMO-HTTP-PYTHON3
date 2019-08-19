@@ -3,7 +3,9 @@ services:
   http1:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DEMO-HTTP-PYTHON3-http-node-http-1.txt
+       dockerfile: test/docker-files/docker-file-DEMO-HTTP-http-node-http-1.txt
+       args:
+          MY_PYTHON_VERSION: -python3
     networks:
        - demo1
     cap_add:
@@ -12,7 +14,9 @@ services:
   http2:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DEMO-HTTP-PYTHON3-http-node-http-2.txt
+       dockerfile: test/docker-files/docker-file-DEMO-HTTP-http-node-http-2.txt
+       args:
+          MY_PYTHON_VERSION: -python3
     networks:
        - demo1
     cap_add:
@@ -21,7 +25,9 @@ services:
   haproxy:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DEMO-HTTP-PYTHON3-http-node-haproxy.txt
+       dockerfile: test/docker-files/docker-file-DEMO-HTTP-http-node-haproxy.txt
+       args:
+          MY_PYTHON_VERSION: -python3
     networks:
        - demo1
     cap_add:
@@ -30,7 +36,9 @@ services:
   client:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DEMO-HTTP-PYTHON3-http-node-client.txt
+       dockerfile: test/docker-files/docker-file-DEMO-HTTP-http-node-client.txt
+       args:
+          MY_PYTHON_VERSION: -python3
     networks:
        - demo1
     cap_add:
