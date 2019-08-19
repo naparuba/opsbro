@@ -198,10 +198,13 @@ function assert_group {
    opsbro detectors wait-group "$1"
    if [ $? != 0 ];then
        echo "ERROR: cannot find the group $1"
-       opsbro agent info
        cat /var/log/opsbro/daemon.log
        cat /var/log/opsbro/gossip.log
        cat /var/log/opsbro/crash.log 2>/dev/null
+       ps axjf
+       dmesg
+       ls -thor /var/log/opsbro/
+       opsbro agent info
        exit 2
    fi
 }
