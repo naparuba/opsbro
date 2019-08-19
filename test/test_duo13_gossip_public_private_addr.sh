@@ -15,6 +15,8 @@ hostname -I
 
 show_my_system_ip
 
+python --version
+
 # Set a valid display name for debug
 opsbro agent parameters set display_name "node-$NODE_NB"
 
@@ -29,6 +31,7 @@ if [ "$NODE_NB" == "1" ]; then
     opsbro agent parameters set proxy-node true
     opsbro agent parameters set zone  lan
     /etc/init.d/opsbro start
+    assert_no_crash
     opsbro detectors wait-group 'zone::lan'
 fi
 
@@ -36,6 +39,7 @@ if [ "$NODE_NB" == "2" ]; then
     opsbro agent parameters set proxy-node true
     opsbro agent parameters set zone  lan
     /etc/init.d/opsbro start
+    assert_no_crash
     opsbro detectors wait-group 'zone::lan'
 fi
 
@@ -43,6 +47,7 @@ if [ "$NODE_NB" == "3" ]; then
     opsbro agent parameters set proxy-node true
     opsbro agent parameters set zone  internet
     /etc/init.d/opsbro start
+    assert_no_crash
     opsbro detectors wait-group 'zone::internet'
 fi
 
@@ -54,6 +59,8 @@ opsbro agent info
 
 opsbro agent print local-addr
 opsbro agent print public-addr
+
+assert_no_crash
 
 print_header "Waiting done, everyone should be there"
 
