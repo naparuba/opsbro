@@ -13,7 +13,7 @@ import struct
 
 if os.name == 'nt':
     from .misc.windows import windowser
-from .log import LoggerFactory
+from opsbro.log import LoggerFactory, DEFAULT_LOG_PART
 from .misc.six import add_metaclass
 from .util import string_decode, my_sort, exec_command, my_cmp, unicode_to_bytes
 
@@ -180,8 +180,13 @@ class InterfaceHostingDriver(object):
             try:
                 mask_filter = IP(ip_mask)
             except Exception as exp:
-                logger.error('Cannot load the ip mask: %s: %s. Exiting' % (ip_mask, exp))
-                # TODO: clean error
+                # Major error, need to exit
+                err = 'Cannot load the ip mask: %s: %s. Exiting' % (ip_mask, exp)
+                daemon_logger = LoggerFactory.create_logger(DEFAULT_LOG_PART)
+                logger_crash = LoggerFactory.create_logger('crash')
+                logger.errro(err)
+                logger_crash.error(err)
+                daemon_logger.error('err')
                 sys.exit(2)
         
         # If I am in the DNS or in my /etc/hosts, I win
