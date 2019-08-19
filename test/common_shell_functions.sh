@@ -200,12 +200,11 @@ function assert_group {
        echo "ERROR: cannot find the group $1"
        cat /var/log/opsbro/daemon.log
        cat /var/log/opsbro/gossip.log
+       cat /var/log/opsbro/detector.log
+       cat /var/log/opsbro/hosting-driver.log
        cat /var/log/opsbro/crash.log 2>/dev/null
-       ps axjf
-       dmesg
        ls -thor /var/log/opsbro/
        opsbro agent info
-       opsbro agent start
        exit 2
    fi
 }
