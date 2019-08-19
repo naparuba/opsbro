@@ -31,24 +31,21 @@ if [ "$NODE_NB" == "1" ]; then
     opsbro agent parameters set proxy-node true
     opsbro agent parameters set zone  lan
     /etc/init.d/opsbro start
-    assert_no_crash
-    opsbro detectors wait-group 'zone::lan'
+    assert_group 'zone::lan'
 fi
 
 if [ "$NODE_NB" == "2" ]; then
     opsbro agent parameters set proxy-node true
     opsbro agent parameters set zone  lan
     /etc/init.d/opsbro start
-    assert_no_crash
-    opsbro detectors wait-group 'zone::lan'
+    assert_group 'zone::lan'
 fi
 
 if [ "$NODE_NB" == "3" ]; then
     opsbro agent parameters set proxy-node true
     opsbro agent parameters set zone  internet
     /etc/init.d/opsbro start
-    assert_no_crash
-    opsbro detectors wait-group 'zone::internet'
+    assert_group 'zone::internet'
 fi
 
 opsbro gossip detect --auto-join --timeout=15
