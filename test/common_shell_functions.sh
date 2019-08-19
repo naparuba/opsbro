@@ -205,6 +205,7 @@ function assert_group {
        dmesg
        ls -thor /var/log/opsbro/
        opsbro agent info
+       opsbro agent start
        exit 2
    fi
 }
