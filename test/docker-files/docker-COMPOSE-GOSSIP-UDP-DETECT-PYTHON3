@@ -3,7 +3,9 @@ services:
   node1:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DUO1-udp-detect-auto-join-PYTHON3-node1.txt
+       dockerfile: test/docker-files/docker-file-DUO1-udp-detect-auto-join-node1.txt
+       args:
+          MY_PYTHON_VERSION: -python3
     networks:
        - gossip-udp-detect
     cap_add:
@@ -12,7 +14,9 @@ services:
   node2:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DUO1-udp-detect-auto-join-PYTHON3-node2.txt
+       dockerfile: test/docker-files/docker-file-DUO1-udp-detect-auto-join-node2.txt
+       args:
+          MY_PYTHON_VERSION: -python3
     networks:
        - gossip-udp-detect
     cap_add:

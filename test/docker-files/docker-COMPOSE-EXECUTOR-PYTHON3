@@ -3,7 +3,9 @@ services:
   node1:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DUO11-executor-python3-1.txt
+       dockerfile: test/docker-files/docker-file-DUO11-executor-1.txt
+       args:
+          MY_PYTHON_VERSION: -python3
     networks:
        - executor-python3
     cap_add:
@@ -13,7 +15,9 @@ services:
   node2:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DUO11-executor-python3-2.txt
+       dockerfile: test/docker-files/docker-file-DUO11-executor-2.txt
+       args:
+          MY_PYTHON_VERSION: -python3
     networks:
        - executor-python3
     cap_add:
@@ -23,7 +27,9 @@ services:
   node3:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DUO11-executor-python3-3.txt
+       dockerfile: test/docker-files/docker-file-DUO11-executor-3.txt
+       args:
+          MY_PYTHON_VERSION: -python3
     networks:
        - executor-python3
     cap_add:

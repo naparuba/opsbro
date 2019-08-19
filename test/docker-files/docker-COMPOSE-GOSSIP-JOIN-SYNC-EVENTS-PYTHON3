@@ -3,7 +3,9 @@ services:
   node1:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DUO5-join-sync-events-PYTHON3-node1.txt
+       dockerfile: test/docker-files/docker-file-DUO5-join-sync-events-node1.txt
+       args:
+          MY_PYTHON_VERSION: -python3
     networks:
        - gossip-join-sync
     cap_add:
@@ -12,7 +14,9 @@ services:
   node2:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DUO5-join-sync-events-PYTHON3-node2.txt
+       dockerfile: test/docker-files/docker-file-DUO5-join-sync-events-node2.txt
+       args:
+          MY_PYTHON_VERSION: -python3
     networks:
        - gossip-join-sync
     cap_add:
