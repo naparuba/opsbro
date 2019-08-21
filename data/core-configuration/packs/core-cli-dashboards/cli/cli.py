@@ -15,6 +15,7 @@ from opsbro.packer import packer
 from opsbro.misc.lolcat import lolcat
 from opsbro.topic import topiker
 from opsbro.util import bytes_to_unicode, unicode_to_bytes
+from opsbro.threadmgr import threader
 
 from dashing import HSplit, HBrailleFilledChart, HGauge, VSplit, VDonut, Text
 
@@ -122,7 +123,18 @@ def _get_ui_from_dashboard(dashboard):
     return ui
 
 
-def do_dashboards_show(dashboard_name, occurences):
+def _do_value_update_thread(ui_tree, interval):
+    while True:
+        ui_tree.refresh_value()
+        # print "UPDATING UI TREE", ui_tree
+        time.sleep(interval)
+
+
+def _start_value_update_thread(ui_tree, interval):
+    threader.create_and_launch(_do_value_update_thread, (ui_tree, interval), 'dashboard-update-thread', essential=True)
+
+
+def do_dashboards_show(dashboard_name, occurences, interval):
     import codecs
     stdout_utf8 = codecs.getwriter("utf-8")(sys.stdout)
     sys.stdout = stdout_utf8
@@ -136,6 +148,7 @@ def do_dashboards_show(dashboard_name, occurences):
         sys.exit(2)
     
     ui = _get_ui_from_dashboard(dashboard)
+    _start_value_update_thread(ui, interval)
     
     if ui is None:
         sys.exit(1)
@@ -143,8 +156,8 @@ def do_dashboards_show(dashboard_name, occurences):
     i = 0
     while True:
         try:
-            ui.display(dashboard['title'])
-            time.sleep(10)
+            ui.full_display(dashboard['title'])
+            time.sleep(interval)
         except KeyboardInterrupt:
             # Clean the screen before exiting
             cprint('\033c')
@@ -194,6 +207,7 @@ exports = {
         'args'                   : [
             {'name': 'dashboard_name', 'description': 'Dashboard name'},
             {'name': '--occurences', 'type': 'int', 'default': 0, 'description': 'How much refresh for the dashboards. By default 0 (means infinite)'},
+            {'name': '--interval', 'type': 'int', 'default': 10, 'description': 'Seconds between dashboard update. By default 10 (seconds)'},
         ],
         'allow_temporary_agent'  : {'enabled': True, },
         'description'            : 'Show a specific dashboard',

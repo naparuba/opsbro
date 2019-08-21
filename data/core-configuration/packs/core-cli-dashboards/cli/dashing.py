@@ -7,6 +7,7 @@ from __future__ import print_function
 import time
 import sys
 from collections import deque, namedtuple
+import copy
 
 try:
     unichr
@@ -22,24 +23,22 @@ from opsbro.characters import CHARACTERS
 
 # "graphic" elements
 
-border_bl = CHARACTERS.corner_bottom_left #u'└'
-border_br = CHARACTERS.corner_bottom_right # u'┘'
-border_tl = CHARACTERS.corner_top_left # u'┌'
-border_tr = CHARACTERS.corner_top_right # u'┐'
-border_h = CHARACTERS.hbar #u'─'
-border_v = CHARACTERS.vbar # u'│'
-#hbar_elements = (u"▏", u"▎", u"▍", u"▌", u"▋", u"▊", u"▉")
-#vbar_elements = (u"▁", u"▂", u"▃", u"▄", u"▅", u"▆", u"▇", u"█")
-#braille_left = (0x01, 0x02, 0x04, 0x40, 0)
-#braille_right = (0x08, 0x10, 0x20, 0x80, 0)
+border_bl = CHARACTERS.corner_bottom_left  # u'└'
+border_br = CHARACTERS.corner_bottom_right  # u'┘'
+border_tl = CHARACTERS.corner_top_left  # u'┌'
+border_tr = CHARACTERS.corner_top_right  # u'┐'
+border_h = CHARACTERS.hbar  # u'─'
+border_v = CHARACTERS.vbar  # u'│'
+# hbar_elements = (u"▏", u"▎", u"▍", u"▌", u"▋", u"▊", u"▉")
+# vbar_elements = (u"▁", u"▂", u"▃", u"▄", u"▅", u"▆", u"▇", u"█")
+# braille_left = (0x01, 0x02, 0x04, 0x40, 0)
+# braille_right = (0x08, 0x10, 0x20, 0x80, 0)
 braille_r_left = (0x04, 0x02, 0x01)
 braille_r_right = (0x20, 0x10, 0x08)
 
 TBox = namedtuple('TBox', 'x y w h')
 
 from opsbro.log import cprint
-
-
 
 
 def LOG(s):
@@ -57,6 +56,8 @@ class Tile(object):
         self.id = id
         self.vcallback = vcallback
         self.unit = unit
+        
+        self._got_value = False  # protect for display before get data
     
     
     def __str__(self):
@@ -67,9 +68,24 @@ class Tile(object):
         return None, self.max_height
     
     
+    def display(self, tbox, parent):
+        if not self._got_value:
+            self.refresh_value()
+        self._display(tbox, parent)
+    
+    
     def _display(self, tbox, parent):
         """Render current tile
         """
+        raise NotImplementedError
+    
+    
+    def refresh_value(self):
+        self._refresh_value()
+        self._got_value = True
+    
+    
+    def _refresh_value(self):
         raise NotImplementedError
     
     
@@ -116,7 +132,7 @@ class Tile(object):
         return TBox(tbox.x, tbox.y, tbox.w, tbox.h)
     
     
-    def display(self, title):
+    def full_display(self, title):
         terminal_height, terminal_width = get_terminal_size()
         
         # Clear the terminal
@@ -142,7 +158,7 @@ class Tile(object):
         cprint(time_format, color='white', end='')
         
         # Now display the other box
-        self._display(tbox, None)
+        self.display(tbox, None)
         
         self._jump_to(terminal_height - 1, 0)
         cprint(' http://opsbro.io (by Shinken Solutions team)', color='grey', end='')
@@ -178,6 +194,8 @@ class Split(Tile):
     def __init__(self, *items, **kw):
         super(Split, self).__init__(**kw)
         self.items = items
+        
+        self._update_value_lock = None  # do not want to lock for such objects
     
     
     # For vertical: get the max of our items as our max height
@@ -248,11 +266,17 @@ class Split(Tile):
             else:
                 max_height += 2  # count the border too
             LOG("DISPLAY %s %s %s %s" % (type(i), max_height, 'will display at addr', x))
-            i._display(TBox(x, y, item_width, max_height), self)
+            i.display(TBox(x, y, item_width, max_height), self)
             if isinstance(self, VSplit):
                 x += max_height
             else:
                 y += item_width
+    
+    
+    # Do not want the lock for such objects
+    def refresh_value(self):
+        for i in self.items:
+            i.refresh_value()
 
 
 class VSplit(Split):
@@ -279,13 +303,13 @@ class Text(Tile):
         if self.vcallback is None:
             return
         
-        self.text = self.vcallback()
-        if self.text is None:
-            self.text = ''
+        text = self.vcallback()
+        if text is None:
+            text = ''
+        self.text = text
     
     
     def _display(self, tbox, parent):
-        self._refresh_value()
         tbox = self._draw_borders_and_title(tbox)
         
         dx = 0
@@ -342,18 +366,18 @@ class HGauge(Tile):
     def _refresh_value(self):
         if self.vcallback is None:
             return
-        self.value = self.vcallback()
-        if self.value is None:
-            self.value = 0
-        if isinstance(self.value, basestring):
+        value = self.vcallback()
+        if value is None:
+            value = 0
+        if isinstance(value, basestring):
             try:
-                self.value = int(self.value)
+                value = int(value)
             except ValueError:
-                self.value = 0
+                value = 0
+        self.value = value
     
     
     def _display(self, tbox, parent):
-        self._refresh_value()
         self.title = self.title_orig + (': %d %s' % (self.value, self.unit))
         tbox = self._draw_borders_and_title(tbox)
         self._jump_to(tbox.x, tbox.y)
@@ -376,15 +400,14 @@ class VGauge(Tile):
     def _refresh_value(self):
         if self.vcallback is None:
             return
-        self.value = self.vcallback()
-        if self.value is None:
-            self.value = 0
-    
+        value = self.vcallback()
+        if value is None:
+            value = 0
+        self.value = value
     
     def _display(self, tbox, parent):
         """Render current tile
         """
-        self._refresh_value()
         tbox = self._draw_borders_and_title(tbox)
         nh = tbox.h * (self.value / 100.5)
         print(tbox.t.move(tbox.x, tbox.y) + tbox.t.color(self.color))
@@ -418,17 +441,17 @@ class VDonut(Tile):
         if self.vcallback is None:
             return
         
-        self.value = self.vcallback()
-        if self.value is None:
-            self.value = 0
-        if self.value < 0:
-            self.value = 0
-        if self.value > 100:
-            self.value = 0
+        value = self.vcallback()
+        if value is None:
+            value = 0
+        if value < 0:
+            value = 0
+        if value > 100:
+            value = 0
+        self.value = value
     
     
     def _display(self, tbox, parent):
-        self._refresh_value()
         self.title = self.title_orig + (': %d %s' % (self.value, self.unit))
         tbox = self._draw_borders_and_title(tbox)
         
@@ -534,14 +557,13 @@ class HChart(Tile):
         if self.vcallback is None:
             return
         
-        self.value = self.vcallback()
-        if self.value is None:
-            self.value = 0
-        self.append(self.value)
+        value = self.vcallback()
+        if value is None:
+            value = 0
+        self.append(value)
     
     
     def _display(self, tbox, parent):
-        self._refresh_value()
         tbox = self._draw_borders_and_title(tbox)
         print(tbox.t.color(self.color))
         for dx in range(tbox.h):
@@ -594,8 +616,6 @@ class HBrailleChart(Tile):
     
     
     def _display(self, tbox, parent):
-        self._refresh_value()
-        
         tbox = self._draw_borders_and_title(tbox)
         
         print(tbox.t.color(self.color))
@@ -641,20 +661,24 @@ class HBrailleFilledChart(Tile):
     
     
     def append(self, dp):
-        self.datapoints.append(dp)
+        # IMPORTANT: we must be lock free, so work with a copy
+        new_datapoints = copy.copy(self.datapoints)
+        new_datapoints.append(dp)
+        self.datapoints = new_datapoints
     
     
     def _refresh_value(self):
         if self.vcallback is None:
             return
         
-        self.value = self.vcallback()
-        if self.value is None:
-            self.value = 0
+        value = self.vcallback()
+        if value is None:
+            value = 0
         # If percent, max to 0=>100
         if self.unit == '%':
-            self.value = min(100, max(0, self.value))
-        self.append(self.value)
+            value = min(100, max(0, value))
+        self.value = value
+        self.append(value)
     
     
     def _generate_braille(self, lmax, rmax):
@@ -677,7 +701,6 @@ class HBrailleFilledChart(Tile):
     
     
     def _display(self, tbox, parent):
-        self._refresh_value()
         self.title = self.title_orig + (': %d %s' % (self.value, self.unit))
         
         tbox = self._draw_borders_and_title(tbox)
