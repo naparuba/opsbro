@@ -12,7 +12,8 @@ if [ "X$TRAVIS_PYTHON_VERSION" == "X2.6" ]; then
    exit 0
 fi
 
-
+# Remove non ascii characters
+TEST_SUITE=${TEST_SUITE//[^[:ascii:]]/}
 
 print_header "Launching installations tests for SUITE: $TEST_SUITE"
 
