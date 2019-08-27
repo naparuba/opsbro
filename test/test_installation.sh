@@ -14,6 +14,7 @@ fi
 
 # Remove non ascii characters
 TEST_SUITE=${TEST_SUITE//[^[:ascii:]]/}
+TEST_SUITE=$(echo "$TEST_SUITE" |tr -d'\' | tr -d"'")
 
 print_header "Launching installations tests for SUITE: $TEST_SUITE"
 
