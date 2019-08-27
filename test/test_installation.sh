@@ -215,7 +215,7 @@ fi
 ls
 
 # Only do the test suite we must do
-DOCKER_FILES=$(ls -1 test/docker-files/docker-file-$TEST_SUITE-*txt)
+DOCKER_FILES=$(ls -1 test/docker-files/docker-file-${TEST_SUITE}-*txt)
 if [ $? != 0 ];then
    echo "NO DOCKER FILES FOUND FOR TEST_SUITE $TEST_SUITE"
    exit 2
