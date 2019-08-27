@@ -212,6 +212,7 @@ if [[ $TEST_SUITE == COMPOSE* ]];then
    exit 0
 fi
 
+ls
 
 # Only do the test suite we must do
 DOCKER_FILES=$(ls -1 test/docker-files/docker-file-$TEST_SUITE-*txt)
