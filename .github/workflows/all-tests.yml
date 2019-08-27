@@ -1,0 +1,24 @@
+name: Launch all tests
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test_name:
+          - ALPINE
+          - DEBIAN
+          - COMPOSE-RAFT-INIT
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Launch all tests
+        env:
+          TEST_SUITE=${{ matrix.test_name }}
+        run:
+          - chmod a+x test/*
+          - chmod a+x test/docker-helper/*
+          - cd test
+          - ./test_suite.sh
