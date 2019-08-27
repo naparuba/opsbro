@@ -18,7 +18,7 @@ jobs:
       - name: 'Launch all tests'
         env:
           TEST_SUITE: ${{ matrix.test_name }}'
-        run:
+      - run:
           - 'chmod a+x test/*'
           - 'chmod a+x test/docker-helper/*'
           - 'cd test'
