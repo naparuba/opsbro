@@ -8,14 +8,90 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        include:
+          - test_name: FEATURE
+            test_python_version: PYTHON3
+        # By default, test python2
+        test_python_version:
         test_name:
-          - ALPINE
-          - DEBIAN
+          - API
+          - PYTHON
+          - OTHER
+          ##### Then features (both python2 & 3)
+          - FEATURE
+          - MONITORING
+          ##### Compliance rules
+          - COMPLIANCE-FILE-RIGHTS
+          - COMPLIANCE-GET-URL
+          - COMPLIANCE-PACKAGE-INSTALL
+          - COMPLIANCE-REPOSITORY
+          - COMPLIANCE-SYSTEM-USER
+          - MODULE
+          - PACK
+          ##### Then complexe scenarios
+          # Some tests are with 2 docker that must run together. I hope it will be maintainable
+          - COMPOSE-GOSSIP-UDP-DETECT
+          - COMPOSE-GOSSIP-UDP-DETECT-PYTHON3
+          # check that with different udp key, then cannot join (no clear message failback)
+          - COMPOSE-GOSSIP-UDP-DETECT-BAD-KEY
+          - COMPOSE-GOSSIP-UDP-DETECT-BAD-KEY-PYTHON3
+          # This one is with 4 containers, in 2 zones, one is sub level of another
+          - COMPOSE-GOSSIP-ZONES
+          - COMPOSE-GOSSIP-ZONES-PYTHON3
+          # This one is with 4 containers, in 3 zones, one is sub level of another
+          - COMPOSE-GOSSIP-ZONES-MULTI
+          - COMPOSE-GOSSIP-ZONES-MULTI-PYTHON3
+          # The same, but with multi level encryption
+          - COMPOSE-GOSSIP-ZONES-MULTI-ENCRYPTED
+          - COMPOSE-GOSSIP-ZONES-MULTI-ENCRYPTED-PYTHON3
+          # This one is with 2 containers, a node with events, joining another, and sync its events
+          - COMPOSE-GOSSIP-JOIN-SYNC-EVENTS
+          - COMPOSE-GOSSIP-JOIN-SYNC-EVENTS-PYTHON3
+          # This is a full DEMO with 4 containers, for a distributed HTTP with
+          # 2 real servers
+          # 1 haproxy (generators to the 2 http)
+          # 1 customer, with DNS module
+          - COMPOSE-DEMO-HTTP
+          - COMPOSE-DEMO-HTTP-PYTHON3
+          # This one is with 3 containers, trying to join together
+          - COMPOSE-GOSSIP-JOIN
+          - COMPOSE-GOSSIP-JOIN-PYTHON3
+          # This one block communication between 1 & 3, and 2 will be the ping relay between both
+          - COMPOSE-GOSSIP-INDIRECT-PING
+          - COMPOSE-GOSSIP-INDIRECT-PING-PYTHON3
+          # This one is with 2 nodes: one collector, and the other a data agregator that save data send by the first to sqlite
+          - COMPOSE-MODULE-AGREGATOR
+          - COMPOSE-MODULE-AGREGATOR-PYTHON3
+          # This test is a 3 node RAFT test, just to see if we have a leader after a huge time
           - COMPOSE-RAFT-INIT
+          - COMPOSE-RAFT-INIT-PYTHON3
+          # This test suite is 3 members that one node run executor to the 2 others (encrypted)
+          - COMPOSE-EXECUTOR
+          - COMPOSE-EXECUTOR-PYTHON3
+          # Test about auto discovery with a init.d script (easy setup).
+          - COMPOSE-GOSSIP-UDP-DETECT-AT-BOOT
+          - COMPOSE-GOSSIP-UDP-DETECT-AT-BOOT-PYTHON3
+          # Test about differences between zones for public/private addr (same zone = private, other=public)
+          - COMPOSE-GOSSIP-PUBLIC-PRIVATE-ADDR
+          - COMPOSE-GOSSIP-PUBLIC-PRIVATE-ADDR-PYTHON3
+          ##### Then installation on various distros
+          - ALPINE
+          - AMAZONLINUX
+          - CENTOS-6
+          - CENTOS-7
+          - DEBIAN
+          - FEDORA
+          - OPENSUSE
+          - UBUNTU
 
     steps:
     - uses: actions/checkout@v1
     - name: 'Launch all tests'
       env:
         TEST_SUITE: ${{ matrix.test_name }}'
-      run: chmod a+x test/* && chmod a+x test/docker-helper/* && cd test && ./test_suite.sh
+        TEST_PYTHON_VERSION: ${{ matrix.test_python_version }}
+      run: |
+        chmod a+x test/*
+        chmod a+x test/docker-helper/*
+        cd test
+        ./test_suite.sh
