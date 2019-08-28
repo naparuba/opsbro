@@ -12,7 +12,7 @@ jobs:
           - test_name: FEATURE
             test_python_version: PYTHON3
         # By default, test python2
-        test_python_version:
+        test_python_version: ""
         test_name:
           - API
           - PYTHON
