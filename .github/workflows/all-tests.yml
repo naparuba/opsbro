@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - test_name: FEATURE
+          - test_name: FEATURE33
             test_python_version: PYTHON3
         # By default, test python2
         test_python_version:
