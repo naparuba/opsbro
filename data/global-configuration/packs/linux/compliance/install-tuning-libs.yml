@@ -127,10 +127,9 @@ compliance:
            post_commands:
               - pip install leveldb
 
-
-         # Fedora can be python 2 or 3 by default
-         - name: fedora_python2
-           if: "{{variables.is_debian}} and system_is_python_2()"
+         # So fedora 25 with python-pip
+         - name: fedora
+           if: "{{variables.is_fedora}}"
            parameters:
              packages:
                 - gcc-c++
@@ -138,12 +137,11 @@ compliance:
                 - python-devel
                 - redhat-rpm-config
                 - python-pip
-                - python3-simplejson
+                - python2-simplejson
            post_commands:
               - pip install leveldb
 
-
-         # So fedora 25
+         # and So fedora 31 and more
          - name: fedora_python3
            if: "{{variables.is_fedora}} and system_is_python_3()"
            parameters:
