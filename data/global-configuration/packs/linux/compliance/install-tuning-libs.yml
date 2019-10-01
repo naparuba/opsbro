@@ -99,6 +99,21 @@ compliance:
                 - python-setproctitle
                 - python-psutil
 
+         ##### FEDORA:
+         # there are rules for 24, 25, 26 -> 30 (python2) and 31+ (python3)
+         # and So fedora 31 and more
+         - name: fedora_python3
+           if: "{{variables.is_fedora}} and system_is_python_3()"
+           parameters:
+             packages:
+                - gcc-c++
+                - gcc
+                - python-devel
+                - redhat-rpm-config
+                - python-pip
+                - python3-simplejson
+           post_commands:
+              - pip install leveldb
 
          - name: fedora26_and_more
            if: "{{variables.is_fedora}} and {{collector.system.os.linux.major_version}} >= 26"
@@ -141,19 +156,7 @@ compliance:
            post_commands:
               - pip install leveldb
 
-         # and So fedora 31 and more
-         - name: fedora_python3
-           if: "{{variables.is_fedora}} and system_is_python_3()"
-           parameters:
-             packages:
-                - gcc-c++
-                - gcc
-                - python-devel
-                - redhat-rpm-config
-                - python-pip
-                - python3-simplejson
-           post_commands:
-              - pip install leveldb
+
 
 
          # Alpine 3.1->4 have pip command and python-dev package
