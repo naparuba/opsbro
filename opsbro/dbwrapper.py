@@ -135,7 +135,14 @@ class LevelDBBackend(object):
     
     
     def GetStats(self):
-        return {'size': self.__get_size(), 'raw': self.db.GetStats(), 'error': ''}
+        err = ''
+        try:
+            stats = self.db.GetStats()
+        except SystemError as exp:  # leveldb on fedora 31 does crash... great...
+            err = 'Cannot get stats from the leveldb lib: %s. It is a known bug on fedora 31, but just for the stats.' % exp
+            logger.error(err)
+            stats = err
+        return {'size': self.__get_size(), 'raw': stats, 'error': err}
     
     
     def RangeIter(self):
