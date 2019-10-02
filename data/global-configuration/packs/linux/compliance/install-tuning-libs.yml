@@ -102,18 +102,14 @@ compliance:
          ##### FEDORA:
          # there are rules for 24, 25, 26 -> 30 (python2) and 31+ (python3)
          # and So fedora 31 and more
+         # FEDORA 31: there is a package for leveldb
          - name: fedora_python3
            if: "{{variables.is_fedora}} and system_is_python_3()"
            parameters:
              packages:
-                - gcc-c++
-                - gcc
-                - python-devel
-                - redhat-rpm-config
-                - python-pip
-                - python3-simplejson
-           post_commands:
-              - pip install leveldb
+                - python3-leveldb
+                - python3-setproctitle
+
 
          - name: fedora26_and_more
            if: "{{variables.is_fedora}} and {{collector.system.os.linux.major_version}} >= 26"
