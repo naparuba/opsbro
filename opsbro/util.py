@@ -185,7 +185,7 @@ def guess_server_const_uuid():
             logger.info('[SERVER-UUID] OpenVZ: using the hostname & openvz local id as server unique UUID: %s' % servr_uniq_id)
             return hashlib.sha1(servr_uniq_id).hexdigest()
     # No merly fixed stuff? ok, pure randomness
-    return hashlib.sha1(get_uuid()).hexdigest()
+    return hashlib.sha1(unicode_to_bytes(get_uuid())).hexdigest()
 
 
 # recursivly change a dict with pure bytes
