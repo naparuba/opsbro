@@ -591,9 +591,9 @@ class Gossip(BaseManager):
     def _compute_node_address(self, node):
         node_zone = node['zone']
         if node_zone != self.zone:
-            node['addr'] = node.get('public_addr', 'addr')  # old version <0.5 do not have public_addr
+            node['addr'] = node.get('public_addr', node.get('addr'))  # old version <0.5 do not have public_addr
         else:
-            node['addr'] = node.get('local_addr', 'addr')  # old version <0.5 do not have local_addr
+            node['addr'] = node.get('local_addr', node.get('addr'))  # old version <0.5 do not have local_addr
     
     
     # Got a new node, great! Warn others about this
@@ -1697,7 +1697,7 @@ class Gossip(BaseManager):
     def __get_node_basic_msg(node):
         return {
             'name'       : node['name'], 'display_name': node.get('display_name', ''),
-            'public_addr': node.get('public_addr', 'addr'), 'local_addr': node.get('local_addr', 'addr'),  # pre 0.5 field: addr
+            'public_addr': node.get('public_addr', node.get('addr')), 'local_addr': node.get('local_addr', node.get('addr')),  # pre 0.5 field: addr
             'port'       : node['port'], 'uuid': node['uuid'],
             'incarnation': node['incarnation'], 'groups': node.get('groups', []),
             'services'   : node['services'], 'checks': node['checks'],
