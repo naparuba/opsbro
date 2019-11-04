@@ -3,5 +3,5 @@ detector:
     add_groups:
         - 'ovh'
     # will be set only if
-    apply_if: '{{collector.geoloc.org}}) != "" and "ovh" in string_lower({{collector.geoloc.org}})'
+    apply_if: '"ovh" in string_lower({{collector.geoloc.org||""}})'
     interval: 3600s
