@@ -1697,7 +1697,7 @@ class Gossip(BaseManager):
     def __get_node_basic_msg(node):
         return {
             'name'       : node['name'], 'display_name': node.get('display_name', ''),
-            'public_addr': node['public_addr'], 'local_addr': node['local_addr'],
+            'public_addr': node.get('public_addr', 'addr'), 'local_addr': node.get('local_addr', 'addr'),  # pre 0.5 field: addr
             'port'       : node['port'], 'uuid': node['uuid'],
             'incarnation': node['incarnation'], 'groups': node.get('groups', []),
             'services'   : node['services'], 'checks': node['checks'],
