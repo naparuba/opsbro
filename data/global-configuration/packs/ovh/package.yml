@@ -1,0 +1,19 @@
+name: ovh
+topics:
+    - automatic detection
+types:
+    - pack
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description: Look if server hosted by OVH. Need the geoloc pack because it is using the public ip address.
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - ovh
+dependencies:
+    core: ">=1.0"
+    geoloc: ">=1.0"
+license: ""
