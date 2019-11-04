@@ -377,13 +377,17 @@ class Cluster(object):
     
     @staticmethod
     def launch_replication_backlog_thread():
-        threader.create_and_launch(kvmgr.do_replication_backlog_thread, name='Replication backlog', essential=True, part='key-value')
+        threader.create_and_launch(kvmgr.do_replication_backlog_thread, name='KV Replication backlog', essential=True, part='key-value')
     
     
     def launch_replication_first_sync_thread(self):
-        threader.create_and_launch(self.do_replication_first_sync_thread, name='First replication synchronization', essential=True, part='key-value')
-    
-    
+        threader.create_and_launch(self.do_replication_first_sync_thread, name='KV First replication synchronization', essential=True, part='key-value')
+
+
+    def launch_kv_updates_cleaning_thread(self):
+        threader.create_and_launch(kvmgr.do_kv_updates_cleaning_thread, name='KV updates files cleaning', essential=True, part='key-value')
+
+
     def launch_http_listeners(self):
         threader.create_and_launch(self.launch_tcp_listener, name='Http backend', essential=True, part='agent')
     
@@ -860,6 +864,10 @@ class Cluster(object):
         if 'kv' in gossiper.groups and not one_shot:
             self.launch_replication_backlog_thread()
             self.launch_replication_first_sync_thread()
+            
+        # In a classic daemon, we must clean our old KV updates files
+        if not one_shot:
+            self.launch_kv_updates_cleaning_thread()
         
         # We don't care about docker in one-shot disco
         if not one_shot:

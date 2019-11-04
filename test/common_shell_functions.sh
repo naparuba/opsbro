@@ -210,6 +210,19 @@ function assert_group {
 }
 
 
+function do_bad_exit_and_logs {
+    echo "ERROR: exiting because $1"
+    cat /var/log/opsbro/daemon.log
+    cat /var/log/opsbro/gossip.log
+    cat /var/log/opsbro/detector.log
+    cat /var/log/opsbro/hosting-driver.log
+    cat /var/log/opsbro/key-value.log
+    cat /var/log/opsbro/crash.log 2>/dev/null
+    ls -thor /var/log/opsbro/
+    echo "ERROR: exiting because $1"
+}
+
+
 function assert_my_zone_is_encrypted {
    out=$(opsbro agent info)
    if [ $? != 0 ];then

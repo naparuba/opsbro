@@ -29,6 +29,10 @@ def string_to_b64unicode(s):
     return bytes_to_unicode(base64.b64encode(s))
 
 
+def epoch_to_human_string(t_epoch):
+    return time.strftime("%Y-%b-%d %H:%M:%S", time.localtime(t_epoch))
+
+
 # Make a directory with recursive creation if need
 # Can send IOError if a file already exists with the name
 def make_dir(path):

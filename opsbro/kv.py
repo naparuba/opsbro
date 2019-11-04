@@ -10,12 +10,15 @@ from .dbwrapper import dbwrapper
 from .gossip import gossiper
 from .library import libstore
 from .stop import stopper
-from .util import get_sha1_hash
+from .util import get_sha1_hash, epoch_to_human_string
 from .jsonmgr import jsoner
 from .ttldatabase import TTLDatabase
 from .udprouter import udprouter
 
 REPLICATS = 1
+
+_UPDATES_DB_FILE_EXTENSION = '.lst'
+_UPDATES_DB_FILES_RETENTION = 86400 * 7  # Keep 7 days of updates
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('key-value')
@@ -55,6 +58,7 @@ class KVBackend:
         self.db_dir = os.path.join(data_dir, 'kv')
         self.db = dbwrapper.get_db(self.db_dir)
         self.ttldb = TTLDatabase(os.path.join(data_dir, 'ttl'))
+        self._updates_files_dir = self._get_updates_db_directory()
         
         # We can now export our http interface
         self.export_http()
@@ -94,13 +98,18 @@ class KVBackend:
                 logger.debug("FLUSH TIME: %.4f" % (time.time() - t0))
                 self.update_db.close()
                 self.update_db = None
-            db_dir = os.path.join(self.data_dir, 'updates')
-            db_path = os.path.join(db_dir, '%d.lst' % cmin)
-            if not os.path.exists(db_dir):
-                os.mkdir(db_dir)
+            db_dir = self._updates_files_dir
+            db_path = os.path.join(db_dir, '%d%s' % (cmin, _UPDATES_DB_FILE_EXTENSION))
             self.update_db = open(db_path, 'a')
             self.update_db_time = cmin
             return self.update_db
+    
+    
+    def _get_updates_db_directory(self):
+        db_dir = os.path.join(self.data_dir, 'updates')
+        if not os.path.exists(db_dir):
+            os.mkdir(db_dir)
+        return db_dir
     
     
     # Raw get in our db for a key
@@ -132,7 +141,7 @@ class KVBackend:
         metavalue['modify_time'] = mtime
         
         # Update our meta values
-        self.put_meta(key, metavalue)
+        self._put_meta(key, metavalue)
         
         # if we got a tll, compute the dead time, and set it
         if ttl > 0:
@@ -143,12 +152,9 @@ class KVBackend:
         with self.lock:  # protect to not have flush and close mixed in different threads
             f = self.get_update_db(mtime)
             f.write('%s\n' % key)
-        # print "write", time.time() - t0
         
-        t0 = time.time()
         # and in the end save the real data :)
         self.db.Put(key, value)
-        # print "write db", time.time() - t0
     
     
     # Delete both leveldb and metadata entry
@@ -178,7 +184,7 @@ class KVBackend:
     
     
     # Save a metadata entry in json
-    def put_meta(self, key, meta):
+    def _put_meta(self, key, meta):
         metakey = '__meta/%s' % key
         metadata = meta
         if isinstance(meta, dict):
@@ -187,7 +193,8 @@ class KVBackend:
     
     
     # Look at meta entries for data that changed since t
-    def changed_since(self, t):
+    # TODO: if there are update db, use them
+    def _changed_since(self, t):
         # Lookup all __meta keys
         _all = list(self.db.RangeIter(key_from='__meta', key_to='__n'))
         
@@ -242,7 +249,7 @@ class KVBackend:
                 continue
             # If the other mod_index is higer, we import it :)
             if meta['modify_index'] > lmeta['modify_index']:
-                self.put_meta(ukey, meta)
+                self._put_meta(ukey, meta)
                 self.db.Put(ukey, v)
             else:
                 pass
@@ -329,7 +336,7 @@ class KVBackend:
             
             # We also replicate the meta data from the master node
             if meta:
-                self.put_meta(key, meta)
+                self._put_meta(key, meta)
             
             # If we are in a force mode, so we do not launch a repl, we are not
             # the master node
@@ -440,6 +447,39 @@ class KVBackend:
             time.sleep(1)
     
     
+    def do_kv_updates_cleaning_thread(self):
+        logger.log('KV Updates files cleaning threads')
+        while not stopper.is_stop():
+            self._clean_old_updates_files()
+            time.sleep(3600)  # clean one an hour, it's not a problem
+    
+    
+    # Look at old update database entries
+    def _clean_old_updates_files(self):
+        logger.info("Clean old databases updates entry")
+        update_files_limit = NOW.now - _UPDATES_DB_FILES_RETENTION
+        
+        # Look at the databses directory that have the hour time set
+        subfiles = os.listdir(self._updates_files_dir)
+        
+        nb_file_cleaned = 0
+        for subfile in subfiles:
+            subfile_minute = subfile.replace(_UPDATES_DB_FILE_EXTENSION, '')
+            try:
+                file_minute = int(subfile_minute)
+            except ValueError:  # who add a dir that is not a int here...
+                continue
+            # Is the hour available for cleaning?
+            if file_minute < update_files_limit:
+                try:
+                    os.unlink(os.path.join(self._updates_files_dir, subfile))
+                    nb_file_cleaned += 1
+                except Exception as exp:
+                    logger.error('Cannot remove update file %s : %s' % (subfile, exp))
+        if nb_file_cleaned != 0:
+            logger.info("We did cleaned %d updates files older than %s" % (nb_file_cleaned, epoch_to_human_string(update_files_limit)))
+    
+    
     # main method to export http interface. Must be in a method that got
     # a self entry
     def export_http(self):
@@ -454,10 +494,10 @@ class KVBackend:
         
         
         @http_export('/kv-meta/changed/:t', method='GET')
-        def changed_since(t):
+        def get_changed_since(t):
             response.content_type = 'application/json'
             t = int(t)
-            return jsoner.dumps(self.changed_since(t))
+            return jsoner.dumps(self._changed_since(t))
         
         
         @http_export('/kv/:ukey#.+#', method='GET')
