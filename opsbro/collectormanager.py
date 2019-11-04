@@ -48,7 +48,7 @@ class CollectorManager(BaseManager):
     
     
     def __init__(self):
-        super(CollectorManager, self).__init__()
+        super(CollectorManager, self).__init__(logger)
         self.collectors = {}
         
         self.did_run = False  # did our data are all ok or we did not launch all?
@@ -56,8 +56,6 @@ class CollectorManager(BaseManager):
         # results from the collectors, keep ony the last run
         self.results_lock = threading.RLock()
         self.results = {}
-        
-        self.logger = logger
         
         self.cur_launchs = {}
         

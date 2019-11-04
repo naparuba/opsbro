@@ -513,12 +513,10 @@ class ComplianceManager(BaseManager):
     
     
     def __init__(self):
-        super(ComplianceManager, self).__init__()
+        super(ComplianceManager, self).__init__(logger)
         self.compliances = {}
         self.did_run = False
         self.drivers = {}
-        
-        self.logger = logger
     
     
     def load_backends(self):

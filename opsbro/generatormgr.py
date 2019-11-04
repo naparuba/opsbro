@@ -16,9 +16,8 @@ class GeneratorMgr(BaseManager):
     
     
     def __init__(self):
-        super(GeneratorMgr, self).__init__()
+        super(GeneratorMgr, self).__init__(logger)
         
-        self.logger = logger
         self.generators = {}
         # Did we run at least once
         self.did_run = False

@@ -614,8 +614,8 @@ class RaftManager(BaseManager):
     
     
     def __init__(self, raft_layer):
-        super(RaftManager, self).__init__()
-        self.logger = logger
+        super(RaftManager, self).__init__(logger)
+        
         self.raft_layer = raft_layer
         self.raft_node = RaftNode(self.raft_layer)
         # Set myself as master of the raft:: udp messages

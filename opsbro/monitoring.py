@@ -35,8 +35,7 @@ class MonitoringManager(BaseManager):
     
     
     def __init__(self):
-        super(MonitoringManager, self).__init__()
-        self.logger = logger
+        super(MonitoringManager, self).__init__(logger)
         
         self.checks = {}
         self.services = {}

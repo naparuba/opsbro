@@ -67,8 +67,7 @@ class Gossip(BaseManager):
     
     
     def __init__(self):
-        super(Gossip, self).__init__()
-        self.logger = logger
+        super(Gossip, self).__init__(logger)
         # Set myself as master of the gossip:: udp messages
         udprouter.declare_handler('gossip', self)
         # We must protect the nodes with a lock

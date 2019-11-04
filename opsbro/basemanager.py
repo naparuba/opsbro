@@ -3,19 +3,24 @@ import threading
 import os
 import time
 
-from .util import make_dir
+from .util import make_dir, epoch_to_human_string
 from .jsonmgr import jsoner
 
 
 # This class is an abstract for various manager
 class BaseManager(object):
     history_directory_suffix = 'UNSET'
+    history_files_keep_delay = 86400 * 15  # by default keep 15 days of files
+    history_files_clean_interval = 3600
     
     
-    def __init__(self):
+    def __init__(self, logger):
+        self.logger = logger
         self.history_directory = None
         self._current_history_entry = []
         self._current_history_entry_lock = threading.RLock()
+        # Clean
+        self._last_history_files_clean = 0.0  # clean files at startup
     
     
     def prepare_history_directory(self):
@@ -47,6 +52,36 @@ class BaseManager(object):
                 f.write(buf)
             # Now we can reset it
             self._current_history_entry = []
+        
+        if self._last_history_files_clean < now - self.history_files_clean_interval:
+            self._clean_history_files()
+    
+    
+    def _clean_history_files(self):
+        now = int(time.time())
+        self._last_history_files_clean = now
+        clean_limit = now - self.history_files_keep_delay
+        
+        # Look at the databses directory that have the hour time set
+        subfiles = os.listdir(self.history_directory)
+        
+        nb_file_cleaned = 0
+        for subfile in subfiles:
+            subfile_minute = subfile.replace('.json', '')
+            try:
+                file_minute = int(subfile_minute)
+            except ValueError:  # who add a dir that is not a int here...
+                continue
+            # Is the hour available for cleaning?
+            if file_minute < clean_limit:
+                fpath = os.path.join(self.history_directory, subfile)
+                try:
+                    os.unlink(fpath)
+                    nb_file_cleaned += 1
+                except Exception as exp:
+                    self.logger.error('Cannot remove history file %s : %s' % (fpath, exp))
+        if nb_file_cleaned != 0:
+            self.logger.info("We did cleaned %d history files older than %s" % (nb_file_cleaned, epoch_to_human_string(clean_limit)))
     
     
     def get_history(self):
