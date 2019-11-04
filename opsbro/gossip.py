@@ -591,9 +591,9 @@ class Gossip(BaseManager):
     def _compute_node_address(self, node):
         node_zone = node['zone']
         if node_zone != self.zone:
-            node['addr'] = node['public_addr']
+            node['addr'] = node.get('public_addr', 'addr')  # old version <0.5 do not have public_addr
         else:
-            node['addr'] = node['local_addr']
+            node['addr'] = node.get('local_addr', 'addr')  # old version <0.5 do not have local_addr
     
     
     # Got a new node, great! Warn others about this
