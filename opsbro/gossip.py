@@ -1168,29 +1168,43 @@ class Gossip(BaseManager):
                 except socket.error as exp:
                     logger.error('Cannot send a ping relay to %s:%s' % (r['public_addr'], r['port']))
             # Allow 3s to get an answer from whatever relays got it
-            sock.settimeout(3 * 2)
-            try:
-                ret = sock.recv(_64K)
-            except socket.timeout:
-                logger.info('PING RELAY: no response from relays about node %s' % other['display_name'])
-                # still noone succed to ping it? I suspect it
-                self.set_suspect(other)
+            now = time.time()
+            all_responses_timeout = 3 * 2
+            out_of_time_date = now + all_responses_timeout
+            while time.time() < out_of_time_date:
+                # Allow 3s to get an answer from whatever relays got it
+                sock.settimeout(max(0.01, out_of_time_date - time.time()))  # don't know if 0 is an acceptable timeout
+                try:
+                    ret = sock.recv(_64K)
+                except socket.timeout:
+                    logger.info('PING RELAY: no response from relays about node %s' % other['display_name'])
+                    # still noone succed to ping it? I suspect it
+                    self.set_suspect(other)
+                    sock.close()
+                    return
+                
+                uncrypted_ret = encrypter.decrypt(ret)
+                try:
+                    msg = jsoner.loads(uncrypted_ret)
+                except ValueError:  # bad json from the relay reponse
+                    logger.warning('PING RELAY: the response from another node is in wrong format')
+                    continue
+                # Got a valid response, do not look for all
                 sock.close()
-                return
-            sock.close()
-            uncrypted_ret = encrypter.decrypt(ret)
-            msg = jsoner.loads(uncrypted_ret)
-            new_other = msg['node']
-            logger.debug('PING got a return from %s (%s) via a relay: %s' % (new_other['name'], new_other['display_name'], msg))
-            # Ok it's no more suspected, great :)
-            if new_other['state'] == NODE_STATES.ALIVE:
-                # An aswer? great it is alive!
-                self.set_alive(other, strong=True)
-            elif new_other['state'] == NODE_STATES.LEAVE:
-                self.set_leave(new_other)
-            else:
-                logger.error('PING the other node %s did give us a unamanged state: %s' % (new_other['name'], new_other['state']))
-                self.set_suspect(new_other)
+                new_other = msg['node']
+                logger.debug('PING got a return from %s (%s) via a relay: %s' % (new_other['name'], new_other['display_name'], msg))
+                # Ok it's no more suspected, great :)
+                if new_other['state'] == NODE_STATES.ALIVE:
+                    # An aswer? great it is alive!
+                    self.set_alive(other, strong=True)
+                    return
+                elif new_other['state'] == NODE_STATES.LEAVE:
+                    self.set_leave(new_other)
+                    return
+                else:
+                    logger.error('PING the other node %s did give us a unamanged state: %s' % (new_other['name'], new_other['state']))
+                    self.set_suspect(new_other)
+                    return
         except socket.error as exp:
             logger.info("PING: cannot join the other node %s:%s : %s" % (addr, port, exp))
     
