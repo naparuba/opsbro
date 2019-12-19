@@ -27,6 +27,13 @@ class YumBackend(LinuxBackend):
             yum = None
         self.yum = yum
         
+        self.dnf = None
+        if self.yum is None:
+            try:
+                import dnf
+            except ImportError:
+                pass
+        
         self._installed_packages_cache = set()
         self._rpm_package_file_age = None
     
@@ -41,16 +48,23 @@ class YumBackend(LinuxBackend):
     
     
     def _update_cache(self):
-        # NOTE: need to close yum base
-        logger.info('Yum:: updating the rpm package cache')
-        yum_base = self.yum.YumBase()
-        rpm_db = yum_base.rpmdb
-        all_packages = rpm_db.returnPackages()
-        self._installed_packages_cache = set([pkg.name for pkg in all_packages])
-        
-        # IMPORTANT: close the db before exiting, if not, memory leak will be present
-        yum_base.close()
-        yum_base.closeRpmDB()
+        if self.yum:
+            # NOTE: need to close yum base
+            logger.info('Yum:: updating the rpm package cache')
+            yum_base = self.yum.YumBase()
+            rpm_db = yum_base.rpmdb
+            all_packages = rpm_db.returnPackages()
+            self._installed_packages_cache = set([pkg.name for pkg in all_packages])
+            
+            # IMPORTANT: close the db before exiting, if not, memory leak will be present
+            yum_base.close()
+            yum_base.closeRpmDB()
+        elif self.dnf:
+            base = self.dnf.Base()
+            base.fill_sack()
+            q = base.sack.query()
+            all_installed = q.installed()
+            self._installed_packages_cache = set([pkg.name for pkg in all_installed])
     
     
     def has_package(self, package):
@@ -65,12 +79,13 @@ class YumBackend(LinuxBackend):
     @staticmethod
     def install_package(package):
         logger.debug('YUM :: installing package: %s' % package)
-        p = subprocess.Popen(['yum', '--nogpgcheck', '-y', '--rpmverbosity=error', '--errorlevel=1', '--color=auto', 'install', package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        args = ['yum', '--nogpgcheck', '-y', '--rpmverbosity=error', '--errorlevel=1', '--color=auto', 'install', package]
+        p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
         logger.debug('YUM (%s):: stdout: %s' % (package, stdout))
         logger.debug('YUM (%s):: stderr: %s' % (package, stderr))
         if p.returncode != 0:
-            raise Exception('YUM: Cannot install package: %s from yum: %s' % (package, stdout + stderr))
+            raise Exception('YUM: Cannot install package: %s from yum: =>%s' % (package, ' '.join(args), stdout + stderr))
         return
     
     

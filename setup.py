@@ -403,7 +403,7 @@ if PY3:
                 'ubuntu'       : 'python3-crypto',
                 'amazon-linux' : 'python3-crypto',
                 'amazon-linux2': 'python3-crypto',
-                'centos'       : 'python3-crypto',
+                'centos'       : 'python3-cryptography',
                 'redhat'       : 'python3-crypto',
                 'oracle-linux' : 'python3-crypto',
                 'fedora'       : 'python3-crypto',

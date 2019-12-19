@@ -2,6 +2,13 @@ FROM centos:8
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 ADD        test/docker-helper/  /
+
+RUN        /yum_install  python3
+
+# TODO: fix, theses should not be necessary
+RUN        alternatives --set python /usr/bin/python3
+RUN        pip3 install bottle
+
 ADD        . /root/opsbro-oss
 
 WORKDIR    /root/opsbro-oss
