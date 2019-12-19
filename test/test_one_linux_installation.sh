@@ -136,6 +136,7 @@ if [ $? != 0 ];then
    cat $MASSIVE_INSTALL_LOG
    cat /var/log/opsbro/daemon.log
    cat /var/log/opsbro/*log
+   cat /var/log/opsbro/*system-packages*log
    ps axjf
    exit 2
 fi

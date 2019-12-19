@@ -31,6 +31,7 @@ class YumBackend(LinuxBackend):
         if self.yum is None:
             try:
                 import dnf
+                self.dnf = dnf
             except ImportError:
                 pass
         
@@ -40,7 +41,7 @@ class YumBackend(LinuxBackend):
     
     def _assert_valid_cache(self):
         last_package_change = os.stat(self.RPM_PACKAGE_FILE_PATH).st_mtime
-        
+        logger.debug('Yum:: Current rpm cache file %s, new rpm cache file: %s' % (self._rpm_package_file_age, last_package_change))
         if self._rpm_package_file_age != last_package_change:
             self._rpm_package_file_age = last_package_change
             self._update_cache()
@@ -50,7 +51,7 @@ class YumBackend(LinuxBackend):
     def _update_cache(self):
         if self.yum:
             # NOTE: need to close yum base
-            logger.info('Yum:: updating the rpm package cache')
+            logger.info('Yum:: updating the rpm YUM package cache')
             yum_base = self.yum.YumBase()
             rpm_db = yum_base.rpmdb
             all_packages = rpm_db.returnPackages()
@@ -60,11 +61,14 @@ class YumBackend(LinuxBackend):
             yum_base.close()
             yum_base.closeRpmDB()
         elif self.dnf:
+            logger.info('Yum:: updating the rpm DNF package cache')
             base = self.dnf.Base()
             base.fill_sack()
             q = base.sack.query()
             all_installed = q.installed()
             self._installed_packages_cache = set([pkg.name for pkg in all_installed])
+        else:
+            logger.error('Yum:: do not have nor yum or dnf lib, cannot lookup for packages')
     
     
     def has_package(self, package):
@@ -72,7 +76,9 @@ class YumBackend(LinuxBackend):
         # NOTE: the yum base is not able to detect that the cache is wrong :'(
         with self.yumbase_lock:
             self._assert_valid_cache()  # be sure that the package list is up to date, iff need, reload it
-            return package in self._installed_packages_cache
+            is_installed = package in self._installed_packages_cache
+            logger.debug('Yum:: Is the package %s installed? => %s' % (package, is_installed))
+            return is_installed
     
     
     # yum  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto  install  XXXXX

@@ -37,21 +37,24 @@ compliance:
               - pip install leveldb
 
 
-         - name: centos7
-           if:   "{{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 7"
+         - name: centos8
+           if:   "{{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 8"
            parameters:
              packages:
+                # epel is need to find libs
                 - epel-release
+                # redhat-rpm-config => to avoid gcc error
                 - gcc-c++
+                - redhat-rpm-config
                 - curl
                 - gcc
-                - python-devel
-                - python2-pip
-                - python2-simplejson
-                - python-setproctitle
-                - python2-psutil
+                - python36-devel
+                # Tuning lib we can install
+                - python3-simplejson
+                - python3-setproctitle
+                - python3-psutil
            post_commands:
-              - pip install leveldb
+              - pip3 install leveldb
 
 
          # Debian 6 is not managed
