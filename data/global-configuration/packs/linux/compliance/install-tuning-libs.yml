@@ -37,6 +37,23 @@ compliance:
               - pip install leveldb
 
 
+         - name: centos7
+           if:   "{{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 7"
+           parameters:
+             packages:
+                - epel-release
+                - gcc-c++
+                - curl
+                - gcc
+                - python-devel
+                - python2-pip
+                - python2-simplejson
+                - python-setproctitle
+                - python2-psutil
+           post_commands:
+              - pip install leveldb
+
+
          - name: centos8
            if:   "{{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 8"
            parameters:
