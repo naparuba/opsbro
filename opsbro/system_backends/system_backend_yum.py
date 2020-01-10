@@ -21,21 +21,17 @@ class YumBackend(LinuxBackend):
         self.yumbase_lock = threading.RLock()
         
         try:
-            import rpm
             # we want to silent verbose plugins
             yum_logger = logging.getLogger("yum.verbose.YumPlugins")
             yum_logger.setLevel(logging.CRITICAL)
+            import rpm
         except ImportError:
-            rpm = None
-        self.rpm = rpm
-        
-        self.dnf = None
-        if self.rpm is None:
             try:
-                import dnf
-                self.dnf = dnf
-            except ImportError:
-                pass
+                self.install_package('rpm-python')
+                import rpm
+            except:
+                rpm = None
+        self.rpm = rpm
         
         self._installed_packages_cache = set()
         self._rpm_package_file_age = None
@@ -65,7 +61,7 @@ class YumBackend(LinuxBackend):
                     if '/' in package_name or '(' in package_name:
                         continue
                     self._installed_packages_cache.add(package_name)
-                    
+            
             # IMPORTANT: close the db before exiting, if not, memory leak will be present
             # old python do not have clear but clean instead
             if hasattr(ts, 'clear'):
@@ -73,15 +69,8 @@ class YumBackend(LinuxBackend):
             else:
                 ts.clean()
             ts.closeDB()
-        elif self.dnf:
-            logger.info('Yum:: updating the rpm DNF package cache')
-            base = self.dnf.Base()
-            base.fill_sack()
-            q = base.sack.query()
-            all_installed = q.installed()
-            self._installed_packages_cache = set([pkg.name for pkg in all_installed])
         else:
-            logger.error('Yum:: do not have nor yum or dnf lib, cannot lookup for packages')
+            logger.error('Yum:: do not havethe rpm lib installed, cannot lookup for packages')
     
     
     def has_package(self, package):
