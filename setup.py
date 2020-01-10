@@ -192,6 +192,7 @@ from opsbro.misc.bro_quotes import get_quote
 from opsbro.systempacketmanager import get_systepacketmgr
 from opsbro.cli_display import print_h1
 from opsbro.characters import CHARACTERS
+from opsbro.util import make_dir
 
 systepacketmgr = get_systepacketmgr()
 
@@ -637,6 +638,17 @@ if not allow_black_magic:
 # HACK: debian 6 do not allow any more pypi install, sorry :'(
 if system_distro == 'debian' and system_distroversion.startswith('6.'):
     install_from_pip = set()
+
+# HACK: centos8 have a know bug about not allowing a setup() call before run pip
+if allow_black_magic and system_distro == 'centos' and system_distroversion.startswith('8'):
+    setup_py_path = '/usr/local/lib/python%d.%d/site-packages/' % (sys.version_info[0], sys.version_info[1])
+    if not os.path.exists(setup_py_path):
+        cprint(' * Fixing a know bug on Centos 8:')
+        cprint('   - have a know bug that you cannot install a python package before run pip first.', color='grey')
+        cprint('   - Creating the directory %s' % setup_py_path, color='grey')
+        make_dir(setup_py_path)
+        cprint('   - Centos 8 fix: ', end='')
+        cprint(' %s' % CHARACTERS.check, color='green')
 
 # Try to import setup tools, and if not, switch to
 try:

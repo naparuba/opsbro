@@ -7,7 +7,7 @@ RUN        /yum_install  python3
 
 # TODO: fix, theses should not be necessary
 RUN        alternatives --set python /usr/bin/python3
-RUN        pip3 install bottle
+
 
 # TCL: very little
 ENV        TEST_PACKAGE_NAME=tcl
