@@ -74,6 +74,22 @@ compliance:
               - pip3 install leveldb
 
 
+         - name: redhat6
+           if:   "{{variables.is_redhat}} and {{collector.system.os.linux.major_version}} == 6"
+           parameters:
+             packages:
+                - epel-release
+                - gcc-c++
+                - curl
+                - gcc
+                - python-devel
+                - python-pip
+                - python-simplejson
+                - python-setproctitle
+                - python-psutil
+           post_commands:
+              - pip install leveldb
+
          # Debian 6 is not managed
          # TODO: failback with leveldb C lib?
          - name: debian6

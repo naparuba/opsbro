@@ -6,8 +6,6 @@ from .log import LoggerFactory
 # Global logger for this part
 logger = LoggerFactory.create_logger('system-packages')
 
-from .systempacketmanager_errors import InstallationFailedException, UpdateFailedException, AssertKeyFailedException, AssertRepositoryFailedException
-
 # TODO: get a way to know if a service is enabled, or not
 # RUN level: [root@centos-7 ~]# systemctl get-default
 # multi-user.target   ==> 3
@@ -87,7 +85,7 @@ class SystemPacketMgr(object):
         elif 'centos' in distname:
             self.distro = 'centos'
             self.managed_system = True
-        elif 'redhat' in distname:
+        elif 'redhat' in distname or 'red hat' in distname:
             self.distro = 'redhat'
             self.managed_system = True
         elif 'fedora' in distname:
@@ -117,14 +115,12 @@ class SystemPacketMgr(object):
             self.managed_system = False
         
         # Get the backend
-        if self.distro in ['redhat', 'centos', 'amazon-linux', 'amazon-linux2', 'oracle-linux']:
+        if self.distro in ['redhat', 'centos', 'amazon-linux', 'amazon-linux2', 'oracle-linux', 'fedora']:
             self.backend = YumBackend()
         elif self.distro in ['debian', 'ubuntu']:
             self.backend = AptBackend()
         elif self.distro == 'alpine':
             self.backend = ApkBackend()
-        elif self.distro == 'fedora':
-            self.backend = YumBackend()
         elif self.distro == 'opensuse':
             self.backend = ZypperBackend()
         else:  # oups
