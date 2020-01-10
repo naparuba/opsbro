@@ -796,8 +796,11 @@ def __do_change_bin_opsbro_python_path(scripts):
         with open(script_path, 'w') as f:
             f.write(final_file)
 
+
 # Always install standard directories (log, run, etc)
 if allow_black_magic:
+    # NOTE: start to Centos8 there is no more "python", only python2 or python3
+    # so we need to let the bin/opsbro know about it
     __do_change_bin_opsbro_python_path(scripts)
     __do_install_files(data_files)
     __print_sub_install_part('OpsBro scripts & directories')
