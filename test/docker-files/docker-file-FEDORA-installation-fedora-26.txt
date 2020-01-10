@@ -7,6 +7,9 @@ RUN        /dnf_install python
 # NOTE: there is a bug in fedora 26 with a pypi connection impossible without the glibc update
 RUN       /dnf_update glibc
 
+ENV        TEST_PACKAGE_NAME_VIRTUAL=vi
+# But need to delete it first as it is installed by default
+RUN        /yum_remove vim-minimal
 
 ADD        . /root/opsbro-oss
 

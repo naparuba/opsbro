@@ -113,32 +113,16 @@ print_header "Runtime package detection"
 if [ "X$TEST_PACKAGE_NAME" == "X" ];then
    TEST_PACKAGE_NAME=fping
 fi
-echo "We should not have the $TEST_PACKAGE_NAME package installed"
-opsbro evaluator wait-eval-true "has_package('$TEST_PACKAGE_NAME')" --timeout=2
-if [ $? == 0 ];then
-   echo "ERROR: should not be the $TEST_PACKAGE_NAME package installed"
-   exit 2
-fi
 
-MASSIVE_INSTALL_LOG=/tmp/massive_install_test
-> $MASSIVE_INSTALL_LOG
-/dnf_install     $TEST_PACKAGE_NAME >>$MASSIVE_INSTALL_LOG  2>>$MASSIVE_INSTALL_LOG
-/yum_install     $TEST_PACKAGE_NAME >>$MASSIVE_INSTALL_LOG  2>>$MASSIVE_INSTALL_LOG
-/apt_get_install $TEST_PACKAGE_NAME >>$MASSIVE_INSTALL_LOG  2>>$MASSIVE_INSTALL_LOG
-/apk_add         $TEST_PACKAGE_NAME >>$MASSIVE_INSTALL_LOG  2>>$MASSIVE_INSTALL_LOG
-/zypper_install  $TEST_PACKAGE_NAME >>$MASSIVE_INSTALL_LOG  2>>$MASSIVE_INSTALL_LOG
+echo " * Testing simple package"
+assert_one_package_can_be_installed_and_detected "$TEST_PACKAGE_NAME"
 
-
-# We let debian take some few seconds before detect it (5s cache for more perfs on docker only)
-opsbro evaluator wait-eval-true "has_package('$TEST_PACKAGE_NAME')" --timeout=10
-if [ $? != 0 ];then
-   echo "ERROR: the $TEST_PACKAGE_NAME package should have been detected"
-   cat $MASSIVE_INSTALL_LOG
-   cat /var/log/opsbro/daemon.log
-   cat /var/log/opsbro/*log
-   cat /var/log/opsbro/*system-packages*log
-   ps axjf
-   exit 2
+# We are trying the fping package unless the distro test did ask us another
+if [ "X$TEST_PACKAGE_NAME_VIRTUAL" == "X" ];then
+   echo " * No virtual package is defined for this distribution, skipping the virtal package test."
+else
+   echo " * Testing virtual package detection"
+   assert_one_package_can_be_installed_and_detected "$TEST_PACKAGE_NAME_VIRTUAL"
 fi
 
 

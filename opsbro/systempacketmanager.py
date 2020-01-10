@@ -6,6 +6,8 @@ from .log import LoggerFactory
 # Global logger for this part
 logger = LoggerFactory.create_logger('system-packages')
 
+from .systempacketmanager_errors import InstallationFailedException, UpdateFailedException, AssertKeyFailedException, AssertRepositoryFailedException
+
 # TODO: get a way to know if a service is enabled, or not
 # RUN level: [root@centos-7 ~]# systemctl get-default
 # multi-user.target   ==> 3
@@ -18,6 +20,8 @@ logger = LoggerFactory.create_logger('system-packages')
 # Run level:
 # root@docker-host:~/opsbro-oss# systemctl get-default
 # graphical.target
+
+
 
 from .system_backends.linux_system_backend import LinuxBackend  # for unmanaged system
 from .system_backends.system_backend_apt import AptBackend
@@ -122,7 +126,7 @@ class SystemPacketMgr(object):
         elif self.distro == 'alpine':
             self.backend = ApkBackend()
         elif self.distro == 'fedora':
-            self.backend = DnfBackend()
+            self.backend = YumBackend()
         elif self.distro == 'opensuse':
             self.backend = ZypperBackend()
         else:  # oups

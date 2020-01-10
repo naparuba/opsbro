@@ -4,6 +4,9 @@ MAINTAINER Jean Gabes <naparuba@gmail.com>
 ADD        test/docker-helper/  /
 RUN        /dnf_install python2
 
+ENV        TEST_PACKAGE_NAME_VIRTUAL=vi
+# But need to delete it first as it is installed by default
+RUN        /yum_remove vim-minimal
 
 ADD        . /root/opsbro-oss
 

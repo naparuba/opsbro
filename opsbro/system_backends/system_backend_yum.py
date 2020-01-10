@@ -3,9 +3,11 @@ import threading
 import logging
 import os
 
-from opsbro.log import LoggerFactory
+from ..log import LoggerFactory
+from ..util import bytes_to_unicode
 
 from .linux_system_backend import LinuxBackend
+from ..systempacketmanager_errors import InstallationFailedException, UpdateFailedException, AssertKeyFailedException, AssertRepositoryFailedException
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('system-packages')
@@ -19,16 +21,16 @@ class YumBackend(LinuxBackend):
         self.yumbase_lock = threading.RLock()
         
         try:
-            import yum
+            import rpm
             # we want to silent verbose plugins
             yum_logger = logging.getLogger("yum.verbose.YumPlugins")
             yum_logger.setLevel(logging.CRITICAL)
         except ImportError:
-            yum = None
-        self.yum = yum
+            rpm = None
+        self.rpm = rpm
         
         self.dnf = None
-        if self.yum is None:
+        if self.rpm is None:
             try:
                 import dnf
                 self.dnf = dnf
@@ -49,17 +51,28 @@ class YumBackend(LinuxBackend):
     
     
     def _update_cache(self):
-        if self.yum:
+        if self.rpm:
             # NOTE: need to close yum base
-            logger.info('Yum:: updating the rpm YUM package cache')
-            yum_base = self.yum.YumBase()
-            rpm_db = yum_base.rpmdb
-            all_packages = rpm_db.returnPackages()
-            self._installed_packages_cache = set([pkg.name for pkg in all_packages])
-            
+            logger.info('RPM:: updating the rpm package cache')
+            self._installed_packages_cache = set()
+            ts = self.rpm.TransactionSet()
+            mi = ts.dbMatch()
+            for package in mi:
+                package_provides = package.provides
+                for package_name in package_provides:
+                    package_name = bytes_to_unicode(package_name)  # python3 entries are bytes
+                    # provides will give /bin/vi and libdw.so.1(ELFUTILS_0.127)(64bit) returns, and we don't want them
+                    if '/' in package_name or '(' in package_name:
+                        continue
+                    self._installed_packages_cache.add(package_name)
+                    
             # IMPORTANT: close the db before exiting, if not, memory leak will be present
-            yum_base.close()
-            yum_base.closeRpmDB()
+            # old python do not have clear but clean instead
+            if hasattr(ts, 'clear'):
+                ts.clear()
+            else:
+                ts.clean()
+            ts.closeDB()
         elif self.dnf:
             logger.info('Yum:: updating the rpm DNF package cache')
             base = self.dnf.Base()
@@ -91,7 +104,7 @@ class YumBackend(LinuxBackend):
         logger.debug('YUM (%s):: stdout: %s' % (package, stdout))
         logger.debug('YUM (%s):: stderr: %s' % (package, stderr))
         if p.returncode != 0:
-            raise Exception('YUM: Cannot install package: %s from yum: =>%s' % (package, ' '.join(args), stdout + stderr))
+            raise InstallationFailedException('YUM: Cannot install package: %s from yum: %s=>%s' % (package, ' '.join(args), stdout + stderr))
         return
     
     
@@ -104,7 +117,7 @@ class YumBackend(LinuxBackend):
         logger.debug('YUM (%s):: stdout: %s' % (package, stdout))
         logger.debug('YUM (%s):: stderr: %s' % (package, stderr))
         if p.returncode != 0:
-            raise Exception('YUM: Cannot update package: %s from yum: %s' % (package, stdout + stderr))
+            raise UpdateFailedException('YUM: Cannot update package: %s from yum: %s' % (package, stdout + stderr))
         return
     
     
@@ -116,7 +129,7 @@ class YumBackend(LinuxBackend):
         stdout, stderr = p.communicate()
         logger.debug('YUM (rpm import):: stdout/stderr: %s/%s' % (stdout, stderr))
         if p.returncode != 0:
-            raise Exception('YUM (rpm import) cannot import key (%s): %s' % (key, stdout + stderr))
+            raise AssertKeyFailedException('YUM (rpm import) cannot import key (%s): %s' % (key, stdout + stderr))
         return True
     
     
@@ -145,7 +158,7 @@ gpgkey=https://www.mongodb.org/static/pgp/server-3.4.asc
             except IOError as exp:
                 err = 'YUM: cannot read the repository file: %s : %s' % (pth, exp)
                 logger.error(err)
-                raise Exception(err)
+                raise AssertRepositoryFailedException(err)
         
         # If we are just in audit, do NOT write it
         if check_only:
@@ -159,5 +172,5 @@ gpgkey=https://www.mongodb.org/static/pgp/server-3.4.asc
         except IOError as exp:
             err = 'YUM: cannot write repository content: %s: %s' % (pth, exp)
             logger.error(err)
-            raise Exception(err)
+            raise AssertRepositoryFailedException(err)
         return True

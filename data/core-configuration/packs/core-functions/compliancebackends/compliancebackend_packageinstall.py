@@ -1,5 +1,8 @@
+import traceback
+
 from opsbro.systempacketmanager import get_systepacketmgr
 from opsbro.compliancemgr import InterfaceComplianceDriver
+from opsbro.systempacketmanager_errors import InstallationFailedException
 
 
 class PackageInstallDriver(InterfaceComplianceDriver):
@@ -62,8 +65,12 @@ class PackageInstallDriver(InterfaceComplianceDriver):
                     systepacketmgr.install_package(pkg)
                     txt = 'Environnement %s: package %s is now installed' % (env_name, pkg)
                     rule.add_fix(txt)
-                except Exception as exp:
+                except InstallationFailedException  as exp:
                     err = 'Environnement %s: package (%s) installation fail: %s' % (env_name, pkg, exp)
+                    rule.add_error(err)
+                    did_error = True
+                except Exception as exp:  # same but it's a programming error, so show it for debug
+                    err = 'Environnement %s: package (%s) installation fail: %s (%s)' % (env_name, pkg, exp, traceback.format_exc())
                     rule.add_error(err)
                     did_error = True
             else:

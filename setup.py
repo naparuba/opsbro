@@ -574,7 +574,7 @@ if allow_black_magic:
                     post_fix()
             cprint('%s' % CHARACTERS.check, color='green')
         except Exception as exp:
-            cprint('   - ERROR: cannot install the prerequite %s from the system. Please install it manually' % package_name, color='red')
+            cprint('   - ERROR: cannot install the prerequite %s from the system (%s). Please install it manually' % (package_name, exp), color='red')
             sys.exit(2)
 
 # windows black magic: we ned pywin32

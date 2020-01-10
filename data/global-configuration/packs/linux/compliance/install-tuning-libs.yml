@@ -65,7 +65,7 @@ compliance:
                 - redhat-rpm-config
                 - curl
                 - gcc
-                - python36-devel
+                - python3-devel
                 # Tuning lib we can install
                 - python3-simplejson
                 - python3-setproctitle
@@ -171,8 +171,6 @@ compliance:
                 - python2-simplejson
            post_commands:
               - pip install leveldb
-
-
 
 
          # Alpine 3.1->4 have pip command and python-dev package

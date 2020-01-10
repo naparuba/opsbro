@@ -308,3 +308,44 @@ function assert_addr_in_range {
     fi
     echo "OK: The address $ADDR is in the good range $RANGE"
 }
+
+
+
+function assert_one_package_can_be_installed_and_detected {
+    TEST_PACKAGE_NAME="$1"
+    echo "We should not have the $TEST_PACKAGE_NAME package installed"
+
+    MASSIVE_INSTALL_LOG=/tmp/massive_install_test
+    > $MASSIVE_INSTALL_LOG
+    /dnf_remove     $TEST_PACKAGE_NAME >>$MASSIVE_INSTALL_LOG  2>>$MASSIVE_INSTALL_LOG
+    /yum_remove     $TEST_PACKAGE_NAME >>$MASSIVE_INSTALL_LOG  2>>$MASSIVE_INSTALL_LOG
+    /apt_get_remove $TEST_PACKAGE_NAME >>$MASSIVE_INSTALL_LOG  2>>$MASSIVE_INSTALL_LOG
+
+
+    opsbro evaluator wait-eval-true "has_package('$TEST_PACKAGE_NAME')" --timeout=2
+    if [ $? == 0 ];then
+       echo "ERROR: should not be the $TEST_PACKAGE_NAME package installed"
+       exit 2
+    fi
+
+    MASSIVE_INSTALL_LOG=/tmp/massive_install_test
+    > $MASSIVE_INSTALL_LOG
+    /dnf_install     $TEST_PACKAGE_NAME >>$MASSIVE_INSTALL_LOG  2>>$MASSIVE_INSTALL_LOG
+    /yum_install     $TEST_PACKAGE_NAME >>$MASSIVE_INSTALL_LOG  2>>$MASSIVE_INSTALL_LOG
+    /apt_get_install $TEST_PACKAGE_NAME >>$MASSIVE_INSTALL_LOG  2>>$MASSIVE_INSTALL_LOG
+    /apk_add         $TEST_PACKAGE_NAME >>$MASSIVE_INSTALL_LOG  2>>$MASSIVE_INSTALL_LOG
+    /zypper_install  $TEST_PACKAGE_NAME >>$MASSIVE_INSTALL_LOG  2>>$MASSIVE_INSTALL_LOG
+
+
+    # We let debian take some few seconds before detect it (5s cache for more perfs on docker only)
+    opsbro evaluator wait-eval-true "has_package('$TEST_PACKAGE_NAME')" --timeout=10
+    if [ $? != 0 ];then
+       echo "ERROR: the $TEST_PACKAGE_NAME package should have been detected"
+       cat $MASSIVE_INSTALL_LOG
+       cat /var/log/opsbro/daemon.log
+       cat /var/log/opsbro/*log
+       cat /var/log/opsbro/*system-packages*log
+       ps axjf
+       exit 2
+    fi
+}

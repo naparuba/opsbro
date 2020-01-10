@@ -1,0 +1,6 @@
+#!/bin/bash
+
+
+rpm -e $1
+
+exit $?

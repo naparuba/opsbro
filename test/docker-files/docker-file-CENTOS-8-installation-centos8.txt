@@ -9,9 +9,17 @@ RUN        /yum_install  python3
 RUN        alternatives --set python /usr/bin/python3
 RUN        pip3 install bottle
 
+# TCL: very little
+ENV        TEST_PACKAGE_NAME=tcl
+# centos have a virtual package to test, vi -> vim-minimal
+ENV        TEST_PACKAGE_NAME_VIRTUAL=vi
+# But need to delete it first as it is installed by default
+RUN        /yum_remove vim-minimal
+
 ADD        . /root/opsbro-oss
 
 WORKDIR    /root/opsbro-oss
+
 
 # TCL: very little
 ENV        TEST_PACKAGE_NAME=tcl
