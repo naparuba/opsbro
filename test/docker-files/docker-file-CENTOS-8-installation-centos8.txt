@@ -5,8 +5,9 @@ ADD        test/docker-helper/  /
 
 RUN        /yum_install  python3
 
-# TODO: fix, theses should not be necessary
-RUN        alternatives --set python /usr/bin/python3
+# As there is no "python" in centos8, we are giving the test it's path for starting the setup.py
+ENV        PYTHON_EXE=/usr/bin/python3
+
 
 
 # TCL: very little

@@ -8,7 +8,7 @@ MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 ##############################################################################
 print_header "Installation"
 
-python setup.py install
+$PYTHON_EXE setup.py install
 if [ $? != 0 ]; then
    echo "ERROR: installation failed!"
    exit 2

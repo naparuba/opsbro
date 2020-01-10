@@ -727,9 +727,6 @@ try:
             'Topic :: System :: Distributed Computing',
         ],
         install_requires=[install_from_pip],
-        # data_files=data_files,
-        # include_package_data=True,  # we need to let setup() install data files, becwause we must give it AND say it's ok to install....
-        # TODO: add some more black magic here! I really hate python packaging!
         
         # Maybe some system need specific packages address on pypi, like add httpS on debian 6 :'(
         dependency_links=additionnal_pypi_repos,
@@ -787,8 +784,21 @@ def __do_install_files(lst):
             shutil.copy2(lfile, destination)
 
 
+def __do_change_bin_opsbro_python_path(scripts):
+    python_path = sys.executable
+    print("Updating opsbro to use the python version %s" % python_path)
+    for script_path in scripts:
+        with open(script_path, 'r') as f:
+            lines = f.readlines()
+            new_line = '#!%s\n' % python_path
+            lines[0] = new_line
+        final_file = ''.join(lines)
+        with open(script_path, 'w') as f:
+            f.write(final_file)
+
 # Always install standard directories (log, run, etc)
 if allow_black_magic:
+    __do_change_bin_opsbro_python_path(scripts)
     __do_install_files(data_files)
     __print_sub_install_part('OpsBro scripts & directories')
     

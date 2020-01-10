@@ -1,5 +1,10 @@
 echo "Loading the common shell functions"
 
+# If there is no python_exe set in the test, set the dfault system one
+if [ "X$PYTHON_EXE" == "X" ];then
+    export  PYTHON_EXE=python
+fi
+
 function print_header {
    printf "\n\n\n"
    printf '\033[94m¯`·.¸.·´¯`·.¸.·´¯`·.¸.·´\033[0m  \033[93m%-40s  \033[94m¯`·.¸.·´¯`·.¸.·´¯`·.¸.·´\033[0m\n\n' "$1"
