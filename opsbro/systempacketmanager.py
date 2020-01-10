@@ -22,11 +22,9 @@ from .systempacketmanager_errors import InstallationFailedException, UpdateFaile
 # graphical.target
 
 
-
 from .system_backends.linux_system_backend import LinuxBackend  # for unmanaged system
 from .system_backends.system_backend_apt import AptBackend
 from .system_backends.system_backend_apk import ApkBackend
-from .system_backends.system_backend_dnf import DnfBackend
 from .system_backends.system_backend_yum import YumBackend
 from .system_backends.system_backend_zypper import ZypperBackend
 
