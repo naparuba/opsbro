@@ -114,8 +114,11 @@ Note that you have to explicitly set
 :attr:`response.body <cherrypy._cprequest.Response.body>`
 and not simply return an error message as a result.
 """
-
-from cgi import escape as _escape
+#python 3.8 move escape to html
+try:
+    from cgi import escape as _escape
+except ImportError:
+    from html import escape as _escape
 from sys import exc_info as _exc_info
 from traceback import format_exception as _format_exception
 from cherrypy._cpcompat import basestring, bytestr, iteritems, ntob
