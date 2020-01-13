@@ -208,8 +208,8 @@ compliance:
               - pip2 install leveldb
 
          # Alpine 3.5->7+ have pip2 command
-         - name: alpine3_5_6_7_8
-           if: "{{variables.is_alpine}} and {{collector.system.os.linux.minor_version}} >= 5"
+         - name: alpine3_5_6_7_8_9_10
+           if: "{{variables.is_alpine}} and ( {{collector.system.os.linux.minor_version}} >= 5 and {{collector.system.os.linux.minor_version}} <= 10 )"
            parameters:
               packages:
                  - gcc
@@ -222,6 +222,25 @@ compliance:
                  - py2-pip
                  - py2-simplejson
                  - py2-setproctitle
+           post_commands:
+              - pip2 install leveldb
+
+
+         # Alpine 3.11+ => do not have setproctitle in python2
+         - name: alpine11_and_more
+           if: "{{variables.is_alpine}} and {{collector.system.os.linux.minor_version}} >= 11"
+           parameters:
+              packages:
+                 - gcc
+                 - linux-headers
+                 - musl-dev
+                 - libgcc
+                 - libgc++
+                 - g++
+                 - python2-dev
+                 - py2-pip
+                 - py2-simplejson
+                 # Not available in alpine 11 - py2-setproctitle
            post_commands:
               - pip2 install leveldb
 

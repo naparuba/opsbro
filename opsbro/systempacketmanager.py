@@ -32,10 +32,16 @@ from .system_backends.system_backend_zypper import ZypperBackend
 class SystemPacketMgr(object):
     def __init__(self):
         if os.name != 'nt':
-            (distname, distversion, distid) = platform.linux_distribution()
-            distname = distname.lower().strip()
-            distversion = distversion.lower().strip()
-            distid = distid.lower().strip()
+            # python 3.8 do not have any more platform.linux_distribution :(
+            if hasattr(platform, 'linux_distribution'):
+                (distname, distversion, distid) = platform.linux_distribution()
+                distname = distname.lower().strip()
+                distversion = distversion.lower().strip()
+                distid = distid.lower().strip()
+            else:  # new python version, no luck.
+                distname = ''
+                distversion = ''
+                distid = ''
         else:
             distname = 'windows'
             distversion = ''
