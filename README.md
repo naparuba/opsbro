@@ -32,13 +32,13 @@ Example of the installation at:
 
 
 Note: main linux distributions are managed and will automatically install dependencies from the package manager (apt/yum/apk/zypper):
- * Alpine 3.1→3.9
+ * Alpine 3.1→3.11
  * Amazonlinux 2016→2018
- * Centos 6 & 7
+ * Centos 6 & 7 & 8
  * Debian 6→10
- * Fedora 24→30
+ * Fedora 24→32
  * OpenSuse 42
- * Ubuntu 12.04→19.04
+ * Ubuntu 12.04→20.04
 
 
 On others distributions are not automatically managed, and so depedencies will be take from pypi, but beware, pypi usage should NOT be for production servers.
