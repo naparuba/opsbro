@@ -3,7 +3,7 @@ MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 ADD        test/docker-helper/  /
 
-RUN        /apt_get_install  python
+RUN        /apt_get_install  python2
 
 ADD        . /root/opsbro-oss
 
