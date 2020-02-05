@@ -126,14 +126,24 @@ compliance:
                 - bash
 
 
-         - name: ubuntu
-           if: "{{variables.is_ubuntu}}"
+         - name: ubuntu_python2
+           if: "{{variables.is_ubuntu}} and system_is_python_2()"
            parameters:
              packages:
                 - python-leveldb
                 - python-simplejson
                 - python-setproctitle
                 - python-psutil
+
+         - name: ubuntu_python3
+           if: "{{variables.is_ubuntu}} and system_is_python_3()"
+           parameters:
+             packages:
+                - libleveldb1d   # no python3-leveldb, only python3-plyvel
+                - python3-simplejson
+                - python3-setproctitle
+                - python3-psutil
+
 
          ##### FEDORA:
          # there are rules for 24, 25, 26 -> 30 (python2) and 31+ (python3)
