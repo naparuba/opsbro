@@ -3,7 +3,7 @@ MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 ADD        test/docker-helper/  /
 
-RUN        /apt_get_install  python2
+RUN        /apt_get_install  python3
 
 # As there is no "python" in ubuntu20.04, we are giving the test it's path for starting the setup.py
 ENV        PYTHON_EXE=/usr/bin/python3
