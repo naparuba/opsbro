@@ -7,6 +7,7 @@ import sys
 from ..log import LoggerFactory
 from .linux_system_backend import LinuxBackend
 from ..util import exec_command
+from ..systempacketmanager_errors import InstallationFailedException, UpdateFailedException, AssertKeyFailedException, AssertRepositoryFailedException
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('system-packages')
@@ -102,7 +103,7 @@ class AptBackend(LinuxBackend):
         stdout, stderr = p.communicate()
         logger.debug('APT (apt-get install) (%s):: stdout/stderr: %s/%s' % (package, stdout, stderr))
         if p.returncode != 0:
-            raise Exception('APT: apt-get install did not succeed (%s), exiting from package installation (%s)' % (stdout + stderr, package))
+            raise InstallationFailedException('APT: apt-get install did not succeed (%s), exiting from package installation (%s)' % (stdout + stderr, package))
         # we did install a package, so our internal cache is wrong
         self.need_reload = True
         return
@@ -115,12 +116,12 @@ class AptBackend(LinuxBackend):
         stdout, stderr = p.communicate()
         logger.debug('APT (apt-get update):: stdout/stderr: %s/%s' % (stdout, stderr))
         if p.returncode != 0:
-            raise Exception('APT: apt-get update did not succeed (%s), exiting from package installation (%s)' % (stdout + stderr, package))
+            raise UpdateFailedException('APT: apt-get update did not succeed (%s), exiting from package installation (%s)' % (stdout + stderr, package))
         p = subprocess.Popen(['apt-get', '-q', '--yes', '--no-install-recommends', 'upgrade', r'%s' % package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
         logger.debug('APT (apt-get update) (%s):: stdout/stderr: %s/%s' % (package, stdout, stderr))
         if p.returncode != 0:
-            raise Exception('APT: apt-get update did not succeed (%s), exiting from package installation (%s)' % (stdout + stderr, package))
+            raise UpdateFailedException('APT: apt-get update did not succeed (%s), exiting from package installation (%s)' % (stdout + stderr, package))
         # we did install a package, so our internal cache is wrong
         self.need_reload = True
         return
@@ -171,7 +172,7 @@ class AptBackend(LinuxBackend):
         return_code, stdout, stderr = exec_command(['apt-key', 'adv', '--keyserver', key_server, '--recv', key])
         logger.info('APT (apt-key adv):: stdout/stderr: %s/%s' % (stdout, stderr))
         if return_code != 0:
-            raise Exception('APT: apt-key adv update did not succeed (%s), exiting from serveur key update' % (stdout + stderr))
+            raise AssertKeyFailedException('APT: apt-key adv update did not succeed (%s), exiting from serveur key update' % (stdout + stderr))
         with self.gpg_cache_lock:
             self.gpg_cache[key] = True
         return True
@@ -196,7 +197,7 @@ class AptBackend(LinuxBackend):
             except IOError as exp:
                 err = 'APT: cannot read the repository file: %s : %s' % (pth, exp)
                 logger.error(err)
-                raise Exception(err)
+                raise AssertRepositoryFailedException(err)
         
         # If we are just in audit, do NOT write it
         if check_only:
@@ -210,5 +211,5 @@ class AptBackend(LinuxBackend):
         except IOError as exp:
             err = 'APT: cannot write repository content: %s: %s' % (pth, exp)
             logger.error(err)
-            raise Exception(err)
+            raise AssertRepositoryFailedException(err)
         return True
