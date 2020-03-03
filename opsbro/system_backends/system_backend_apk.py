@@ -4,6 +4,7 @@ import threading
 
 from .linux_system_backend import LinuxBackend
 from opsbro.log import LoggerFactory
+from opsbro.util import bytes_to_unicode
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('system-packages')
@@ -39,7 +40,7 @@ class ApkBackend(LinuxBackend):
                 logger.debug('APK (apk info) :: stdout/stderr: %s/%s' % (stdout, stderr))
                 if p.returncode != 0:
                     raise Exception('APK: apk info id not succeed (%s), exiting from package listing' % (stdout + stderr))
-                packages = [pname.strip() for pname in stdout.splitlines()]
+                packages = [pname.strip() for pname in bytes_to_unicode(stdout).splitlines()]  # NOTE: force unicode as python3 will be bytes
                 self.apk_installed_packages = set(packages)
                 return
     

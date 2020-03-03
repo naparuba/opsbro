@@ -13,6 +13,7 @@ compliance:
          is_centos: "{{collector.system.os.linux.distribution}} == 'centos'"
          is_fedora: "{{collector.system.os.linux.distribution}} == 'fedora'"
          is_alpine: "{{collector.system.os.linux.distribution}} == 'alpine'"
+         is_alpine_11_plus: "{{collector.system.os.linux.distribution}} == 'alpine' and {{collector.system.os.linux.minor_version}} >= 11"   # in order to avoid the 2*and limitation in variables
          is_ubuntu: "{{collector.system.os.linux.distribution}} == 'ubuntu'"
          is_amazon_linux: "{{collector.system.os.linux.distribution}} == 'amazon-linux'"
          is_amazon_linux2: "{{collector.system.os.linux.distribution}} == 'amazon-linux2'"
@@ -237,8 +238,8 @@ compliance:
 
 
          # Alpine 3.11+ => do not have setproctitle in python2
-         - name: alpine11_and_more
-           if: "{{variables.is_alpine}} and {{collector.system.os.linux.minor_version}} >= 11"
+         - name: alpine11_py2_and_more
+           if: "{{variables.is_alpine_11_plus}} and system_is_python_2()"
            parameters:
               packages:
                  - gcc
@@ -253,6 +254,16 @@ compliance:
                  # Not available in alpine 11 - py2-setproctitle
            post_commands:
               - pip2 install leveldb
+
+
+         # Alpine 3.11+ => do not have setproctitle in python2
+         - name: alpine11_py3_and_more
+           if: "{{variables.is_alpine_11_plus}} and system_is_python_3()"
+           parameters:
+              packages:
+                 - leveldb
+                 - py3-simplejson
+                 - py3-setproctitle
 
 
          # Open suse 15 have specific packages names
