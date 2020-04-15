@@ -3,6 +3,9 @@ MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 ADD        test/docker-helper/  /
 
+# April 2020: this version is moved to old-releases
+RUN         sed 's/archive/old-releases/' -i /etc/apt/sources.list
+RUN         sed 's/security/old-releases/' -i /etc/apt/sources.list
 RUN        /apt_get_install  python
 
 ADD        . /root/opsbro-oss
