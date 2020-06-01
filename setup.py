@@ -640,11 +640,11 @@ if system_distro == 'debian' and system_distroversion.startswith('6.'):
     install_from_pip = set()
 
 # HACK: centos8/opensuse15 have a know bug about not allowing a setup() call before run pip
-if allow_black_magic and
-    ((system_distro == 'centos' and system_distroversion.startswith('8'))
-     or
-     (system_distro == 'opensuse' and system_distroversion.startswith('15'))
-     ):
+if allow_black_magic and (
+        (system_distro == 'centos' and system_distroversion.startswith('8'))
+        or
+        (system_distro == 'opensuse' and system_distroversion.startswith('15'))
+):
     setup_py_path = '/usr/local/lib/python%d.%d/site-packages/' % (sys.version_info[0], sys.version_info[1])
     if not os.path.exists(setup_py_path):
         cprint(' * Fixing a know bug on Centos 8:')
