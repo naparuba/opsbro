@@ -20,6 +20,8 @@ REPLICATS = 1
 _UPDATES_DB_FILE_EXTENSION = '.lst'
 _UPDATES_DB_FILES_RETENTION = 86400 * 7  # Keep 7 days of updates
 
+_UPDATES_DB_FILE_DURATION = 3600  # one file by hour
+
 # Global logger for this part
 logger = LoggerFactory.create_logger('key-value')
 
@@ -86,9 +88,8 @@ class KVBackend:
     # We will open a file with the keys writen during a minute
     # so we can easily look at previous changed
     def get_update_db(self, t):
-        cmin = divmod(t, 60)[0] * 60
+        cmin = divmod(t, _UPDATES_DB_FILE_DURATION)[0] * _UPDATES_DB_FILE_DURATION
         if cmin == self.update_db_time and self.update_db:
-            # print "UPDATE DB CACHE HIT"
             return self.update_db
         else:  # not the good time
             if self.update_db:
@@ -100,7 +101,7 @@ class KVBackend:
                 self.update_db = None
             db_dir = self._updates_files_dir
             db_path = os.path.join(db_dir, '%d%s' % (cmin, _UPDATES_DB_FILE_EXTENSION))
-            self.update_db = open(db_path, 'a')
+            self.update_db = open(db_path, 'a', buffering=1024)  # do not hammer the disk, but not too far
             self.update_db_time = cmin
             return self.update_db
     
