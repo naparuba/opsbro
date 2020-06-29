@@ -21,6 +21,8 @@ import atexit
 # We have some warnings because we reimport some libs. We don't want them to be shown at install
 import warnings
 
+UPDATE_GLOBAL_PACKS_PARAMETER = '--update-global-packs'
+
 PY3 = sys.version_info >= (3,)
 if PY3:
     basestring = str  # no basestring in python 3
@@ -37,8 +39,6 @@ warnings.showwarning = _disable_warns
 python_version = sys.version_info
 if python_version < (2, 6):
     sys.exit("OpsBro require as a minimum Python 2.6, sorry")
-# elif python_version >= (3,):
-#    sys.exit("OpsBro is not yet compatible with Python 3.x, sorry")
 
 package_data = ['*.py']
 
@@ -207,6 +207,10 @@ core_logger.setLevel('ERROR')
 if '-v' in sys.argv or os.environ.get('DEBUG_INSTALL', '0') == '1':
     core_logger.setLevel('DEBUG')
 
+update_global_packs = False
+if UPDATE_GLOBAL_PACKS_PARAMETER in sys.argv:
+    update_global_packs = True
+
 core_logger.debug('SCRIPT: install/update script was call with arguments: %s' % orig_sys_argv)
 
 what = 'Installing' if not is_update else 'Updating'
@@ -257,10 +261,14 @@ install_scripts = opts.install_scripts or ''
 
 # setup() will warn about unknown parameter we already managed
 # to delete them
-deleting_args = ['--skip-build']
+deleting_args = ['--skip-build', UPDATE_GLOBAL_PACKS_PARAMETER]
 to_del = []
 for a in deleting_args:
     for av in sys.argv:
+        if av == a:
+            idx = sys.argv.index(av)
+            to_del.append(idx)
+            continue
         if av.startswith(a):
             idx = sys.argv.index(av)
             to_del.append(idx)
@@ -351,6 +359,8 @@ if not is_update:
     _get_all_from_directory('data', 'var')
 else:  # only take core directory for update
     _get_all_from_directory('data', 'var', filter_dir='core-configuration')
+    if update_global_packs:
+        _get_all_from_directory('data', 'var', filter_dir='global-configuration')
 
 # Libexec is always installed
 for path, subdirs, files in os.walk('libexec'):
@@ -838,11 +848,16 @@ if not root and is_install and allow_black_magic:
         __print_sub_install_part('bash completion rule')
 
 if not root and is_update and allow_black_magic:
-    cprint(' * Updating core configuration files')
+    cprint(' * Updating packs configuration files')
     __print_sub_install_part('Core packs')
     core_configuration_dir = os.path.join(default_paths['var'], 'core-configuration')
     shutil.rmtree(core_configuration_dir)
     __do_install_files(configuration_files)
+    if not update_global_packs:
+        cprint('     - skipping global packs update. You can enable it with the %s parameter.' % UPDATE_GLOBAL_PACKS_PARAMETER, color='grey')
+    else:
+        # Fake print: was already done in the core call in fact :)
+        __print_sub_install_part('Global packs')
 
 if allow_black_magic:
     print('')
