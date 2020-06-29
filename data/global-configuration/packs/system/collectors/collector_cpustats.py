@@ -38,6 +38,9 @@ class CpuStats(Collector):
             r[h_name] = {}
             values = [int(v.strip()) for v in elts[1:] if v.strip()]
             columns = (r'%user', r'%nice', r'%system', r'%idle', r'%iowait', r'%irq', r'%softirq', r'%steal', r'%guest', r'%guest_nice')
+            if len(columns) != len(values):
+                self.set_not_eligible('This system is not managed currently, cannot parse /proc/stat currently on VPS.')
+                raise Exception('Not managed')
             for i in range(0, len(columns)):  # note: beware of python3
                 r[h_name][columns[i]] = values[i]
         # if we have multiple cpus, prepare the all in a percent way
@@ -86,7 +89,10 @@ class CpuStats(Collector):
             # /proc/stat columns:
             # user, nice, system, idle, iowait, irq, softirq, steal, guest, guest_nice
             logger.debug('getCPUStats: linux2')
-            new_stats = self._get_linux_abs_stats()
+            try:
+                new_stats = self._get_linux_abs_stats()
+            except:  # cannot manage this type of systems
+                return False
             new_time = NOW.monotonic()
             # First loop: do a 1s loop an compute it, to directly have results
             if self.prev_linux_time == 0:

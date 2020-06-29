@@ -30,9 +30,13 @@ class Dmidecode(Collector):
             return False
         # Ok not direct access, try to launch with
         else:  # try dmidecode way, if exists
-            res = self.execute_shell('LANG=C dmidecode -s')
+            try:
+                res = self.execute_shell('LANG=C dmidecode -s', if_fail_set_error=False, if_fail_not_eligible=True, not_eligible_text='This system do not manage dmi calls')
+            except Exception as exp:
+                self.set_not_eligible('Cannot read dmi information: %s' % exp)
+                return False
             if res is False:
-                self.set_not_eligible('Cannot read dmi information')
+                # already set in the call
                 return False
             for p in res.split('\n'):
                 if re.search('^ ', p):

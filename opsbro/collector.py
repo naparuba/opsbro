@@ -105,7 +105,7 @@ class Collector(ParameterBasedType):
     
     # Execute a shell command and return the result or '' if there is an error
     # NOTE: the caller can ask to not fail directly
-    def execute_shell(self, cmd, if_fail_set_error=True):
+    def execute_shell(self, cmd, if_fail_set_error=True, if_fail_not_eligible=False, not_eligible_text=''):
         # Get output from a command
         self.logger.debug('execute_shell:: %s' % cmd)
         try:
@@ -114,6 +114,8 @@ class Collector(ParameterBasedType):
             if err:
                 if if_fail_set_error:
                     self.set_error('Error in sub process: %s' % err)
+                elif if_fail_not_eligible:
+                    self.set_not_eligible(not_eligible_text)
                 return False
             return output
         except Exception:

@@ -18,6 +18,8 @@ if os.name == 'nt':
 BYTES_PER_SECTOR = 512
 
 
+LINUX_DISKS_STATS = '/proc/diskstats'
+
 class IoStats(Collector):
     def __init__(self):
         super(IoStats, self).__init__()
@@ -32,7 +34,7 @@ class IoStats(Collector):
     
     
     def _get_disk_stats(self):
-        file_path = '/proc/diskstats'
+        file_path = LINUX_DISKS_STATS
         result = {}
         
         # ref: http://lxr.osuosl.org/source/Documentation/iostats.txt
@@ -130,6 +132,10 @@ class IoStats(Collector):
         
         if not sys.platform.startswith('linux'):  # linux2 on python2, linux on python3
             self.set_not_eligible('Unsupported platform (%s) for this collector' % sys.platform)
+            return False
+        
+        if not os.path.exists(LINUX_DISKS_STATS):
+            self.set_not_eligible('This linux do not have any %s file. Must be a VPS system with no disk stats available.' % LINUX_DISKS_STATS)
             return False
         
         new_stats = self._get_disk_stats()

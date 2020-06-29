@@ -887,7 +887,7 @@ class Gossip(BaseManager):
                 logger.debug('SKIPPING myself node entry in merge nodes')
                 continue
             
-            logger.info('SOMEONE GIVE A NODE: %s' % node)
+            logger.debug('SOMEONE GIVE A NODE: %s' % node)
             node_zone = node.get('zone', None)
             if node_zone is None:
                 continue
