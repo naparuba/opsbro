@@ -303,8 +303,8 @@ compliance:
              packages:
                 - python2-leveldb
                 - python2-simplejson
-                 # Bash completion to enable the CLI completion
-                 - bash-completion
+                # Bash completion to enable the CLI completion
+                - bash-completion
 
 
         # Older open source (42.x)
@@ -314,8 +314,8 @@ compliance:
              packages:
                 - python-leveldb
                 - python-simplejson
-                 # Bash completion to enable the CLI completion
-                 - bash-completion
+                # Bash completion to enable the CLI completion
+                - bash-completion
 
          - name: amazon_linux
            if: "{{variables.is_amazon_linux}}"
@@ -326,8 +326,8 @@ compliance:
                 - python27-devel
                 - python27-pip
                 - python27-simplejson
-                 # Bash completion to enable the CLI completion
-                 - bash-completion
+                # Bash completion to enable the CLI completion
+                - bash-completion
            post_commands:
               - pip install leveldb
 
@@ -341,8 +341,8 @@ compliance:
                 - python-devel
                 - python2-pip
                 - python-simplejson
-                 # Bash completion to enable the CLI completion
-                 - bash-completion
+                # Bash completion to enable the CLI completion
+                - bash-completion
            post_commands:
               - pip install leveldb
 
