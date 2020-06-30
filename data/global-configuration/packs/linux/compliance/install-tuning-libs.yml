@@ -326,8 +326,7 @@ compliance:
                 - python27-devel
                 - python27-pip
                 - python27-simplejson
-                # Bash completion to enable the CLI completion
-                - bash-completion
+                # No Bash completion for amazon linux
            post_commands:
               - pip install leveldb
 
@@ -341,8 +340,7 @@ compliance:
                 - python-devel
                 - python2-pip
                 - python-simplejson
-                # Bash completion to enable the CLI completion
-                - bash-completion
+                # No Bash completion for amazon linux
            post_commands:
               - pip install leveldb
 
