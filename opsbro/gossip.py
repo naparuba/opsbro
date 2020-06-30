@@ -383,7 +383,7 @@ class Gossip(BaseManager):
     
     
     # find all nearly alive nodes with a specific name or display_name
-    def find_nodes_by_name_or_display_name(self, name):
+    def find_alive_nodes_by_name_or_display_name(self, name):
         nodes = []
         for (uuid, node) in self.nodes.items():
             if node['state'] in [NODE_STATES.DEAD, NODE_STATES.LEAVE]:
@@ -391,7 +391,16 @@ class Gossip(BaseManager):
             if name == node.get('name') or name == node.get('display_name'):
                 nodes.append(uuid)
         return nodes
-    
+
+
+    # find all nearly alive nodes with a specific name or display_name
+    def find_nodes_by_name_or_display_name(self, name):
+        nodes = []
+        for (uuid, node) in self.nodes.items():
+            if name == node.get('name') or name == node.get('display_name'):
+                nodes.append(uuid)
+        return nodes
+
     
     # find the good ring node for a group and for a key
     def find_group_node(self, group, hkey):
@@ -1891,10 +1900,13 @@ class Gossip(BaseManager):
         
         @http_export('/agent/leave/:nuuid', protected=True)
         def set_node_leave(nuuid):
+            # First try to look by uuid
             node = self.nodes.get(nuuid, None)
             if node is None:
-                logger.error('Asking us to set as leave the node %s but we cannot find it' % (nuuid))
-                return abort(404, 'This node is not found')
+                node = self.find_nodes_by_name_or_display_name(nuuid)
+                if node is None:
+                    logger.error('Asking us to set as leave the node %s but we cannot find it (as uuid, name or display_name)' % (nuuid))
+                    return abort(404, 'This node is not found')
             self.set_leave(node, force=True)
             return
         
