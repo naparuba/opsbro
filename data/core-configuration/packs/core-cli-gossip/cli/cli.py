@@ -289,7 +289,7 @@ def do_leave(nuuid=''):
         return
     
     if code != 200:
-        logger.error('Node %s is missing (return=%s)' % (nuuid, r))
+        logger.error('Node %s is missing (code=%s, return=%s)' % (nuuid, code, r))
         return
     cprint('Node %s is set to leave state' % nuuid, end='')
     cprint(': OK', color='green')

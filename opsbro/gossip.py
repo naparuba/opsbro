@@ -383,7 +383,7 @@ class Gossip(BaseManager):
     
     
     # find all nearly alive nodes with a specific name or display_name
-    def find_alive_nodes_by_name_or_display_name(self, name):
+    def find_alive_nodes_uuids_by_name_or_display_name(self, name):
         nodes = []
         for (uuid, node) in self.nodes.items():
             if node['state'] in [NODE_STATES.DEAD, NODE_STATES.LEAVE]:
@@ -391,16 +391,16 @@ class Gossip(BaseManager):
             if name == node.get('name') or name == node.get('display_name'):
                 nodes.append(uuid)
         return nodes
-
-
+    
+    
     # find all nearly alive nodes with a specific name or display_name
     def find_nodes_by_name_or_display_name(self, name):
         nodes = []
         for (uuid, node) in self.nodes.items():
             if name == node.get('name') or name == node.get('display_name'):
-                nodes.append(uuid)
+                nodes.append(node)
         return nodes
-
+    
     
     # find the good ring node for a group and for a key
     def find_group_node(self, group, hkey):
@@ -1903,10 +1903,16 @@ class Gossip(BaseManager):
             # First try to look by uuid
             node = self.nodes.get(nuuid, None)
             if node is None:
-                node = self.find_nodes_by_name_or_display_name(nuuid)
-                if node is None:
+                nodes = self.find_nodes_by_name_or_display_name(nuuid)
+                if len(nodes) == 0:
                     logger.error('Asking us to set as leave the node %s but we cannot find it (as uuid, name or display_name)' % (nuuid))
                     return abort(404, 'This node is not found')
+                if len(nodes) > 1:
+                    err = 'Too much nodes are matching %s => %s. Please choose with the uuid instead.' % (nuuid, ','.join(['%s[%s][uuid=%s]' % (node['name'], node['display_name'], node['uuid']) for node in nodes]))
+                    logger.error(err)
+                    return abort(400, err)
+                node = nodes[0]  # we are sure there is only one
+            
             self.set_leave(node, force=True)
             return
         

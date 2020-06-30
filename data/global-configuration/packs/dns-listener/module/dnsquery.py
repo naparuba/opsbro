@@ -103,7 +103,7 @@ class DNSQuery:
         
         else:  # filter by name
             name = filter_value
-            valid_filter_node_uuids = gossiper.find_alive_nodes_by_name_or_display_name(name)
+            valid_filter_node_uuids = gossiper.find_alive_nodes_uuids_by_name_or_display_name(name)
         
         # Now look for real node & addr/ip
         for node_uuid in valid_filter_node_uuids:
