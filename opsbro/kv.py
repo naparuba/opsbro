@@ -2,6 +2,9 @@ import os
 import time
 import threading
 import socket
+# gor compression of updates
+import gzip
+import shutil
 
 from .httpclient import get_http_exceptions, httper
 from .log import LoggerFactory
@@ -18,9 +21,10 @@ from .udprouter import udprouter
 REPLICATS = 1
 
 _UPDATES_DB_FILE_EXTENSION = '.lst'
+_UPDATES_DB_FILE_EXTENSION_COMPRESSED_SHORT = '.gz'
 _UPDATES_DB_FILES_RETENTION = 86400 * 7  # Keep 7 days of updates
-
 _UPDATES_DB_FILE_DURATION = 3600  # one file by hour
+_UPDATES_DB_COMPRESSION_LEVEL = 4 # from 1 to 9 for gzip, 4 is quite fast (10ms) and file size is OK
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('key-value')
@@ -42,6 +46,7 @@ class KVBackend:
         
         self.update_db_time = 0
         self.update_db = None
+        self._update_db_path = None
         self.lock = threading.RLock()
         
         # We have a backlog to manage our replication by threads
@@ -98,16 +103,21 @@ class KVBackend:
                 self.update_db.flush()
                 logger.debug("FLUSH TIME: %.4f" % (time.time() - t0))
                 self.update_db.close()
+                # Now re-read update file and compress it in a new file, then remove the uncompress one
+                with open(self._update_db_path, 'rb') as f_in, gzip.open('%s%s' % (self._update_db_path, _UPDATES_DB_FILE_EXTENSION_COMPRESSED_SHORT), 'wb', compresslevel=_UPDATES_DB_COMPRESSION_LEVEL) as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+                os.unlink(self._update_db_path)
+                logger.info("Did save all KV UPDATES from %ss was done in %.3fs" % (_UPDATES_DB_FILE_DURATION, time.time() - t0))
                 self.update_db = None
             db_dir = self._updates_files_dir
-            db_path = os.path.join(db_dir, '%d%s' % (cmin, _UPDATES_DB_FILE_EXTENSION))
-            self.update_db = open(db_path, 'a', buffering=1024)  # do not hammer the disk, but not too far
+            self._update_db_path = os.path.join(db_dir, '%d%s' % (cmin, _UPDATES_DB_FILE_EXTENSION))
+            self.update_db = open(self._update_db_path, 'a', buffering=1024)  # do not hammer the disk, but not too far
             self.update_db_time = cmin
             return self.update_db
     
     
     def _get_updates_db_directory(self):
-        db_dir = os.path.join(self.data_dir, 'updates')
+        db_dir = os.path.join(self.data_dir, 'kv_updates')
         if not os.path.exists(db_dir):
             os.mkdir(db_dir)
         return db_dir
@@ -465,7 +475,8 @@ class KVBackend:
         
         nb_file_cleaned = 0
         for subfile in subfiles:
-            subfile_minute = subfile.replace(_UPDATES_DB_FILE_EXTENSION, '')
+            # File can be raw (unfinish) or compressed
+            subfile_minute = subfile.replace(_UPDATES_DB_FILE_EXTENSION_COMPRESSED_SHORT, '').replace(_UPDATES_DB_FILE_EXTENSION, '')
             try:
                 file_minute = int(subfile_minute)
             except ValueError:  # who add a dir that is not a int here...
