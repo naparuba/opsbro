@@ -868,5 +868,6 @@ if allow_black_magic:
     cprint(' %s' % CHARACTERS.check, color='green')
     
     cprint('  %s Notes: ' % CHARACTERS.corner_bottom_left, color='grey')
-    cprint('     - you can now start your daemon with:  service opsbro start', color='grey')
-    cprint('     - you can look at all available with:  opsbro -h', color='grey')
+    start_string = 'start' if not is_update else 'restart'
+    cprint('     - you can now %s your daemon with:  service opsbro %s' % (start_string, start_string), color='grey')
+    cprint('     - you can look at all commands available with:  opsbro -h', color='grey')
