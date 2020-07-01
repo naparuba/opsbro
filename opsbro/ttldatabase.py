@@ -45,7 +45,7 @@ class TTLDatabase(object):
                         ttodrop = self.dbs.keys()[0]
                         del self.dbs[ttodrop]
                     _t = time.time()
-                    cdb = dbwrapper.get_db(os.path.join(self.ttldb_dir, '%d' % h))  # leveldb.LevelDB(os.path.join(self.ttldb_dir, '%d' % h))
+                    cdb = dbwrapper.get_db(os.path.join(self.ttldb_dir, '%d' % h))
                     STATS.incr('ttl-db-open', time.time() - _t)
                     self.dbs[h] = cdb
                 # Ok a malicious thread just go before us, good :)

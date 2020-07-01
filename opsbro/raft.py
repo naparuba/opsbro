@@ -477,7 +477,7 @@ class RaftNode(object):
                     continue
             
             if msg:
-                logger.info('Receiving a message: %s' % str(msg))
+                logger.debug('Receiving a message: %s' % str(msg))
                 # print " %d I got a message: %s" % (n.uuid, m)
                 election_turn = msg['election_turn']
                 msg_type = msg['type']
