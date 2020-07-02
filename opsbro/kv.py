@@ -104,8 +104,9 @@ class KVBackend:
                 logger.debug("FLUSH TIME: %.4f" % (time.time() - t0))
                 self.update_db.close()
                 # Now re-read update file and compress it in a new file, then remove the uncompress one
-                with open(self._update_db_path, 'rb') as f_in, gzip.open('%s%s' % (self._update_db_path, _UPDATES_DB_FILE_EXTENSION_COMPRESSED_SHORT), 'wb', compresslevel=_UPDATES_DB_COMPRESSION_LEVEL) as f_out:
-                    shutil.copyfileobj(f_in, f_out)
+                with open(self._update_db_path, 'rb') as f_in:
+                    with gzip.open('%s%s' % (self._update_db_path, _UPDATES_DB_FILE_EXTENSION_COMPRESSED_SHORT), 'wb', compresslevel=_UPDATES_DB_COMPRESSION_LEVEL) as f_out:
+                        shutil.copyfileobj(f_in, f_out)
                 os.unlink(self._update_db_path)
                 logger.info("Did save all KV UPDATES from %ss was done in %.3fs" % (_UPDATES_DB_FILE_DURATION, time.time() - t0))
                 self.update_db = None
