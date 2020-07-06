@@ -51,7 +51,8 @@ class SqliteDBBackend(object):
     
     
     def RangeIter(self):
-        return self.db.iterkeys()
+        for k in self.db.iterkeys():
+            yield k, None
 
 
 class FailbackLevelDBBackend(object):
