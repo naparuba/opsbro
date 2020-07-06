@@ -136,6 +136,8 @@ parser.add_option('--skip-build', dest="skip_build", action='store_true', help='
 parser.add_option('-O', type="int", dest="optimize", help='skipping build')
 parser.add_option('--record', dest="record", help='File to save writing files. Used by pip install only')
 parser.add_option('--single-version-externally-managed', dest="single_version", action='store_true', help='This option is for pip only')
+parser.add_option(UPDATE_GLOBAL_PACKS_PARAMETER, dest="update_global_packs", action='store_true', help='If set, global packs will be updated')
+
 
 old_error = parser.error
 
