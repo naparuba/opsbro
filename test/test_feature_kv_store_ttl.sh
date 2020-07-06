@@ -31,16 +31,16 @@ function launch_as_start_of_day_day {
 launch_as_start_of_day_day 01
 
 
-# Must exists /var/lib/opsbro/ttl/1549069200.ttl
+# Must exists /var/lib/opsbro/kv_ttl/1549069200.ttl
 
 
 sleep 30
-echo "Looking at /var/lib/opsbro/ttl/"
-ls -thor /var/lib/opsbro/ttl/
+echo "Looking at /var/lib/opsbro/kv_ttl/"
+ls -thor /var/lib/opsbro/kv_ttl/
 sleep 30
-ls -thor /var/lib/opsbro/ttl/
+ls -thor /var/lib/opsbro/kv_ttl/
 
-TTL_FILE=/var/lib/opsbro/ttl/1549069200.ttl
+TTL_FILE=/var/lib/opsbro/kv_ttl/1549069200.ttl
 if [ ! -f $TTL_FILE ];then
     echo "ERROR: the TTL file $TTL_FILE should be exists"
     cat /var/log/opsbro/key-value.log
@@ -54,9 +54,9 @@ echo "TTL FILE $TTL_FILE  is present"
 
 sleep 30
 echo "Looking at /var/lib/opsbro/ttl/"
-ls -thor /var/lib/opsbro/ttl/
+ls -thor /var/lib/opsbro/kv_ttl/
 sleep 30
-ls -thor /var/lib/opsbro/ttl/
+ls -thor /var/lib/opsbro/kv_ttl/
 
 if [ -f $TTL_FILE ];then
     echo "ERROR: the TTL file $TTL_FILE should be missing"

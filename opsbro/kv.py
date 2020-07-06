@@ -64,7 +64,7 @@ class KVBackend:
         self.data_dir = data_dir
         self.db_dir = os.path.join(data_dir, 'kv')
         self.db = dbwrapper.get_db(self.db_dir)
-        self.ttldb = TTLDatabase(os.path.join(data_dir, 'ttl'))
+        self.ttldb = TTLDatabase(os.path.join(data_dir, 'kv_ttl'))
         self._updates_files_dir = self._get_updates_db_directory()
         
         # We can now export our http interface
