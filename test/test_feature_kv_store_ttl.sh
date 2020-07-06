@@ -31,7 +31,7 @@ function launch_as_start_of_day_day {
 launch_as_start_of_day_day 01
 
 
-# Must exists /var/lib/opsbro/ttl/1549069200.sqlite
+# Must exists /var/lib/opsbro/ttl/1549069200.ttl
 
 
 sleep 30
@@ -40,7 +40,7 @@ ls -thor /var/lib/opsbro/ttl/
 sleep 30
 ls -thor /var/lib/opsbro/ttl/
 
-TTL_FILE=/var/lib/opsbro/ttl/1549069200.sqlite
+TTL_FILE=/var/lib/opsbro/ttl/1549069200.ttl
 if [ ! -f $TTL_FILE ];then
     echo "ERROR: the TTL file $TTL_FILE should be exists"
     cat /var/log/opsbro/key-value.log

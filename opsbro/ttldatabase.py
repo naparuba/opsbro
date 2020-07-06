@@ -2,6 +2,7 @@ import shutil
 import os
 import time
 import threading
+import codecs
 
 from .now import NOW
 from .stats import STATS
@@ -43,9 +44,10 @@ class TTLDatabase(object):
                     # databases (number of open files can increase quickly)
                     if len(self.dbs) > self.db_cache_size:
                         ttodrop = self.dbs.keys()[0]
+                        ttodrop.close()
                         del self.dbs[ttodrop]
                     _t = time.time()
-                    cdb = dbwrapper.get_db(os.path.join(self.ttldb_dir, '%d' % h))
+                    cdb = codecs.open(os.path.join(self.ttldb_dir, '%d.ttl' % h), 'a', 'utf8')
                     STATS.incr('ttl-db-open', time.time() - _t)
                     self.dbs[h] = cdb
                 # Ok a malicious thread just go before us, good :)
@@ -64,27 +66,24 @@ class TTLDatabase(object):
         
         cdb = self.get_ttl_db(ttl_t)
         logger.debug("TTL save", key, "with ttl", ttl_t, "in", cdb)
-        cdb.Put(key, '')
+        cdb.write(key)
+        cdb.write('\n')
+        cdb.flush()
     
     
     # We already droped all entry in a db, so drop it from our cache
     def drop_db(self, h):
         # now remove the database
         with self.lock:
-            try:
+            if h in self.dbs:
+                self.dbs[h].close()
                 del self.dbs[h]
-            except (IndexError, KeyError):  # if not there, not a problem...
-                pass
         
         # And remove the files of this database
-        leveldb_path = os.path.join(self.ttldb_dir, '%d' % h)
-        if os.path.exists(leveldb_path):
-            logger.info("Deleting ttl database Leveldb tree: %s" % leveldb_path)
-            shutil.rmtree(leveldb_path, ignore_errors=True)
-        sqlite_path = os.path.join(self.ttldb_dir, '%d.sqlite' % h)
-        if os.path.exists(sqlite_path):
-            logger.info("Deleting ttl database Sqlite tree : %s" % sqlite_path)
-            os.unlink(sqlite_path)
+        ttl_path = os.path.join(self.ttldb_dir, '%d.ttl' % h)
+        if os.path.exists(ttl_path):
+            logger.info("Deleting ttl database tree : %s" % ttl_path)
+            os.unlink(ttl_path)
     
     
     # Look at the available dbs and clean all olds dbs that time are lower
@@ -102,8 +101,8 @@ class TTLDatabase(object):
             # Sub files can be:
             # * EPOCH.sqlite => was a sqlite file
             # * EPOCH => is a leveldb dir
-            if d.endswith('.sqlite'):
-                d = d.replace('.sqlite', '')
+            if d.endswith('.ttl'):
+                d = d.replace('.ttl', '')
             try:
                 bhour = int(d)
             except ValueError:  # who add a dir that is not a int here...
@@ -113,17 +112,16 @@ class TTLDatabase(object):
                 before = time.time()
                 logger.info("TTL bhour is too low: cleaning %s" % bhour)
                 # take the database and dump all keys in it
-                cdb = self.get_ttl_db(bhour)
-                to_del = cdb.RangeIter()
+                f = codecs.open(os.path.join(self.ttldb_dir, '%d.ttl' % bhour), 'r', 'utf8')
                 nb_clean = 0
-                # Now ask the cluster to delete the key, whatever it is
-                for (k, v) in to_del:
+                for line in f.readlines():
+                    key = line.strip()
                     nb_clean += 1
-                    kvmgr.delete(k)
+                    kvmgr.delete(key)
                 
                 # now we clean all old entries, remove the idx database
                 self.drop_db(bhour)
-                logger.info("TTL bhour %s was used to clean %d keys in %.2fs" % (bhour, nb_clean,time.time() - before))
+                logger.info("TTL bhour %s was used to clean %d keys in %.2fs" % (bhour, nb_clean, time.time() - before))
     
     
     # Thread that will manage the delete of the ttld-die key
