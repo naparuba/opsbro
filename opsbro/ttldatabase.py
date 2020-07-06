@@ -77,9 +77,14 @@ class TTLDatabase(object):
                 pass
         
         # And remove the files of this database
-        p = os.path.join(self.ttldb_dir, '%d' % h)
-        logger.log("Deleting ttl database tree", p)
-        shutil.rmtree(p, ignore_errors=True)
+        leveldb_path = os.path.join(self.ttldb_dir, '%d' % h)
+        if os.path.exists(leveldb_path):
+            logger.info("Deleting ttl database Leveldb tree: %s" % leveldb_path)
+            shutil.rmtree(leveldb_path, ignore_errors=True)
+        sqlite_path = os.path.join(self.ttldb_dir, '%d.sqlite' % h)
+        if os.path.exists(sqlite_path):
+            logger.info("Deleting ttl database Sqlite tree : %s" % sqlite_path)
+            os.unlink(sqlite_path)
     
     
     # Look at the available dbs and clean all olds dbs that time are lower
@@ -94,22 +99,31 @@ class TTLDatabase(object):
         subdirs = os.listdir(self.ttldb_dir)
         
         for d in subdirs:
+            # Sub files can be:
+            # * EPOCH.sqlite => was a sqlite file
+            # * EPOCH => is a leveldb dir
+            if d.endswith('.sqlite'):
+                d = d.replace('.sqlite', '')
             try:
                 bhour = int(d)
             except ValueError:  # who add a dir that is not a int here...
                 continue
             # Is the hour available for cleaning?
             if bhour < h:
-                logger.log("TTL bhour is too low!", bhour)
+                before = time.time()
+                logger.info("TTL bhour is too low: cleaning %s" % bhour)
                 # take the database and dump all keys in it
                 cdb = self.get_ttl_db(bhour)
                 to_del = cdb.RangeIter()
+                nb_clean = 0
                 # Now ask the cluster to delete the key, whatever it is
                 for (k, v) in to_del:
+                    nb_clean += 1
                     kvmgr.delete(k)
                 
                 # now we clean all old entries, remove the idx database
                 self.drop_db(bhour)
+                logger.info("TTL bhour %s was used to clean %d keys in %.2fs" % (bhour, nb_clean,time.time() - before))
     
     
     # Thread that will manage the delete of the ttld-die key
