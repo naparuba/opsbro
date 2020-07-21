@@ -43,9 +43,10 @@ class TTLDatabase(object):
                     # Ok really load it, but no more than self.db_cache_size
                     # databases (number of open files can increase quickly)
                     if len(self.dbs) > self.db_cache_size:
-                        ttodrop = self.dbs.keys()[0]
+                        h_to_drop = min(self.dbs.keys())
+                        ttodrop = self.dbs[h_to_drop]
                         ttodrop.close()
-                        del self.dbs[ttodrop]
+                        del self.dbs[h_to_drop]
                     _t = time.time()
                     cdb = codecs.open(os.path.join(self.ttldb_dir, '%d.ttl' % h), 'a', 'utf8')
                     STATS.incr('ttl-db-open', time.time() - _t)
