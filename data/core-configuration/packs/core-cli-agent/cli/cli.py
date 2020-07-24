@@ -32,7 +32,7 @@ from opsbro.topic import TOPICS, TOPICS_LABELS, TOPICS_LABEL_BANNER, MAX_TOPICS_
 from opsbro.monitoring import CHECK_STATES, STATE_ID_COLORS, STATE_COLORS
 from opsbro.compliancemgr import ALL_COMPLIANCE_STATES, COMPLIANCE_STATE_COLORS
 from opsbro.generator import GENERATOR_STATES, GENERATOR_STATE_COLORS
-from opsbro.util import my_cmp, my_sort
+from opsbro.util import my_cmp, my_sort, bytes_to_unicode
 
 NO_ZONE_DEFAULT = '(no zone)'
 
@@ -690,6 +690,7 @@ def do_agent_parameters_show():
 
 
 def do_agent_parameters_set(parameter_name, str_value):
+    str_value = bytes_to_unicode(str_value)  # always be sure than we manage unicode here
     parameter_set_to_main_yml(parameter_name, str_value)
 
 

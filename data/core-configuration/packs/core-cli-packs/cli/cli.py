@@ -14,6 +14,7 @@ from opsbro.yamleditor import yml_parameter_get, yml_parameter_set, get_and_asse
 from opsbro.packer import packer
 from opsbro.misc.lolcat import lolcat
 from opsbro.topic import topiker, VERY_ALL_TOPICS, TOPICS_LABELS
+from opsbro.util import bytes_to_unicode
 
 
 def __print_pack_breadcumb(pack_name, pack_level, end='\n', topic_picto='large'):
@@ -397,6 +398,7 @@ def _assert_value_is_valid_for_pack_parameter(value, pack_name, parameter_name):
 
 def do_parameters_set(parameter_full_path, str_value):
     parameters_file_path, pack_name, parameter_name = __get_path_pname_from_parameter_full_path(parameter_full_path)
+    str_value = bytes_to_unicode(str_value)  # always be sure than we manage unicode here
     
     # Get the value as a python object from a yaml string value
     try:

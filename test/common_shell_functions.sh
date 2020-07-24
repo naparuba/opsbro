@@ -225,6 +225,7 @@ function do_bad_exit_and_logs {
     cat /var/log/opsbro/crash.log 2>/dev/null
     ls -thor /var/log/opsbro/
     echo "ERROR: exiting because $1"
+    exit 2
 }
 
 

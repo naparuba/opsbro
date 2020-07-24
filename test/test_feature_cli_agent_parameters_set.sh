@@ -28,6 +28,31 @@ assert_in_file 'proxy-node: true'          $AGENT_FILE
 assert_in_file 'SET proxy-node → true'     $AGENT_FILE
 
 
+print_header "Setting values in the agent file (UTF8 mode)"
+# Now with UTF8 parameters
+PNAME="⌐■_■"
+SET=$(opsbro agent parameters set process_name "$PNAME")
+if [ $? != 0 ];then
+    echo "ERROR: the set parameter do not support UTF8"
+    echo "$SET"
+    exit 2
+fi
+
+GET=$(opsbro agent parameters get process_name )
+if [ $? != 0 ];then
+    echo "ERROR: the get parameter do not support UTF8"
+    echo "$GET"
+    exit 2
+fi
+echo "$GET"
+echo "$GET" | grep "$PNAME"
+if [ $? != 0 ];then
+   echo "ERROR: should be $PNAME in the process_name parameter:"
+   echo "$GET"
+   exit 2
+fi
+
+
 
 print_header "Setting values in a pack"
 
@@ -49,7 +74,24 @@ echo "$GET" | grep $GRAFANA_KEY
 if [ $? != 0 ];then
    echo "ERROR: should be the grafana key in the get result"
    echo "$GET"
+   exit 2
 fi
 
+
+print_header "Setting values in a pack (UTF8 mode)"
+GRAFANA_KEY="⌐■_■"
+# WRITE
+opsbro  packs parameters set local.grafana.api_key  $GRAFANA_KEY
+assert_in_file $GRAFANA_KEY $OVERLOAD_PACK/parameters/parameters.yml
+
+# READ
+GET=$(opsbro  packs parameters  get local.grafana.api_key)
+echo "$GET"
+echo "$GET" | grep $GRAFANA_KEY
+if [ $? != 0 ];then
+   echo "ERROR: should be the grafana key in the get result"
+   echo "$GET"
+   exit 2
+fi
 
 exit_if_no_crash "TEST OK"

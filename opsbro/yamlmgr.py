@@ -99,7 +99,7 @@ class YamlMgr(object):
         # Add a change history entry
         # BEWARE: only a oneliner!
         value_str = str_value.replace('\n', ' ')
-        change_line = '# CHANGE: (%s) %s %s %s %s' % (datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), change_type, parameter_name, CHARACTERS.arrow_left, value_str)
+        change_line = u'# CHANGE: (%s) %s %s %s %s' % (datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), change_type, parameter_name, CHARACTERS.arrow_left, value_str)
         self.add_document_ending_comment(o, change_line, ENDING_SUFFIX)
         
         result_str = self.dumps(o)

@@ -8,6 +8,7 @@ from .yamlmgr import yamler
 from .defaultpaths import DEFAULT_CFG_FILE
 from .cli import get_opsbro_json, put_opsbro_json
 from .unixclient import get_request_errors
+from .util import bytes_to_unicode
 
 # some parameters cannot be "set", only add/remove
 list_type_parameters = ('groups', 'seeds')
@@ -28,12 +29,11 @@ def yml_parameter_get(parameters_file_path, parameter_name, file_display=None):
     # Error if the parameter is not present
     __assert_pname_in_obj(parameter_name, o, parameters_file_path)
     
-    # yaml.dumps is putting us a ugly '...' as last line, remove it
+    # yaml.dumps is putting us a ugly '...' as last line, remove it, and be sure to have unicode
     lines = yamler.dumps(o[parameter_name]).splitlines()
-    if '...' in lines:
-        lines.remove('...')
+    lines = [bytes_to_unicode(line) for line in lines if lines != u'...']
     
-    value_string = '\n'.join(lines)
+    value_string = u'\n'.join(lines)
     cprint('%s' % file_display, color='magenta', end='')
     cprint(' %s ' % CHARACTERS.arrow_left, end='')
     cprint(value_string, color='green')

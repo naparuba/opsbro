@@ -575,7 +575,7 @@ class CLICommander(object):
         sys.exit(0)
     
     
-    def _print_help_from_cli_entry(self, entry):
+    def _print_help_from_cli_entry(self, entry, do_exit=True):
         keyword_string = ' '.join(entry.keywords)
         cprint('%s' % keyword_string, color='green')
         description = entry.description
@@ -586,8 +586,8 @@ class CLICommander(object):
             desc = arg.get('description', '')
             cprint('\t%s' % n.ljust(10), 'magenta', end='')
             cprint(': %s' % desc)
-        
-        sys.exit(0)
+        if do_exit:  # on some case we want to print wihtout exiting (like with errors)
+            sys.exit(0)
     
     
     # Execute a function based on the command line
@@ -689,7 +689,7 @@ class CLICommander(object):
                 logger.debug('Cannot launch function: %s' % str(traceback.format_exc()))
                 err = 'The call did crash: %s.\nPlease fill a bug report about it.' % str(traceback.format_exc())
                 self.print_fatal_error(err)
-                self._print_help_from_cli_entry(entry)
+                self._print_help_from_cli_entry(entry, do_exit=False)  # must NOT exit from this print
                 sys.exit(2)
     
     
