@@ -5,13 +5,11 @@ import datetime
 import time
 import codecs
 
-PY3 = sys.version_info >= (3,)
-
 from .characters import CHARACTERS
 import opsbro.misc
 from .library import libstore
 from .log import LoggerFactory
-from .util import bytes_to_unicode
+from .util import bytes_to_unicode, PY3
 
 ruamel_yaml = None
 
@@ -137,7 +135,7 @@ class YamlMgr(object):
             fake_file = StringIO(s)  # unicode_to_bytes(s))
             if simple_yaml_loader is not None:
                 data = yamllib.load(fake_file, Loader=simple_yaml_loader)
-            else:
+            else:  # ruamel
                 data = yamllib.round_trip_load(s)
         if force_document_comment_to_first_entry:
             del data['____useless_property']

@@ -27,6 +27,7 @@ from .agentstates import AGENT_STATES
 from .now import NOW
 from .jsonmgr import jsoner
 from .cli_display import print_h1, print_h2, print_h3
+from .util import bytes_to_unicode
 
 # Will be populated by the opsbro CLI command
 CONFIG = None
@@ -401,6 +402,14 @@ class CLICommander(object):
         logger.debug('self.load_cli_mods :: %.3f' % (time.time() - t0))
     
     
+    # Python3 does nasty decode before give us sys.argv, so must get back to original values
+    def _get_argv_as_unicode(self):
+        _argv = sys.argv
+        if PY3:
+            _argv = [os.fsencode(arg) for arg in sys.argv]
+        return [bytes_to_unicode(arg) for arg in _argv]
+    
+    
     # We should look on the sys.argv if we find a valid keywords to
     # call in one loop or not.
     def hack_sys_argv(self):
@@ -410,7 +419,9 @@ class CLICommander(object):
         founded = False
         ptr = self.keywords
         
-        for arg in sys.argv[1:]:  # don't care about the program name
+        _argv = self._get_argv_as_unicode()
+        
+        for arg in _argv[1:]:  # don't care about the program name
             # Maybe it's a global one
             if not founded and arg in self.keywords['global']:
                 founded = True
@@ -419,12 +430,12 @@ class CLICommander(object):
                 founded = True
             # Did we found it?
             if founded:
-                command_values.append(arg)
+                command_values.append(bytes_to_unicode(arg))
             else:  # ok still not, it's for the opsbro command so
                 internal_values.append(arg)
         
-        logger.debug('Internal args %s' % internal_values)
-        logger.debug('Command values %s' % command_values)
+        logger.debug(u'Internal args %s' % internal_values)
+        logger.debug(u'Command values %s' % u','.join(command_values))
         
         # Ok, really hack sys.argv to catch PURE cli argument (like -D or -h)
         sys.argv = internal_values

@@ -47,10 +47,11 @@ def yml_parameter_get(parameters_file_path, parameter_name, file_display=None):
 
 
 def get_and_assert_valid_to_yaml_value(str_value):
+    str_value = bytes_to_unicode(str_value)
     try:
-        python_value = yamler.loads('%s' % str_value)
+        python_value = yamler.loads(str_value, with_comments=False)
     except Exception as exp:
-        err = 'Cannot load the value %s as a valid parameter: %s' % (str_value, exp)
+        err = u'Cannot load the value %s as a valid parameter: %s' % (str_value, exp)
         logger.error(err)
         raise Exception(err)
     return python_value
