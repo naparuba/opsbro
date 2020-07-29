@@ -355,3 +355,16 @@ function assert_one_package_can_be_installed_and_detected {
        exit 2
     fi
 }
+
+
+function launch_discovery_auto_join {
+    echo "Launching UDP detection `date`"
+    opsbro gossip detect --auto-join --timeout=30
+    if [ $? != 0 ];then
+        echo "UDP done at `date`"
+        echo "ERROR: cannot auto join other nodes"
+        exit 2
+    fi
+    echo "UDP done at `date`"
+
+}

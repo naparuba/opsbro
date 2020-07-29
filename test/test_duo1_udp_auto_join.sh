@@ -24,7 +24,7 @@ opsbro agent parameters set display_name "$CASE"
 
 print_header "Start auto detect"
 
-opsbro gossip detect --auto-join --timeout=15
+launch_discovery_auto_join
 
 if [ $CASE == "NODE2" ]; then
     print_header "Case node2, just waiting for the other node to join us then exit"

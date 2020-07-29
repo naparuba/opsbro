@@ -64,7 +64,7 @@ opsbro gossip members --detail
 
 
 # Join all together
-opsbro gossip detect --auto-join --timeout=15
+launch_discovery_auto_join
 if [ $? != 0 ];then
    echo "ERROR: cannot discover any other node in UDP, exiting"
    exit 2

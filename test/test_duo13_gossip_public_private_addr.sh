@@ -48,7 +48,7 @@ if [ "$NODE_NB" == "3" ]; then
     assert_group 'zone::internet'
 fi
 
-opsbro gossip detect --auto-join --timeout=15
+launch_discovery_auto_join
 
 opsbro gossip members
 

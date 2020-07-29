@@ -33,7 +33,7 @@ assert_can_ping node3
 
 
 ############# Let the two nodes joins
-opsbro gossip detect --auto-join --timeout=15
+launch_discovery_auto_join
 
 
 

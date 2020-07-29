@@ -23,7 +23,7 @@ print_header "Starting"
 show_my_system_ip
 
 print_header "Joining"
-opsbro gossip detect --auto-join --timeout=15
+launch_discovery_auto_join
 
 
 TOTAL_NUMBER_OF_NODES=5

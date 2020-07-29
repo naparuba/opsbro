@@ -83,8 +83,7 @@ show_my_system_ip
 
 # Let the nodes join them selve.
 # NOTE: the haproxy node will be slower to get here, because he need to install haproxy during the start
-echo "Launching UDP detection `date`"
-opsbro gossip detect --auto-join --timeout=15
+launch_discovery_auto_join
 if [ $? != 0 ];then
    echo "ERROR: `date` the automatic detect call did fail after 15s"
    cat /var/log/opsbro/gossip.log
