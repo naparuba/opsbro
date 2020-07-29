@@ -5,15 +5,17 @@ MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 . $MYDIR/common_shell_functions.sh
 
 
+KV_UPDATES_DIR=/var/lib/opsbro/kv_updates/
+
 # Fake generate old updates.lst to test cleaning
 print_header " Creating update files"
 NOW=$(python -c 'import time;print(int(time.time()))')
 
 TWO_WEEKS_AGO=$(python -c 'import time;print(int(time.time()) - (86400 * 15))')
 
-mkdir /var/lib/opsbro/updates/ 2>/dev/null
+mkdir $KV_UPDATES_DIR 2>/dev/null
 for ii in `seq $TWO_WEEKS_AGO 60 $NOW`; do
-    touch /var/lib/opsbro/updates/$ii.lst
+    touch $KV_UPDATES_DIR/$ii.lst
     if [ $? != 0 ];then
         echo "ERROR: cannot create update file"
         exit 2
@@ -61,12 +63,12 @@ fi
 
 print_header " Looking if updates files are cleaned"
 # Look if the updates files are clean
-if [ -f /var/lib/opsbro/updates/$TWO_WEEKS_AGO.lst ];then
+if [ -f $KV_UPDATES_DIR/$TWO_WEEKS_AGO.lst ];then
     do_bad_exit_and_logs "ERROR: the update file /var/lib/opsbro/updates/$TWO_WEEKS_AGO.lst is still existing"
 fi
 echo "* File: /var/lib/opsbro/updates/$TWO_WEEKS_AGO.lst is cleaned"
 
-if [ ! -f /var/lib/opsbro/updates/$NOW.lst ];then
+if [ ! -f $KV_UPDATES_DIR/$NOW.lst ];then
     do_bad_exit_and_logs "ERROR: the update file /var/lib/opsbro/updates/$NOW.lst is removed!"
 fi
 echo "* File: /var/lib/opsbro/updates/$NOW.lst is still there"
