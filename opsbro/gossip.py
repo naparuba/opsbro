@@ -1362,10 +1362,12 @@ class Gossip(BaseManager):
         logger.info("Detect back: return back message (from %s): %s" % (ret_msg, m))
     
     
-    # launch a broadcast (UDP) and wait 5s for returns, and give all answers from others daemons
+    # launch a broadcast (UDP) and wait Xs for returns, and give all answers from others daemons
+    # NOTE: we are launching a UDP probe packet every seconds, so even if the others nodes did start during ourtimeout
+    #       we will see them
     def launch_gossip_detect_ping(self, timeout):
         logger.info('Launching UDP detection with a %d second timeout' % timeout)
-        r = []
+        received_nodes = {}
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         
@@ -1377,16 +1379,22 @@ class Gossip(BaseManager):
         # so we must compute the time where we should finish
         start = time.time()
         end = start + timeout
+        last_broadcast = time.time()  # we will send a broadcast every second
         
         while True:
             now = time.time()
             remaining_time = end - now
-            # Maybe we did get bac in time a LOT
+            # Maybe we did get back in time a LOT
             if remaining_time > timeout:
                 break
             # No more time: break
             if remaining_time < 0:
                 break
+            
+            # Look is we should send a new broadcast
+            if now > last_broadcast + 1:
+                s.sendto(enc_p, ('<broadcast>', 6768))
+                last_broadcast = now
             logger.debug('UDP detection Remaining time: %.2f' % remaining_time)
             s.settimeout(remaining_time)
             try:
@@ -1415,8 +1423,9 @@ class Gossip(BaseManager):
             nuuid = n.get('uuid', self.uuid)
             if nuuid == self.uuid:
                 continue
-            r.append(n)
+            received_nodes[nuuid] = n  # overwrite old entry of need
         
+        r = list(received_nodes.values())  # true list, thanks python3
         logger.info('UDP detection done after %dseconds. %d nodes are detected on the network.' % (timeout, len(r)))
         return r
     
