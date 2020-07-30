@@ -24,7 +24,7 @@ opsbro agent parameters set display_name "$CASE"
 
 print_header "Start auto detect"
 
-launch_discovery_auto_join
+launch_discovery_auto_join_allow_error
 
 
 if [ $CASE == "NODE2" ]; then
