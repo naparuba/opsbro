@@ -1,5 +1,8 @@
 echo "Loading the common shell functions"
 
+
+LOG_DIR=/var/log/opsbro
+
 # If there is no python_exe set in the test, set the dfault system one
 if [ "X$PYTHON_EXE" == "X" ];then
     export  PYTHON_EXE=python
@@ -25,9 +28,9 @@ function assert_state_count {
       STATS=$(opsbro gossip members)
       if [ $? != 0 ];then
          echo "ERROR: the daemon cannot answer to gossip member listing"
-         cat /var/log/opsbro/gossip.log
-         cat /var/log/opsbro/daemon.log
-         cat /var/log/opsbro/crash.log 2>/dev/null
+         cat $LOG_DIR/gossip.log
+         cat $LOG_DIR/daemon.log
+         cat $LOG_DIR/crash.log 2>/dev/null
          exit 2
       fi
       NB=$(echo "$STATS" | grep "$1" | wc -l)
@@ -43,9 +46,9 @@ function assert_state_count {
    # Out and still not OK? we did fail
    echo "ERROR: `date` there should be $2 $1 but there are $NB after 20 try"
    echo "$STATS"
-   cat /var/log/opsbro/gossip.log
-   cat /var/log/opsbro/daemon.log
-   cat /var/log/opsbro/crash.log 2>/dev/null
+   cat $LOG_DIR/gossip.log
+   cat $LOG_DIR/daemon.log
+   cat $LOG_DIR/crash.log 2>/dev/null
    opsbro gossip history
    exit 2
 }
@@ -56,8 +59,8 @@ function wait_member_display_name_with_timeout {
     if [ $? != 0 ]; then
        echo "ERROR: `date` the node with the display name $1 is not present after $2s"
        opsbro gossip members --detail
-       cat /var/log/opsbro/daemon.log
-       cat /var/log/opsbro/crash.log 2>/dev/null
+       cat $LOG_DIR/daemon.log
+       cat $LOG_DIR/crash.log 2>/dev/null
        exit 2
     fi
 }
@@ -68,9 +71,9 @@ function wait_event_with_timeout {
     if [ $? != 0 ]; then
          echo ""
          echo "FAIL `date` on event $1. Logs:"
-         cat /var/log/opsbro/daemon.log
-         cat /var/log/opsbro/gossip.log
-         cat /var/log/opsbro/crash.log 2>/dev/null
+         cat $LOG_DIR/daemon.log
+         cat $LOG_DIR/gossip.log
+         cat $LOG_DIR/crash.log 2>/dev/null
          echo "ERROR: `date` I do not have the event $1 after $2 seconds"
          exit 2
     fi
@@ -139,9 +142,9 @@ function assert_directory_exists {
 
 
 function assert_no_crash {
-   if [ -f /var/log/opsbro/crash.log ];then
+   if [ -f $LOG_DIR/crash.log ];then
        echo "ERROR: BIG CRASH"
-       cat /var/log/opsbro/crash.log
+       cat $LOG_DIR/crash.log
        exit 2
     fi
 }
@@ -203,12 +206,12 @@ function assert_group {
    opsbro detectors wait-group "$1"
    if [ $? != 0 ];then
        echo "ERROR: cannot find the group $1"
-       cat /var/log/opsbro/daemon.log
-       cat /var/log/opsbro/gossip.log
-       cat /var/log/opsbro/detector.log
-       cat /var/log/opsbro/hosting-driver.log
-       cat /var/log/opsbro/crash.log 2>/dev/null
-       ls -thor /var/log/opsbro/
+       cat $LOG_DIR/daemon.log
+       cat $LOG_DIR/gossip.log
+       cat $LOG_DIR/detector.log
+       cat $LOG_DIR/hosting-driver.log
+       cat $LOG_DIR/crash.log 2>/dev/null
+       ls -thor $LOG_DIR/
        opsbro agent info
        exit 2
    fi
@@ -217,13 +220,13 @@ function assert_group {
 
 function do_bad_exit_and_logs {
     echo "ERROR: exiting because $1"
-    cat /var/log/opsbro/daemon.log
-    cat /var/log/opsbro/gossip.log
-    cat /var/log/opsbro/detector.log
-    cat /var/log/opsbro/hosting-driver.log
-    cat /var/log/opsbro/key-value.log
-    cat /var/log/opsbro/crash.log 2>/dev/null
-    ls -thor /var/log/opsbro/
+    cat $LOG_DIR/daemon.log
+    cat $LOG_DIR/gossip.log
+    cat $LOG_DIR/detector.log
+    cat $LOG_DIR/hosting-driver.log
+    cat $LOG_DIR/key-value.log
+    cat $LOG_DIR/crash.log 2>/dev/null
+    ls -thor $LOG_DIR/
     echo "ERROR: exiting because $1"
     exit 2
 }
@@ -348,9 +351,9 @@ function assert_one_package_can_be_installed_and_detected {
     if [ $? != 0 ];then
        echo "ERROR: the $TEST_PACKAGE_NAME package should have been detected"
        cat $MASSIVE_INSTALL_LOG
-       cat /var/log/opsbro/daemon.log
-       cat /var/log/opsbro/*log
-       cat /var/log/opsbro/*system-packages*log
+       cat $LOG_DIR/daemon.log
+       cat $LOG_DIR/*log
+       cat $LOG_DIR/*system-packages*log
        ps axjf
        exit 2
     fi
@@ -363,6 +366,9 @@ function launch_discovery_auto_join {
     if [ $? != 0 ];then
         echo "UDP done at `date`"
         echo "ERROR: cannot auto join other nodes"
+        cat $LOG_DIR/daemon.log
+        cat $LOG_DIR/gossip.log
+        cat $LOG_DIR/crash.log 2>/dev/null
         exit 2
     fi
     echo "UDP done at `date`"
