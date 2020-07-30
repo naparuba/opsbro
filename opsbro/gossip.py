@@ -1396,11 +1396,13 @@ class Gossip(BaseManager):
                 s.sendto(enc_p, ('<broadcast>', 6768))
                 last_broadcast = now
             logger.debug('UDP detection Remaining time: %.2f' % remaining_time)
-            s.settimeout(remaining_time)
+            # We want to sleep at least 1s because we need to send other probes during our wait
+            this_turn_timeout = min(1, remaining_time)
+            s.settimeout(this_turn_timeout)
             try:
                 data, addr = s.recvfrom(65507)
             except socket.timeout:
-                logger.info('UDP detection: no response after: %.2f' % (time.time() - start))
+                logger.debug('UDP detection: no response after: %.2f' % (this_turn_timeout))
                 continue
             logger.debug('RECEIVE detect-ping response: %s' % data)
             try:
@@ -1410,7 +1412,6 @@ class Gossip(BaseManager):
             except ValueError as exp:
                 logger.error('Cannot load ping detection package: %s' % exp)
                 continue
-            logger.info('UDP detected node: %s' % d)
             # if not a detect-pong package, I don't want it
             _type = d.get('type', '')
             if _type != PACKET_TYPES.DETECT_PONG:
@@ -1423,6 +1424,7 @@ class Gossip(BaseManager):
             nuuid = n.get('uuid', self.uuid)
             if nuuid == self.uuid:
                 continue
+            logger.info('UDP detected node: %s (%s)' % (nuuid, n.get('name', 'NONAME')))
             received_nodes[nuuid] = n  # overwrite old entry of need
         
         r = list(received_nodes.values())  # true list, thanks python3
