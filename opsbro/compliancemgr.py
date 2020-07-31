@@ -588,6 +588,12 @@ class ComplianceManager(BaseManager):
             
             should_be_launched = compliance.should_be_launched()
             if not should_be_launched:
+                compliance.set_not_eligible()
+                did_change = compliance.compute_state()
+                if did_change:
+                    history_entries = compliance.get_history_entries()
+                    for history_entry in history_entries:
+                        self.add_history_entry(history_entry)
                 continue
             
             # Reset previous errors
@@ -623,9 +629,10 @@ class ComplianceManager(BaseManager):
                     one_step_in_error = True
             
             did_change = compliance.compute_state()
-            history_entries = compliance.get_history_entries()
-            for history_entry in history_entries:
-                self.add_history_entry(history_entry)
+            if did_change:
+                history_entries = compliance.get_history_entries()
+                for history_entry in history_entries:
+                    self.add_history_entry(history_entry)
             
             # We should give the compliance launch to handlers module, but only when the
             # compliance state do change and the change is an interesting one
