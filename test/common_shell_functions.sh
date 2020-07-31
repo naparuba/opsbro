@@ -10,7 +10,7 @@ fi
 
 function print_header {
    printf "\n\n\n"
-   printf '\033[94m¯`·.¸.·´¯`·.¸.·´¯`·.¸.·´\033[0m  \033[93m%-40s  \033[94m¯`·.¸.·´¯`·.¸.·´¯`·.¸.·´\033[0m\n\n' "$1"
+   printf '\033[94m¯`·.¸.·´¯`·.¸.·´¯`·.¸.·´\033[0m ' `print_time` ' \033[93m%-40s  \033[94m¯`·.¸.·´¯`·.¸.·´¯`·.¸.·´\033[0m\n\n' "$1"
 }
 
 
@@ -18,6 +18,10 @@ function show_my_system_ip {
     ip addr show | grep 'scope global' | awk '{print $2}'
 }
 
+
+function print_time {
+  date +"--%H:%M:%S--"
+}
 
 # Count the number of members in a STATE and check if they are NB==$2
 function assert_state_count {
