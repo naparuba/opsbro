@@ -9,6 +9,7 @@ import threading
 from collections import deque
 import traceback
 import shutil
+import errno
 from contextlib import closing as closing_context
 
 # some singleton :)
@@ -1401,6 +1402,13 @@ class Gossip(BaseManager):
             s.settimeout(this_turn_timeout)
             try:
                 data, addr = s.recvfrom(65507)
+            except IOError as exp:
+                if exp.errno == errno.EWOULDBLOCK:  # error 11: not available: sleep a bit
+                    logger.debug('UDP detection: socket is not ready, sleeping a bit')
+                    time.sleep(0.01)
+                    continue
+                # Another error? what the...
+                raise
             except socket.timeout:
                 logger.debug('UDP detection: no response after: %.2f' % (this_turn_timeout))
                 continue
