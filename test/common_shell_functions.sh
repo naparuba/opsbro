@@ -38,7 +38,7 @@ function assert_state_count {
           echo "OK: founded $NB $1 states nodes"
           return 0
       fi
-      echo "OUPS: there should be $2 $1 but there are $NB after $i/20 try"
+      echo "`date` OUPS: there should be $2 $1 but there are $NB after $i/20 try"
       i=$[$i+1]
       sleep 1
    done
@@ -158,7 +158,7 @@ function exit_if_no_crash {
 
     assert_no_crash
     printf " - $1\n"
-    printf " - Clean exit: OK √\n"
+    printf " - `date` Clean exit: OK √\n"
     exit 0
 }
 
