@@ -1402,6 +1402,9 @@ class Gossip(BaseManager):
             s.settimeout(this_turn_timeout)
             try:
                 data, addr = s.recvfrom(65507)
+            except socket.timeout:  # BEFORE IOError
+                logger.debug('UDP detection: no response after: %.2f' % (this_turn_timeout))
+                continue
             except IOError as exp:
                 if exp.errno == errno.EWOULDBLOCK:  # error 11: not available: sleep a bit
                     logger.debug('UDP detection: socket is not ready, sleeping a bit')
@@ -1409,9 +1412,6 @@ class Gossip(BaseManager):
                     continue
                 # Another error? what the...
                 raise
-            except socket.timeout:
-                logger.debug('UDP detection: no response after: %.2f' % (this_turn_timeout))
-                continue
             logger.debug('RECEIVE detect-ping response: %s' % data)
             try:
                 d_str = encrypter.decrypt(data)
