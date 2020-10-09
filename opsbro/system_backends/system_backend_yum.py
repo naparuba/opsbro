@@ -15,6 +15,7 @@ logger = LoggerFactory.create_logger('system-packages')
 
 class YumBackend(LinuxBackend):
     RPM_PACKAGE_FILE_PATH = '/var/lib/rpm/Packages'  # seems to be list of installed packages
+    RPM_PACKAGE_FILE_PATH_FED33 = '/var/lib/rpm/rpmdb.sqlite'  # after Fedora 33, this is the new file
     
     
     def __init__(self):
@@ -37,8 +38,14 @@ class YumBackend(LinuxBackend):
         self._rpm_package_file_age = None
     
     
+    def _get_rpm_package_file_path(self):
+        if os.path.exists(self.RPM_PACKAGE_FILE_PATH):
+            return self.RPM_PACKAGE_FILE_PATH
+        return self.RPM_PACKAGE_FILE_PATH_FED33
+    
     def _assert_valid_cache(self):
-        last_package_change = os.stat(self.RPM_PACKAGE_FILE_PATH).st_mtime
+        rpm_package_file = self._get_rpm_package_file_path()
+        last_package_change = os.stat(rpm_package_file).st_mtime
         logger.debug('Yum:: Current rpm cache file %s, new rpm cache file: %s' % (self._rpm_package_file_age, last_package_change))
         if self._rpm_package_file_age != last_package_change:
             self._rpm_package_file_age = last_package_change

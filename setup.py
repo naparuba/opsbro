@@ -138,7 +138,6 @@ parser.add_option('--record', dest="record", help='File to save writing files. U
 parser.add_option('--single-version-externally-managed', dest="single_version", action='store_true', help='This option is for pip only')
 parser.add_option(UPDATE_GLOBAL_PACKS_PARAMETER, dest="update_global_packs", action='store_true', help='If set, global packs will be updated')
 
-
 old_error = parser.error
 
 
@@ -489,6 +488,9 @@ distro_prerequites = {
         {'package_name': 'epel-release', 'only_for': ['6.7', '7.0', '7.1'], 'post_fix': _fix_centos_7_epel_no_https},  # need for leveldb, and post_fix is need for 6.7
         {'package_name': 'leveldb', 'only_for': ['7.0', '7.1']},  # sqlite on old centos is broken
     ],
+    'fedora': [
+        {'package_name': 'python3-simplejson', 'only_for': ['33']},
+    ]
 }
 
 # If we are uploading to pypi, we just don't want to install/update packages here
