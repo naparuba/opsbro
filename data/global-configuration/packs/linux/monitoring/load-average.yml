@@ -3,12 +3,12 @@ check:
 
     display_name: System Load Average
 
-    ok_output: "'OK: load is at %s' % {{collector.loadaverage.load1}}"
+    ok_output: "'OK: load is at %.2f' % {{collector.loadaverage.load1}}"
     
     critical_if: "{{collector.loadaverage.load1}} > {{collector.system.cpu_count}}"
-    critical_output: "'CRITICAL: load is at %s' % {{collector.loadaverage.load1}}"
+    critical_output: "'CRITICAL: load is at %.2f' % {{collector.loadaverage.load1}}"
 
     warning_if: "{{collector.loadaverage.load1}} > 0.9 * {{collector.system.cpu_count}}"
-    warning_output: "'WARNING: load is at %s' % {{collector.loadaverage.load1}}"
+    warning_output: "'WARNING: load is at %.2f' % {{collector.loadaverage.load1}}"
     
     interval: 30s

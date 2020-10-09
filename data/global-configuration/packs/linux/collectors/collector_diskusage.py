@@ -1,12 +1,129 @@
 import os
-import re
 
 from opsbro.collector import Collector
 
+import ctypes
+import ctypes.util
+
+try:
+    libc = ctypes.CDLL(ctypes.util.find_library("c"), use_errno=True)
+except Exception:  # windows
+    libc = None
+
+
+class statfs_t(ctypes.Structure):
+    """Describes the details about a filesystem.
+
+    f_type:    type of file system (see below)
+    f_bsize:   optimal transfer block size
+    f_blocks:  total data blocks in file system
+    f_bfree:   free blocks in fs
+    f_bavail:  free blocks avail to non-superuser
+    f_files:   total file nodes in file system
+    f_ffree:   free file nodes in fs
+    f_fsid:    file system id
+    f_namelen: maximum length of filenames
+    """
+    _fields_ = [
+        ("f_type", ctypes.c_long),  # type of file system (see below)
+        ("f_bsize", ctypes.c_long),  # optimal transfer block size
+        ("f_blocks", ctypes.c_long),  # total data blocks in file system
+        ("f_bfree", ctypes.c_long),  # free blocks in fs
+        ("f_bavail", ctypes.c_long),  # free blocks avail to non-superuser
+        ("f_files", ctypes.c_long),  # total file nodes in file system
+        ("f_ffree", ctypes.c_long),  # free file nodes in fs
+        ("f_fsid", ctypes.c_int * 2),  # file system id
+        ("f_namelen", ctypes.c_long),  # maximum length of filenames
+        # statfs_t has a bunch of extra padding, we hopefully guess large enough.
+        ("padding", ctypes.c_char * 1024),
+    ]
+
+
+_statfs = libc.statfs
+_statfs.argtypes = [ctypes.c_char_p, ctypes.POINTER(statfs_t)]
+_statfs.rettype = ctypes.c_int
+
+
+def statfs(path):
+    """The function statfs() returns information about a mounted file system.
+
+    Args:
+      path: is the pathname of any file within the mounted file system.
+
+    Returns:
+      Returns a statfs_t object.
+    """
+    buf = statfs_t()
+    err = _statfs(path, ctypes.byref(buf))
+    if err == -1:
+        errno = ctypes.get_errno()
+        raise OSError(errno, '%s path: %r' % (os.strerror(errno), path))
+    return buf
+
+
+_fstatfs = libc.fstatfs
+_fstatfs.argtypes = [ctypes.c_int, ctypes.POINTER(statfs_t)]
+_fstatfs.rettype = ctypes.c_int
+
+
+def fstatfs(fd):
+    """The fuction fstatfs() returns information about a mounted file ssytem.
+
+    Args:
+      fd: A file descriptor.
+
+    Returns:
+      Returns a statfs_t object.
+    """
+    buf = statfs_t()
+    fileno = fd.fileno()
+    assert fileno
+    err = _fstatfs(fileno, ctypes.byref(buf))
+    if err == -1:
+        errno = ctypes.get_errno()
+        raise OSError(errno, os.strerror(errno))
+    return buf
+
 
 class DiskUsage(Collector):
+    not_wish_fs_type = set(['sysfs', 'devtmpfs', 'securityfs',
+                            'devpts', 'cgroup', 'pstore', 'configfs',
+                            'mqueue', 'hugetlbfs', 'autofs', 'fusectl',
+                            'proc', 'smbfs', 'cifs', 'iso9660', 'udf',
+                            'nfsv4', 'udev'])
+    
+    
+    def _get_volume_paths(self):
+        fs_paths = []
+        with open('/etc/mtab', 'r') as f:
+            lines = f.readlines()
+            for line in lines:
+                # /dev/md1 / ext4 rw,relatime,errors=remount-ro 0 0
+                device, path, fs_type, _ = line.split(' ', 3)
+                if fs_type in self.not_wish_fs_type:
+                    continue
+                fs_paths.append((path, fs_type))
+        return fs_paths
+    
+    
+    @staticmethod
+    def _get_and_unduplicate_volume_stats(fs_paths):
+        final_fs_details = {}
+        for (path, fs_type) in fs_paths:
+            details = statfs(path)
+            fs_id = (details.f_fsid[0], details.f_fsid[1])
+            prev_entry = final_fs_details.get(fs_id, None)
+            if prev_entry is None:  # new fs
+                final_fs_details[fs_id] = (path, fs_type, details)
+            else:
+                prev_path, _, _ = prev_entry
+                # is our path shorter than the previous?
+                if len(path) < len(prev_path):
+                    final_fs_details[fs_id] = (path, fs_type, details)
+        return final_fs_details
+    
+    
     def launch(self):
-        logger = self.logger
         # logger.debug('getDiskUsage: start')
         
         # logger.debug('getDiskUsage: attempting Popen')
@@ -14,78 +131,26 @@ class DiskUsage(Collector):
             self.set_not_eligible('This collector is not availabe on windows currently.')
             return False
         
-        # We are asking for calling the df call but there is a trap:
-        # * classic linux, manage -x
-        # * embedded and co, cannot manage -x
-        _cmd = 'df -k -x smbfs -x tmpfs -x cifs -x iso9660 -x udf -x nfsv4 -x udev -x devtmpfs'
-        df = self.execute_shell(_cmd, if_fail_set_error=False)
-        if not df:
-            _cmd = 'df -k'
-            df = self.execute_shell(_cmd, if_fail_set_error=False)
-            if not df:
-                return False
+        fs_paths = self._get_volume_paths()
+        final_fs_details = self._get_and_unduplicate_volume_stats(fs_paths)
         
-        # logger.debug('getDiskUsage: Popen success, start parsing')
-        
-        # Split out each volume
-        volumes = df.split('\n')
-        
-        logger.debug('getDiskUsage: parsing, split')
-        
-        # Remove first (headings) and last (blank)
-        volumes.pop(0)
-        volumes.pop()
-        
-        logger.debug('getDiskUsage: parsing, pop')
-        
-        usageData = {}
-        
-        regexp = re.compile(r'([0-9]+)')
-        
-        # Set some defaults
-        previousVolume = None
-        volumeCount = 0
-        
-        # logger.debug('getDiskUsage: parsing, start loop')
-        
-        for volume in volumes:
-            logger.debug('getDiskUsage: parsing volume: %s' % volume)
+        usage_data = {}
+        for (path, fs_type, details) in final_fs_details.values():
+            d = {}
+            self.logger.debug("%s => f_bsize: %s" % (path, details.f_bsize))
+            self.logger.debug("%s => f_blocks: total data blocks in file system: %s" % (path, details.f_blocks))
+            self.logger.debug("%s => f_bfree: free blocks in fs: %s" % (path, details.f_bfree))
+            block_size = details.f_bsize
+            total_size = int(details.f_blocks * block_size / (1024.0 * 1024.0))
+            free_size = int(details.f_bfree * block_size / (1024.0 * 1024.0))
+            used_size = total_size - free_size
+            pct_used = round(float(100 * float(used_size) / total_size), 1)
             
-            # Split out the string
-            volume = volume.split(None, 10)
+            self.logger.debug("%s=> Total size:%s   used:%s  pct:%s" % (path, total_size, used_size, pct_used))
             
-            # Handle df output wrapping onto multiple lines (case 27078 and case 30997)
-            # Thanks to http://github.com/sneeu
-            if len(volume) == 1:  # If the length is 1 then this just has the mount name
-                previousVolume = volume[0]  # We store it, then continue the for
-                continue
-            
-            if previousVolume is not None:  # If the previousVolume was set (above) during the last loop
-                volume.insert(0, previousVolume)  # then we need to insert it into the volume
-                previousVolume = None  # then reset so we don't use it again
-            
-            volumeCount = volumeCount + 1
-            
-            # Sometimes the first column will have a space, which is usually a system line that isn't relevant
-            # e.g. map -hosts              0         0          0   100%    /net
-            # so we just get rid of it
-            # Also ignores lines with no values
-            if re.match(regexp, volume[1]) is None or re.match(regexp, volume[2]) is None or re.match(regexp, volume[
-                3]) is None:
-                logger.debug('invalid volume', volume, re.match(regexp, volume[1]), re.match(regexp, volume[2]),
-                             re.match(regexp, volume[3]))
-            else:
-                d = {}
-                try:
-                    volume[1] = int(volume[1]) / 1024  # total
-                    volume[2] = int(volume[2]) / 1024  # Used
-                    volume[3] = int(volume[3]) / 1024  # Available
-                except Exception as e:
-                    logger.error('getDiskUsage: parsing, loop %s - Used or Available not present' % (repr(e),))
-                d['total'] = volume[1]
-                d['used'] = volume[2]
-                d['pct_used'] = int(volume[4].replace('%', ''))
-                usageData[volume[5]] = d
-                # usageData.append(volume)
+            d['total'] = total_size
+            d['used'] = used_size
+            d['pct_used'] = pct_used
+            usage_data[path] = d
         
-        return usageData
+        return usage_data
