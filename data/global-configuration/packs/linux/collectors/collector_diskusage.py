@@ -1,6 +1,7 @@
 import os
 
 from opsbro.collector import Collector
+from opsbro.util import unicode_to_bytes
 
 import ctypes
 import ctypes.util
@@ -54,6 +55,7 @@ def statfs(path):
       Returns a statfs_t object.
     """
     buf = statfs_t()
+    path = unicode_to_bytes(path)  # python3: need a raw string, not unicode
     err = _statfs(path, ctypes.byref(buf))
     if err == -1:
         errno = ctypes.get_errno()

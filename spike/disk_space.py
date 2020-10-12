@@ -9,6 +9,7 @@ See man statfs for usage.
 import os
 import time
 
+from opsbro.util import bytes_to_unicode, unicode_to_bytes
 import ctypes
 import ctypes.util
 
@@ -60,6 +61,8 @@ def statfs(path):
       Returns a statfs_t object.
     """
     buf = statfs_t()
+    path = unicode_to_bytes(path)  # python3: need a raw string, not unicode
+    print('TYPE? %s=>%s' % (path, type(path)))
     err = _statfs(path, ctypes.byref(buf))
     if err == -1:
         errno = ctypes.get_errno()
@@ -178,10 +181,12 @@ def _get_volume_paths():
     with open('/etc/mtab', 'r') as f:
         lines = f.readlines()
         for line in lines:
+            line = bytes_to_unicode(line)
             # /dev/md1 / ext4 rw,relatime,errors=remount-ro 0 0
             device, path, fs_type, _ = line.split(' ', 3)
             if fs_type in not_wish_fs_type:
                 continue
+            
             fs_paths.append((path, fs_type))
     return fs_paths
 
@@ -200,7 +205,7 @@ def _get_and_unduplicate_volume_stats(fs_paths):
             if len(path) < len(prev_path):
                 final_fs_details[fs_id] = (path, fs_type, details)
             else:
-                print "REMOVING DUPLICATE", path
+                print("REMOVING DUPLICATE", path)
     return final_fs_details
 
 
@@ -237,28 +242,28 @@ def main():
     #             print "REMOVING DUPLICATE", path
     
     for (path, fs_type, details) in final_fs_details.values():
-        print "\n\nPath %s" % path,
+        print("\n\nPath %s" % path)
         d = {}
         r[path] = d
-        print "is on a %s filesystem" % fs_type  # f_types[details.f_type]
+        print("is on a %s filesystem" % fs_type)  # f_types[details.f_type]
         # print details.__dict__
         # print "f_type:", details.f_type
         
-        print "f_bsize:", details.f_bsize
-        print "f_blocks: total data blocks in file system", details.f_blocks
-        print "f_bfree: free blocks in fs", details.f_bfree
-        print "f_bavail:  free blocks avail to non-superuser", details.f_bavail
-        print "f_files:   total file nodes in file system", details.f_files
-        print "f_ffree:   free file nodes in fs", details.f_ffree
-        print "f_fsid:    file system id", details.f_fsid[0], details.f_fsid[1]
-        print "f_namelen: maximum length of filenames", details.f_namelen
+        print("f_bsize:", details.f_bsize)
+        print("f_blocks: total data blocks in file system", details.f_blocks)
+        print("f_bfree: free blocks in fs", details.f_bfree)
+        print("f_bavail:  free blocks avail to non-superuser", details.f_bavail)
+        print("f_files:   total file nodes in file system", details.f_files)
+        print("f_ffree:   free file nodes in fs", details.f_ffree)
+        print("f_fsid:    file system id", details.f_fsid[0], details.f_fsid[1])
+        print("f_namelen: maximum length of filenames", details.f_namelen)
         block_size = details.f_bsize
         total_size = int(details.f_blocks * block_size / (1024.0 * 1024.0))
         free_size = int(details.f_bfree * block_size / (1024.0 * 1024.0))
         used_size = total_size - free_size
         pct_used = round(float(100 * float(used_size) / total_size), 0)
         
-        print "Total size", total_size, used_size, pct_used, free_size
+        print("Total size", total_size, used_size, pct_used, free_size)
         
         d['total'] = total_size
         d['used'] = used_size
@@ -266,8 +271,8 @@ def main():
     
     t4 = time.time()
     
-    print "Times: %.3f  %.3f  %.3f  %.3f" % (t1 - t0, t2 - t1, t3 - t2, t4 - t3)
-    print r
+    print("Times: %.3f  %.3f  %.3f  %.3f" % (t1 - t0, t2 - t1, t3 - t2, t4 - t3))
+    print(r)
 
 
 if __name__ == "__main__":
