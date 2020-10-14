@@ -96,6 +96,10 @@ class DiskUsage(Collector):
     
     
     def _get_volume_paths(self):
+        
+        if not os.path.exists('/etc/mtab'):
+            return None
+        
         fs_paths = []
         with open('/etc/mtab', 'r') as f:
             lines = f.readlines()
@@ -134,6 +138,11 @@ class DiskUsage(Collector):
             return False
         
         fs_paths = self._get_volume_paths()
+        
+        if fs_paths is None:  # running on a special system?
+            self.set_not_eligible('This collector is not availabe on your system, missing the /etc/mtab file for listing disks.')
+            return False
+        
         final_fs_details = self._get_and_unduplicate_volume_stats(fs_paths)
         
         usage_data = {}
