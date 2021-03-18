@@ -76,7 +76,7 @@ env:
 ##### Then installation on various distros
 - TEST_SUITE=ALPINE
 - TEST_SUITE=AMAZONLINUX
-- TEST_SUITE=CENTOS-6
+# - TEST_SUITE=CENTOS-6 => NO more possible to launch in docker, not more managed
 - TEST_SUITE=CENTOS-7
 - TEST_SUITE=CENTOS-8
 - TEST_SUITE=DEBIAN

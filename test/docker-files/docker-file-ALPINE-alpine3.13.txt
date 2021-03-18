@@ -1,0 +1,15 @@
+FROM alpine:3.13
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+RUN        /apk_add bash
+# Alpine 3.11 do not have any more py2-jinja2, so directly go to python3
+RUN        /apk_add python3
+
+# Tests with , we are giving the test it's path for starting the setup.py
+#ENV        PYTHON_EXE=/usr/bin/python3
+
+ADD        . /root/opsbro-oss
+
+WORKDIR       /root/opsbro-oss
+ENTRYPOINT    test/test_one_linux_installation.sh  && test/assert_group.sh "alpine"

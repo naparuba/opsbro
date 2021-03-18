@@ -1,0 +1,19 @@
+FROM      debian:buster
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+
+# DNS: need dig
+RUN        /apt_get_install  dnsutils
+RUN        /apt_get_install  procps
+RUN        /apt_get_install  net-tools
+
+ADD        . /root/opsbro-oss
+
+
+WORKDIR    /root/opsbro-oss
+
+RUN        python setup.py install
+
+
+ENTRYPOINT     test/test_module_dns.sh
