@@ -102,6 +102,12 @@ matrix:
     - python: "3.7"
       dist:   xenial          # required for Python >= 3.7
       env:     TEST_SUITE=PYTHON
+    - python: "3.8"
+      dist:   xenial          # required for Python >= 3.7
+      env:     TEST_SUITE=PYTHON
+    - python: "3.9"
+      dist:   xenial          # required for Python >= 3.7
+      env:     TEST_SUITE=PYTHON
 
 # command to run tests
 script:
