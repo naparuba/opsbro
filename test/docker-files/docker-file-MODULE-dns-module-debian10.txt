@@ -3,6 +3,11 @@ MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 ADD        test/docker-helper/  /
 
+RUN        /apt_get_install   python3
+
+# Set python3 as default python
+RUN        update-alternatives --install /usr/bin/python python /usr/bin/python3 1
+
 # DNS: need dig
 RUN        /apt_get_install  dnsutils
 RUN        /apt_get_install  procps
