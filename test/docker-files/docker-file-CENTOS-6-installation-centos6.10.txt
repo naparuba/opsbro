@@ -1,0 +1,26 @@
+FROM centos:6.10
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+
+# For archived repo
+RUN         curl https://www.getpagespeed.com/files/centos6-eol.repo --output /etc/yum.repos.d/CentOS-Base.repo
+
+
+## Package install test
+# TCL: very little
+ENV        TEST_PACKAGE_NAME=tcl
+# centos have a virtual package to test, vi -> vim-minimal
+ENV        TEST_PACKAGE_NAME_VIRTUAL=vi
+# But need to delete it first as it is installed by default
+RUN        /yum_remove vim-minimal
+
+ADD        . /root/opsbro-oss
+
+WORKDIR      /root/opsbro-oss
+
+
+
+ENTRYPOINT   test/test_one_linux_installation.sh && test/assert_group.sh "centos"
+
+

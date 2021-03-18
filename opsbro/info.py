@@ -7,7 +7,7 @@ from .topic import TOPICS, TOPICS_LABELS, TOPICS_LABEL_BANNER, TOPICS_COLORS, TO
 from .log import sprintf
 from .cli_display import get_terminal_size
 
-VERSION = '0.5'
+VERSION = '0.7'
 PROJECT_NAME = 'opsbro'
 
 _txt_topics = u' Topics:\n%s' % ('\n'.join([' - %s (%s)' % (TOPICS_LABELS[t].ljust(MAX_TOPICS_LABEL_SIZE), TOPICS_SUB_TITLES[t]) for t in TOPICS]))

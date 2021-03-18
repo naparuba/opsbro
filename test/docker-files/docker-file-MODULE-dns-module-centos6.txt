@@ -1,0 +1,27 @@
+FROM centos:6
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+
+# For archived repo
+RUN         curl https://www.getpagespeed.com/files/centos6-eol.repo --output /etc/yum.repos.d/CentOS-Base.repo
+
+RUN        /yum_install  epel-release
+RUN        /yum_install  python-jinja2
+RUN        /yum_install  python-crypto
+RUN        /yum_install  python-setuptools
+RUN        /yum_install  libgomp
+
+
+# DNS: need dig
+RUN        /yum_install  bind-utils
+
+ADD        . /root/opsbro-oss
+
+
+WORKDIR    /root/opsbro-oss
+
+RUN        python setup.py install
+
+
+ENTRYPOINT     test/test_module_dns.sh
