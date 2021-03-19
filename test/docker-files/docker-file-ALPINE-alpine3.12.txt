@@ -7,7 +7,7 @@ RUN        /apk_add bash
 RUN        /apk_add python3
 
 # Tests with , we are giving the test it's path for starting the setup.py
-#ENV        PYTHON_EXE=/usr/bin/python3
+ENV        PYTHON_EXE=/usr/bin/python3
 
 ADD        . /root/opsbro-oss
 
