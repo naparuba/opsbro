@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+
+# Always be sure we are loggued in docker
+if  [ ! -f /root/.docker/config.json ];then
+    echo "Login to docker with credentials naparuba"
+    docker login --username  naparuba  --password  $DOCKER_TOKEN
+fi
+
 MODE="$1"
 DF="$2"
 PYTHON3_ARGS=""
@@ -26,4 +33,3 @@ if [ $MODE == "build" ]; then
    docker build -f test/docker-files/$DF $PYTHON3_ARGS .
    exit $?
 fi
-

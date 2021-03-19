@@ -2,7 +2,14 @@
 
 echo "##################### Launching TEST $TEST_SUITE"
 
-
+# Always be sure we are loggued in docker
+if  [ ! -f /root/.docker/config.json ]; then
+    echo "Login to docker with credentials naparuba"
+    if [ "X$DOCKER_TOKEN" == "X" ]; then
+        echo "WARNING: Your docker token is void!"
+    fi
+    docker login --username  naparuba  --password  "$DOCKER_TOKEN"
+fi
 
 # Travis: only need to run the installation once, it it not link to a specific python version. They don't need to use CPU for nothing ;)
 if [ "$TEST_SUITE" == "PYTHON" ]; then
