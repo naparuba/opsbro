@@ -15,7 +15,11 @@ from opsbro.util import PY3
 if PY3:
     # Local import, as we have . in sys.path when loading this file
     # NOTE: do NOT import in python2, as the synctax will be broken!
-    from discord_bot import get_a_botclass
+    try:
+        from discord_bot import get_a_botclass
+    except SyntaxError:  # old python3 versions
+        def get_a_bot_class(logger):
+            raise Exception('The discord module is only available for python3, sorry.')
 else:
     def get_a_bot_class(logger):
         raise Exception('The discord module is only available for python3, sorry.')
