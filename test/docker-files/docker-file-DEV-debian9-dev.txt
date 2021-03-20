@@ -20,7 +20,7 @@ RUN        pip install coveralls
 RUN        pip install nose-cov
 RUN        pip install unittest2
 RUN        /apt_get_install python-cherrypy3
-RUN        pip install rsa
+#RUN        pip install rsa
 # The internal yaml seems to not be used, thanks nose
 RUN        pip install ruamel.yaml==0.11.15
 RUN        /apt_get_install curl
