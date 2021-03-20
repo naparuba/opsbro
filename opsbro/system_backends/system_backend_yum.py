@@ -4,7 +4,7 @@ import logging
 import os
 
 from ..log import LoggerFactory
-from ..util import bytes_to_unicode
+from ..util import bytes_to_unicode, PY3
 
 from .linux_system_backend import LinuxBackend
 from ..systempacketmanager_errors import InstallationFailedException, UpdateFailedException, AssertKeyFailedException, AssertRepositoryFailedException
@@ -28,7 +28,10 @@ class YumBackend(LinuxBackend):
             import rpm
         except ImportError:
             try:
-                self.install_package('rpm-python')
+                if PY3:
+                    self.install_package('python36-rpm')
+                else:
+                    self.install_package('rpm-python')
                 import rpm
             except:
                 rpm = None
