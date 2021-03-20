@@ -18,5 +18,4 @@ WORKDIR       /root/opsbro-oss
 RUN       python3 setup.py install
 
 
-ENTRYPOINT      /bin/bash
-
+ENTRYPOINT     test/test_module_discord.sh

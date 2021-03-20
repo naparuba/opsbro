@@ -10,7 +10,9 @@ from opsbro.gossip import gossiper
 def get_a_botclass(logger):
     # NOTE: this directory is no more in sys.path, and we want to to lazy load, so need to hack a bit the
     # sys.path
-    sys.path.insert(0, os.path.dirname(__file__))
+    my_path = os.path.dirname(__file__)
+    if my_path not in sys.path:
+        sys.path.insert(0, my_path)
     # Lazy import
     import aiohttp
     import discord

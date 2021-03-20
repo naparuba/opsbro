@@ -6,9 +6,25 @@ compliance:
    note: This installer will install the python aiohttp librairy is the discord module goes enabled
    rule:
       type: package-install
+      # You can set variables in order to not repeat yourself in the if rules
+      variables:
+         is_debian: "{{collector.system.os.linux.distribution}} == 'debian'"
+         is_centos: "{{collector.system.os.linux.distribution}} == 'centos'"
       environments:
-        - name: linux
-          if:   "system_get_os() == 'linux'"
+        - name: debian
+          # Debian: already in packages
+          if:   "{{variables.is_debian}}"
           parameters:
              packages:
               - python3-aiohttp
+
+        - name: centos
+          # Centos: ... nightmare mode one
+          if:   "{{variables.is_centos}}"
+          parameters:
+             packages:
+              - gcc
+              - python3-devel
+          post_commands:
+              # centos, need to go with pip3
+              - pip3 install aiohttp

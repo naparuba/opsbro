@@ -44,11 +44,12 @@ if [ $? != 0 ];then
    do_bad_exit_and_logs "ERROR: the local discord prereqs cannot be installed"
 fi
 
+# Centos: don't know why, but the aiohttp lib cannot be load unless restart
+/etc/init.d/opsbro --debug restart
+assert_no_crash
+
 print_header "Checking module is working"
 opsbro agent info
-
-
-
 
 
 ls -thor /var/log/opsbro/
