@@ -493,6 +493,13 @@ distro_prerequites = {
     ]
 }
 
+# Centos: need rpm lib, especially in python3
+if PY3:
+    distro_prerequites['centos'].append( {'package_name': 'python36-rpm'})
+else:
+    distro_prerequites['centos'].append({'package_name': 'rpm-python'})
+    
+
 # If we are uploading to pypi, we just don't want to install/update packages here
 if not allow_black_magic:
     mod_need.clear()
