@@ -3,7 +3,7 @@ import sys
 import imp
 import traceback
 
-from .log import logger
+from .log import logger, LoggerFactory
 from .module import Module
 
 
@@ -15,6 +15,13 @@ class ModuleManager(object):
     
     def add_module_directory_to_load(self, dirname, pack_name, pack_level):
         self.modules_directories_to_load.append((dirname, pack_name, pack_level))
+    
+    
+    def _fail_and_hard_exit(self, err):
+        logger_crash = LoggerFactory.create_logger('crash')
+        logger.error(err)
+        logger_crash.error(err)
+        os._exit(2)  # noqa => force exit even if some modules are not ok with this
     
     
     # Raw import module source code. So they will be available in the Modules class as Class.
@@ -44,8 +51,8 @@ class ModuleManager(object):
                 else:
                     imp.load_compiled(short_mod_name, mod_file)
             except Exception:
-                logger.error('The module %s did fail to be imported: %s' % (dirname, str(traceback.format_exc())))
-                sys.exit(2)
+                err = 'The module %s did fail to be imported: %s' % (dirname, str(traceback.format_exc()))
+                self._fail_and_hard_exit(err)
             
             # remove the module dir from sys.path, it's not need anymore
             # NOTE: as I don't think set sys.path to a new list is a good idea (switching pointer) I prefer to use a del here
@@ -60,8 +67,8 @@ class ModuleManager(object):
                 logger.debug('[module] %s (from pack=%s and pack level=%s) did load' % (mod, mod.pack_name, mod.pack_level))
                 self.modules.append(mod)
             except Exception:
-                logger.error('The module %s did fail to create: %s' % (cls, str(traceback.format_exc())))
-                sys.exit(2)
+                err = 'The module %s did fail to create: %s' % (cls, str(traceback.format_exc()))
+                self._fail_and_hard_exit(err)
     
     
     def prepare(self):
@@ -74,8 +81,8 @@ class ModuleManager(object):
             try:
                 mod.prepare()
             except Exception:
-                logger.error('The module %s did fail to prepare: %s' % (mod, str(traceback.format_exc())))
-                sys.exit(2)
+                err = 'The module %s did fail to prepare: %s' % (mod, str(traceback.format_exc()))
+                self._fail_and_hard_exit(err)
     
     
     def export_http(self):
@@ -87,8 +94,8 @@ class ModuleManager(object):
             try:
                 mod.export_http()
             except Exception:
-                logger.error('The module %s did fail to export the HTTP API: %s' % (mod, str(traceback.format_exc())))
-                sys.exit(2)
+                err = 'The module %s did fail to export the HTTP API: %s' % (mod, str(traceback.format_exc()))
+                self._fail_and_hard_exit(err)
     
     
     def launch(self):
@@ -100,8 +107,8 @@ class ModuleManager(object):
             try:
                 mod.launch()
             except Exception:
-                logger.error('Cannot launch module %s: %s' % (mod, str(traceback.format_exc())))
-                sys.exit(2)
+                err = 'Cannot launch module %s: %s' % (mod, str(traceback.format_exc()))
+                self._fail_and_hard_exit(err)
     
     
     # Now we have our modules and our parameters, link both

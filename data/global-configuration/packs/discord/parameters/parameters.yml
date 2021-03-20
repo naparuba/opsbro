@@ -1,0 +1,17 @@
+
+# By default discord is not enabled
+# NOTE: will only works under python3 currently
+enabled_if_group:  discord
+
+# which check severities to send to slack
+severities:
+        - ok
+        - warning
+        - critical
+        - unknown
+
+# Set your discord bot token here. Look at https://www.docstring.fr/blog/creer-un-bot-discord-avec-python/ how to create one
+token: ''
+
+# Which channel to post to. If missing, will not be able to send alerts ^^
+channel_id: 0

@@ -1,0 +1,14 @@
+compliance:
+   name: Install python3-aiohttp if discord module enabled
+   verify_if:   "is_in_group('discord')"
+   mode: enforcing
+   interval: 1s
+   note: This installer will install the python aiohttp librairy is the discord module goes enabled
+   rule:
+      type: package-install
+      environments:
+        - name: linux
+          if:   "system_get_os() == 'linux'"
+          parameters:
+             packages:
+              - python3-aiohttp
