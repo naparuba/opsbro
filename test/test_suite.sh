@@ -11,6 +11,12 @@ if  [ ! -f /root/.docker/config.json ]; then
     docker login --username  naparuba  --password  "$DOCKER_TOKEN"
 fi
 
+# Look if we did set our docker env variables, for some tests
+if [ ! -f /root/.docket_env ];then
+    printf "DISCORD_TOKEN=$DISCORD_TOKEN\nDISCORD_CHANNEL=$DISCORD_CHANNEL\n" > /root/.docket_env
+fi
+#--env-file ~/.docker_env
+
 # Travis: only need to run the installation once, it it not link to a specific python version. They don't need to use CPU for nothing ;)
 if [ "$TEST_SUITE" == "PYTHON" ]; then
    # No more virtual env on Travis

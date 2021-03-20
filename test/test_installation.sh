@@ -104,7 +104,7 @@ function launch_docker_file {
    SHA=`echo $BUILD|cut -d':' -f2`
 
    print_color "$DO_WHAT  $DOCKER_FILE : RUN starting at $NOW \n" "magenta"
-   docker run --interactive -a stdout -a stderr --rm=true --privileged --cap-add ALL  "$SHA" 2>>$LOG >>$LOG
+   docker run --env-file ~/.docker_env --interactive -a stdout -a stderr --rm=true --privileged --cap-add ALL  "$SHA" 2>>$LOG >>$LOG
    if [ $? != 0 ]; then
        print_color "$DO_WHAT  ERROR: `date` $DOCKER_FILE" "red"
        printf "  Cannot run. Look at $LOG\n"
