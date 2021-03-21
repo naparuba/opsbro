@@ -401,7 +401,7 @@ if PY3:
                 'ubuntu'       : 'python3-jinja2',
                 'amazon-linux' : 'python3-jinja2',
                 'amazon-linux2': 'python3-jinja2',
-                'centos'       : 'python3-jinja2',
+                'centos'       : None,#'python36-jinja2',
                 'redhat'       : 'python3-jinja2',
                 'oracle-linux' : 'python3-jinja2',
                 'fedora'       : 'python3-jinja2',
@@ -415,7 +415,7 @@ if PY3:
                 'ubuntu'       : 'python3-crypto',
                 'amazon-linux' : 'python3-crypto',
                 'amazon-linux2': 'python3-crypto',
-                'centos'       : 'python3-cryptography',
+                'centos'       : None, #'python36-cryptography',
                 'redhat'       : 'python3-crypto',
                 'oracle-linux' : 'python3-crypto',
                 'fedora'       : 'python3-crypto',
@@ -485,7 +485,7 @@ distro_prerequites = {
     'centos': [
         {'package_name': 'libgomp'},  # monotonic clock
         {'package_name': 'nss', 'only_for': ['6.6', '6.7', '7.0', '7.1'], 'force_update': True},  # force update of nss for connect to up to date HTTPS, especialy epel
-        {'package_name': 'epel-release', 'only_for': ['6.7', '7.0', '7.1'], 'post_fix': _fix_centos_7_epel_no_https},  # need for leveldb, and post_fix is need for 6.7
+        {'package_name': 'epel-release', 'only_for': ['6.7', '7.', '8.'], 'post_fix': _fix_centos_7_epel_no_https},  # need for leveldb, and post_fix is need for 6.7
         {'package_name': 'leveldb', 'only_for': ['7.0', '7.1']},  # sqlite on old centos is broken
     ],
     'fedora': [
@@ -496,8 +496,15 @@ distro_prerequites = {
 # Centos: need rpm lib, especially in python3
 if PY3:
     distro_prerequites['centos'].append( {'package_name': 'python36-rpm'})
+    distro_prerequites['centos'].append( {'package_name': 'python36-rpm', 'only_for': ['7.']})
+    distro_prerequites['centos'].append( {'package_name': 'python3-rpm', 'only_for': ['8.']})
+    distro_prerequites['centos'].append( {'package_name': 'python36-cryptography', 'only_for': ['7.']})
+    distro_prerequites['centos'].append( {'package_name': 'python3-cryptography', 'only_for': ['8.']})
+    distro_prerequites['centos'].append( {'package_name': 'python36-jinja2', 'only_for': ['7.']})
+    distro_prerequites['centos'].append( {'package_name': 'python3-jinja2', 'only_for': ['8.']})
 else:
     distro_prerequites['centos'].append({'package_name': 'rpm-python'})
+    distro_prerequites['centos'].append({'package_name': 'python-crypto'})
     
 
 # If we are uploading to pypi, we just don't want to install/update packages here
@@ -543,7 +550,9 @@ for (m, d) in mod_need.items():
         packages = d['packages']
         to_install = packages.get(system_distro, '')
         pip_failback = d.get('failback_pip', m)
-        if not to_install:
+        if to_install is None:  #ask to do nothing
+            pass
+        elif not to_install:
             cprint('   - Cannot find valid packages from system packages on this distribution for the module %s, will be installed by the python pip system instead (need an internet connection)' % m, color='yellow')
             install_from_pip.append(pip_failback)
         else:
