@@ -1,0 +1,28 @@
+FROM centos:7
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+
+RUN        /yum_install  python36
+
+# Tests with , we are giving the test it's path for starting the setup.py
+ENV        PYTHON_EXE=/usr/bin/python3
+
+
+# TCL: very little
+ENV        TEST_PACKAGE_NAME=tcl
+# centos have a virtual package to test, vi -> vim-minimal
+ENV        TEST_PACKAGE_NAME_VIRTUAL=vi
+# But need to delete it first as it is installed by default
+RUN        /yum_remove vim-minimal
+
+ADD        . /root/opsbro-oss
+
+WORKDIR    /root/opsbro-oss
+
+
+
+
+ENTRYPOINT        test/test_one_linux_installation.sh  && test/assert_group.sh "centos"
+
+

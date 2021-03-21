@@ -12,8 +12,8 @@ if  [ ! -f /root/.docker/config.json ]; then
 fi
 
 # Look if we did set our docker env variables, for some tests
-if [ ! -f ~/.docket_env ];then
-    printf "DISCORD_TOKEN=$DISCORD_TOKEN\nDISCORD_CHANNEL=$DISCORD_CHANNEL\n" > ~/.docket_env
+if [ ! -f ~/.docker_env ];then
+    printf "DISCORD_TOKEN=$DISCORD_TOKEN\nDISCORD_CHANNEL=$DISCORD_CHANNEL\n" > ~/.docker_env
 fi
 #--env-file ~/.docker_env
 
