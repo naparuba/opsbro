@@ -553,7 +553,7 @@ if is_compliant_system_distro:
     python_exe_path = sys.executable
     
     # TODO Be sure to be on the installation directory
-    install_dependencies_command = '''%s bin/opsbro compliance launch 'Install OpsBro system dependencies' ''' % python_exe_path
+    install_dependencies_command = '''%s bin/opsbro compliance launch 'Install OpsBro system dependencies' --timeout=300 ''' % python_exe_path
     cprint('   - Launching to install dependencies: %s' % install_dependencies_command, color='grey')
     dependency_process = subprocess.Popen(install_dependencies_command, stdout=sys.stdout, stderr=sys.stderr, shell=True)
     stdout, stderr = dependency_process.communicate()
