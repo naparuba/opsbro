@@ -1,0 +1,348 @@
+compliance:
+   name: Install OpsBro system dependencies
+   mode: enforcing
+   interval: 1s
+   note: This will install system prereqs about opsbro
+   rule:
+      type: package-install
+      # You can set variables in order to not repeat yourself in the if rules
+      variables:
+         is_debian: "{{collector.system.os.linux.distribution}} == 'debian'"
+         is_centos: "{{collector.system.os.linux.distribution}} == 'centos'"
+         is_fedora: "{{collector.system.os.linux.distribution}} == 'fedora'"
+         is_alpine: "{{collector.system.os.linux.distribution}} == 'alpine'"
+         is_alpine_11_plus: "{{collector.system.os.linux.distribution}} == 'alpine' and {{collector.system.os.linux.minor_version}} >= 11"   # in order to avoid the 2*and limitation in variables
+         is_ubuntu: "{{collector.system.os.linux.distribution}} == 'ubuntu'"
+         is_amazon_linux: "{{collector.system.os.linux.distribution}} == 'amazon-linux'"
+         is_amazon_linux2: "{{collector.system.os.linux.distribution}} == 'amazon-linux2'"
+         is_redhat: "{{collector.system.os.linux.distribution}} == 'redhat'"
+         is_oracle_linux: "{{collector.system.os.linux.distribution}} == 'oracle-linux'"
+         is_opensuse: "{{collector.system.os.linux.distribution}} == 'opensuse'"
+      environments:
+
+#         - name: centos6
+#           if:   "{{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 6"
+#           parameters:
+#             packages:
+#                - epel-release
+#                - gcc-c++
+#                - curl
+#                - gcc
+#                - python-devel
+#                - python-pip
+#                - python-simplejson
+#                - python-setproctitle
+#                - python-psutil
+#                # Bash completion to enable the CLI completion
+#                - bash-completion
+#           post_commands:
+#              - pip install leveldb
+
+
+#         - name: centos7_python2
+#           if:   "({{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 7) and system_is_python_2()"
+#           parameters:
+#             packages:
+#                - python2-leveldb
+#                - python2-simplejson
+#                - python-setproctitle
+#                - python2-psutil
+#                # Bash completion to enable the CLI completion
+#                - bash-completion
+
+
+#         - name: centos7_python3
+#           if:   "({{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 7) and system_is_python_3()"
+#           parameters:
+#             packages:
+#                - python36-leveldb
+#                - python36-simplejson
+#                - python36-setproctitle
+#                - python36-psutil
+#                # Bash completion to enable the CLI completion
+#                - bash-completion
+
+
+#         - name: centos8
+#           if:   "{{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 8"
+#           parameters:
+#             packages:
+#                # epel is need to find libs
+#                - epel-release
+#                # redhat-rpm-config => to avoid gcc error
+#                - gcc-c++
+#                - redhat-rpm-config
+#                - curl
+#                - gcc
+#                - python3-devel
+#                # Tuning lib we can install
+#                - python3-simplejson
+#                - python3-setproctitle
+#                - python3-psutil
+#                # Bash completion to enable the CLI completion
+#                - bash-completion
+#           post_commands:
+#              - pip3 install leveldb
+
+
+#         - name: redhat6
+#           if:   "{{variables.is_redhat}} and {{collector.system.os.linux.major_version}} == 6"
+#           parameters:
+#             packages:
+#                - epel-release
+#                - gcc-c++
+#                - curl
+#                - gcc
+#                - python-devel
+#                - python-pip
+#                - python-simplejson
+#                - python-setproctitle
+#                - python-psutil
+#                # Bash completion to enable the CLI completion
+#                - bash-completion
+#           post_commands:
+#              - pip install leveldb
+
+
+#         # Debian 6 is not managed
+#         # TODO: failback with leveldb C lib?
+#         - name: debian6
+#           if: "{{variables.is_debian}} and {{collector.system.os.linux.major_version}} == 6"
+#           parameters:
+#             packages:
+#                - bash
+
+
+         - name: debian
+           if: "{{variables.is_debian}} and system_is_python_2()"
+           parameters:
+             packages:
+                - python-jinja2
+                - python-crypto
+                - python-setuptools
+
+
+         - name: debian_python3
+           if: "{{variables.is_debian}} and system_is_python_3()"
+           parameters:
+             packages:
+               - python3-jinja2
+               - python3-crypto
+               - python3-setuptools
+
+
+#         # like debian6, cannot reach pypi
+#         - name: ubuntu12
+#           if: "{{variables.is_ubuntu}} and {{collector.system.os.linux.major_version}} == 12"
+#           parameters:
+#             packages:
+#                - bash
+
+
+#         - name: ubuntu_python2
+#           if: "{{variables.is_ubuntu}} and system_is_python_2()"
+#           parameters:
+#             packages:
+#                - python-leveldb
+#                - python-simplejson
+#                - python-setproctitle
+#                - python-psutil
+#                # Bash completion to enable the CLI completion
+#                - bash-completion
+
+#         - name: ubuntu_python3
+#           if: "{{variables.is_ubuntu}} and system_is_python_3()"
+#           parameters:
+#             packages:
+#                - libleveldb1d   # no python3-leveldb, only python3-plyvel
+#                - python3-simplejson
+#                - python3-setproctitle
+#                - python3-psutil
+#                # Bash completion to enable the CLI completion
+#                - bash-completion
+
+
+#         ##### FEDORA:
+#         # there are rules for 24, 25, 26 -> 30 (python2) and 31+ (python3)
+#         # and So fedora 31 and more
+#         # FEDORA 31: there is a package for leveldb
+#         - name: fedora_python3
+#           if: "{{variables.is_fedora}} and system_is_python_3()"
+#           parameters:
+#             packages:
+#                - python3-leveldb
+#                - python3-setproctitle
+#                # Bash completion to enable the CLI completion
+#                - bash-completion
+
+
+#         - name: fedora26_and_more
+#           if: "{{variables.is_fedora}} and {{collector.system.os.linux.major_version}} >= 26"
+#           parameters:
+#             packages:
+#                - gcc-c++
+#                - gcc
+#                - python2-devel
+#                - redhat-rpm-config
+#                - python2-pip
+#                - python2-simplejson
+#                # Bash completion to enable the CLI completion
+#                - bash-completion
+#           post_commands:
+#              - pip install leveldb
+
+#         # Fedora 24 have the python-simplejson package, not python2-simplejson
+#         - name: fedora
+#           if: "{{variables.is_fedora}} and {{collector.system.os.linux.major_version}} == 24"
+#           parameters:
+#             packages:
+#                - gcc-c++
+#                - gcc
+#                - python-devel
+#                - redhat-rpm-config
+#                - python-pip
+#                - python-simplejson
+#                # Bash completion to enable the CLI completion
+#                - bash-completion
+#           post_commands:
+#              - pip install leveldb
+
+#         # So fedora 25 with python-pip
+#         - name: fedora
+#           if: "{{variables.is_fedora}}"
+#           parameters:
+#             packages:
+#                - gcc-c++
+#                - gcc
+#                - python-devel
+#                - redhat-rpm-config
+#                - python-pip
+#                - python2-simplejson
+#                # Bash completion to enable the CLI completion
+#                - bash-completion
+#           post_commands:
+#              - pip install leveldb
+
+
+#         # Alpine 3.1->4 have pip command and python-dev package
+#         - name: alpine3_1_to_4
+#           if: "{{variables.is_alpine}} and {{collector.system.os.linux.minor_version}} <= 4"
+#           parameters:
+#              packages:
+#                 - gcc
+#                 - linux-headers
+#                 - musl-dev
+#                 - libgcc
+#                 - libgc++
+#                 - g++
+#                 - python-dev
+#                 - py-pip
+#                 - py-simplejson
+#                 # py-setproctitle is not available for alpine <= 3.4
+#                 # Bash completion to enable the CLI completion
+#                 - bash-completion
+#           post_commands:
+#              - pip2 install leveldb
+
+#         # Alpine 3.5->7+ have pip2 command
+#         - name: alpine3_5_6_7_8_9_10
+#           if: "{{variables.is_alpine}} and ( {{collector.system.os.linux.minor_version}} >= 5 and {{collector.system.os.linux.minor_version}} <= 10 )"
+#           parameters:
+#              packages:
+#                 - gcc
+#                 - linux-headers
+#                 - musl-dev
+#                 - libgcc
+#                 - libgc++
+#                 - g++
+#                 - python2-dev
+#                 - py2-pip
+#                 - py2-simplejson
+#                 - py2-setproctitle
+#                 # Bash completion to enable the CLI completion
+#                 - bash-completion
+#           post_commands:
+#              - pip2 install leveldb
+
+
+#         # Alpine 3.11+ => do not have setproctitle in python2
+#         - name: alpine11_py2_and_more
+#           if: "{{variables.is_alpine_11_plus}} and system_is_python_2()"
+#           parameters:
+#              packages:
+#                 - gcc
+#                 - linux-headers
+#                 - musl-dev
+#                 - libgcc
+#                 - libgc++
+#                 - g++
+#                 - python2-dev
+#                 - py2-pip
+#                 - py2-simplejson
+#                 # Not available in alpine 11 - py2-setproctitle
+#                 # Bash completion to enable the CLI completion
+#                 - bash-completion
+#           post_commands:
+#              - pip2 install leveldb
+
+
+#         # Alpine 3.11+ => do not have setproctitle in python2
+#         - name: alpine11_py3_and_more
+#           if: "{{variables.is_alpine_11_plus}} and system_is_python_3()"
+#           parameters:
+#              packages:
+#                 - leveldb
+#                 - py3-simplejson
+#                 - py3-setproctitle
+#                 # Bash completion to enable the CLI completion
+#                 - bash-completion
+
+
+#         # Open suse 15 have specific packages names
+#         - name: opensuse_15
+#           if: "{{variables.is_opensuse}} and {{collector.system.os.linux.major_version}} == 15"
+#           parameters:
+#             packages:
+#                - python2-leveldb
+#                - python2-simplejson
+#                # Bash completion to enable the CLI completion
+#                - bash-completion
+
+
+#        # Older open source (42.x)
+#         - name: opensuse
+#           if: "{{variables.is_opensuse}}"
+#           parameters:
+#             packages:
+#                - python-leveldb
+#                - python-simplejson
+#                # Bash completion to enable the CLI completion
+#                - bash-completion
+
+#         - name: amazon_linux
+#           if: "{{variables.is_amazon_linux}}"
+#           parameters:
+#             packages:
+#                - gcc
+#                - gcc-c++
+#                - python27-devel
+#                - python27-pip
+#                - python27-simplejson
+#                # No Bash completion for amazon linux
+#           post_commands:
+#              - pip install leveldb
+
+
+#         - name: amazon_linux2
+#           if: "{{variables.is_amazon_linux2}}"
+#           parameters:
+#             packages:
+#                - gcc
+#                - gcc-c++
+#                - python-devel
+#                - python2-pip
+#                - python-simplejson
+#                # No Bash completion for amazon linux
+#           post_commands:
+#              - pip install leveldb
+

@@ -1,0 +1,18 @@
+name: core-installation
+topics:
+    - system compliance
+types:
+    - pack
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description: Give compliance rules about system installation
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - installation
+dependencies:
+    core: ">=1.0"
+license: ""

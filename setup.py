@@ -188,7 +188,9 @@ except ImportError as exp:  # great, first install so
 my_dir = os.path.dirname(os.path.abspath(__file__))
 opsbro = imp.load_module('opsbro', *imp.find_module('opsbro', [os.path.realpath(my_dir)]))
 from opsbro.info import VERSION, BANNER, TXT_BANNER
+from opsbro.topic import TOPICS_COLORS, TOPIC_SYSTEM_COMPLIANCE
 from opsbro.log import cprint, is_tty, sprintf, core_logger
+from opsbro.misc.lolcat import lolcat
 from opsbro.misc.bro_quotes import get_quote
 from opsbro.systempacketmanager import get_systepacketmgr
 from opsbro.cli_display import print_h1
@@ -401,7 +403,7 @@ if PY3:
                 'ubuntu'       : 'python3-jinja2',
                 'amazon-linux' : 'python3-jinja2',
                 'amazon-linux2': 'python3-jinja2',
-                'centos'       : None,#'python36-jinja2',
+                'centos'       : None,  # special case based on versions
                 'redhat'       : 'python3-jinja2',
                 'oracle-linux' : 'python3-jinja2',
                 'fedora'       : 'python3-jinja2',
@@ -415,7 +417,7 @@ if PY3:
                 'ubuntu'       : 'python3-crypto',
                 'amazon-linux' : 'python3-crypto',
                 'amazon-linux2': 'python3-crypto',
-                'centos'       : None, #'python36-cryptography',
+                'centos'       : None,  # special case based on versions
                 'redhat'       : 'python3-crypto',
                 'oracle-linux' : 'python3-crypto',
                 'fedora'       : 'python3-crypto',
@@ -495,16 +497,15 @@ distro_prerequites = {
 
 # Centos: need rpm lib, especially in python3
 if PY3:
-    distro_prerequites['centos'].append( {'package_name': 'python36-rpm', 'only_for': ['7.']})
-    distro_prerequites['centos'].append( {'package_name': 'python3-rpm', 'only_for': ['8.']})
-    distro_prerequites['centos'].append( {'package_name': 'python36-cryptography', 'only_for': ['7.']})
-    distro_prerequites['centos'].append( {'package_name': 'python3-cryptography', 'only_for': ['8.']})
-    distro_prerequites['centos'].append( {'package_name': 'python36-jinja2', 'only_for': ['7.']})
-    distro_prerequites['centos'].append( {'package_name': 'python3-jinja2', 'only_for': ['8.']})
+    distro_prerequites['centos'].append({'package_name': 'python36-rpm', 'only_for': ['7.']})
+    distro_prerequites['centos'].append({'package_name': 'python3-rpm', 'only_for': ['8.']})
+    distro_prerequites['centos'].append({'package_name': 'python36-cryptography', 'only_for': ['7.']})
+    distro_prerequites['centos'].append({'package_name': 'python3-cryptography', 'only_for': ['8.']})
+    distro_prerequites['centos'].append({'package_name': 'python36-jinja2', 'only_for': ['7.']})
+    distro_prerequites['centos'].append({'package_name': 'python3-jinja2', 'only_for': ['8.']})
 else:
     distro_prerequites['centos'].append({'package_name': 'rpm-python'})
     distro_prerequites['centos'].append({'package_name': 'python-crypto'})
-    
 
 # If we are uploading to pypi, we just don't want to install/update packages here
 if not allow_black_magic:
@@ -513,6 +514,11 @@ if not allow_black_magic:
 # We will have to look in which distro we are
 is_managed_system = systepacketmgr.is_managed_system()
 system_distro, system_distroversion, _ = systepacketmgr.get_distro()
+
+# In this list of distro, the dependecies are installed with the internal system compliant
+compliant_system_distros = ['debian']
+
+is_compliant_system_distro = system_distro in compliant_system_distros
 
 # Hack for debian & centos 6 that is not configure to access leveldb on pypi because pypi did remove http (no S) on november 2017.
 # great....
@@ -527,6 +533,10 @@ if allow_black_magic:
         cprint(u'is managed by this installer: ', end='')
         cprint(CHARACTERS.check, color='green')
         cprint('   - it will be able to use system package manager to install dependencies.', color='grey')
+        if is_compliant_system_distro:
+            cprint(' * Your system depedencies will be setup thanks to the OpsBro ', end='')
+            cprint(lolcat.get_line('system compliance', TOPICS_COLORS.get(TOPIC_SYSTEM_COMPLIANCE), spread=None), end='')
+            cprint(' system.')
     else:
         cprint(" * ", end='')
         cprint("%s NOTICE" % CHARACTERS.double_exclamation, color='yellow', end='')
@@ -536,7 +546,26 @@ if allow_black_magic:
         cprint("   - it won't use the package system to install dependencies")
         cprint("   - and so it will use the python pip dependency system instead (internet connection is need).")
 
+if is_compliant_system_distro:
+    # Using the OpsBro compliance system to install it's own dependencies
+    import subprocess
+    
+    python_exe_path = sys.executable
+    
+    # TODO Be sure to be on the installation directory
+    install_dependencies_command = '''%s bin/opsbro compliance launch 'Install OpsBro system dependencies' ''' % python_exe_path
+    cprint('   - Launching to install dependencies: %s' % install_dependencies_command, color='grey')
+    dependency_process = subprocess.Popen(install_dependencies_command, stdout=sys.stdout, stderr=sys.stderr, shell=True)
+    stdout, stderr = dependency_process.communicate()
+    if dependency_process.returncode != 0:
+        core_logger.debug('The dependency process did failed: rc=%s  stdput=%s stderr=%s' % (dependency_process.returncode, stdout, stderr))
+        cprint('   - ERROR: cannot install the prerequite from the system (%s - %s). Please reports a bug.' % (system_distro, system_distroversion), color='red')
+        sys.exit(2)
+
 for (m, d) in mod_need.items():
+    # System ompliant distro are already managed
+    if is_compliant_system_distro:
+        continue
     cprint(' * Checking dependency for ', end='')
     cprint('%-20s' % m, color='blue', end='')
     cprint(' : ', end='')
@@ -549,7 +578,7 @@ for (m, d) in mod_need.items():
         packages = d['packages']
         to_install = packages.get(system_distro, '')
         pip_failback = d.get('failback_pip', m)
-        if to_install is None:  #ask to do nothing
+        if to_install is None:  # ask to do nothing
             pass
         elif not to_install:
             cprint('   - Cannot find valid packages from system packages on this distribution for the module %s, will be installed by the python pip system instead (need an internet connection)' % m, color='yellow')
@@ -574,7 +603,7 @@ for (m, d) in mod_need.items():
                     
                     install_from_pip.append(pip_failback)
 
-if allow_black_magic:
+if allow_black_magic and not is_compliant_system_distro:
     distro_specific_packages = distro_prerequites.get(system_distro, [])
     if len(distro_specific_packages) >= 1:
         cprint(' * This OS have specific prerequites:')
@@ -586,7 +615,7 @@ if allow_black_magic:
             match_version = False
             for only_for_version in only_for:
                 if system_distroversion.startswith(only_for_version):
-                    core_logger.debug('The package %s: match the rule %s %s' % (package_name,system_distroversion, only_for_version))
+                    core_logger.debug('The package %s: match the rule %s %s' % (package_name, system_distroversion, only_for_version))
                     match_version = True
                     break
             if not match_version:
