@@ -197,7 +197,7 @@ class AnyAgent(object):
             cprint('%s | - process pid is %s' % (CHARACTERS.vbar, self.tmp_agent.pid), color='grey')
             cprint('%s | - you can avoid the temporary agent by launching one with "opsbro agent start" or "/etc/init.d/opsbro start" ' % CHARACTERS.corner_bottom_left, color='grey')
             cprint('')
-            agent_state = wait_for_agent_started(visual_wait=True, wait_for_spawn=True, timeout=self._timeout)  # note: we wait for spawn as it can take some few seconds before the unix socket is available
+            agent_state = wait_for_agent_started(visual_wait=True, wait_for_spawn=True, timeout=self._timeout, sub_agent_process=self.tmp_agent)  # note: we wait for spawn as it can take some few seconds before the unix socket is available
         if agent_state == AGENT_STATES.AGENT_STATE_STOPPED:
             if self.tmp_agent.returncode is None:  # not finish
                  err = 'ERROR: Cannot have the agent, even a temporary one: still running after %s seconds' % self._timeout
@@ -237,7 +237,8 @@ def wait_for_agent_stopped(timeout=5, visual_wait=False):
 # exit_if_stopped: if true, sys.exit() directly
 # wait_for_spawn: maybe we just did spawn the agent process, but it can take some few seconds before the
 # unix socket is available, so allow some stopped state and only exit at the end of the timeout
-def wait_for_agent_started(timeout=30, visual_wait=False, exit_if_stopped=False, wait_for_spawn=False):
+# sub_agent_process: if there is an agent launch with subprocess, should look if still alive
+def wait_for_agent_started(timeout=30, visual_wait=False, exit_if_stopped=False, wait_for_spawn=False, sub_agent_process=None):
     spinners = itertools.cycle(CHARACTERS.spinners)
     start = NOW.monotonic()  # note: thanks to monotonic, we don't care about the system get back in time during this loop
     agent_state = 'unknown'
@@ -248,6 +249,12 @@ def wait_for_agent_started(timeout=30, visual_wait=False, exit_if_stopped=False,
         except get_request_errors():
             agent_state = 'stopped'
         if agent_state == 'stopped':
+            if sub_agent_process is not None and sub_agent_process.returncode is not None:  # it's finish?
+                stdout, stderr = sub_agent_process.communicate()
+                cprint('\r', end='')
+                cprint(' %s The sub process seems to be dead (return code=%s), here are the logs:' % (CHARACTERS.cross, sub_agent_process.returncode), color='red')
+                cprint(' %s\n%s' % (stdout, stderr), color='grey')
+
             # Maybe we need to exit of the daemon is stopped
             if exit_if_stopped:
                 cprint('\r', end='')
