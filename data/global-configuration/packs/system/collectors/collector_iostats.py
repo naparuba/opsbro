@@ -17,8 +17,8 @@ if os.name == 'nt':
 
 BYTES_PER_SECTOR = 512
 
-
 LINUX_DISKS_STATS = '/proc/diskstats'
+
 
 class IoStats(Collector):
     def __init__(self):
@@ -27,31 +27,39 @@ class IoStats(Collector):
         self.previous_time = 0
         
         # Columns for disk entry in /proc/diskstats
-        self.columns_disk = ['major', 'minor', 'device', 'reads', 'reads_merged', 'read_sectors', 'read_ms', 'writes', 'writes_merged', 'write_sectors', 'write_ms', 'cur_ios', 'total_io_ms', 'total_io_weighted_ms']
+        # NOTE: based on the kernel version, there a 3 formats (linux 4.18+, linux 5.5+)
+        self.columns_disk = {
+            14: ['major', 'minor', 'device', 'reads', 'reads_merged', 'read_sectors', 'read_ms', 'writes', 'writes_merged', 'write_sectors', 'write_ms', 'cur_ios', 'total_io_ms', 'total_io_weighted_ms']
+        }
+        self.columns_disk[18] = self.columns_disk[14] + ['discard_success', 'discard_merged', 'discard_sectors', 'discard_time']
+        self.columns_disk[20] = self.columns_disk[18] + ['flush_requests', 'flush_time']
+        
         # We don't care about theses fields
         # NOTE: write_ms and read_ms are over the sleep time, not sure about what it means
-        self.columns_to_del_in_raw = ('major', 'minor', 'cur_ios', 'total_io_weighted_ms', 'read_ms', 'write_ms')
+        self.columns_to_del_in_raw = ('major', 'minor', 'cur_ios', 'total_io_weighted_ms', 'read_ms', 'write_ms', 'discard_success', 'discard_merged', 'discard_sectors', 'discard_time', 'flush_requests', 'flush_time')
     
     
     def _get_disk_stats(self):
         file_path = LINUX_DISKS_STATS
         result = {}
         
-        # ref: http://lxr.osuosl.org/source/Documentation/iostats.txt
+        # ref: https://www.kernel.org/doc/Documentation/ABI/testing/procfs-diskstats
         
         # columns_partition = ['major', 'minor', 'device', 'reads', 'rd_sectors', 'writes', 'wr_sectors']
         
         lines = open(file_path, 'r').readlines()
+        self.logger.debug('Parsing diskstats lines: %s' % lines)
         for line in lines:
             if line == '':
                 continue
+            self.logger.debug('Parsing diskstats line: %s' % line)
             split = line.split()
-            if len(split) == len(self.columns_disk):
-                columns = self.columns_disk
-            # elif len(split) == len(columns_partition):
-            #    columns = columns_partition
-            else:
+            nb_collumns = len(split)
+            columns = self.columns_disk.get(nb_collumns, None)
+            # Maybe this is a new combination of collumns, again...
+            if columns is None:
                 # No match, drop partitions too
+                self.logger.debug('Skipping an invalid line (nb fields=%s) != expected in list %s : %s' % (len(split), ' or '.join(['%s' % nb for nb in self.columns_disk.keys()]), line))
                 continue
             
             data = dict(zip(columns, split))
@@ -62,6 +70,7 @@ class IoStats(Collector):
             # NOTE: car in digit is faster than regexp re.search('\d+', value)
             # (⌐■_■)==ε╦╤─   regexp
             if any(char in digits for char in device_name):
+                self.logger.debug('Skipping partition line: %s' % device_name)
                 continue
             
             for key in data:
@@ -69,10 +78,13 @@ class IoStats(Collector):
                     data[key] = int(data[key])
             # We don't care about some raw fields
             for k in self.columns_to_del_in_raw:
-                del data[k]
+                try:
+                    del data[k]
+                except KeyError:  # maybe the filed is missing, like in old kernels
+                    pass
             
             result[device_name] = data
-        
+        self.logger.debug('Saving raw stats for devices: %s' % ','.join(result.keys()))
         return result
     
     
@@ -82,6 +94,7 @@ class IoStats(Collector):
             old_stats = self.previous_raw.get(device, None)
             # A new disk did spawn? wait a loop to compute it
             if old_stats is None:
+                self.logger.debug('Skipping compute stats for the new device %s' % device)
                 continue
             r[device] = {}
             for (k, new_v) in new_stats.items():
@@ -113,8 +126,7 @@ class IoStats(Collector):
     
     
     def launch(self):
-        logger = self.logger
-        # logger.debug('getIOStats: start')
+        self.logger.debug('getIOStats: start')
         
         if os.name == 'nt':
             iostats = {}
