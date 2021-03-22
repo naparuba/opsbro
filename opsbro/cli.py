@@ -132,9 +132,11 @@ class NeedAgentContextClass(object):
 
 
 class AnyAgent(object):
-    def __init__(self):
+    def __init__(self, timeout=30):
         self.did_start_a_tmp_agent = False
         self.tmp_agent = None
+        self._timeout = timeout
+        logger.debug('Anyagent is created with a timeout of %ss' % self._timeout)
     
     
     def __enter__(self):
@@ -178,10 +180,10 @@ class AnyAgent(object):
     # For some CLI we don't care if we have a running agent or just a dummy send (like
     # quick dashboards)
     def assert_one_agent(self):
-        agent_state = wait_for_agent_started(visual_wait=True)
+        agent_state = wait_for_agent_started(visual_wait=True, timeout=self._timeout)
         if agent_state == AGENT_STATES.AGENT_STATE_STOPPED:
             self.did_start_a_tmp_agent = True
-            tmp_agent_cmd = 'python %s agent start' % get_current_binary()
+            tmp_agent_cmd = '%s %s agent start' % (sys.executable, get_current_binary())
             logger.debug('Temporary agent command: %s' % tmp_agent_cmd)
             additional_args = {}
             if os.name != 'nt':
@@ -195,9 +197,14 @@ class AnyAgent(object):
             cprint('%s | - process pid is %s' % (CHARACTERS.vbar, self.tmp_agent.pid), color='grey')
             cprint('%s | - you can avoid the temporary agent by launching one with "opsbro agent start" or "/etc/init.d/opsbro start" ' % CHARACTERS.corner_bottom_left, color='grey')
             cprint('')
-            agent_state = wait_for_agent_started(visual_wait=True, wait_for_spawn=True)  # note: we wait for spawn as it can take some few seconds before the unix socket is available
+            agent_state = wait_for_agent_started(visual_wait=True, wait_for_spawn=True, timeout=self._timeout)  # note: we wait for spawn as it can take some few seconds before the unix socket is available
         if agent_state == AGENT_STATES.AGENT_STATE_STOPPED:
-            raise Exception('Cannot have the agent, even a temporary one')
+            if self.tmp_agent.returncode is None:  # not finish
+                 err = 'ERROR: Cannot have the agent, even a temporary one: still running after %s seconds' % self._timeout
+            else:
+                stdout, stderr = self.tmp_agent.communicate()
+                err = 'ERROR: Cannot have the agent, even a temporary one because of the error: %s\n%s' % (stdout, stderr)
+            raise Exception(err)
 
 
 def wait_for_agent_stopped(timeout=5, visual_wait=False):
@@ -558,10 +565,17 @@ class CLICommander(object):
     
     # Look at entry like allow_temporary_agent and give a matching context
     @staticmethod
-    def __get_execution_context(entry):
+    def __get_execution_context(entry, **kwargs):
+        logger.debug('__get_execution_context call with KWARGS: %s' % kwargs)
         temp_agent = entry.allow_temporary_agent
         if temp_agent is not None and temp_agent.get('enabled', False):
-            return AnyAgent()
+            # Get the timeout by looking at the function call parameter, if specified
+            timeout_parameter = temp_agent.get('timeout_parameter', None)
+            if timeout_parameter and timeout_parameter in kwargs:
+                timeout = kwargs[timeout_parameter]
+            else:
+                timeout = 30
+            return AnyAgent(timeout=timeout)
         if entry.need_agent:
             return NeedAgentContextClass()
         return NoContextClass()
@@ -686,7 +700,7 @@ class CLICommander(object):
                 sys.stdout.flush()
         
         # Look if this call need a specific execution context, like a temporary agent
-        execution_ctx = self.__get_execution_context(entry)
+        execution_ctx = self.__get_execution_context(entry, **cmd_opts.__dict__)
         with execution_ctx:
             try:
                 f(*cmd_args, **cmd_opts.__dict__)

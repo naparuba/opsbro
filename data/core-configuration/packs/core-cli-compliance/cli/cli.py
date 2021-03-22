@@ -251,7 +251,7 @@ exports = {
             {'name': 'compliance-name', 'description': 'Name of the compliance rule to force to be launched and then for compliance state'},
             {'name': '--timeout', 'type': 'int', 'default': 30, 'description': 'Timeout to let the initialization'},
         ],
-        'allow_temporary_agent': {'enabled': True, },
+        'allow_temporary_agent': {'enabled': True, 'timeout_parameter': 'timeout'},
         'description'          : 'Force a rule to be launched and wait until the compliance rule is in COMPLIANT state'
     },
 }

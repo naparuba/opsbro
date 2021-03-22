@@ -562,6 +562,7 @@ if is_compliant_system_distro:
         cprint('   - ERROR: cannot install the prerequite from the system (%s - %s). Please reports a bug.' % (system_distro, system_distroversion), color='red')
         sys.exit(2)
 
+
 for (m, d) in mod_need.items():
     # System ompliant distro are already managed
     if is_compliant_system_distro:
