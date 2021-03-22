@@ -38,23 +38,28 @@ compliance:
               - pip install leveldb
 
 
-         - name: centos7
-           if:   "{{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 7"
+         - name: centos7_python2
+           if:   "({{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 7) and system_is_python_2()"
            parameters:
              packages:
-                - epel-release
-                - gcc-c++
-                - curl
-                - gcc
-                - python-devel
-                - python2-pip
+                - python2-leveldb
                 - python2-simplejson
                 - python-setproctitle
                 - python2-psutil
                 # Bash completion to enable the CLI completion
                 - bash-completion
-           post_commands:
-              - pip install leveldb
+
+
+         - name: centos7_python3
+           if:   "({{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 7) and system_is_python_3()"
+           parameters:
+             packages:
+                - python36-leveldb
+                - python36-simplejson
+                - python36-setproctitle
+                - python36-psutil
+                # Bash completion to enable the CLI completion
+                - bash-completion
 
 
          - name: centos8
