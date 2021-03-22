@@ -546,7 +546,7 @@ if allow_black_magic:
         cprint("   - it won't use the package system to install dependencies")
         cprint("   - and so it will use the python pip dependency system instead (internet connection is need).")
 
-if is_compliant_system_distro:
+if allow_black_magic and is_compliant_system_distro:
     # Using the OpsBro compliance system to install it's own dependencies
     import subprocess
     
@@ -562,47 +562,48 @@ if is_compliant_system_distro:
         cprint('   - ERROR: cannot install the prerequite from the system (%s - %s). Please reports a bug.' % (system_distro, system_distroversion), color='red')
         sys.exit(2)
 
+if allow_black_magic:
+    for (m, d) in mod_need.items():
+        # System ompliant distro are already managed
+        if is_compliant_system_distro:
+            continue
+        cprint(' * Checking dependency for ', end='')
+        cprint('%-20s' % m, color='blue', end='')
+        cprint(' : ', end='')
+        sys.stdout.flush()
+        try:
+            __import__(m)
+            cprint('%s' % CHARACTERS.check, color='green')
+        except ImportError:
+            cprint('MISSING', color='cyan')
+            packages = d['packages']
+            to_install = packages.get(system_distro, '')
+            pip_failback = d.get('failback_pip', m)
+            if to_install is None:  # ask to do nothing
+                pass
+            elif not to_install:
+                cprint('   - Cannot find valid packages from system packages on this distribution for the module %s, will be installed by the python pip system instead (need an internet connection)' % m, color='yellow')
+                install_from_pip.append(pip_failback)
+            else:
+                if isinstance(to_install, basestring):
+                    to_install = [to_install]
+                for pkg in to_install:
+                    cprint('   - Trying to install the package ', color='grey', end='')
+                    cprint('%-20s' % pkg, color='blue', end='')
+                    cprint(' from system packages  : ', color='grey', end='')
+                    sys.stdout.flush()
+                    try:
+                        systepacketmgr.update_or_install(pkg)
+                        cprint('%s' % CHARACTERS.check, color='green')
+                        # __import__(m)
+                    except Exception as exp:
+                        cprint('(missing in package)', color='cyan')
+                        cprint('   - cannot install the package from the system. Switching to an installation based on the python pip system (need an internet connection)', color='grey')
+                        _prefix = '      | '
+                        cprint('\n'.join(['%s%s' % (_prefix, s) for s in str(exp).splitlines()]), color='grey')
+                        
+                        install_from_pip.append(pip_failback)
 
-for (m, d) in mod_need.items():
-    # System ompliant distro are already managed
-    if is_compliant_system_distro:
-        continue
-    cprint(' * Checking dependency for ', end='')
-    cprint('%-20s' % m, color='blue', end='')
-    cprint(' : ', end='')
-    sys.stdout.flush()
-    try:
-        __import__(m)
-        cprint('%s' % CHARACTERS.check, color='green')
-    except ImportError:
-        cprint('MISSING', color='cyan')
-        packages = d['packages']
-        to_install = packages.get(system_distro, '')
-        pip_failback = d.get('failback_pip', m)
-        if to_install is None:  # ask to do nothing
-            pass
-        elif not to_install:
-            cprint('   - Cannot find valid packages from system packages on this distribution for the module %s, will be installed by the python pip system instead (need an internet connection)' % m, color='yellow')
-            install_from_pip.append(pip_failback)
-        else:
-            if isinstance(to_install, basestring):
-                to_install = [to_install]
-            for pkg in to_install:
-                cprint('   - Trying to install the package ', color='grey', end='')
-                cprint('%-20s' % pkg, color='blue', end='')
-                cprint(' from system packages  : ', color='grey', end='')
-                sys.stdout.flush()
-                try:
-                    systepacketmgr.update_or_install(pkg)
-                    cprint('%s' % CHARACTERS.check, color='green')
-                    # __import__(m)
-                except Exception as exp:
-                    cprint('(missing in package)', color='cyan')
-                    cprint('   - cannot install the package from the system. Switching to an installation based on the python pip system (need an internet connection)', color='grey')
-                    _prefix = '      | '
-                    cprint('\n'.join(['%s%s' % (_prefix, s) for s in str(exp).splitlines()]), color='grey')
-                    
-                    install_from_pip.append(pip_failback)
 
 if allow_black_magic and not is_compliant_system_distro:
     distro_specific_packages = distro_prerequites.get(system_distro, [])
