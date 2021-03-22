@@ -495,7 +495,6 @@ distro_prerequites = {
 
 # Centos: need rpm lib, especially in python3
 if PY3:
-    distro_prerequites['centos'].append( {'package_name': 'python36-rpm'})
     distro_prerequites['centos'].append( {'package_name': 'python36-rpm', 'only_for': ['7.']})
     distro_prerequites['centos'].append( {'package_name': 'python3-rpm', 'only_for': ['8.']})
     distro_prerequites['centos'].append( {'package_name': 'python36-cryptography', 'only_for': ['7.']})
@@ -587,9 +586,13 @@ if allow_black_magic:
             match_version = False
             for only_for_version in only_for:
                 if system_distroversion.startswith(only_for_version):
+                    core_logger.debug('The package %s: match the rule %s %s' % (package_name,system_distroversion, only_for_version))
                     match_version = True
+                    break
             if not match_version:
                 continue
+        else:
+            core_logger.debug('The package: %s is installed because there is no filter' % package)
         force_update = package.get('force_update', False)  # should be updated even if already installed
         post_fix = package.get('post_fix', None)  # function called AFTER the package installation, to fix something
         cprint('   - Prerequite for ', color='grey', end='')
