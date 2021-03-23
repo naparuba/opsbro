@@ -404,7 +404,6 @@ if PY3:
                 'amazon-linux2': 'python3-jinja2',
                 'redhat'       : 'python3-jinja2',
                 'oracle-linux' : 'python3-jinja2',
-                'fedora'       : 'python3-jinja2',
                 'opensuse'     : 'python3-Jinja2',
             }
         },
@@ -415,7 +414,6 @@ if PY3:
                 'amazon-linux2': 'python3-crypto',
                 'redhat'       : 'python3-crypto',
                 'oracle-linux' : 'python3-crypto',
-                'fedora'       : 'python3-crypto',
                 'opensuse'     : 'python3-pycrypto',
             }
         },
@@ -429,7 +427,6 @@ else:
                 'amazon-linux2': 'python-jinja2',
                 'redhat'       : 'python-jinja2',
                 'oracle-linux' : 'python-jinja2',
-                'fedora'       : 'python-jinja2',
                 'opensuse'     : 'python-Jinja2',
             }
         },
@@ -440,7 +437,6 @@ else:
                 'amazon-linux2': 'python-crypto',
                 'redhat'       : 'python-crypto',
                 'oracle-linux' : 'python-crypto',
-                'fedora'       : 'python-crypto',
                 'opensuse'     : 'python-pycrypto',
             }
         },
@@ -454,9 +450,7 @@ setuptools_package_exceptions = {
 
 # Some distro have specific dependencies
 distro_prerequites = {
-    'fedora': [
-        {'package_name': 'python3-simplejson', 'only_for': ['33']},
-    ]
+
 }
 
 # If we are uploading to pypi, we just don't want to install/update packages here
@@ -468,7 +462,7 @@ is_managed_system = systepacketmgr.is_managed_system()
 system_distro, system_distroversion, _ = systepacketmgr.get_distro()
 
 # In this list of distro, the dependecies are installed with the internal system compliant
-compliant_system_distros = ['debian', 'centos', 'alpine']
+compliant_system_distros = ['debian', 'centos', 'alpine', 'fedora']
 
 is_compliant_system_distro = system_distro in compliant_system_distros
 

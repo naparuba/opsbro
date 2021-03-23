@@ -35,7 +35,10 @@ class JsonMgr(object):
     def loads(self, s, encoding='utf8'):
         s = string_decode(s)
         try:
-            r = json_read.loads(s, encoding=encoding)
+            try:
+                r = json_read.loads(s, encoding=encoding)
+            except TypeError:  #old fedora, do not know about encoding
+                r = json_read.loads(s)
         except Exception as exp:  # beware: ValueError in python2, but some freaking exception in python3
             raise ValueError(str(exp))
         return r
