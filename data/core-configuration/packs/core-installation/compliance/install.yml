@@ -1,134 +1,136 @@
 compliance:
-   name: Install OpsBro system dependencies
-   mode: enforcing
+   name    : Install OpsBro system dependencies
+   mode    : enforcing
    interval: 1s
-   note: This will install system prereqs about opsbro
-   rule:
-      type: package-install
+   note    : This will install system prereqs about opsbro
+   rule    :
+      type        : package-install
       # You can set variables in order to not repeat yourself in the if rules
-      variables:
-         is_debian: "{{collector.system.os.linux.distribution}} == 'debian'"
-         is_centos: "{{collector.system.os.linux.distribution}} == 'centos'"
-         is_fedora: "{{collector.system.os.linux.distribution}} == 'fedora'"
-         is_alpine: "{{collector.system.os.linux.distribution}} == 'alpine'"
+      variables   :
+         is_debian        : "{{collector.system.os.linux.distribution}} == 'debian'"
+         is_centos        : "{{collector.system.os.linux.distribution}} == 'centos'"
+         is_fedora        : "{{collector.system.os.linux.distribution}} == 'fedora'"
+         is_alpine        : "{{collector.system.os.linux.distribution}} == 'alpine'"
          is_alpine_11_plus: "{{collector.system.os.linux.distribution}} == 'alpine' and {{collector.system.os.linux.minor_version}} >= 11"   # in order to avoid the 2*and limitation in variables
-         is_ubuntu: "{{collector.system.os.linux.distribution}} == 'ubuntu'"
-         is_amazon_linux: "{{collector.system.os.linux.distribution}} == 'amazon-linux'"
-         is_amazon_linux2: "{{collector.system.os.linux.distribution}} == 'amazon-linux2'"
-         is_redhat: "{{collector.system.os.linux.distribution}} == 'redhat'"
-         is_oracle_linux: "{{collector.system.os.linux.distribution}} == 'oracle-linux'"
-         is_opensuse: "{{collector.system.os.linux.distribution}} == 'opensuse'"
+         is_ubuntu        : "{{collector.system.os.linux.distribution}} == 'ubuntu'"
+         is_amazon_linux  : "{{collector.system.os.linux.distribution}} == 'amazon-linux'"
+         is_amazon_linux2 : "{{collector.system.os.linux.distribution}} == 'amazon-linux2'"
+         is_redhat        : "{{collector.system.os.linux.distribution}} == 'redhat'"
+         is_oracle_linux  : "{{collector.system.os.linux.distribution}} == 'oracle-linux'"
+         is_opensuse      : "{{collector.system.os.linux.distribution}} == 'opensuse'"
       environments:
-
-#         - name: centos6
-#           if:   "{{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 6"
-#           parameters:
-#             packages:
-#                - epel-release
-#                - gcc-c++
-#                - curl
-#                - gcc
-#                - python-devel
-#                - python-pip
-#                - python-simplejson
-#                - python-setproctitle
-#                - python-psutil
-#                # Bash completion to enable the CLI completion
-#                - bash-completion
-#           post_commands:
-#              - pip install leveldb
-
-
-#         - name: centos7_python2
-#           if:   "({{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 7) and system_is_python_2()"
-#           parameters:
-#             packages:
-#                - python2-leveldb
-#                - python2-simplejson
-#                - python-setproctitle
-#                - python2-psutil
-#                # Bash completion to enable the CLI completion
-#                - bash-completion
-
-
-#         - name: centos7_python3
-#           if:   "({{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 7) and system_is_python_3()"
-#           parameters:
-#             packages:
-#                - python36-leveldb
-#                - python36-simplejson
-#                - python36-setproctitle
-#                - python36-psutil
-#                # Bash completion to enable the CLI completion
-#                - bash-completion
-
-
-#         - name: centos8
-#           if:   "{{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 8"
-#           parameters:
-#             packages:
-#                # epel is need to find libs
-#                - epel-release
-#                # redhat-rpm-config => to avoid gcc error
-#                - gcc-c++
-#                - redhat-rpm-config
-#                - curl
-#                - gcc
-#                - python3-devel
-#                # Tuning lib we can install
-#                - python3-simplejson
-#                - python3-setproctitle
-#                - python3-psutil
-#                # Bash completion to enable the CLI completion
-#                - bash-completion
-#           post_commands:
-#              - pip3 install leveldb
-
-
-#         - name: redhat6
-#           if:   "{{variables.is_redhat}} and {{collector.system.os.linux.major_version}} == 6"
-#           parameters:
-#             packages:
-#                - epel-release
-#                - gcc-c++
-#                - curl
-#                - gcc
-#                - python-devel
-#                - python-pip
-#                - python-simplejson
-#                - python-setproctitle
-#                - python-psutil
-#                # Bash completion to enable the CLI completion
-#                - bash-completion
-#           post_commands:
-#              - pip install leveldb
-
-
-#         # Debian 6 is not managed
-#         # TODO: failback with leveldb C lib?
-#         - name: debian6
-#           if: "{{variables.is_debian}} and {{collector.system.os.linux.major_version}} == 6"
-#           parameters:
-#             packages:
-#                - bash
-
-
-         - name: debian
-           if: "{{variables.is_debian}} and system_is_python_2()"
-           parameters:
-             packages:
-                - python-jinja2
-                - python-crypto
-                - python-setuptools
-
-
-         - name: debian_python3
-           if: "{{variables.is_debian}} and system_is_python_3()"
-           parameters:
-             packages:
-               - python3-jinja2
-               - python3-crypto
-               - python3-setuptools
+         
+         -  name      : centos6
+            if        : "{{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 6"
+            parameters:
+               packages:
+                  - libgomp   # monotonic clock
+                  - nss  #for epel https
+                  #- leveldb  currently disabled before we change tests to give leveldb by default every where
+                  - epel-release
+                  - python-jinja2
+                  - python-crypto
+                  #- gcc-c++
+                  #- curl
+                  #- gcc
+                  #- python-devel
+                  #- python-pip
+                  - python-simplejson
+                  - python-setproctitle
+                  - python-psutil
+                  # Bash completion to enable the CLI completion
+                  - bash-completion
+               #post_commands:
+               # - pip install leveldb
+         
+         
+         -  name      : centos7_python2
+            if        : "({{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 7) and system_is_python_2()"
+            parameters:
+               packages:
+                  - libgomp   # monotonic clock
+                  - nss  # for epel https
+                  - epel-release
+                  - rpm-python
+                  - python-jinja2
+                  - python-crypto
+                  #- python2-leveldb   # currently disabled before we change tests to give leveldb by default every where
+                  #- python2-simplejson
+                  #- python-setproctitle
+                  #- python2-psutil
+                  # Bash completion to enable the CLI completion
+                  - bash-completion
+         
+         -  name      : centos7_python3
+            if        : "({{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 7) and system_is_python_3()"
+            parameters:
+               packages:
+                  - libgomp   # monotonic clock
+                  - nss  # for epel https
+                  - epel-release
+                  - python36-rpm
+                  - python36-jinja2
+                  - python36-cryptography
+                  #- python2-leveldb   # currently disabled before we change tests to give leveldb by default every where
+                  #- python2-simplejson
+                  #- python-setproctitle
+                  #- python2-psutil
+                  # Bash completion to enable the CLI completion
+                  - bash-completion
+         
+         -  name      : centos8
+            if        : "{{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 8"
+            parameters:
+               packages:
+                  - libgomp   # monotonic clock
+                  - epel-release
+                  - python3-rpm
+                  - python3-jinja2
+                  - python3-cryptography
+                  #- python2-leveldb   # currently disabled before we change tests to give leveldb by default every where
+                  #- python2-simplejson
+                  #- python-setproctitle
+                  #- python2-psutil
+                  # Bash completion to enable the CLI completion
+                  - bash-completion
+         
+         
+         #         - name: redhat6
+         #           if:   "{{variables.is_redhat}} and {{collector.system.os.linux.major_version}} == 6"
+         #           parameters:
+         #             packages:
+         #                - epel-release
+         #                - gcc-c++
+         #                - curl
+         #                - gcc
+         #                - python-devel
+         #                - python-pip
+         #                - python-simplejson
+         #                - python-setproctitle
+         #                - python-psutil
+         #                # Bash completion to enable the CLI completion
+         #                - bash-completion
+         #           post_commands:
+         #              - pip install leveldb
+         
+         
+         
+         -  name      : debian
+            if        : "{{variables.is_debian}} and system_is_python_2()"
+            parameters:
+               packages:
+                  - python-jinja2
+                  - python-crypto
+                  - python-setuptools
+         
+         
+         -  name      : debian_python3
+            if        : "{{variables.is_debian}} and system_is_python_3()"
+            parameters:
+               packages:
+                  - python3-jinja2
+                  - python3-crypto
+                  - python3-setuptools
 
 
 #         # like debian6, cannot reach pypi

@@ -403,7 +403,6 @@ if PY3:
                 'ubuntu'       : 'python3-jinja2',
                 'amazon-linux' : 'python3-jinja2',
                 'amazon-linux2': 'python3-jinja2',
-                'centos'       : None,  # special case based on versions
                 'redhat'       : 'python3-jinja2',
                 'oracle-linux' : 'python3-jinja2',
                 'fedora'       : 'python3-jinja2',
@@ -417,7 +416,6 @@ if PY3:
                 'ubuntu'       : 'python3-crypto',
                 'amazon-linux' : 'python3-crypto',
                 'amazon-linux2': 'python3-crypto',
-                'centos'       : None,  # special case based on versions
                 'redhat'       : 'python3-crypto',
                 'oracle-linux' : 'python3-crypto',
                 'fedora'       : 'python3-crypto',
@@ -434,7 +432,6 @@ else:
                 'ubuntu'       : 'python-jinja2',
                 'amazon-linux' : 'python-jinja2',
                 'amazon-linux2': 'python-jinja2',
-                'centos'       : 'python-jinja2',
                 'redhat'       : 'python-jinja2',
                 'oracle-linux' : 'python-jinja2',
                 'fedora'       : 'python-jinja2',
@@ -448,7 +445,6 @@ else:
                 'ubuntu'       : 'python-crypto',
                 'amazon-linux' : 'python-crypto',
                 'amazon-linux2': 'python-crypto',
-                'centos'       : 'python-crypto',
                 'redhat'       : 'python-crypto',
                 'oracle-linux' : 'python-crypto',
                 'fedora'       : 'python-crypto',
@@ -465,47 +461,13 @@ setuptools_package_exceptions = {
     'amazon-linux2': 'python2-setuptools',
 }
 
-
-# Centos 7.0 and 7.1 have issues to access to the epel release (due to certificates)
-# and I don't find how to fix unless remove the https access to it
-# if someone have a better solution, with only packages update, I take :)
-def _fix_centos_7_epel_no_https():
-    epel = '/etc/yum.repos.d/epel.repo'
-    if os.path.exists(epel):
-        with open(epel, 'r') as f:
-            lines = f.readlines()
-        # sed 'mirrorlist=https:' into 'mirrorlist=http:'
-        # and mirrorlist=https: into mirrorlist=https: (centos 6)
-        new_file = ''.join([line.replace('metalink=https:', 'metalink=http:').replace('mirrorlist=https:', 'mirrorlist=http:') for line in lines])
-        with open(epel, 'w') as f:
-            f.write(new_file)
-
-
 # Some distro have specific dependencies
 distro_prerequites = {
     'alpine': [{'package_name': 'musl-dev'}],  # monotonic clock
-    'centos': [
-        {'package_name': 'libgomp'},  # monotonic clock
-        {'package_name': 'nss', 'only_for': ['6.6', '6.7', '7.0', '7.1'], 'force_update': True},  # force update of nss for connect to up to date HTTPS, especialy epel
-        {'package_name': 'epel-release', 'only_for': ['6.7', '7.', '8.'], 'post_fix': _fix_centos_7_epel_no_https},  # need for leveldb, and post_fix is need for 6.7
-        {'package_name': 'leveldb', 'only_for': ['7.0', '7.1']},  # sqlite on old centos is broken
-    ],
     'fedora': [
         {'package_name': 'python3-simplejson', 'only_for': ['33']},
     ]
 }
-
-# Centos: need rpm lib, especially in python3
-if PY3:
-    distro_prerequites['centos'].append({'package_name': 'python36-rpm', 'only_for': ['7.']})
-    distro_prerequites['centos'].append({'package_name': 'python3-rpm', 'only_for': ['8.']})
-    distro_prerequites['centos'].append({'package_name': 'python36-cryptography', 'only_for': ['7.']})
-    distro_prerequites['centos'].append({'package_name': 'python3-cryptography', 'only_for': ['8.']})
-    distro_prerequites['centos'].append({'package_name': 'python36-jinja2', 'only_for': ['7.']})
-    distro_prerequites['centos'].append({'package_name': 'python3-jinja2', 'only_for': ['8.']})
-else:
-    distro_prerequites['centos'].append({'package_name': 'rpm-python'})
-    distro_prerequites['centos'].append({'package_name': 'python-crypto'})
 
 # If we are uploading to pypi, we just don't want to install/update packages here
 if not allow_black_magic:
@@ -516,7 +478,7 @@ is_managed_system = systepacketmgr.is_managed_system()
 system_distro, system_distroversion, _ = systepacketmgr.get_distro()
 
 # In this list of distro, the dependecies are installed with the internal system compliant
-compliant_system_distros = ['debian']
+compliant_system_distros = ['debian', 'centos']
 
 is_compliant_system_distro = system_distro in compliant_system_distros
 
@@ -603,7 +565,6 @@ if allow_black_magic:
                         cprint('\n'.join(['%s%s' % (_prefix, s) for s in str(exp).splitlines()]), color='grey')
                         
                         install_from_pip.append(pip_failback)
-
 
 if allow_black_magic and not is_compliant_system_distro:
     distro_specific_packages = distro_prerequites.get(system_distro, [])

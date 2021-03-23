@@ -10,6 +10,29 @@ import time
 import itertools
 import subprocess
 
+if os.name == 'nt':
+    import msvcrt
+    #import ctypes
+    from ctypes import windll, byref, wintypes, GetLastError, WinError
+    #from ctypes.wintypes import HANDLE, DWORD, POINTER, BOOL
+    
+    #TerminateProcess = ctypes.windll.kernel32.TerminateProcess
+    
+    # Use for  setting a socket to not blocking
+    #LPDWORD = POINTER(DWORD)
+    PIPE_NOWAIT = wintypes.DWORD(0x00000001)
+    ERROR_NO_DATA = 232
+    # Function used to set pipe to not blocking mode
+    #SetNamedPipeHandleState = windll.kernel32.SetNamedPipeHandleState
+    #SetNamedPipeHandleState.argtypes = [HANDLE, LPDWORD, LPDWORD, LPDWORD]
+    #SetNamedPipeHandleState.restype = BOOL
+
+# Try to read in non-blocking mode, from now this only from now on  Unix systems
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
+
 PY3 = (sys.version_info[0] == 3)
 if PY3:
     xrange = range  # note: python 3 do not have xrange
@@ -175,7 +198,52 @@ class AnyAgent(object):
             setproctitle("Temporary agent")
         except ImportError:
             pass
+
+
+    @staticmethod
+    def __windows_set_pipe_no_wait(pipefd):
+        h = msvcrt.get_osfhandle(pipefd)
     
+        res = windll.kernel32.SetNamedPipeHandleState(h, byref(PIPE_NOWAIT), None, None)
+        if res == 0:
+            logger.error('Cannot set the command execution to not blocking. Please join the support. %s' % WinError())
+
+
+    @staticmethod
+    def __unix_set_pipe_no_wait(pipefd):
+        fl = fcntl.fcntl(pipefd, fcntl.F_GETFL)
+        fcntl.fcntl(pipefd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+
+
+    # Try to read a fd in a non blocking mode
+    @staticmethod
+    def no_block_read(output):
+        fd = output.fileno()
+        if os.name == 'nt':
+            # Important on windows: cannot block on the output.read() so
+            # we will have to work wot hthe file descriptor directly
+            # and loop until we void the full buffer
+            AnyAgent.__windows_set_pipe_no_wait(fd)
+        
+            all_buffers = []
+            while True:  # will be break when the buffer will be empty so we don't block the command execution
+                try:
+                    buf = os.read(fd, 1024)
+                    all_buffers.append(buf)
+                    if not buf:  # there is no more in the buffer too
+                        return ''.join(all_buffers)
+                except Exception as exp:
+                    last_error = GetLastError()
+                    if last_error == ERROR_NO_DATA:  # ok we did void it
+                        return ''.join(all_buffers)
+                    logger.error('Cannot read the command execution result: %s / %s. Please contact the support' % (last_error, exp))
+                    return ''
+        else:  # All unix, use fcntl for non blocking read
+            AnyAgent.__unix_set_pipe_no_wait(fd)
+            try:
+                return output.read()  # will void the whole buffer
+            except:  # no more in the buffer
+                return ''
     
     # For some CLI we don't care if we have a running agent or just a dummy send (like
     # quick dashboards)
@@ -197,13 +265,16 @@ class AnyAgent(object):
             cprint('%s | - process pid is %s' % (CHARACTERS.vbar, self.tmp_agent.pid), color='grey')
             cprint('%s | - you can avoid the temporary agent by launching one with "opsbro agent start" or "/etc/init.d/opsbro start" ' % CHARACTERS.corner_bottom_left, color='grey')
             cprint('')
+            logger.debug('Giving a process agent: %s' % self.tmp_agent)
             agent_state = wait_for_agent_started(visual_wait=True, wait_for_spawn=True, timeout=self._timeout, sub_agent_process=self.tmp_agent)  # note: we wait for spawn as it can take some few seconds before the unix socket is available
         if agent_state == AGENT_STATES.AGENT_STATE_STOPPED:
             if self.tmp_agent.returncode is None:  # not finish
-                 err = 'ERROR: Cannot have the agent, even a temporary one: still running after %s seconds' % self._timeout
+                stdout = self.no_block_read(self.tmp_agent.stdout)
+                stderr = self.no_block_read(self.tmp_agent.stderr)
+                err = 'ERROR: Cannot have the agent, even a temporary one: still running after %s seconds: %s\n%s' % (self._timeout, stdout, stderr)
             else:
                 stdout, stderr = self.tmp_agent.communicate()
-                err = 'ERROR: Cannot have the agent, even a temporary one because of the error: %s\n%s' % (stdout, stderr)
+                err = 'ERROR: Cannot have the agent, even a temporary one because of the error:\n %s\n%s' % (stdout, stderr)
             raise Exception(err)
 
 
@@ -231,6 +302,8 @@ def wait_for_agent_stopped(timeout=5, visual_wait=False):
     return agent_state
 
 
+
+
 # Maybe the agent is initializing or not even started (as unix socket).
 # Timeout: wait as much time
 # visual_wait: during the wait, we can show a spinner and a text to enjoy the user
@@ -248,12 +321,15 @@ def wait_for_agent_started(timeout=30, visual_wait=False, exit_if_stopped=False,
             agent_state = get_opsbro_json('/agent/state')
         except get_request_errors():
             agent_state = 'stopped'
+        logger.debug('\nCurrent state: %s\n' % agent_state)
         if agent_state == 'stopped':
-            if sub_agent_process is not None and sub_agent_process.returncode is not None:  # it's finish?
-                stdout, stderr = sub_agent_process.communicate()
-                cprint('\r', end='')
-                cprint(' %s The sub process seems to be dead (return code=%s), here are the logs:' % (CHARACTERS.cross, sub_agent_process.returncode), color='red')
-                cprint(' %s\n%s' % (stdout, stderr), color='grey')
+            logger.debug('\nIs there a sub process ? %s\n' % (sub_agent_process))
+            if sub_agent_process is not None:  # it's finish/dead?
+                sub_agent_process.poll()  # need to know if dead or not, if not, will be zombie
+                logger.debug('Is the sub process finish? rc=%s' % sub_agent_process.returncode)
+                # If there was a sub process, stop means a problem
+                if sub_agent_process.returncode is not None:
+                    return agent_state
 
             # Maybe we need to exit of the daemon is stopped
             if exit_if_stopped:

@@ -142,7 +142,7 @@ def do_compliance_history():
         cprint("\n")
 
 
-def do_compliance_wait_compliant(compliance_name, timeout=30, exit_if_ok=True):
+def do_compliance_wait_compliant(compliance_name, timeout=30, exit_if_ok=True, exit_if_fail=True):
     import itertools
     spinners = itertools.cycle(CHARACTERS.spinners)
     
@@ -200,7 +200,8 @@ def do_compliance_wait_compliant(compliance_name, timeout=30, exit_if_ok=True):
         
         time.sleep(1)
     cprint("\nThe compliance rule %s is not compliant after %s seconds (currently %s)" % (compliance_name, timeout, current_state))
-    sys.exit(2)
+    if exit_if_fail:  # if we are in a CLI waiting, do exit, but in a run we want the current state
+        sys.exit(2)
 
 
 def do_compliance_launch(compliance_name, timeout=30):
@@ -213,7 +214,7 @@ def do_compliance_launch(compliance_name, timeout=30):
     if not founded:
         cprint('ERROR: cannot find the compliance %s (founded=%s)' % (compliance_name, founded), color='red')
         sys.exit(2)
-    do_compliance_wait_compliant(compliance_name, timeout=timeout, exit_if_ok=False)
+    do_compliance_wait_compliant(compliance_name, timeout=timeout, exit_if_ok=False, exit_if_fail=False)
     do_compliance_state(compliance_name=compliance_name)
 
 
