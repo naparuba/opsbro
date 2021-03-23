@@ -3,17 +3,17 @@
 echo "##################### Launching TEST $TEST_SUITE"
 
 # Always be sure we are loggued in docker
-if  [ ! -f /root/.docker/config.json ]; then
-    echo "Login to docker with credentials naparuba"
-    if [ "X$DOCKER_TOKEN" == "X" ]; then
-        echo "WARNING: Your docker token is void!"
-    fi
-    docker login --username  naparuba  --password  "$DOCKER_TOKEN"
+if [ ! -f /root/.docker/config.json ]; then
+   echo "Login to docker with credentials naparuba"
+   if [ "X$DOCKER_TOKEN" == "X" ]; then
+      echo "WARNING: Your docker token is void!"
+   fi
+   docker login --username naparuba --password "$DOCKER_TOKEN"
 fi
 
 # Look if we did set our docker env variables, for some tests
-if [ ! -f ~/.docker_env ];then
-    printf "DISCORD_TOKEN=$DISCORD_TOKEN\nDISCORD_CHANNEL=$DISCORD_CHANNEL\n" > ~/.docker_env
+if [ ! -f ~/.docker_env ]; then
+   printf "DISCORD_TOKEN=$DISCORD_TOKEN\nDISCORD_CHANNEL=$DISCORD_CHANNEL\n" >~/.docker_env
 fi
 #--env-file ~/.docker_env
 
@@ -31,7 +31,6 @@ if [ "$TEST_SUITE" == "PYTHON" ]; then
    test/launch_python_tests.sh
    exit $?
 fi
-
 
 echo "Test installations for SUITE  $TEST_SUITE"
 # If not python, launch installations, and only a sub part if possible

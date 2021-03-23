@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 
 # Load common shell functions
-MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . $MYDIR/common_shell_functions.sh
-
 
 ##############################################################################
 print_header "Installation"
@@ -33,13 +32,12 @@ print_header "Info"
 
 opsbro agent info
 if [ $? != 0 ]; then
-    echo "ERROR: information get failed!"
-    cat /var/log/opsbro/daemon.log
-    cat /var/log/opsbro/*log
-    ps axjf
-    exit 2
+   echo "ERROR: information get failed!"
+   cat /var/log/opsbro/daemon.log
+   cat /var/log/opsbro/*log
+   ps axjf
+   exit 2
 fi
-
 
 print_header "Address"
 
@@ -47,12 +45,11 @@ print_header "Address"
 echo "Checking agent addr"
 ADDR=$(opsbro agent print local-addr)
 if [ "X$ADDR" == "X" ]; then
-    echo "The opsbro daemon do not have a valid address."
-    echo `opsbro agent info`
-    exit 2
+   echo "The opsbro daemon do not have a valid address."
+   echo $(opsbro agent info)
+   exit 2
 fi
 echo "Address: $ADDR"
-
 
 ##############################################################################
 print_header "linux Group"
@@ -61,10 +58,9 @@ echo "Checking linux group"
 # Check if linux group is set
 test/assert_group.sh "linux"
 if [ $? != 0 ]; then
-    echo "ERROR: the group linux is missing!"
-    exit 2
+   echo "ERROR: the group linux is missing!"
+   exit 2
 fi
-
 
 ##############################################################################
 print_header "Docker container group"
@@ -77,12 +73,11 @@ if [ $? != 0 ]; then
    exit 2
 fi
 
-
 ##############################################################################
 print_header "Linux PACK: iostats coutners"
 IOSTATS=$(opsbro collectors show iostats)
 
-printf "%s" "$IOSTATS" | grep read_bytes > /dev/null
+printf "%s" "$IOSTATS" | grep read_bytes >/dev/null
 if [ $? != 0 ]; then
    echo "ERROR: the iostats collector do not seems to be working"
    printf "$IOSTATS"
@@ -91,12 +86,11 @@ fi
 
 echo "Pack: iostats counters are OK"
 
-
 ##############################################################################
 print_header "Linux PACK: cpustats counters"
 CPUSTATS=$(opsbro collectors show cpustats)
 
-printf "%s" "$CPUSTATS" | grep 'cpu_all.%idle' > /dev/null
+printf "%s" "$CPUSTATS" | grep 'cpu_all.%idle' >/dev/null
 if [ $? != 0 ]; then
    echo "ERROR: the cpustats collector do not seems to be working"
    printf "$CPUSTATS"
@@ -105,12 +99,11 @@ fi
 
 echo "Pack: cpustats counters are OK"
 
-
 ##############################################################################
 print_header "Runtime package detection"
 
 # We are trying the fping package unless the distro test did ask us another
-if [ "X$TEST_PACKAGE_NAME" == "X" ];then
+if [ "X$TEST_PACKAGE_NAME" == "X" ]; then
    TEST_PACKAGE_NAME=fping
 fi
 
@@ -118,16 +111,14 @@ echo " * Testing simple package"
 assert_one_package_can_be_installed_and_detected "$TEST_PACKAGE_NAME"
 
 # We are trying the fping package unless the distro test did ask us another
-if [ "X$TEST_PACKAGE_NAME_VIRTUAL" == "X" ];then
+if [ "X$TEST_PACKAGE_NAME_VIRTUAL" == "X" ]; then
    echo " * No virtual package is defined for this distribution, skipping the virtal package test."
 else
    echo " * Testing virtual package detection"
    assert_one_package_can_be_installed_and_detected "$TEST_PACKAGE_NAME_VIRTUAL"
 fi
 
-
 echo "PACKAGE: the runtime package detection is working well"
-
 
 #TODO: fis the networktraffic so it pop out directly at first loop
 # printf "\n\n"
@@ -160,123 +151,119 @@ echo "PACKAGE: the runtime package detection is working well"
 
 print_header "KV Store (sqlite/leveldb)"
 
+function test_key_store() {
+   KEY="SUPERKEY/33"
+   VALUE="SUPERVALUE"
 
-function test_key_store {
-    KEY="SUPERKEY/33"
-    VALUE="SUPERVALUE"
+   echo " - do not exists"
+   GET=$(opsbro kv-store get $KEY)
+   if [ $? == 0 ]; then
+      echo "There should not be key $KEY"
+      echo $GET
+      exit 2
+   fi
 
-    echo " - do not exists"
-    GET=$(opsbro kv-store get $KEY)
-    if [ $? == 0 ];then
-       echo "There should not be key $KEY"
-       echo $GET
-       exit 2
-    fi
+   echo " - set"
+   SET=$(opsbro kv-store put $KEY $VALUE)
+   if [ $? != 0 ]; then
+      echo "There should be ok in set $KEY $VALUE"
+      echo $SET
+      exit 2
+   fi
 
-    echo " - set"
-    SET=$(opsbro kv-store put $KEY $VALUE)
-    if [ $? != 0 ];then
-       echo "There should be ok in set $KEY $VALUE"
-       echo $SET
-       exit 2
-    fi
+   echo " - get"
+   GET=$(opsbro kv-store get $KEY)
+   if [ $? != 0 ]; then
+      echo "There should be key $KEY"
+      echo $GET
+      exit 2
+   fi
 
-    echo " - get"
-    GET=$(opsbro kv-store get $KEY)
-    if [ $? != 0 ];then
-       echo "There should be key $KEY"
-       echo $GET
-       exit 2
-    fi
+   echo " - grep get"
+   GET_GREP=$(echo $GET | grep $VALUE)
+   if [ $? != 0 ]; then
+      echo "There should be key $KEY $VALUE"
+      opsbro --debug kv-store get $KEY
+      cat /var/log/opsbro/key-value.log
+      cat /var/log/opsbro/crash.log 2>/dev/null
+      exit 2
+   fi
 
-    echo " - grep get"
-    GET_GREP=$(echo $GET | grep $VALUE)
-    if [ $? != 0 ];then
-       echo "There should be key $KEY $VALUE"
-       opsbro --debug kv-store get $KEY
-       cat /var/log/opsbro/key-value.log
-       cat /var/log/opsbro/crash.log 2>/dev/null
-       exit 2
-    fi
+   echo " - delete"
+   DELETE=$(opsbro kv-store delete $KEY)
+   if [ $? != 0 ]; then
+      echo "There should be no more key $KEY"
+      echo $DELETE
+      exit 2
+   fi
 
-    echo " - delete"
-    DELETE=$(opsbro kv-store delete $KEY)
-    if [ $? != 0 ];then
-       echo "There should be no more key $KEY"
-       echo $DELETE
-       exit 2
-    fi
-
-    echo " - get after delete"
-    GET=$(opsbro kv-store get $KEY)
-    if [ $? == 0 ];then
-       echo "There should not be key $KEY after delete"
-       echo $GET
-       exit 2
-    fi
+   echo " - get after delete"
+   GET=$(opsbro kv-store get $KEY)
+   if [ $? == 0 ]; then
+      echo "There should not be key $KEY after delete"
+      echo $GET
+      exit 2
+   fi
 }
 
 ##############################################################################
 # Some distro do not have access to sqlite, as it is unstable (centos 7.0 and 7.1)
-if [ "X$SKIP_SQLITE" == "X" ];then
+if [ "X$SKIP_SQLITE" == "X" ]; then
 
-    test_key_store
+   test_key_store
 
-    echo "KV (sqlite): get/put/delete is working"
+   echo "KV (sqlite): get/put/delete is working"
 
+   ##############################################################################
+   print_header "KV Store: leveldb"
 
-    ##############################################################################
-    print_header "KV Store: leveldb"
+   # First we must have the sqlite backend
+   INFO=$(opsbro agent info)
 
-    # First we must have the sqlite backend
-    INFO=$(opsbro agent info)
+   echo "$INFO" | grep sqlite
+   if [ $? != 0 ]; then
+      echo "ERROR: The kv backend should be sqlite"
+      echo "$INFO"
+      exit 2
+   fi
 
-    echo "$INFO" | grep sqlite
-    if [ $? != 0 ];then
-       echo "ERROR: The kv backend should be sqlite"
-       echo "$INFO"
-       exit 2
-    fi
-
-fi  # end of SQLITE
-
+fi # end of SQLITE
 
 # Some distro do not have access to leveldb anymore...
-if [ "X$SKIP_LEVELDB" == "X" ];then
+if [ "X$SKIP_LEVELDB" == "X" ]; then
 
-    # Note: compilation of leveldb can be long (and depedency download too)
-    opsbro compliance launch 'Install tuning libs' --timeout=300
-    if [ $? != 0 ];then
-       echo "ERROR: Cannot install leveldb"
-       opsbro compliance state
-       opsbro compliance history
-       #cat /var/log/opsbro/daemon.log
-       exit 2
-    fi
+   # Note: compilation of leveldb can be long (and depedency download too)
+   opsbro compliance launch 'Install tuning libs' --timeout=300
+   if [ $? != 0 ]; then
+      echo "ERROR: Cannot install leveldb"
+      opsbro compliance state
+      opsbro compliance history
+      #cat /var/log/opsbro/daemon.log
+      exit 2
+   fi
 
-    /etc/init.d/opsbro restart
+   /etc/init.d/opsbro restart
 
-    sleep 1
+   sleep 1
 
-    # Now must be leveldb
-    INFO=$(opsbro agent info)
+   # Now must be leveldb
+   INFO=$(opsbro agent info)
 
-    echo "$INFO" | grep leveldb
-    if [ $? != 0 ];then
-       echo "ERROR: The kv backend should be leveldb"
-       echo "$INFO"
-       exit 2
-    fi
+   echo "$INFO" | grep leveldb
+   if [ $? != 0 ]; then
+      echo "ERROR: The kv backend should be leveldb"
+      echo "$INFO"
+      exit 2
+   fi
 
-    echo "Leveldb install is OK"
+   echo "Leveldb install is OK"
 
-    test_key_store
+   test_key_store
 
-    echo "KV (leveldb): get/put/delete is working"
-fi  # end of LEVELDB
+   echo "KV (leveldb): get/put/delete is working"
+fi # end of LEVELDB
 
 printf "\n\n"
 printf "\n\n"
-
 
 exit_if_no_crash "**** One linux installation is OK *****"

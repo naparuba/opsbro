@@ -224,80 +224,49 @@ compliance:
 #                - bash-completion
 #           post_commands:
 #              - pip install leveldb
+   
+   
+   
+         # Alpine 3.5->7+ have pip2 command
+         -  name         : alpine3_5_6_7_8_9_10
+            if           : "{{variables.is_alpine}} and ( {{collector.system.os.linux.minor_version}} >= 5 and {{collector.system.os.linux.minor_version}} <= 10 )"
+            parameters   :
+               packages:
+                  - musl-dev  # monotonic clock
+                  - py-jinja2
+                  - py-crypto
+                  - py-setuptools
+                  #- gcc
+                  #- linux-headers
+                  #- musl-dev
+                  #- libgcc
+                  #- libgc++
+                  #- g++
+                  #- python2-dev
+                  #- py2-pip
+                  - py2-simplejson
+                  - py2-setproctitle
+                  # Bash completion to enable the CLI completion
+                  - bash-completion
+           #post_commands:
+           #    - pip2 install leveldb
 
 
-#         # Alpine 3.1->4 have pip command and python-dev package
-#         - name: alpine3_1_to_4
-#           if: "{{variables.is_alpine}} and {{collector.system.os.linux.minor_version}} <= 4"
-#           parameters:
-#              packages:
-#                 - gcc
-#                 - linux-headers
-#                 - musl-dev
-#                 - libgcc
-#                 - libgc++
-#                 - g++
-#                 - python-dev
-#                 - py-pip
-#                 - py-simplejson
-#                 # py-setproctitle is not available for alpine <= 3.4
-#                 # Bash completion to enable the CLI completion
-#                 - bash-completion
-#           post_commands:
-#              - pip2 install leveldb
 
-#         # Alpine 3.5->7+ have pip2 command
-#         - name: alpine3_5_6_7_8_9_10
-#           if: "{{variables.is_alpine}} and ( {{collector.system.os.linux.minor_version}} >= 5 and {{collector.system.os.linux.minor_version}} <= 10 )"
-#           parameters:
-#              packages:
-#                 - gcc
-#                 - linux-headers
-#                 - musl-dev
-#                 - libgcc
-#                 - libgc++
-#                 - g++
-#                 - python2-dev
-#                 - py2-pip
-#                 - py2-simplejson
-#                 - py2-setproctitle
-#                 # Bash completion to enable the CLI completion
-#                 - bash-completion
-#           post_commands:
-#              - pip2 install leveldb
-
-
-#         # Alpine 3.11+ => do not have setproctitle in python2
-#         - name: alpine11_py2_and_more
-#           if: "{{variables.is_alpine_11_plus}} and system_is_python_2()"
-#           parameters:
-#              packages:
-#                 - gcc
-#                 - linux-headers
-#                 - musl-dev
-#                 - libgcc
-#                 - libgc++
-#                 - g++
-#                 - python2-dev
-#                 - py2-pip
-#                 - py2-simplejson
-#                 # Not available in alpine 11 - py2-setproctitle
-#                 # Bash completion to enable the CLI completion
-#                 - bash-completion
-#           post_commands:
-#              - pip2 install leveldb
-
-
-#         # Alpine 3.11+ => do not have setproctitle in python2
-#         - name: alpine11_py3_and_more
-#           if: "{{variables.is_alpine_11_plus}} and system_is_python_3()"
-#           parameters:
-#              packages:
-#                 - leveldb
-#                 - py3-simplejson
-#                 - py3-setproctitle
-#                 # Bash completion to enable the CLI completion
-#                 - bash-completion
+         # Alpine 3.11+ => for python 3
+         - name: alpine11_py3_and_more
+           if: "{{variables.is_alpine_11_plus}} and system_is_python_3()"
+           parameters:
+              packages:
+                 - musl-dev  # monotonic clock
+                 - py3-jinja2
+                 - py3-pycryptodome
+                 - py3-setuptools
+                 #- leveldb
+                 - py3-simplejson
+                 - py3-setproctitle
+                 # Bash completion to enable the CLI completion
+                 - bash-completion
 
 
 #         # Open suse 15 have specific packages names

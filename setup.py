@@ -399,7 +399,6 @@ if PY3:
     mod_need = {
         'jinja2': {
             'packages': {
-                'debian'       : 'python3-jinja2',
                 'ubuntu'       : 'python3-jinja2',
                 'amazon-linux' : 'python3-jinja2',
                 'amazon-linux2': 'python3-jinja2',
@@ -407,12 +406,10 @@ if PY3:
                 'oracle-linux' : 'python3-jinja2',
                 'fedora'       : 'python3-jinja2',
                 'opensuse'     : 'python3-Jinja2',
-                'alpine'       : 'py3-jinja2',
             }
         },
         'Crypto': {
             'packages': {
-                'debian'       : 'python3-crypto',
                 'ubuntu'       : 'python3-crypto',
                 'amazon-linux' : 'python3-crypto',
                 'amazon-linux2': 'python3-crypto',
@@ -420,7 +417,6 @@ if PY3:
                 'oracle-linux' : 'python3-crypto',
                 'fedora'       : 'python3-crypto',
                 'opensuse'     : 'python3-pycrypto',
-                'alpine'       : 'py3-crypto',
             }
         },
     }
@@ -428,7 +424,6 @@ else:
     mod_need = {
         'jinja2': {
             'packages': {
-                'debian'       : 'python-jinja2',
                 'ubuntu'       : 'python-jinja2',
                 'amazon-linux' : 'python-jinja2',
                 'amazon-linux2': 'python-jinja2',
@@ -436,12 +431,10 @@ else:
                 'oracle-linux' : 'python-jinja2',
                 'fedora'       : 'python-jinja2',
                 'opensuse'     : 'python-Jinja2',
-                'alpine'       : 'py-jinja2',
             }
         },
         'Crypto': {
             'packages': {
-                'debian'       : 'python-crypto',
                 'ubuntu'       : 'python-crypto',
                 'amazon-linux' : 'python-crypto',
                 'amazon-linux2': 'python-crypto',
@@ -449,21 +442,18 @@ else:
                 'oracle-linux' : 'python-crypto',
                 'fedora'       : 'python-crypto',
                 'opensuse'     : 'python-pycrypto',
-                'alpine'       : 'py-crypto',
             }
         },
     }
 
 # Some distro have another name for python-setuptools, so list here only exceptions
 setuptools_package_exceptions = {
-    'alpine'       : 'py-setuptools',
     'amazon-linux' : 'python27-setuptools',
     'amazon-linux2': 'python2-setuptools',
 }
 
 # Some distro have specific dependencies
 distro_prerequites = {
-    'alpine': [{'package_name': 'musl-dev'}],  # monotonic clock
     'fedora': [
         {'package_name': 'python3-simplejson', 'only_for': ['33']},
     ]
@@ -478,7 +468,7 @@ is_managed_system = systepacketmgr.is_managed_system()
 system_distro, system_distroversion, _ = systepacketmgr.get_distro()
 
 # In this list of distro, the dependecies are installed with the internal system compliant
-compliant_system_distros = ['debian', 'centos']
+compliant_system_distros = ['debian', 'centos', 'alpine']
 
 is_compliant_system_distro = system_distro in compliant_system_distros
 
