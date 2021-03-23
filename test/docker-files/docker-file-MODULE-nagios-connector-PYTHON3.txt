@@ -27,7 +27,7 @@ RUN       echo "cfg_dir=/etc/nagios/objects/agent" >> /etc/nagios/nagios.cfg
 ADD        . /root/opsbro-oss
 WORKDIR       /root/opsbro-oss
 
-RUN       python setup.py install
+RUN       python3 setup.py install
 
 # We will modify a pack, so overload it first
 RUN        opsbro  packs overload global.shinken
