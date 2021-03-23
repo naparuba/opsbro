@@ -399,7 +399,6 @@ if PY3:
     mod_need = {
         'jinja2': {
             'packages': {
-                'ubuntu'       : 'python3-jinja2',
                 'amazon-linux' : 'python3-jinja2',
                 'amazon-linux2': 'python3-jinja2',
                 'redhat'       : 'python3-jinja2',
@@ -409,7 +408,6 @@ if PY3:
         },
         'Crypto': {
             'packages': {
-                'ubuntu'       : 'python3-crypto',
                 'amazon-linux' : 'python3-crypto',
                 'amazon-linux2': 'python3-crypto',
                 'redhat'       : 'python3-crypto',
@@ -422,7 +420,6 @@ else:
     mod_need = {
         'jinja2': {
             'packages': {
-                'ubuntu'       : 'python-jinja2',
                 'amazon-linux' : 'python-jinja2',
                 'amazon-linux2': 'python-jinja2',
                 'redhat'       : 'python-jinja2',
@@ -432,7 +429,6 @@ else:
         },
         'Crypto': {
             'packages': {
-                'ubuntu'       : 'python-crypto',
                 'amazon-linux' : 'python-crypto',
                 'amazon-linux2': 'python-crypto',
                 'redhat'       : 'python-crypto',
@@ -462,7 +458,7 @@ is_managed_system = systepacketmgr.is_managed_system()
 system_distro, system_distroversion, _ = systepacketmgr.get_distro()
 
 # In this list of distro, the dependecies are installed with the internal system compliant
-compliant_system_distros = ['debian', 'centos', 'alpine', 'fedora']
+compliant_system_distros = ['debian', 'centos', 'alpine', 'fedora', 'ubuntu']
 
 is_compliant_system_distro = system_distro in compliant_system_distros
 
