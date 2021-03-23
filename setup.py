@@ -400,7 +400,6 @@ if PY3:
         'jinja2': {
             'packages': {
                 'amazon-linux' : 'python3-jinja2',
-                'amazon-linux2': 'python3-jinja2',
                 'redhat'       : 'python3-jinja2',
                 'oracle-linux' : 'python3-jinja2',
                 'opensuse'     : 'python3-Jinja2',
@@ -409,7 +408,6 @@ if PY3:
         'Crypto': {
             'packages': {
                 'amazon-linux' : 'python3-crypto',
-                'amazon-linux2': 'python3-crypto',
                 'redhat'       : 'python3-crypto',
                 'oracle-linux' : 'python3-crypto',
                 'opensuse'     : 'python3-pycrypto',
@@ -421,7 +419,6 @@ else:
         'jinja2': {
             'packages': {
                 'amazon-linux' : 'python-jinja2',
-                'amazon-linux2': 'python-jinja2',
                 'redhat'       : 'python-jinja2',
                 'oracle-linux' : 'python-jinja2',
                 'opensuse'     : 'python-Jinja2',
@@ -430,7 +427,6 @@ else:
         'Crypto': {
             'packages': {
                 'amazon-linux' : 'python-crypto',
-                'amazon-linux2': 'python-crypto',
                 'redhat'       : 'python-crypto',
                 'oracle-linux' : 'python-crypto',
                 'opensuse'     : 'python-pycrypto',
@@ -441,7 +437,6 @@ else:
 # Some distro have another name for python-setuptools, so list here only exceptions
 setuptools_package_exceptions = {
     'amazon-linux' : 'python27-setuptools',
-    'amazon-linux2': 'python2-setuptools',
 }
 
 # Some distro have specific dependencies
@@ -458,7 +453,7 @@ is_managed_system = systepacketmgr.is_managed_system()
 system_distro, system_distroversion, _ = systepacketmgr.get_distro()
 
 # In this list of distro, the dependecies are installed with the internal system compliant
-compliant_system_distros = ['debian', 'centos', 'alpine', 'fedora', 'ubuntu']
+compliant_system_distros = ['debian', 'centos', 'alpine', 'fedora', 'ubuntu', 'amazon-linux2']
 
 is_compliant_system_distro = system_distro in compliant_system_distros
 
@@ -640,23 +635,21 @@ install_from_pip = set(install_from_pip)
 if not allow_black_magic:
     install_from_pip = set()
 
-# HACK: debian 6 do not allow any more pypi install, sorry :'(
-if system_distro == 'debian' and system_distroversion.startswith('6.'):
-    install_from_pip = set()
-
 # HACK: centos8/opensuse15 have a know bug about not allowing a setup() call before run pip
 if allow_black_magic and (
         (system_distro == 'centos' and system_distroversion.startswith('8'))
         or
         (system_distro == 'opensuse' and system_distroversion.startswith('15'))
+        or
+        (system_distro == 'amazon-linux2')
 ):
     setup_py_path = '/usr/local/lib/python%d.%d/site-packages/' % (sys.version_info[0], sys.version_info[1])
     if not os.path.exists(setup_py_path):
-        cprint(' * Fixing a know bug on Centos 8:')
+        cprint(' * Fixing a know bug on Centos 8/Opensuse/AmazonLinux2:')
         cprint('   - have a know bug that you cannot install a python package before run pip first.', color='grey')
         cprint('   - Creating the directory %s' % setup_py_path, color='grey')
         make_dir(setup_py_path)
-        cprint('   - Centos 8 fix: ', end='')
+        cprint('   - fix: ', end='')
         cprint(' %s' % CHARACTERS.check, color='green')
 
 # Try to import setup tools, and if not, switch to

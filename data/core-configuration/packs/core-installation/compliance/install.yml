@@ -254,16 +254,15 @@ compliance:
 #              - pip install leveldb
 
 
-#         - name: amazon_linux2
-#           if: "{{variables.is_amazon_linux2}}"
-#           parameters:
-#             packages:
-#                - gcc
-#                - gcc-c++
-#                - python-devel
-#                - python2-pip
-#                - python-simplejson
-#                # No Bash completion for amazon linux
-#           post_commands:
-#              - pip install leveldb
+         - name: amazon_linux2
+           if: "{{variables.is_amazon_linux2}}"
+           parameters:
+             packages:
+                - python2-setuptools
+                - python-jinja2
+                - python2-cryptography
+                - python-simplejson
+                # No Bash completion for amazon linux
+           #post_commands:
+           #   - pip install leveldb
 
