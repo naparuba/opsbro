@@ -21,30 +21,33 @@ class YumBackend(LinuxBackend):
     def __init__(self):
         self.yumbase_lock = threading.RLock()
         
-        try:
-            # we want to silent verbose plugins
-            yum_logger = logging.getLogger("yum.verbose.YumPlugins")
-            yum_logger.setLevel(logging.CRITICAL)
-            import rpm
-        except ImportError:
-            try:
-                if PY3:
-                    self.install_package('python36-rpm')
-                else:
-                    self.install_package('rpm-python')
-                import rpm
-            except:
-                rpm = None
-        self.rpm = rpm
+        # we want to silent verbose plugins
+        yum_logger = logging.getLogger("yum.verbose.YumPlugins")
+        yum_logger.setLevel(logging.CRITICAL)
+        self.rpm = None
+        
+        self._try_to_import_lib()
         
         self._installed_packages_cache = set()
         self._rpm_package_file_age = None
+    
+    
+    def _try_to_import_lib(self):
+        if self.rpm is not None:  # already done
+            return
+        try:
+            import rpm
+        except ImportError as exp:
+            logger.warning('Cannot import RPM librairy, package detection will be slow: %s' % exp)
+            rpm = None
+        self.rpm = rpm
     
     
     def _get_rpm_package_file_path(self):
         if os.path.exists(self.RPM_PACKAGE_FILE_PATH):
             return self.RPM_PACKAGE_FILE_PATH
         return self.RPM_PACKAGE_FILE_PATH_FED33
+    
     
     def _assert_valid_cache(self):
         rpm_package_file = self._get_rpm_package_file_path()
@@ -57,6 +60,7 @@ class YumBackend(LinuxBackend):
     
     
     def _update_cache(self):
+        self._try_to_import_lib()
         if self.rpm:
             # NOTE: need to close yum base
             logger.info('RPM:: updating the rpm package cache')
@@ -84,6 +88,21 @@ class YumBackend(LinuxBackend):
     
     
     def has_package(self, package):
+        # We do not have the rpm lib, maybe we did install it,
+        if self.rpm is None:
+            self._try_to_import_lib()
+        
+        if self.rpm is None:  # still not the lib, arg
+            logger.warning('The rpm librairy is missing, switching to a slower package detection method')
+            args = ['rpm', '-q', package]
+            p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = p.communicate()
+            logger.debug('RPM -q (%s):: stdout: %s' % (package, stdout))
+            logger.debug('RPM -q (%s):: stderr: %s' % (package, stderr))
+            is_installed = p.returncode == 0
+            logger.debug('RPM:: Is the package %s installed? => %s' % (package, is_installed))
+            return is_installed
+        
         # Yum conf seem to be global and so cannot set it in 2 threads at the same time
         # NOTE: the yum base is not able to detect that the cache is wrong :'(
         with self.yumbase_lock:
