@@ -160,6 +160,20 @@ compliance:
                   # Bash completion to enable the CLI completion
                   - bash-completion
          
+         ##### FEDORA:
+         # there are rules for 24, 25, 26 -> 30 (python2) and 31+ (python3)
+         # and So fedora 31 and more
+         -  name      : fedora_python2
+            if        : "{{variables.is_fedora}} and system_is_python_2()"
+            parameters:
+               packages:
+                  - python2-rpm
+                  - python-jinja2
+                  - python-crypto
+                  - python-simplejson
+                  # Bash completion to enable the CLI completion
+                  - bash-completion
+         
          
          ##### FEDORA:
          # there are rules for 24, 25, 26 -> 30 (python2) and 31+ (python3)
@@ -168,6 +182,7 @@ compliance:
             if        : "{{variables.is_fedora}} and system_is_python_3()"
             parameters:
                packages:
+                  - python3-rpm
                   - python3-jinja2
                   - python3-crypto
                   - python3-simplejson
@@ -217,52 +232,52 @@ compliance:
                   - py3-setproctitle
                   # Bash completion to enable the CLI completion
                   - bash-completion
-
-
-#         # Open suse 15 have specific packages names
-#         - name: opensuse_15
-#           if: "{{variables.is_opensuse}} and {{collector.system.os.linux.major_version}} == 15"
-#           parameters:
-#             packages:
-#                - python2-leveldb
-#                - python2-simplejson
-#                # Bash completion to enable the CLI completion
-#                - bash-completion
-
-
-#        # Older open source (42.x)
-#         - name: opensuse
-#           if: "{{variables.is_opensuse}}"
-#           parameters:
-#             packages:
-#                - python-leveldb
-#                - python-simplejson
-#                # Bash completion to enable the CLI completion
-#                - bash-completion
-
-#         - name: amazon_linux
-#           if: "{{variables.is_amazon_linux}}"
-#           parameters:
-#             packages:
-#                - gcc
-#                - gcc-c++
-#                - python27-devel
-#                - python27-pip
-#                - python27-simplejson
-#                # No Bash completion for amazon linux
-#           post_commands:
-#              - pip install leveldb
-
-
-         - name: amazon_linux2
-           if: "{{variables.is_amazon_linux2}}"
-           parameters:
-             packages:
-                - python2-setuptools
-                - python-jinja2
-                - python2-cryptography
-                - python-simplejson
-                # No Bash completion for amazon linux
-           #post_commands:
-           #   - pip install leveldb
+         
+         
+         #         # Open suse 15 have specific packages names
+         #         - name: opensuse_15
+         #           if: "{{variables.is_opensuse}} and {{collector.system.os.linux.major_version}} == 15"
+         #           parameters:
+         #             packages:
+         #                - python2-leveldb
+         #                - python2-simplejson
+         #                # Bash completion to enable the CLI completion
+         #                - bash-completion
+         
+         
+         #        # Older open source (42.x)
+         #         - name: opensuse
+         #           if: "{{variables.is_opensuse}}"
+         #           parameters:
+         #             packages:
+         #                - python-leveldb
+         #                - python-simplejson
+         #                # Bash completion to enable the CLI completion
+         #                - bash-completion
+         
+         #         - name: amazon_linux
+         #           if: "{{variables.is_amazon_linux}}"
+         #           parameters:
+         #             packages:
+         #                - gcc
+         #                - gcc-c++
+         #                - python27-devel
+         #                - python27-pip
+         #                - python27-simplejson
+         #                # No Bash completion for amazon linux
+         #           post_commands:
+         #              - pip install leveldb
+         
+         
+         -  name      : amazon_linux2
+            if        : "{{variables.is_amazon_linux2}}"
+            parameters:
+               packages:
+                  - python2-setuptools
+                  - python-jinja2
+                  - python2-cryptography
+                  - python-simplejson
+                  # No Bash completion for amazon linux
+            #post_commands:
+            #   - pip install leveldb
 
