@@ -55,7 +55,7 @@ compliance:
             if        : "({{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 7) and system_is_python_3()"
             parameters:
                packages:
-                  - python36-leveldb
+                  - python36-leveld
                   - python36-simplejson
                   - python36-setproctitle
                   - python36-psutil
@@ -228,25 +228,7 @@ compliance:
                - pip install leveldb
          
          
-         # Alpine 3.1->4 have pip command and python-dev package
-         -  name         : alpine3_1_to_4
-            if           : "{{variables.is_alpine}} and {{collector.system.os.linux.minor_version}} <= 4"
-            parameters   :
-               packages:
-                  - gcc
-                  - linux-headers
-                  - musl-dev
-                  - libgcc
-                  - libgc++
-                  - g++
-                  - python-dev
-                  - py-pip
-                  - py-simplejson
-                  # py-setproctitle is not available for alpine <= 3.4
-                  # Bash completion to enable the CLI completion
-                  - bash-completion
-            post_commands:
-               - pip2 install leveldb
+
          
          # Alpine 3.5->7+ have pip2 command
          -  name         : alpine3_5_6_7_8_9_10

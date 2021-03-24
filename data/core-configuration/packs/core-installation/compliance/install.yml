@@ -255,7 +255,7 @@ compliance:
                   - py3-jinja2
                   - py3-pycryptodome
                   - py3-setuptools
-                  #- leveldb
+                  - leveldb
                   - py3-simplejson
                   - py3-setproctitle
                   # Bash completion to enable the CLI completion
@@ -272,6 +272,7 @@ compliance:
                   - python2-pycrypto
                   - python2-simplejson
                   - python-setuptools
+                  - python2-leveldb
                   # Bash completion to enable the CLI completion
                   - bash-completion
    
@@ -286,6 +287,7 @@ compliance:
                   - python-pycrypto
                   - python-simplejson
                   - python-setuptools
+                  - python-leveldb
                   # Bash completion to enable the CLI completion
                   - bash-completion
 
@@ -298,9 +300,14 @@ compliance:
                   - python-jinja2
                   - python-crypto
                   - python27-simplejson
+                  - gcc
+                  - gcc-c++
+                  - python27-devel
+                  - python27-pip
+                  - python27-simplejson
                   # No Bash completion for amazon linux
-            #post_commands:
-            #   - pip install leveldb
+            post_commands:
+               - pip install leveldb
          
          
          -  name      : amazon_linux2
@@ -311,7 +318,12 @@ compliance:
                   - python-jinja2
                   - python2-cryptography
                   - python-simplejson
+                  - gcc
+                  - gcc-c++
+                  - python-devel
+                  - python2-pip
+                  - python-simplejson
                   # No Bash completion for amazon linux
-            #post_commands:
-            #   - pip install leveldb
+            post_commands:
+               - pip install leveldb
 
