@@ -208,7 +208,7 @@ function test_key_store() {
 
 ##############################################################################
 # Some distro do not have access to sqlite, as it is unstable (centos 7.0 and 7.1)
-if [ "X$SKIP_SQLITE" == "X" ]; then
+if [ "X$TEST_SQLITE" == "XTrue" ]; then
 
    test_key_store
 
@@ -232,14 +232,17 @@ fi # end of SQLITE
 # Some distro do not have access to leveldb anymore...
 if [ "X$SKIP_LEVELDB" == "X" ]; then
 
-   # Note: compilation of leveldb can be long (and depedency download too)
-   opsbro compliance launch 'Install tuning libs' --timeout=300
-   if [ $? != 0 ]; then
-      echo "ERROR: Cannot install leveldb"
-      opsbro compliance state
-      opsbro compliance history
-      #cat /var/log/opsbro/daemon.log
-      exit 2
+   # We need to install libs only if the sqlite was need
+   if [ "X$TEST_SQLITE" == "XTrue" ]; then
+      # Note: compilation of leveldb can be long (and depedency download too)
+      opsbro compliance launch 'Install tuning libs' --timeout=300
+      if [ $? != 0 ]; then
+         echo "ERROR: Cannot install leveldb"
+         opsbro compliance state
+         opsbro compliance history
+         #cat /var/log/opsbro/daemon.log
+         exit 2
+      fi
    fi
 
    /etc/init.d/opsbro restart

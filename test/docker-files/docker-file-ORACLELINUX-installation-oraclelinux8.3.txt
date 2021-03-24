@@ -1,0 +1,18 @@
+FROM oraclelinux:8.3
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+
+# To load the repos before the run
+RUN        /yum_install  python3
+ENV        PYTHON_EXE=/usr/bin/python3
+
+
+ADD        . /root/opsbro-oss
+
+# TCL: very little
+ENV        TEST_PACKAGE_NAME=tcl
+WORKDIR       /root/opsbro-oss
+
+ENTRYPOINT    test/test_one_linux_installation.sh  && test/assert_group.sh "oracle-linux"
+

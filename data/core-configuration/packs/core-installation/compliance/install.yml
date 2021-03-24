@@ -25,23 +25,15 @@ compliance:
             parameters:
                packages:
                   - libgomp   # monotonic clock
-                  - nss  #for epel https
-                  #- leveldb  currently disabled before we change tests to give leveldb by default every where
+                  - nss  # for epel https
+                  - leveldb
                   - epel-release
                   - python-jinja2
                   - python-crypto
-                  #- gcc-c++
-                  #- curl
-                  #- gcc
-                  #- python-devel
-                  #- python-pip
                   - python-simplejson
                   - python-setproctitle
                   - python-psutil
-                  # Bash completion to enable the CLI completion
-                  - bash-completion
-               #post_commands:
-               # - pip install leveldb
+                  - bash-completion  # Bash completion to enable the CLI completion
          
          
          -  name      : centos7_python2
@@ -60,6 +52,7 @@ compliance:
                   - python2-psutil
                   # Bash completion to enable the CLI completion
                   - bash-completion
+
          
          -  name      : centos7_python3
             if        : "({{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 7) and system_is_python_3()"
@@ -95,9 +88,9 @@ compliance:
                   - bash-completion
          
          
-         -  name      : is_oracle_linux
-            if        : "{{variables.is_oracle_linux}}"
-            parameters:
+         -  name         : is_oracle_linux
+            if           : "{{variables.is_oracle_linux}}"
+            parameters   :
                packages:
                   - libgomp   # monotonic clock
                   - rpm-python
@@ -173,6 +166,7 @@ compliance:
                   # Bash completion to enable the CLI completion
                   - bash-completion
          
+         
          -  name      : ubuntu_python3
             if        : "{{variables.is_ubuntu}} and system_is_python_3()"
             parameters:
@@ -198,9 +192,10 @@ compliance:
                   - python-jinja2
                   - python-crypto
                   - python-simplejson
-                  # Bash completion to enable the CLI completion
-                  - bash-completion
-         
+                  - python2-setproctitle
+                  - bash-completion  # Bash completion to enable the CLI completion
+                  - leveldb
+                  
          
          ##### FEDORA:
          # there are rules for 24, 25, 26 -> 30 (python2) and 31+ (python3)
@@ -213,36 +208,35 @@ compliance:
                   - python3-jinja2
                   - python3-crypto
                   - python3-simplejson
-                  # Bash completion to enable the CLI completion
-                  - bash-completion
+                  - bash-completion  # Bash completion to enable the CLI completion
                   - python3-leveldb
                   - python3-setproctitle
          
          
          
          # Alpine 3.5->7+ have pip2 command
-         -  name      : alpine3_5_6_7_8_9_10
-            if        : "{{variables.is_alpine}} and ( {{collector.system.os.linux.minor_version}} >= 5 and {{collector.system.os.linux.minor_version}} <= 10 )"
-            parameters:
+         -  name         : alpine3_5_6_7_8_9_10
+            if           : "{{variables.is_alpine}} and ( {{collector.system.os.linux.minor_version}} >= 5 and {{collector.system.os.linux.minor_version}} <= 10 )"
+            parameters   :
                packages:
                   - musl-dev  # monotonic clock
                   - py-jinja2
                   - py-crypto
                   - py-setuptools
-                  #- gcc
-                  #- linux-headers
-                  #- musl-dev
-                  #- libgcc
-                  #- libgc++
-                  #- g++
-                  #- python2-dev
-                  #- py2-pip
+                  - gcc
+                  - linux-headers
+                  - musl-dev
+                  - libgcc
+                  - libgc++
+                  - g++
+                  - python2-dev
+                  - py2-pip
                   - py2-simplejson
                   - py2-setproctitle
                   # Bash completion to enable the CLI completion
                   - bash-completion
-         #post_commands:
-         #    - pip2 install leveldb
+            post_commands:
+               - pip2 install leveldb
          
          
          
@@ -260,8 +254,8 @@ compliance:
                   - py3-setproctitle
                   # Bash completion to enable the CLI completion
                   - bash-completion
-   
-   
+         
+         
          # Open suse 15 have specific packages names
          -  name      : opensuse_15
             if        : "{{variables.is_opensuse}} and {{collector.system.os.linux.major_version}} == 15"
@@ -273,10 +267,9 @@ compliance:
                   - python2-simplejson
                   - python-setuptools
                   - python2-leveldb
-                  # Bash completion to enable the CLI completion
-                  - bash-completion
-   
-   
+                  - bash-completion  # Bash completion to enable the CLI completion
+         
+         
          # Older open source (42.x)
          -  name      : opensuse
             if        : "{{variables.is_opensuse}}"
@@ -288,13 +281,12 @@ compliance:
                   - python-simplejson
                   - python-setuptools
                   - python-leveldb
-                  # Bash completion to enable the CLI completion
-                  - bash-completion
-
-
-         -  name      : amazon_linux
-            if        : "{{variables.is_amazon_linux}}"
-            parameters:
+                  - bash-completion  # Bash completion to enable the CLI completion
+         
+         
+         -  name         : amazon_linux
+            if           : "{{variables.is_amazon_linux}}"
+            parameters   :
                packages:
                   - python27-setuptools
                   - python-jinja2
@@ -310,9 +302,9 @@ compliance:
                - pip install leveldb
          
          
-         -  name      : amazon_linux2
-            if        : "{{variables.is_amazon_linux2}}"
-            parameters:
+         -  name         : amazon_linux2
+            if           : "{{variables.is_amazon_linux2}}"
+            parameters   :
                packages:
                   - python2-setuptools
                   - python-jinja2
@@ -322,8 +314,8 @@ compliance:
                   - gcc-c++
                   - python-devel
                   - python2-pip
-                  - python-simplejson
-                  # No Bash completion for amazon linux
+                  - python-setproctitle
+                  - bash-completion
             post_commands:
                - pip install leveldb
 
