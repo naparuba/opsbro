@@ -26,19 +26,20 @@ class YumBackend(LinuxBackend):
         yum_logger.setLevel(logging.CRITICAL)
         self.rpm = None
         
-        self._try_to_import_lib()
+        self._try_to_import_lib(allow_logs=False)
         
         self._installed_packages_cache = set()
         self._rpm_package_file_age = None
     
     
-    def _try_to_import_lib(self):
+    def _try_to_import_lib(self, allow_logs=True):
         if self.rpm is not None:  # already done
             return
         try:
             import rpm
         except ImportError as exp:
-            logger.warning('Cannot import RPM librairy, package detection will be slow: %s' % exp)
+            if allow_logs:  # when initialized, don't log
+                logger.warning('Cannot import RPM librairy, package detection will be slow: %s' % exp)
             rpm = None
         self.rpm = rpm
     

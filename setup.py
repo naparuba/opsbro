@@ -8,7 +8,6 @@ import re
 import stat
 import optparse
 import shutil
-import imp
 import codecs
 
 try:
@@ -33,6 +32,8 @@ def _disable_warns(*args, **kwargs):
 
 
 warnings.showwarning = _disable_warns
+
+python_exe_path = sys.executable
 
 # will fail under 2.5 python version, but if really you have such a version in
 # prod you are a morron and we can't help you
@@ -186,7 +187,16 @@ except ImportError as exp:  # great, first install so
 
 # Now look at loading the local opsbro lib for version and banner
 my_dir = os.path.dirname(os.path.abspath(__file__))
-opsbro = imp.load_module('opsbro', *imp.find_module('opsbro', [os.path.realpath(my_dir)]))
+if PY3:  # imp is deprecated on python3
+    import importlib.machinery
+    
+    mod_path = importlib.machinery.PathFinder().find_spec('opsbro', [os.path.realpath(my_dir)])
+    opsbro = mod_path.loader.load_module()
+else:
+    import imp
+    
+    opsbro = imp.load_module('opsbro', *imp.find_module('opsbro', [os.path.realpath(my_dir)]))
+
 from opsbro.info import VERSION, BANNER, TXT_BANNER
 from opsbro.topic import TOPICS_COLORS, TOPIC_SYSTEM_COMPLIANCE
 from opsbro.log import cprint, is_tty, sprintf, core_logger
@@ -391,31 +401,6 @@ if allow_black_magic:
     title = 'Checking prerequites ' + sprintf('(1/3)', color='magenta', end='')
     print_h1(title, raw_title=True)
 
-# Maybe we won't be able to setup with packages, if so, switch to pip :(
-install_from_pip = []
-
-# Python 3 and 2 have differents packages
-if PY3:
-    mod_need = {
-    }
-else:
-    mod_need = {
-    
-    }
-
-# Some distro have another name for python-setuptools, so list here only exceptions
-setuptools_package_exceptions = {
-}
-
-# Some distro have specific dependencies
-distro_prerequites = {
-
-}
-
-# If we are uploading to pypi, we just don't want to install/update packages here
-if not allow_black_magic:
-    mod_need.clear()
-
 # We will have to look in which distro we are
 is_managed_system = systepacketmgr.is_managed_system()
 system_distro, system_distroversion, _ = systepacketmgr.get_distro()
@@ -434,13 +419,16 @@ if allow_black_magic:
 if allow_black_magic:
     if is_managed_system:
         cprint(' * Your system ', end='')
+        cprint('%s (version %s.%s.%s)' % (python_exe_path, sys.version_info[0], sys.version_info[1], sys.version_info[2]), color='magenta', end='')
+        cprint(' on ', end='')
         cprint('%s (version %s) ' % (system_distro, system_distroversion), color='magenta', end='')
+
+
         cprint(u'is managed by this installer: ', end='')
         cprint(CHARACTERS.check, color='green')
         cprint('   - it will be able to use system package manager to install dependencies.', color='grey')
         if is_compliant_system_distro:
-            cprint(' * Your system depedencies will be setup thanks to the OpsBro ', end='')
-            cprint(lolcat.get_line('system compliance', TOPICS_COLORS.get(TOPIC_SYSTEM_COMPLIANCE), spread=None), end='')
+            cprint(' * %s : your system depedencies will be setup thanks to the OpsBro ' % lolcat.get_line('System Compliance', TOPICS_COLORS.get(TOPIC_SYSTEM_COMPLIANCE), spread=None), end='')
             cprint(' system.')
     else:
         cprint(" * ", end='')
@@ -455,8 +443,6 @@ if allow_black_magic and is_compliant_system_distro:
     # Using the OpsBro compliance system to install it's own dependencies
     import subprocess
     
-    python_exe_path = sys.executable
-    
     # TODO Be sure to be on the installation directory
     install_dependencies_command = '''%s bin/opsbro compliance launch 'Install OpsBro system dependencies' --timeout=300 ''' % python_exe_path
     cprint('   - Launching to install dependencies: %s' % install_dependencies_command, color='grey')
@@ -466,85 +452,6 @@ if allow_black_magic and is_compliant_system_distro:
         core_logger.debug('The dependency process did failed: rc=%s  stdput=%s stderr=%s' % (dependency_process.returncode, stdout, stderr))
         cprint('   - ERROR: cannot install the prerequite from the system (%s - %s). Please reports a bug.' % (system_distro, system_distroversion), color='red')
         sys.exit(2)
-
-if allow_black_magic:
-    for (m, d) in mod_need.items():
-        # System ompliant distro are already managed
-        if is_compliant_system_distro:
-            continue
-        cprint(' * Checking dependency for ', end='')
-        cprint('%-20s' % m, color='blue', end='')
-        cprint(' : ', end='')
-        sys.stdout.flush()
-        try:
-            __import__(m)
-            cprint('%s' % CHARACTERS.check, color='green')
-        except ImportError:
-            cprint('MISSING', color='cyan')
-            packages = d['packages']
-            to_install = packages.get(system_distro, '')
-            pip_failback = d.get('failback_pip', m)
-            if to_install is None:  # ask to do nothing
-                pass
-            elif not to_install:
-                cprint('   - Cannot find valid packages from system packages on this distribution for the module %s, will be installed by the python pip system instead (need an internet connection)' % m, color='yellow')
-                install_from_pip.append(pip_failback)
-            else:
-                if isinstance(to_install, basestring):
-                    to_install = [to_install]
-                for pkg in to_install:
-                    cprint('   - Trying to install the package ', color='grey', end='')
-                    cprint('%-20s' % pkg, color='blue', end='')
-                    cprint(' from system packages  : ', color='grey', end='')
-                    sys.stdout.flush()
-                    try:
-                        systepacketmgr.update_or_install(pkg)
-                        cprint('%s' % CHARACTERS.check, color='green')
-                        # __import__(m)
-                    except Exception as exp:
-                        cprint('(missing in package)', color='cyan')
-                        cprint('   - cannot install the package from the system. Switching to an installation based on the python pip system (need an internet connection)', color='grey')
-                        _prefix = '      | '
-                        cprint('\n'.join(['%s%s' % (_prefix, s) for s in str(exp).splitlines()]), color='grey')
-                        
-                        install_from_pip.append(pip_failback)
-
-if allow_black_magic and not is_compliant_system_distro:
-    distro_specific_packages = distro_prerequites.get(system_distro, [])
-    if len(distro_specific_packages) >= 1:
-        cprint(' * This OS have specific prerequites:')
-    for package in distro_specific_packages:
-        package_name = package.get('package_name')
-        only_for = package.get('only_for', [])
-        # Maybe this package is only for specific versions, like old centos 7 versions
-        if len(only_for) != 0:
-            match_version = False
-            for only_for_version in only_for:
-                if system_distroversion.startswith(only_for_version):
-                    core_logger.debug('The package %s: match the rule %s %s' % (package_name, system_distroversion, only_for_version))
-                    match_version = True
-                    break
-            if not match_version:
-                continue
-        else:
-            core_logger.debug('The package: %s is installed because there is no filter' % package)
-        force_update = package.get('force_update', False)  # should be updated even if already installed
-        post_fix = package.get('post_fix', None)  # function called AFTER the package installation, to fix something
-        cprint('   - Prerequite for ', color='grey', end='')
-        cprint(system_distro, color='magenta', end='')
-        cprint(' : ', color='grey', end='')
-        cprint('%-20s' % package_name, color='blue', end='')
-        cprint('       from system packages  : ', color='grey', end='')
-        sys.stdout.flush()
-        try:
-            if not systepacketmgr.has_package(package_name) or force_update:
-                systepacketmgr.update_or_install(package_name)
-                if post_fix:
-                    post_fix()
-            cprint('%s' % CHARACTERS.check, color='green')
-        except Exception as exp:
-            cprint('   - ERROR: cannot install the prerequite %s from the system (%s). Please install it manually' % (package_name, exp), color='red')
-            sys.exit(2)
 
 # windows black magic: we ned pywin32
 if os.name == 'nt':
@@ -596,13 +503,6 @@ if os.name == 'nt':
             sys.exit(2)
         cprint('%s' % CHARACTERS.check, color='green')
 
-# Remove duplicate from pip install
-install_from_pip = set(install_from_pip)
-
-# if we are uploading to pypi, we don't want to have dependencies, I don't want pip to do black magic. I already do black magic.
-if not allow_black_magic:
-    install_from_pip = set()
-
 # HACK: centos8/opensuse15 have a know bug about not allowing a setup() call before run pip
 if allow_black_magic and (
         (system_distro == 'centos' and system_distroversion.startswith('8'))
@@ -630,8 +530,7 @@ except ImportError:
         default_setuptools_pkg = 'python-setuptools'
         if PY3:
             default_setuptools_pkg = 'python3-setuptools'
-        package_name = setuptools_package_exceptions.get(system_distro, default_setuptools_pkg)
-        systepacketmgr.install_package(package_name)
+        systepacketmgr.install_package(default_setuptools_pkg)
         cprint(' %s' % CHARACTERS.check, color='green')
         from setuptools import setup, find_packages
     except Exception as exp:
@@ -643,10 +542,6 @@ print('\n')
 if allow_black_magic:
     title = 'Python lib installation ' + sprintf('(2/3)', color='magenta', end='')
     print_h1(title, raw_title=True)
-    
-    if install_from_pip:
-        cprint('  * %s packages will be installed from Pypi (%s)' % (len(install_from_pip), ', '.join(install_from_pip)))
-    
     cprint('  * %s opsbro python lib in progress...' % what, end='')
 sys.stdout.flush()
 
@@ -696,7 +591,7 @@ try:
             'Topic :: System :: Networking :: Monitoring',
             'Topic :: System :: Distributed Computing',
         ],
-        install_requires=[install_from_pip],
+        # install_requires=[install_from_pip],
         
         # Maybe some system need specific packages address on pypi, like add httpS on debian 6 :'(
         dependency_links=additionnal_pypi_repos,
