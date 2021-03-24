@@ -83,6 +83,7 @@ env:
 - TEST_SUITE=FEDORA
 - TEST_SUITE=OPENSUSE
 - TEST_SUITE=UBUNTU
+- TEST_SUITE=ORACLELINUX
 
 
 # becool with travis load : we do not want that all test that don't care about python

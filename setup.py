@@ -397,46 +397,14 @@ install_from_pip = []
 # Python 3 and 2 have differents packages
 if PY3:
     mod_need = {
-        'jinja2': {
-            'packages': {
-                'amazon-linux' : 'python3-jinja2',
-                'redhat'       : 'python3-jinja2',
-                'oracle-linux' : 'python3-jinja2',
-                'opensuse'     : 'python3-Jinja2',
-            }
-        },
-        'Crypto': {
-            'packages': {
-                'amazon-linux' : 'python3-crypto',
-                'redhat'       : 'python3-crypto',
-                'oracle-linux' : 'python3-crypto',
-                'opensuse'     : 'python3-pycrypto',
-            }
-        },
     }
 else:
     mod_need = {
-        'jinja2': {
-            'packages': {
-                'amazon-linux' : 'python-jinja2',
-                'redhat'       : 'python-jinja2',
-                'oracle-linux' : 'python-jinja2',
-                'opensuse'     : 'python-Jinja2',
-            }
-        },
-        'Crypto': {
-            'packages': {
-                'amazon-linux' : 'python-crypto',
-                'redhat'       : 'python-crypto',
-                'oracle-linux' : 'python-crypto',
-                'opensuse'     : 'python-pycrypto',
-            }
-        },
+    
     }
 
 # Some distro have another name for python-setuptools, so list here only exceptions
 setuptools_package_exceptions = {
-    'amazon-linux' : 'python27-setuptools',
 }
 
 # Some distro have specific dependencies
@@ -453,7 +421,7 @@ is_managed_system = systepacketmgr.is_managed_system()
 system_distro, system_distroversion, _ = systepacketmgr.get_distro()
 
 # In this list of distro, the dependecies are installed with the internal system compliant
-compliant_system_distros = ['debian', 'centos', 'alpine', 'fedora', 'ubuntu', 'amazon-linux2']
+compliant_system_distros = ['debian', 'centos', 'alpine', 'fedora', 'ubuntu', 'amazon-linux2', 'amazon-linux', 'opensuse', 'oracle-linux']
 
 is_compliant_system_distro = system_distro in compliant_system_distros
 

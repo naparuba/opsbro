@@ -95,6 +95,22 @@ compliance:
                   - bash-completion
          
          
+         -  name      : is_oracle_linux
+            if        : "{{variables.is_oracle_linux}}"
+            parameters:
+               packages:
+                  - libgomp   # monotonic clock
+                  - rpm-python
+                  - python-jinja2
+                  - python2-cryptography
+                  - python-setuptools
+                  #- python2-leveldb   # currently disabled before we change tests to give leveldb by default every where
+                  #- python2-simplejson
+                  #- python-setproctitle
+                  #- python2-psutil
+                  # Bash completion to enable the CLI completion
+                  - bash-completion
+         
          #         - name: redhat6
          #           if:   "{{variables.is_redhat}} and {{collector.system.os.linux.major_version}} == 6"
          #           parameters:
@@ -232,41 +248,47 @@ compliance:
                   - py3-setproctitle
                   # Bash completion to enable the CLI completion
                   - bash-completion
-         
-         
-         #         # Open suse 15 have specific packages names
-         #         - name: opensuse_15
-         #           if: "{{variables.is_opensuse}} and {{collector.system.os.linux.major_version}} == 15"
-         #           parameters:
-         #             packages:
-         #                - python2-leveldb
-         #                - python2-simplejson
-         #                # Bash completion to enable the CLI completion
-         #                - bash-completion
-         
-         
-         #        # Older open source (42.x)
-         #         - name: opensuse
-         #           if: "{{variables.is_opensuse}}"
-         #           parameters:
-         #             packages:
-         #                - python-leveldb
-         #                - python-simplejson
-         #                # Bash completion to enable the CLI completion
-         #                - bash-completion
-         
-         #         - name: amazon_linux
-         #           if: "{{variables.is_amazon_linux}}"
-         #           parameters:
-         #             packages:
-         #                - gcc
-         #                - gcc-c++
-         #                - python27-devel
-         #                - python27-pip
-         #                - python27-simplejson
-         #                # No Bash completion for amazon linux
-         #           post_commands:
-         #              - pip install leveldb
+   
+   
+         # Open suse 15 have specific packages names
+         -  name      : opensuse_15
+            if        : "{{variables.is_opensuse}} and {{collector.system.os.linux.major_version}} == 15"
+            parameters:
+               packages:
+                  - python2-rpm
+                  - python2-Jinja2
+                  - python2-pycrypto
+                  - python2-simplejson
+                  - python-setuptools
+                  # Bash completion to enable the CLI completion
+                  - bash-completion
+   
+   
+         # Older open source (42.x)
+         -  name      : opensuse
+            if        : "{{variables.is_opensuse}}"
+            parameters:
+               packages:
+                  - rpm-python
+                  - python-Jinja2
+                  - python-pycrypto
+                  - python-simplejson
+                  - python-setuptools
+                  # Bash completion to enable the CLI completion
+                  - bash-completion
+
+
+         -  name      : amazon_linux
+            if        : "{{variables.is_amazon_linux}}"
+            parameters:
+               packages:
+                  - python27-setuptools
+                  - python-jinja2
+                  - python-crypto
+                  - python27-simplejson
+                  # No Bash completion for amazon linux
+            #post_commands:
+            #   - pip install leveldb
          
          
          -  name      : amazon_linux2
