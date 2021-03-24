@@ -1,118 +1,122 @@
 language: python
 
 # NOTE: 2.6 & python 3 versions will be add to the build matrix explictly only for the interesting cases
-python:
-  - "2.7"
+python  :
+   - "2.7"
 
 
 # We need docker for our scripts that test various installations
 services:
-  - docker
+   - docker
 
 
-env:
-##### First basic tests
-- TEST_SUITE=API
-- TEST_SUITE=PYTHON
-- TEST_SUITE=OTHER
-##### Then features (both python2 & 3)
-- TEST_SUITE=FEATURE
-- TEST_SUITE=FEATURE  TEST_PYTHON_VERSION=PYTHON3
-- TEST_SUITE=MONITORING
-##### Compliance rules
-- TEST_SUITE=COMPLIANCE-FILE-RIGHTS
-- TEST_SUITE=COMPLIANCE-GET-URL
-- TEST_SUITE=COMPLIANCE-PACKAGE-INSTALL
-- TEST_SUITE=COMPLIANCE-REPOSITORY
-- TEST_SUITE=COMPLIANCE-SYSTEM-USER
-- TEST_SUITE=MODULE
-- TEST_SUITE=PACK
-##### Then complexe scenarios
-# Some tests are with 2 docker that must run together. I hope it will be maintainable
-- TEST_SUITE=COMPOSE-GOSSIP-UDP-DETECT
-- TEST_SUITE=COMPOSE-GOSSIP-UDP-DETECT-PYTHON3
-# check that with different udp key, then cannot join (no clear message failback)
-- TEST_SUITE=COMPOSE-GOSSIP-UDP-DETECT-BAD-KEY
-- TEST_SUITE=COMPOSE-GOSSIP-UDP-DETECT-BAD-KEY-PYTHON3
-# This one is with 4 containers, in 2 zones, one is sub level of another
-- TEST_SUITE=COMPOSE-GOSSIP-ZONES
-- TEST_SUITE=COMPOSE-GOSSIP-ZONES-PYTHON3
-# This one is with 4 containers, in 3 zones, one is sub level of another
-- TEST_SUITE=COMPOSE-GOSSIP-ZONES-MULTI
-- TEST_SUITE=COMPOSE-GOSSIP-ZONES-MULTI-PYTHON3
-# The same, but with multi level encryption
-- TEST_SUITE=COMPOSE-GOSSIP-ZONES-MULTI-ENCRYPTED
-- TEST_SUITE=COMPOSE-GOSSIP-ZONES-MULTI-ENCRYPTED-PYTHON3
-# This one is with 2 containers, a node with events, joining another, and sync its events
-- TEST_SUITE=COMPOSE-GOSSIP-JOIN-SYNC-EVENTS
-- TEST_SUITE=COMPOSE-GOSSIP-JOIN-SYNC-EVENTS-PYTHON3
-# This is a full DEMO with 4 containers, for a distributed HTTP with
-# 2 real servers
-# 1 haproxy (generators to the 2 http)
-# 1 customer, with DNS module
-- TEST_SUITE=COMPOSE-DEMO-HTTP
-- TEST_SUITE=COMPOSE-DEMO-HTTP-PYTHON3
-# This one is with 3 containers, trying to join together
-- TEST_SUITE=COMPOSE-GOSSIP-JOIN
-- TEST_SUITE=COMPOSE-GOSSIP-JOIN-PYTHON3
-# This one block communication between 1 & 3, and 2 will be the ping relay between both
-- TEST_SUITE=COMPOSE-GOSSIP-INDIRECT-PING
-- TEST_SUITE=COMPOSE-GOSSIP-INDIRECT-PING-PYTHON3
-# This one is with 2 nodes: one collector, and the other a data agregator that save data send by the first to sqlite
-- TEST_SUITE=COMPOSE-MODULE-AGREGATOR
-- TEST_SUITE=COMPOSE-MODULE-AGREGATOR-PYTHON3
-# This test is a 3 node RAFT test, just to see if we have a leader after a huge time
-- TEST_SUITE=COMPOSE-RAFT-INIT
-- TEST_SUITE=COMPOSE-RAFT-INIT-PYTHON3
-# This test suite is 3 members that one node run executor to the 2 others (encrypted)
-- TEST_SUITE=COMPOSE-EXECUTOR
-- TEST_SUITE=COMPOSE-EXECUTOR-PYTHON3
-# Test about auto discovery with a init.d script (easy setup).
-- TEST_SUITE=COMPOSE-GOSSIP-UDP-DETECT-AT-BOOT
-- TEST_SUITE=COMPOSE-GOSSIP-UDP-DETECT-AT-BOOT-PYTHON3
-# Test about differences between zones for public/private addr (same zone = private, other=public)
-- TEST_SUITE=COMPOSE-GOSSIP-PUBLIC-PRIVATE-ADDR
-- TEST_SUITE=COMPOSE-GOSSIP-PUBLIC-PRIVATE-ADDR-PYTHON3
-##### Then installation on various distros
-- TEST_SUITE=ALPINE
-- TEST_SUITE=AMAZONLINUX
-- TEST_SUITE=CENTOS-6
-- TEST_SUITE=CENTOS-7
-- TEST_SUITE=CENTOS-8
-- TEST_SUITE=DEBIAN
-- TEST_SUITE=FEDORA
-- TEST_SUITE=OPENSUSE
-- TEST_SUITE=UBUNTU
-- TEST_SUITE=ORACLELINUX
+env     :
+   ##### First basic tests
+   - TEST_SUITE=API
+   - TEST_SUITE=PYTHON
+   - TEST_SUITE=OTHER
+   ##### Then features (both python2 & 3)
+   - TEST_SUITE=FEATURE
+   - TEST_SUITE=FEATURE  TEST_PYTHON_VERSION=PYTHON3
+   - TEST_SUITE=MONITORING
+   ##### Compliance rules
+   - TEST_SUITE=COMPLIANCE-FILE-RIGHTS
+   - TEST_SUITE=COMPLIANCE-GET-URL
+   - TEST_SUITE=COMPLIANCE-PACKAGE-INSTALL
+   - TEST_SUITE=COMPLIANCE-REPOSITORY
+   - TEST_SUITE=COMPLIANCE-SYSTEM-USER
+   - TEST_SUITE=MODULE
+   - TEST_SUITE=PACK
+   ##### Then complexe scenarios
+   # Some tests are with 2 docker that must run together. I hope it will be maintainable
+   - TEST_SUITE=COMPOSE-GOSSIP-UDP-DETECT
+   - TEST_SUITE=COMPOSE-GOSSIP-UDP-DETECT-PYTHON3
+   # check that with different udp key, then cannot join (no clear message failback)
+   - TEST_SUITE=COMPOSE-GOSSIP-UDP-DETECT-BAD-KEY
+   - TEST_SUITE=COMPOSE-GOSSIP-UDP-DETECT-BAD-KEY-PYTHON3
+   # This one is with 4 containers, in 2 zones, one is sub level of another
+   - TEST_SUITE=COMPOSE-GOSSIP-ZONES
+   - TEST_SUITE=COMPOSE-GOSSIP-ZONES-PYTHON3
+   # This one is with 4 containers, in 3 zones, one is sub level of another
+   - TEST_SUITE=COMPOSE-GOSSIP-ZONES-MULTI
+   - TEST_SUITE=COMPOSE-GOSSIP-ZONES-MULTI-PYTHON3
+   # The same, but with multi level encryption
+   - TEST_SUITE=COMPOSE-GOSSIP-ZONES-MULTI-ENCRYPTED
+   - TEST_SUITE=COMPOSE-GOSSIP-ZONES-MULTI-ENCRYPTED-PYTHON3
+   # This one is with 2 containers, a node with events, joining another, and sync its events
+   - TEST_SUITE=COMPOSE-GOSSIP-JOIN-SYNC-EVENTS
+   - TEST_SUITE=COMPOSE-GOSSIP-JOIN-SYNC-EVENTS-PYTHON3
+   # This is a full DEMO with 4 containers, for a distributed HTTP with
+   # 2 real servers
+   # 1 haproxy (generators to the 2 http)
+   # 1 customer, with DNS module
+   - TEST_SUITE=COMPOSE-DEMO-HTTP
+   - TEST_SUITE=COMPOSE-DEMO-HTTP-PYTHON3
+   # This one is with 3 containers, trying to join together
+   - TEST_SUITE=COMPOSE-GOSSIP-JOIN
+   - TEST_SUITE=COMPOSE-GOSSIP-JOIN-PYTHON3
+   # This one block communication between 1 & 3, and 2 will be the ping relay between both
+   - TEST_SUITE=COMPOSE-GOSSIP-INDIRECT-PING
+   - TEST_SUITE=COMPOSE-GOSSIP-INDIRECT-PING-PYTHON3
+   # This one is with 2 nodes: one collector, and the other a data agregator that save data send by the first to sqlite
+   - TEST_SUITE=COMPOSE-MODULE-AGREGATOR
+   - TEST_SUITE=COMPOSE-MODULE-AGREGATOR-PYTHON3
+   # This test is a 3 node RAFT test, just to see if we have a leader after a huge time
+   - TEST_SUITE=COMPOSE-RAFT-INIT
+   - TEST_SUITE=COMPOSE-RAFT-INIT-PYTHON3
+   # This test suite is 3 members that one node run executor to the 2 others (encrypted)
+   - TEST_SUITE=COMPOSE-EXECUTOR
+   - TEST_SUITE=COMPOSE-EXECUTOR-PYTHON3
+   # Test about auto discovery with a init.d script (easy setup).
+   - TEST_SUITE=COMPOSE-GOSSIP-UDP-DETECT-AT-BOOT
+   - TEST_SUITE=COMPOSE-GOSSIP-UDP-DETECT-AT-BOOT-PYTHON3
+   # Test about differences between zones for public/private addr (same zone = private, other=public)
+   - TEST_SUITE=COMPOSE-GOSSIP-PUBLIC-PRIVATE-ADDR
+   - TEST_SUITE=COMPOSE-GOSSIP-PUBLIC-PRIVATE-ADDR-PYTHON3
+   ##### Then installation on various distros
+   - TEST_SUITE=ALPINE
+   - TEST_SUITE=AMAZONLINUX
+   - TEST_SUITE=CENTOS-6
+   - TEST_SUITE=CENTOS-7
+   - TEST_SUITE=CENTOS-8
+   - TEST_SUITE=DEBIAN
+   - TEST_SUITE=FEDORA
+   - TEST_SUITE=OPENSUSE
+   - TEST_SUITE=UBUNTU
+   - TEST_SUITE=ORACLELINUX
 
 
 # becool with travis load : we do not want that all test that don't care about python
 # run twice, even for just spawn a VM, si manage the python 2.6 / PYTHON case explicitly
-matrix:
-  include:
-    - python: "2.6"
-      env:     TEST_SUITE=PYTHON
-      dist:    trusty          # required for python 2.6
-    # NOTE: no 3.3 as it's just too old and not use
-    - python: "3.4"
-      env:     TEST_SUITE=PYTHON
-    - python: "3.5"
-      env:     TEST_SUITE=PYTHON
-    - python: "3.6"
-      env:     TEST_SUITE=PYTHON
-    - python: "3.7"
-      dist:   xenial          # required for Python >= 3.7
-      env:     TEST_SUITE=PYTHON
-    - python: "3.8"
-      dist:   xenial          # required for Python >= 3.7
-      env:     TEST_SUITE=PYTHON
-    - python: "3.9"
-      dist:   xenial          # required for Python >= 3.7
-      env:     TEST_SUITE=PYTHON
+matrix  :
+   include:
+      -  python: "2.6"
+         env   : TEST_SUITE=PYTHON
+         dist  : trusty          # required for python 2.6
+      # NOTE: no 3.3 as it's just too old and not use
+      -  python: "3.4"
+         env   : TEST_SUITE=PYTHON
+      -  python: "3.5"
+         env   : TEST_SUITE=PYTHON
+      -  python: "3.6"
+         env   : TEST_SUITE=PYTHON
+      -  python: "3.7"
+         dist  : xenial          # required for Python >= 3.7
+         env   : TEST_SUITE=PYTHON
+      -  python: "3.8"
+         dist  : xenial          # required for Python >= 3.7
+         env   : TEST_SUITE=PYTHON
+      -  python: "3.9"
+         dist  : xenial          # required for Python >= 3.7
+         env   : TEST_SUITE=PYTHON
+      -  python: "3.9"
+         os    : windows
+         env   : TEST_SUITE=PYTHON
+
 
 # command to run tests
-script:
-  - chmod a+x test/*
-  - chmod a+x test/docker-helper/*
-  - cd test
-  - ./test_suite.sh
+script  :
+   - chmod a+x test/*
+   - chmod a+x test/docker-helper/*
+   - cd test
+   - ./test_suite.sh
