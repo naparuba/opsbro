@@ -54,10 +54,10 @@ compliance:
                   - rpm-python
                   - python-jinja2
                   - python-crypto
-                  #- python2-leveldb   # currently disabled before we change tests to give leveldb by default every where
-                  #- python2-simplejson
-                  #- python-setproctitle
-                  #- python2-psutil
+                  - python2-leveldb   # currently disabled before we change tests to give leveldb by default every where
+                  - python2-simplejson
+                  - python-setproctitle
+                  - python2-psutil
                   # Bash completion to enable the CLI completion
                   - bash-completion
          
@@ -71,10 +71,10 @@ compliance:
                   - python36-rpm
                   - python36-jinja2
                   - python36-cryptography
-                  #- python2-leveldb   # currently disabled before we change tests to give leveldb by default every where
-                  #- python2-simplejson
-                  #- python-setproctitle
-                  #- python2-psutil
+                  - python2-leveldb   # currently disabled before we change tests to give leveldb by default every where
+                  - python2-simplejson
+                  - python-setproctitle
+                  - python2-psutil
                   # Bash completion to enable the CLI completion
                   - bash-completion
          
@@ -87,10 +87,10 @@ compliance:
                   - python3-rpm
                   - python3-jinja2
                   - python3-cryptography
-                  #- python2-leveldb   # currently disabled before we change tests to give leveldb by default every where
-                  #- python2-simplejson
-                  #- python-setproctitle
-                  #- python2-psutil
+                  - python3-leveldb   # currently disabled before we change tests to give leveldb by default every where
+                  - python3-simplejson
+                  - python3-setproctitle
+                  - python3-psutil
                   # Bash completion to enable the CLI completion
                   - bash-completion
          
@@ -101,15 +101,16 @@ compliance:
                packages:
                   - libgomp   # monotonic clock
                   - rpm-python
-                  - python-jinja2
-                  - python2-cryptography
-                  - python-setuptools
-                  #- python2-leveldb   # currently disabled before we change tests to give leveldb by default every where
-                  #- python2-simplejson
-                  #- python-setproctitle
-                  #- python2-psutil
+                  - python3-jinja2
+                  - python3-cryptography
+                  - python3-setuptools
+                  - gcc
+                  - gcc-c++
+                  - python3-devel
                   # Bash completion to enable the CLI completion
                   - bash-completion
+            post_commands:
+               - pip3 install leveldb simplejson setproctitle psutil
          
          #         - name: redhat6
          #           if:   "{{variables.is_redhat}} and {{collector.system.os.linux.major_version}} == 6"
@@ -138,7 +139,10 @@ compliance:
                   - python-jinja2
                   - python-crypto
                   - python-setuptools
-         
+                  - python-leveldb
+                  - python-simplejson
+                  - python-setproctitle
+                  - python-psutil
          
          -  name      : debian_python3
             if        : "{{variables.is_debian}} and system_is_python_3()"
@@ -147,7 +151,12 @@ compliance:
                   - python3-jinja2
                   - python3-crypto
                   - python3-setuptools
-         
+                  - python3-leveldb
+                  - python3-simplejson
+                  - python3-setproctitle
+                  - python3-psutil
+                  # Bash completion to enable the CLI completion
+                  - bash-completion
          
          
          -  name      : ubuntu_python2
@@ -160,6 +169,7 @@ compliance:
                   - python-simplejson
                   - python-setproctitle
                   - python-psutil
+                  - python-leveldb
                   # Bash completion to enable the CLI completion
                   - bash-completion
          
@@ -173,6 +183,7 @@ compliance:
                   - python3-simplejson
                   - python3-setproctitle
                   - python3-psutil
+                  - libleveldb1d   # no python3-leveldb, only python3-plyvel
                   # Bash completion to enable the CLI completion
                   - bash-completion
          
@@ -204,7 +215,8 @@ compliance:
                   - python3-simplejson
                   # Bash completion to enable the CLI completion
                   - bash-completion
-         
+                  - python3-leveldb
+                  - python3-setproctitle
          
          
          

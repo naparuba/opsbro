@@ -422,8 +422,7 @@ if allow_black_magic:
         cprint('%s (version %s.%s.%s)' % (python_exe_path, sys.version_info[0], sys.version_info[1], sys.version_info[2]), color='magenta', end='')
         cprint(' on ', end='')
         cprint('%s (version %s) ' % (system_distro, system_distroversion), color='magenta', end='')
-
-
+        
         cprint(u'is managed by this installer: ', end='')
         cprint(CHARACTERS.check, color='green')
         cprint('   - it will be able to use system package manager to install dependencies.', color='grey')
@@ -591,7 +590,6 @@ try:
             'Topic :: System :: Networking :: Monitoring',
             'Topic :: System :: Distributed Computing',
         ],
-        # install_requires=[install_from_pip],
         
         # Maybe some system need specific packages address on pypi, like add httpS on debian 6 :'(
         dependency_links=additionnal_pypi_repos,
