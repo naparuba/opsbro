@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo "##################### Launching TEST $TEST_SUITE"
+echo "##################### Launching TEST $TEST_SUITE on $TRAVIS_OS_NAME"
 
 # Always be sure we are loggued in docker
 if [ ! -f /root/.docker/config.json ]; then

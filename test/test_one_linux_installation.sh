@@ -120,34 +120,30 @@ fi
 
 echo "PACKAGE: the runtime package detection is working well"
 
-#TODO: fis the networktraffic so it pop out directly at first loop
-# printf "\n\n"
-#echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  STANDARD LINUX PACK:  networktraffic counters      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
-#NETWORKSTATS=$(opsbro collectors show networktraffic)
+print_header "LINUX PACK:  networktraffic counters"
+NETWORKSTATS=$(opsbro collectors show networktraffic)
 
-#printf "%s" "$NETWORKSTATS" | grep 'recv_bytes/s' > /dev/null
-#if [ $? != 0 ]; then
-#   echo "ERROR: the networkstats collector do not seems to be working"
-#   printf "$NETWORKSTATS"
-#   exit 2
-#fi
+printf "%s" "$NETWORKSTATS" | grep 'recv_bytes/s' >/dev/null
+if [ $? != 0 ]; then
+   echo "ERROR: the networkstats collector do not seems to be working"
+   printf "$NETWORKSTATS"
+   cat /var/log/opsbro/collectors*
+   exit 2
+fi
+echo "Pack: networkstats counters are OK"
 
-#echo "Pack: networkstats counters are OK"
-
-#TODO: openports need netstats
-#printf "\n\n"
-#echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  STANDARD LINUX PACK:  openports counters      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
-#OPENPORTS=$(opsbro collectors show openports)
+print_header "STANDARD LINUX PACK:  openports"
+OPENPORTS=$(opsbro collectors show openports)
 
 # The 6768 is the default agent one, so should be open
-#printf "%s" "$OPENPORTS" | grep '6768' > /dev/null
-#if [ $? != 0 ]; then
-#   echo "ERROR: the OPENPORTS collector do not seems to be working"
-#   printf "$OPENPORTS"
-#   exit 2
-#fi
-
-#echo "Pack: openports counters are OK"
+printf "%s" "$OPENPORTS" | grep '6768' >/dev/null
+if [ $? != 0 ]; then
+   echo "ERROR: the OPENPORTS collector do not seems to be working"
+   printf "$OPENPORTS"
+   cat /var/log/opsbro/collectors*
+   exit 2
+fi
+echo "Pack: openports counters are OK"
 
 print_header "KV Store (sqlite/leveldb)"
 
@@ -268,5 +264,15 @@ fi # end of LEVELDB
 
 printf "\n\n"
 printf "\n\n"
+
+##########   Show internal threads
+print_header "Internal threads comsumption"
+
+opsbro agent internal show-threads
+if [ $? != 0 ]; then
+   echo "ERROR: agent internal show-threads did fail."
+   cat /var/log/opsbro/crash.log 2>/dev/null
+   exit 2
+fi
 
 exit_if_no_crash "**** One linux installation is OK *****"

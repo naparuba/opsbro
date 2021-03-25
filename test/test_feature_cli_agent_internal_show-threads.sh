@@ -7,20 +7,6 @@ MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # We will try to add a group to the agent configuration, all in hot mode
 /etc/init.d/opsbro start
 
-# Should not have the psutil lib
-opsbro agent internal show-threads
-if [ $? == 0 ]; then
-    echo "ERROR: the agent internal show-threads did not fail when it should have."
-    cat /var/log/opsbro/crash.log 2>/dev/null
-    exit 2
-fi
-
-opsbro compliance launch "Install tuning libs" --timeout 120
-if [ $? != 0 ]; then
-    echo "ERROR: did fail to install tuning libs"
-    cat /var/log/opsbro/crash.log 2>/dev/null
-    exit 2
-fi
 
 opsbro agent internal show-threads
 if [ $? != 0 ]; then
