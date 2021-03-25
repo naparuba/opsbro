@@ -14,9 +14,9 @@ except ImportError:  # Python 3
     from urllib.request import AbstractHTTPHandler, Request, build_opener, HTTPHandler
     from urllib.error import URLError
 try:  # Python 2
-    from httplib import HTTPConnection
+    from httplib import HTTPConnection, BadStatusLine
 except ImportError:  # Python 3
-    from http.client import HTTPConnection
+    from http.client import HTTPConnection, BadStatusLine
 
 try:
     from urllib import urlencode
@@ -133,7 +133,7 @@ def get_not_critical_request_errors():
 
 
 def get_request_errors():
-    request_errors = (URLError, socket.timeout, socket.error)
+    request_errors = (URLError, socket.timeout, socket.error, BadStatusLine)
     return request_errors
 
 
