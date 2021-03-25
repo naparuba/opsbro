@@ -2,6 +2,7 @@
 
 echo "##################### Launching TEST $TEST_SUITE on $TRAVIS_OS_NAME"
 
+
 # Always be sure we are loggued in docker
 if [ ! -f /root/.docker/config.json ]; then
    echo "Login to docker with credentials naparuba"
