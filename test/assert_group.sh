@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 
 # Load common shell functions
-MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . $MYDIR/common_shell_functions.sh
-
 
 GROUP=$1
 
@@ -35,4 +34,3 @@ if [ $RES != "True" ]; then
 fi
 
 echo "GROUP: $GROUP is OK"
-

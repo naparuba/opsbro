@@ -123,7 +123,7 @@ echo "PACKAGE: the runtime package detection is working well"
 print_header "LINUX PACK:  networktraffic counters"
 NETWORKSTATS=$(opsbro collectors show networktraffic)
 
-printf "%s" "$NETWORKSTATS" | grep 'recv_bytes/s' >/dev/null
+printf "%s" "$NETWORKSTATS" | grep 'recv_bytes/s'
 if [ $? != 0 ]; then
    echo "ERROR: the networkstats collector do not seems to be working"
    printf "$NETWORKSTATS"
@@ -136,7 +136,7 @@ print_header "STANDARD LINUX PACK:  openports"
 OPENPORTS=$(opsbro collectors show openports)
 
 # The 6768 is the default agent one, so should be open
-printf "%s" "$OPENPORTS" | grep '6768' >/dev/null
+printf "%s" "$OPENPORTS" | grep '6768'
 if [ $? != 0 ]; then
    echo "ERROR: the OPENPORTS collector do not seems to be working"
    printf "$OPENPORTS"
@@ -272,6 +272,7 @@ opsbro agent internal show-threads
 if [ $? != 0 ]; then
    echo "ERROR: agent internal show-threads did fail."
    cat /var/log/opsbro/crash.log 2>/dev/null
+   cat /var/log/opsbro/daemon.log
    exit 2
 fi
 

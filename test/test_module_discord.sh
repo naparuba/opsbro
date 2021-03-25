@@ -1,29 +1,25 @@
 #!/usr/bin/env bash
 
 # Load common shell functions
-MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . $MYDIR/common_shell_functions.sh
 
-
-
 print_header "Starting to test Discord module"
-
 
 # Set a valid display name for debug
 opsbro agent parameters set display_name "node-discord"
 
-opsbro  packs overload global.discord
+opsbro packs overload global.discord
 
-
-if [ "X$DISCORD_TOKEN" == "X" ] || [ "X$DISCORD_CHANNEL" == "X" ];then
-    do_bad_exit_and_logs "ERROR: DISCORD_TOKEN or DISCORD_CHANNEL env variable for this test"
+if [ "X$DISCORD_TOKEN" == "X" ] || [ "X$DISCORD_CHANNEL" == "X" ]; then
+   do_bad_exit_and_logs "ERROR: DISCORD_TOKEN or DISCORD_CHANNEL env variable for this test"
 fi
 
 echo "Using channel : $DISCORD_CHANNEL"
 
 # Change module parameters for Grafana
-opsbro  packs parameters set local.discord.token "$DISCORD_TOKEN"
-opsbro  packs parameters set local.discord.channel_id "$DISCORD_CHANNEL"
+opsbro packs parameters set local.discord.token "$DISCORD_TOKEN"
+opsbro packs parameters set local.discord.channel_id "$DISCORD_CHANNEL"
 
 # Enable Discord module
 opsbro agent parameters add groups discord
@@ -32,10 +28,9 @@ opsbro agent parameters add groups discord
 /etc/init.d/opsbro --debug start
 assert_no_crash
 
-
 print_header "Wait for discord prereqs"
 opsbro compliance wait-compliant "Install python3-aiohttp if discord module enabled" --timeout=60
-if [ $? != 0 ];then
+if [ $? != 0 ]; then
    echo ""
    opsbro compliance state
    opsbro compliance history
@@ -50,7 +45,6 @@ assert_no_crash
 
 print_header "Checking module is working"
 opsbro agent info
-
 
 ls -thor /var/log/opsbro/
 

@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 
 # Load common shell functions
-MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . $MYDIR/common_shell_functions.sh
-
 
 print_header "Starting to test Compliance"
 chmod 777 /etc/passwd
@@ -17,23 +16,22 @@ sleep 2
 
 OUT=$(ls -la /etc/passwd)
 
-
 echo "$OUT" | grep -- "-rw-r--r--"
 if [ $? != 0 ]; then
-    echo "ERROR: rights are not valid, compliance enforcing is failing."
-    echo "$OUT"
-    opsbro compliance history
-    opsbro compliance state
-    exit 2
+   echo "ERROR: rights are not valid, compliance enforcing is failing."
+   echo "$OUT"
+   opsbro compliance history
+   opsbro compliance state
+   exit 2
 fi
 
 echo "$OUT" | grep -- "root root"
 if [ $? != 0 ]; then
-    echo "ERROR: rights are not valid, compliance enforcing is failing."
-    echo "$OUT"
-    opsbro compliance history
-    opsbro compliance state
-    exit 2
+   echo "ERROR: rights are not valid, compliance enforcing is failing."
+   echo "$OUT"
+   opsbro compliance history
+   opsbro compliance state
+   exit 2
 fi
 
 export HISTORY=$(opsbro compliance history)
@@ -59,14 +57,12 @@ check_history_entry "The file /etc/passwd owner (root) is OK"
 check_history_entry "The file /etc/passwd group (root) is OK"
 check_history_entry "The file /etc/passwd permissions (644) are OK"
 
-
 # Also check that the post commands did success
 grep success /tmp/success
-if [ $? != 0 ];then
+if [ $? != 0 ]; then
    echo "ERROR: cannot find the success string on the /tmp/success file"
    echo "the post commands call did fail"
 fi
-
 
 echo "HISTORY"
 echo "$HISTORY"

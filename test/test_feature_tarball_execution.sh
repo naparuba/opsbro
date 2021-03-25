@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
 
 # Load common shell functions
-MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . $MYDIR/common_shell_functions.sh
-
-
 
 echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Starting       ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
 # Try to start daemon, but we don't want systemd hook there
@@ -25,7 +23,6 @@ fi
 
 echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Info           ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
 
-
 echo "Checking agent info"
 python bin/opsbro agent info
 if [ $? != 0 ]; then
@@ -33,7 +30,6 @@ if [ $? != 0 ]; then
    cat log/opsbro/daemon.log
    exit 2
 fi
-
 
 echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Address?       ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
 
@@ -46,7 +42,6 @@ if [ "$ADDR" == "None" ]; then
    exit 2
 fi
 
-
 echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Linux GROUP      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
 
 echo "Checking linux group"
@@ -56,7 +51,6 @@ if [ $RES != "True" ]; then
    echo "ERROR: the group linux is missing!"
    exit 2
 fi
-
 
 echo "************** ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪   Docker-container GROUP      ♪┏(°.°)┛┗(°.°)┓┗(°.°)┛┏(°.°)┓ ♪  *************************"
 # Check if docker-container group is set

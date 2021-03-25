@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Load common shell functions
-MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . $MYDIR/common_shell_functions.sh
 
 test/set_network_simulated_type "WAN"
@@ -17,31 +17,22 @@ show_my_system_ip
 # We only want to test gossip here
 set_to_minimal_gossip_core
 
-
 # Set a valid display name for debug
 opsbro agent parameters set display_name "$CASE"
-
 
 assert_can_ping node1
 assert_can_ping node2
 assert_can_ping node3
 
-
-
-
 /etc/init.d/opsbro start
-
 
 ############# Let the two nodes joins
 launch_discovery_auto_join
-
-
 
 #########  Are the two nodes connected?
 wait_member_display_name_with_timeout "NODE1" 60
 wait_member_display_name_with_timeout "NODE2" 60
 wait_member_display_name_with_timeout "NODE3" 60
-
 
 opsbro gossip events add "BEFORE-TEST-$CASE"
 wait_event_with_timeout "BEFORE-TEST-NODE1" 60
@@ -73,12 +64,12 @@ cat /var/log/opsbro/gossip.log
 
 # As node2 is the relay, we should finish this last one in last
 if [ $CASE == "NODE1" ] || [ $CASE == "NODE3" ]; then
-  opsbro gossip events add "END-$CASE"
+   opsbro gossip events add "END-$CASE"
 fi
 wait_event_with_timeout "END-NODE1" 60
 wait_event_with_timeout "END-NODE3" 60
 
-if [ $CASE == "NODE2" ];then
+if [ $CASE == "NODE2" ]; then
    opsbro gossip events add "END-$CASE"
 fi
 wait_event_with_timeout "END-NODE2" 60

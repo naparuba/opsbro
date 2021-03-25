@@ -120,8 +120,8 @@ class TestRaft(OpsBroTest):
     
     def get_number_of_election_turns(self):
         return len(self.stats['election_turn'])
-
-
+    
+    
     def launch(self):
         for (node_uuid, manager) in ALL_NODES.items():
             t = threading.Thread(None, target=manager.do_raft_thread, name='node-%d' % node_uuid)

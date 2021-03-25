@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Load common shell functions
-MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . $MYDIR/common_shell_functions.sh
 
 test/set_network_simulated_type "WAN"
@@ -19,43 +19,38 @@ opsbro agent parameters set display_name "node-$NODE_NB"
 # Wait for other dockers to be spawned
 sleep 10
 
-
 show_my_system_ip
 
 # Thanks docker compose for DNS resolution
 # Node 1 ip=2
 if [ "$NODE_NB" == "1" ]; then
-  opsbro gossip join node2
-  opsbro gossip join node3
+   opsbro gossip join node2
+   opsbro gossip join node3
 fi
 
 # Node 2 ip=3
 if [ "$NODE_NB" == "2" ]; then
-  opsbro gossip join node1
-  opsbro gossip join node3
+   opsbro gossip join node1
+   opsbro gossip join node3
 fi
-
 
 # Node 3 ip=4
 if [ "$NODE_NB" == "3" ]; then
-  opsbro gossip join node1
-  opsbro gossip join node2
+   opsbro gossip join node1
+   opsbro gossip join node2
 fi
 
 sleep 20
 print_header "Waiting done, everyone should be there"
 
-
 wait_member_display_name_with_timeout "node-1" 10
 wait_member_display_name_with_timeout "node-2" 10
 wait_member_display_name_with_timeout "node-3" 10
-
 
 opsbro gossip events add "NODE$NODE_NB-SYNC"
 wait_event_with_timeout 'NODE1-SYNC' 20
 wait_event_with_timeout 'NODE2-SYNC' 20
 wait_event_with_timeout 'NODE3-SYNC' 20
-
 
 # NODE1: fast exit
 # NODE2: ask leave
@@ -65,7 +60,6 @@ if [ "$NODE_NB" == "1" ]; then
    /etc/init.d/opsbro stop
    exit_if_no_crash "NODE1 is exiting and nothing more to check for it, it will be dead"
 fi
-
 
 if [ "$NODE_NB" == "2" ]; then
    opsbro gossip events add 'NODE2-LEAVING'
@@ -83,7 +77,6 @@ if [ "$NODE_NB" == "2" ]; then
    opsbro gossip history
    exit_if_no_crash "Node 2 exiting"
 fi
-
 
 if [ "$NODE_NB" == "3" ]; then
    # wait until the node2 is ready to leave

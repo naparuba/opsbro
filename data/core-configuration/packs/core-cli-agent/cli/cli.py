@@ -537,7 +537,7 @@ def do_show_threads():
             got_values = True
     
     if not got_values:
-        __print_note('You do not have the psutil lib installed. Please launch the command: opsbro compliance launch "Install tuning libs" --timeout 120')
+        cprint('You do not have the psutil lib installed. Please launch the command: opsbro compliance launch "Install tuning libs" --timeout 120', color='red')
         sys.exit(2)
     
     # Cut the threads into 2 lists: always here, and the others

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Load common shell functions
-MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . $MYDIR/common_shell_functions.sh
 
 CASE=$1
@@ -12,10 +12,8 @@ test/set_network_simulated_type "WAN"
 
 # If node2: wait and quite
 
-
 # We only want to test gossip here
 set_to_minimal_gossip_core
-
 
 # Set a valid display name for debug
 opsbro agent parameters set display_name "$CASE"
@@ -27,51 +25,51 @@ print_header "Start auto detect"
 launch_discovery_auto_join
 
 if [ $CASE == "NODE2" ]; then
-    print_header "Case node2, just waiting for the other node to join us then exit"
-    ip addr show
-    # Wait for 2 nodes
-    print_header "Wait for NODE1 in members"
-    opsbro gossip wait-members --display-name "NODE1" --timeout 60
-    if [ $? != 0 ]; then
-       echo "ERROR: NODE1 is not present after 60s"
-       cat /var/log/opsbro/daemon.log
-       cat /var/log/opsbro/gossip.log
-       cat /var/log/opsbro/crash.log 2>/dev/null
-       exit 2
-    fi
-    printf "Node2 gossip view\n"
-    opsbro gossip members
+   print_header "Case node2, just waiting for the other node to join us then exit"
+   ip addr show
+   # Wait for 2 nodes
+   print_header "Wait for NODE1 in members"
+   opsbro gossip wait-members --display-name "NODE1" --timeout 60
+   if [ $? != 0 ]; then
+      echo "ERROR: NODE1 is not present after 60s"
+      cat /var/log/opsbro/daemon.log
+      cat /var/log/opsbro/gossip.log
+      cat /var/log/opsbro/crash.log 2>/dev/null
+      exit 2
+   fi
+   printf "Node2 gossip view\n"
+   opsbro gossip members
 
-    # Let the history beeing written
-    sleep 5
+   # Let the history beeing written
+   sleep 5
 
-    print_header "Check history"
-    HISTORY=$(opsbro gossip history)
-    echo "$HISTORY" | grep NODE1
-    if [ $? != 0 ];then
-       echo "ERROR: no NODE1 entry in the gossip history"
-       echo "$HISTORY"
-       cat /var/log/opsbro/daemon.log
-       cat /var/log/opsbro/gossip.log
-       cat /var/log/opsbro/crash.log 2>/dev/null
-       exit 2
-    fi
+   print_header "Check history"
+   HISTORY=$(opsbro gossip history)
+   echo "$HISTORY" | grep NODE1
+   if [ $? != 0 ]; then
+      echo "ERROR: no NODE1 entry in the gossip history"
+      echo "$HISTORY"
+      cat /var/log/opsbro/daemon.log
+      cat /var/log/opsbro/gossip.log
+      cat /var/log/opsbro/crash.log 2>/dev/null
+      exit 2
+   fi
 
-    print_header "Send EVENT and wait for end"
-    # Warn the first node we are done
-    opsbro gossip events add 'NODE2-END'
-    # Be sure we are sending it to the other node
-    sleep 2
-    opsbro gossip events wait 'NODE1-END' --timeout=10
-    if [ $? != 0 ]; then
-       echo "ERROR: NODE1 did not end after after 60s"
-       cat /var/log/opsbro/daemon.log
-       cat /var/log/opsbro/gossip.log
-       cat /var/log/opsbro/crash.log 2>/dev/null
-       exit 2
-    fi
+   print_header "Send EVENT and wait for end"
+   # Warn the first node we are done
+   opsbro gossip events add 'NODE2-END'
+   # Be sure we are sending it to the other node
+   sleep 2
+   opsbro gossip events wait 'NODE1-END' --timeout=10
+   if [ $? != 0 ]; then
+      echo "ERROR: NODE1 did not end after after 60s"
+      cat /var/log/opsbro/daemon.log
+      cat /var/log/opsbro/gossip.log
+      cat /var/log/opsbro/crash.log 2>/dev/null
+      exit 2
+   fi
 
-    exit_if_no_crash "NODE2 is OK"
+   exit_if_no_crash "NODE2 is OK"
 fi
 
 print_header "Case 1: try to detect and join other node"
@@ -80,7 +78,6 @@ print_header "Case 1: try to detect and join other node"
 ip addr show
 
 opsbro gossip wait-members --display-name "NODE2" --timeout 60
-
 
 if [ $? != 0 ]; then
    echo "ERROR: cannot find NODE2"
@@ -97,7 +94,7 @@ sleep 5
 print_header "Check history"
 HISTORY=$(opsbro gossip history)
 echo "$HISTORY" | grep NODE2
-if [ $? != 0 ];then
+if [ $? != 0 ]; then
    echo "ERROR: no NODE2 entry in the gossip history"
    echo "$HISTORY"
    cat /var/log/opsbro/daemon.log
@@ -119,6 +116,5 @@ if [ $? != 0 ]; then
    cat /var/log/opsbro/crash.log 2>/dev/null
    exit 2
 fi
-
 
 exit_if_no_crash "Auto join is OK"

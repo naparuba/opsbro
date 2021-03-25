@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Load common shell functions
-MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . $MYDIR/common_shell_functions.sh
 
 test/set_network_simulated_type "WAN"
@@ -18,7 +18,6 @@ print_header "Set parameters"
 MY_NAME="node-$NODE_NB"
 opsbro agent parameters set display_name "$MY_NAME"
 
-
 # LAN > internet > customer-1
 
 # 1: lan and proxy
@@ -26,36 +25,34 @@ opsbro agent parameters set display_name "$MY_NAME"
 # 3: internet & proxy
 # 4: customer-1 & proxy
 if [ "$NODE_NB" == "1" ]; then
-    opsbro agent parameters set proxy-node true
-    opsbro agent parameters set zone  lan
-    /etc/init.d/opsbro start
-    opsbro detectors wait-group 'zone::lan'
+   opsbro agent parameters set proxy-node true
+   opsbro agent parameters set zone lan
+   /etc/init.d/opsbro start
+   opsbro detectors wait-group 'zone::lan'
 fi
 
 if [ "$NODE_NB" == "2" ]; then
-    opsbro agent parameters set proxy-node false
-    opsbro agent parameters set zone  lan
-    /etc/init.d/opsbro start
-    opsbro detectors wait-group 'zone::lan'
+   opsbro agent parameters set proxy-node false
+   opsbro agent parameters set zone lan
+   /etc/init.d/opsbro start
+   opsbro detectors wait-group 'zone::lan'
 fi
 
 if [ "$NODE_NB" == "3" ]; then
-    opsbro agent parameters set proxy-node true
-    opsbro agent parameters set zone  internet
-    /etc/init.d/opsbro start
-    opsbro detectors wait-group 'zone::internet'
+   opsbro agent parameters set proxy-node true
+   opsbro agent parameters set zone internet
+   /etc/init.d/opsbro start
+   opsbro detectors wait-group 'zone::internet'
 fi
 
 if [ "$NODE_NB" == "4" ]; then
-    opsbro agent parameters set proxy-node true
-    opsbro agent parameters set zone  customer-1
-    /etc/init.d/opsbro start
-    opsbro detectors wait-group 'zone::customer-1'
+   opsbro agent parameters set proxy-node true
+   opsbro agent parameters set zone customer-1
+   /etc/init.d/opsbro start
+   opsbro detectors wait-group 'zone::customer-1'
 fi
 
-
 opsbro gossip members --detail
-
 
 print_header "Join all together"
 # Join all together
@@ -63,9 +60,6 @@ opsbro gossip join node1
 opsbro gossip join node2
 opsbro gossip join node3
 opsbro gossip join node4
-
-
-
 
 sleep 2
 
@@ -77,11 +71,11 @@ print_header "Checking every one see who should and should not"
 
 opsbro gossip events add "$MY_NAME""-EVENT"
 
-function assert_member {
+function assert_member() {
    NAME="$1"
    ZONE="$2"
-   opsbro gossip members | grep "$NAME" | grep "zone::$ZONE" > /dev/null
-   if [ $? != 0 ];then
+   opsbro gossip members | grep "$NAME" | grep "zone::$ZONE" >/dev/null
+   if [ $? != 0 ]; then
       echo "ERROR: there should be $NAME in the zone $ZONE"
       opsbro gossip members
       exit 2
@@ -89,18 +83,16 @@ function assert_member {
    echo "OK: founded $NAME in $ZONE"
 }
 
-
-function assert_not_member {
+function assert_not_member() {
    NAME="$1"
-   opsbro gossip members | grep "$NAME" > /dev/null
-   if [ $? == 0 ];then
+   opsbro gossip members | grep "$NAME" >/dev/null
+   if [ $? == 0 ]; then
       echo "ERROR: there should not be $NAME"
       opsbro gossip members
       exit 2
    fi
    echo "OK: not founded $NAME"
 }
-
 
 #WHO SEE WHO?
 # node1 => every one
@@ -171,7 +163,6 @@ if [ "$NODE_NB" == "4" ]; then
    sleep 60
    exit_if_no_crash "Node 4 exit"
 fi
-
 
 echo "This node is unexpected..."
 exit 2

@@ -3,7 +3,6 @@
 #    Gabes Jean, naparuba@gmail.com
 
 
-
 from opsbro_test import *
 from opsbro.util import guess_server_const_uuid
 

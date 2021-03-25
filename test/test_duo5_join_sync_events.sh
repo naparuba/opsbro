@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Load common shell functions
-MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . $MYDIR/common_shell_functions.sh
 
 test/set_network_simulated_type "WAN"
@@ -14,24 +14,18 @@ CASE=$1
 
 show_my_system_ip
 
-
 # We only want to test gossip here
 set_to_minimal_gossip_core
-
 
 # Set a valid display name for debug
 opsbro agent parameters set display_name "$CASE"
 
-
-
 /etc/init.d/opsbro start
-
 
 if [ $CASE == "NODE1" ]; then
    opsbro gossip events add 'EVENT-IN-NODE1'
    wait_event_with_timeout 'EVENT-IN-NODE1' 10
 fi
-
 
 ############# Let the two nodes joins
 launch_discovery_auto_join
@@ -48,30 +42,24 @@ if [ $CASE == "NODE2" ]; then
    wait_member_display_name_with_timeout "NODE1" 60
 fi
 
-
 ############# NODE2 : should have the node1 event
 if [ $CASE == "NODE2" ]; then
-    wait_event_with_timeout  'EVENT-IN-NODE1'  10
+   wait_event_with_timeout 'EVENT-IN-NODE1' 10
 fi
-
-
-
-
 
 # Let the two nodes ends in the same time
 if [ $CASE == "NODE1" ]; then
    opsbro gossip events add 'NODE1-END'
    # Be sure we are sending it to the other node
    sleep 2
-   wait_event_with_timeout  'NODE2-END'  10
+   wait_event_with_timeout 'NODE2-END' 10
 fi
 
 if [ $CASE == "NODE2" ]; then
    opsbro gossip events add 'NODE2-END'
    # Be sure we are sending it to the other node
    sleep 2
-   wait_event_with_timeout  'NODE1-END'  10
+   wait_event_with_timeout 'NODE1-END' 10
 fi
-
 
 exit_if_no_crash "EVENT sharing is done"

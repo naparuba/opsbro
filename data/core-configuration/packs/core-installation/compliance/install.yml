@@ -34,6 +34,7 @@ compliance:
                   - python-setproctitle
                   - python-psutil
                   - bash-completion  # Bash completion to enable the CLI completion
+                  - net-tools
          
          
          -  name      : centos7_python2
@@ -52,7 +53,8 @@ compliance:
                   - python2-psutil
                   # Bash completion to enable the CLI completion
                   - bash-completion
-
+                  - net-tools
+         
          
          -  name      : centos7_python3
             if        : "({{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 7) and system_is_python_3()"
@@ -68,8 +70,8 @@ compliance:
                   - python2-simplejson
                   - python-setproctitle
                   - python2-psutil
-                  # Bash completion to enable the CLI completion
-                  - bash-completion
+                  - bash-completion  # Bash completion to enable the CLI completion
+                  - net-tools
          
          -  name      : centos8
             if        : "{{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 8"
@@ -84,8 +86,8 @@ compliance:
                   - python3-simplejson
                   - python3-setproctitle
                   - python3-psutil
-                  # Bash completion to enable the CLI completion
-                  - bash-completion
+                  - bash-completion  # Bash completion to enable the CLI completion
+                  - net-tools
          
          
          -  name         : is_oracle_linux
@@ -100,8 +102,8 @@ compliance:
                   - gcc
                   - gcc-c++
                   - python3-devel
-                  # Bash completion to enable the CLI completion
-                  - bash-completion
+                  - bash-completion  # Bash completion to enable the CLI completion
+                  - net-tools
             post_commands:
                - pip3 install leveldb simplejson setproctitle psutil
          
@@ -136,6 +138,7 @@ compliance:
                   - python-simplejson
                   - python-setproctitle
                   - python-psutil
+                  - net-tools
          
          -  name      : debian_python3
             if        : "{{variables.is_debian}} and system_is_python_3()"
@@ -148,9 +151,8 @@ compliance:
                   - python3-simplejson
                   - python3-setproctitle
                   - python3-psutil
-                  # Bash completion to enable the CLI completion
-                  - bash-completion
-         
+                  - bash-completion  # Bash completion to enable the CLI completion
+                  - net-tools
          
          -  name      : ubuntu_python2
             if        : "{{variables.is_ubuntu}} and system_is_python_2()"
@@ -163,9 +165,9 @@ compliance:
                   - python-setproctitle
                   - python-psutil
                   - python-leveldb
-                  # Bash completion to enable the CLI completion
-                  - bash-completion
-         
+                  - bash-completion  # Bash completion to enable the CLI completion
+                  - net-tools
+                  
          
          -  name      : ubuntu_python3
             if        : "{{variables.is_ubuntu}} and system_is_python_3()"
@@ -178,8 +180,8 @@ compliance:
                   - python3-setproctitle
                   - python3-psutil
                   - libleveldb1d   # no python3-leveldb, only python3-plyvel
-                  # Bash completion to enable the CLI completion
-                  - bash-completion
+                  - bash-completion  # Bash completion to enable the CLI completion
+                  - net-tools
          
          ##### FEDORA:
          # there are rules for 24, 25, 26 -> 30 (python2) and 31+ (python3)
@@ -195,7 +197,8 @@ compliance:
                   - python2-setproctitle
                   - bash-completion  # Bash completion to enable the CLI completion
                   - leveldb
-                  
+                  - net-tools
+         
          
          ##### FEDORA:
          # there are rules for 24, 25, 26 -> 30 (python2) and 31+ (python3)
@@ -211,6 +214,7 @@ compliance:
                   - bash-completion  # Bash completion to enable the CLI completion
                   - python3-leveldb
                   - python3-setproctitle
+                  - net-tools
          
          
          
@@ -233,8 +237,10 @@ compliance:
                   - py2-pip
                   - py2-simplejson
                   - py2-setproctitle
+                  - py2-psutil
                   # Bash completion to enable the CLI completion
                   - bash-completion
+                  # Netstat: already included
             post_commands:
                - pip2 install leveldb
          
@@ -252,8 +258,10 @@ compliance:
                   - leveldb
                   - py3-simplejson
                   - py3-setproctitle
+                  - py3-psutil
                   # Bash completion to enable the CLI completion
                   - bash-completion
+                  # Netstat: already included
          
          
          # Open suse 15 have specific packages names
@@ -268,6 +276,7 @@ compliance:
                   - python-setuptools
                   - python2-leveldb
                   - bash-completion  # Bash completion to enable the CLI completion
+                  - net-tools-deprecate
          
          
          # Older open source (42.x)
@@ -282,6 +291,7 @@ compliance:
                   - python-setuptools
                   - python-leveldb
                   - bash-completion  # Bash completion to enable the CLI completion
+                  - net-tools
          
          
          -  name         : amazon_linux
@@ -298,6 +308,7 @@ compliance:
                   - python27-pip
                   - python27-simplejson
                   # No Bash completion for amazon linux
+                  - net-tools
             post_commands:
                - pip install leveldb
          
@@ -316,6 +327,7 @@ compliance:
                   - python2-pip
                   - python-setproctitle
                   - bash-completion
+                  - net-tools
             post_commands:
                - pip install leveldb
 
