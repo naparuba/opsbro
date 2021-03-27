@@ -7,9 +7,10 @@ ADD        test/docker-helper/  /
 RUN        /yum_install yum-plugin-fastestmirror
 # STILL SPEED UP
 RUN        yum install --downloadonly gcc gcc-c++
-# NOTE: there is a bug in this version (like fedora 26) with a pypi connection impossible without the glibc update
-RUN        /yum_update glibc
-RUN        /yum_install python
+
+# For the test
+RUN        /yum_install procps
+
 
 
 ADD        . /root/opsbro-oss

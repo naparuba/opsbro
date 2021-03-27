@@ -8,6 +8,9 @@ RUN        /apt_get_install   python3
 # Set python3 as default python
 RUN        update-alternatives --install /usr/bin/python python /usr/bin/python3 1
 
+# For test
+RUN        /apt_get_install   procps
+
 ADD        . /root/opsbro-oss
 
 WORKDIR       /root/opsbro-oss

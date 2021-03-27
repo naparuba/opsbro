@@ -15,6 +15,9 @@ ENV        TEST_PACKAGE_NAME_VIRTUAL=vi
 # But need to delete it first as it is installed by default
 RUN        /yum_remove vim-minimal
 
+# For the test
+RUN        /yum_install   procps
+
 ADD        . /root/opsbro-oss
 
 WORKDIR      /root/opsbro-oss

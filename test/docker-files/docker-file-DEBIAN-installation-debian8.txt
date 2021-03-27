@@ -5,6 +5,9 @@ ADD        test/docker-helper/  /
 
 RUN        /apt_get_install   python
 
+# For test
+RUN        /apt_get_install   procps
+
 ADD        . /root/opsbro-oss
 
 WORKDIR       /root/opsbro-oss

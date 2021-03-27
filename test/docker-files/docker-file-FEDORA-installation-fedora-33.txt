@@ -4,6 +4,8 @@ MAINTAINER Jean Gabes <naparuba@gmail.com>
 ADD        test/docker-helper/  /
 RUN        /dnf_install python
 
+# For the test
+RUN        /dnf_install procps
 
 ENV        TEST_PACKAGE_NAME_VIRTUAL=vi
 # But need to delete it first as it is installed by default

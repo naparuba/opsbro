@@ -9,6 +9,9 @@ RUN        printf "deb http://archive.debian.org/debian-archive/debian/ wheezy-b
 
 RUN        /apt_get_install   python
 
+# For test
+RUN        /apt_get_install   procps
+
 ADD        . /root/opsbro-oss
 
 WORKDIR       /root/opsbro-oss
