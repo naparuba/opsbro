@@ -133,7 +133,10 @@ class Tile(object):
     
     
     def full_display(self, title):
-        terminal_height, terminal_width = get_terminal_size()
+        try:
+            terminal_height, terminal_width = get_terminal_size()
+        except:  # maybe in a stransge shell
+            terminal_width = terminal_height = 100
         
         # Clear the terminal
         cprint('\033c')
