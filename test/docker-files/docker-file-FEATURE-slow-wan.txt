@@ -5,6 +5,8 @@ MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 ADD        test/docker-helper/  /
 
+RUN        /apt_get_install   procps
+
 ADD        . /root/opsbro-oss
 
 
