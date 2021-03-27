@@ -20,6 +20,10 @@ from opsbro.info import TITLE_COLOR
 from opsbro.misc.bro_quotes import get_quote
 from opsbro.colorpalette import colorpalette
 from opsbro.characters import CHARACTERS
+from opsbro.util import PY3
+
+if PY3:
+    basestring = str
 
 # "graphic" elements
 
