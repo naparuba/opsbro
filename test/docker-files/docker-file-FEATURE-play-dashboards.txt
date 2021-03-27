@@ -1,0 +1,13 @@
+# By default we are testing the python2 version, and the builder can ask for python3 with "-python3"
+ARG        MY_PYTHON_VERSION=
+FROM       naparuba/debian-9$MY_PYTHON_VERSION
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+
+ADD        . /root/opsbro-oss
+WORKDIR       /root/opsbro-oss
+
+RUN       python setup.py install
+
+ENTRYPOINT    test/test_feature_dashboards.sh
