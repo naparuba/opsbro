@@ -276,4 +276,75 @@ if [ $? != 0 ]; then
    exit 2
 fi
 
+print_header "Test Gossip Encryption"
+opsbro gossip zone key import --zone internet --key "NGNjZWI2ZmEyMzEyMTFlOA=="
+
+# Try to start daemon, but we don't want systemd hook there
+SYSTEMCTL_SKIP_REDIRECT=1 /etc/init.d/opsbro --debug restart
+if [ $? != 0 ]; then
+   cat /var/log/opsbro/daemon.log
+   cat /var/log/opsbro/*log
+   ps axjf
+   echo "ERROR: daemon start failed due to encryption"
+   exit 2
+fi
+
+# Check that the encrypted key is loaded
+opsbro agent info | grep 'zone have a gossip key'
+# shellcheck disable=SC2181
+if [ $? != 0 ]; then
+   echo "ERROR: Encrypted key seem to not be load"
+   opsbro agent info
+   exit 2
+fi
+
+print_header "Test monitoring checks"
+
+STATE=$(opsbro monitoring state)
+# cpu is
+echo "$STATE" | grep 'cpu is'
+if [ $? != 0 ]; then
+   echo "ERROR: Cannot find CPU CHECK"
+   echo "$STATE"
+   exit 2
+fi
+
+# / is at
+echo "$STATE" | grep '/ is at'
+if [ $? != 0 ]; then
+   echo "ERROR: Cannot find / CHECK"
+   echo "$STATE"
+   exit 2
+fi
+
+# load is at
+echo "$STATE" | grep 'load is at'
+if [ $? != 0 ]; then
+   echo "ERROR: Cannot find Load average CHECK"
+   echo "$STATE"
+   exit 2
+fi
+
+# memory is
+echo "$STATE" | grep 'memory is'
+if [ $? != 0 ]; then
+   echo "ERROR: Cannot find Memory CHECK"
+   echo "$STATE"
+   exit 2
+fi
+
+echo "All linux checks are running well"
+
+##########
+print_header "Test proctitle display"
+
+ps aux | grep opsbro | grep 'running'
+if [ $? != 0 ]; then
+   echo "ERROR: Cannot find agent with process title changed (setproctitle)"
+   ps aux | grep opsbro
+   exit 2
+fi
+echo "Agent is with setproctitle name"
+
+
 exit_if_no_crash "**** One linux installation is OK *****"

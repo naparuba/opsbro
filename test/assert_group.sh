@@ -6,7 +6,7 @@ MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 GROUP=$1
 
-printf "\n****************** [ Checking GROUP is set:  $GROUP  ] ******************\n"
+print_header "[ Checking GROUP is set:  $GROUP  ]"
 
 # Assert group only if agent is stable
 opsbro detectors wait-group $GROUP --timeout=60
