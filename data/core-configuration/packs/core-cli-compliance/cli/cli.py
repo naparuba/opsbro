@@ -10,7 +10,7 @@ import sys
 
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger
-from opsbro.unixclient import get_request_errors
+from opsbro.unixclient import get_request_errors, get_not_critical_request_errors
 from opsbro.cli import get_opsbro_local, put_opsbro_json
 from opsbro.cli_display import print_h1, print_h2, get_terminal_size
 from opsbro.compliancemgr import COMPLIANCE_LOG_COLORS, COMPLIANCE_STATES, COMPLIANCE_STATE_COLORS
@@ -151,6 +151,12 @@ def do_compliance_wait_compliant(compliance_name, timeout=30, exit_if_ok=True, e
         uri = '/compliance/state'
         try:
             (code, r) = get_opsbro_local(uri)
+        # If just a timeout, wait a bit longer
+        except get_not_critical_request_errors() as exp:
+            logger.warning('[Loop %s/%s] The request temporary failed: %s. Retrying.' % (i, timeout, exp))
+            time.sleep(1)
+            continue
+        # But maybe it's dead, if so, quit now
         except get_request_errors() as exp:
             logger.error(exp)
             return
