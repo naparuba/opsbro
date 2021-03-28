@@ -292,7 +292,7 @@ compliance:
                packages:
                   - python27-setuptools
                   - python-jinja2
-                  - python-crypto
+                  - python27-crypto
                   - python27-simplejson
                   - gcc
                   - gcc-c++
