@@ -246,7 +246,8 @@ compliance:
                packages:
                   - musl-dev  # monotonic clock
                   - py3-jinja2
-                  - py3-pycryptodome
+                  #- py3-pycryptodome   fail on alpine 11
+                  - py3-crypto
                   - py3-setuptools
                   - leveldb
                   - py3-simplejson
