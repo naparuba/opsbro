@@ -64,10 +64,10 @@ compliance:
                   - python36-rpm
                   - python36-jinja2
                   - python36-cryptography
-                  - python2-leveldb   # currently disabled before we change tests to give leveldb by default every where
-                  - python2-simplejson
-                  - python-setproctitle
-                  - python2-psutil
+                  - python36-leveldb   # currently disabled before we change tests to give leveldb by default every where
+                  - python36-simplejson
+                  - python36-setproctitle
+                  - python36-psutil
                   - bash-completion  # Bash completion to enable the CLI completion
          
          
