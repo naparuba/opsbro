@@ -1,10 +1,12 @@
-
-diskuse_warning: 90
+diskuse_warning : 90
 diskuse_critical: 95
 
 
-cpu_critical: 90
+cpu_critical    : 90
 
 
 diskuse_critical: 95
-diskuse_warning: 90
+diskuse_warning : 90
+
+memory_warning: 80
+memory_critical: 90

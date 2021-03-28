@@ -10,7 +10,7 @@ check:
     critical_if: "{{variables.used_pct}} > {{parameters.memory_critical}}"
     critical_output: "'CRITICAL: memory is:\\n %d%% %s' % ({{variables.used_pct}}, {{variables.bar}})"
 
-    warning_if: "{{variables.used_pct}} > {{parameters.threshold.memory_warning}}"
+    warning_if: "{{variables.used_pct}} > {{parameters.memory_warning}}"
     warning_output:  "'WARNING: memory is:\\n %d%% %s' % ({{variables.used_pct}}, {{variables.bar}})"
 
     interval: 30s

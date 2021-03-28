@@ -259,7 +259,7 @@ For example here is a memory check on a linux server:
         critical_if: "{{collector.memory.phys_used}} > {{parameters.memory_critical}}"
         critical_output: "'CRITICAL: memory is at %d%%' % {{collectors.memory.phys_used}}"
 
-        warning_if: "{{collector.memory.phys_used}} > {{parameters.threshold.memory_warning}}"
+        warning_if: "{{collector.memory.phys_used}} > {{parameters.memory_warning}}"
         warning_output:  "'WARNING: memory is at %d%%' % {{collector.memory.phys_used}}"
 
         interval: "30s"
