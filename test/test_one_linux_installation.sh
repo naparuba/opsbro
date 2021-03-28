@@ -132,18 +132,21 @@ if [ $? != 0 ]; then
 fi
 echo "Pack: networkstats counters are OK"
 
-print_header "STANDARD LINUX PACK:  openports"
-OPENPORTS=$(opsbro collectors show openports)
+# Some old distro do not like open port test (like centos6)
+if [ "X$SKIP_OPENPORTS" != "XTrue"]; then
+   print_header "STANDARD LINUX PACK:  openports"
+   OPENPORTS=$(opsbro collectors show openports)
 
-# The 6768 is the default agent one, so should be open
-printf "%s" "$OPENPORTS" | grep '6768'
-if [ $? != 0 ]; then
-   echo "ERROR: the OPENPORTS collector do not seems to be working"
-   printf "$OPENPORTS"
-   cat /var/log/opsbro/collectors*
-   exit 2
+   # The 6768 is the default agent one, so should be open
+   printf "%s" "$OPENPORTS" | grep '6768'
+   if [ $? != 0 ]; then
+      echo "ERROR: the OPENPORTS collector do not seems to be working"
+      printf "$OPENPORTS"
+      cat /var/log/opsbro/collectors*
+      exit 2
+   fi
+   echo "Pack: openports counters are OK"
 fi
-echo "Pack: openports counters are OK"
 
 print_header "KV Store (sqlite/leveldb)"
 
