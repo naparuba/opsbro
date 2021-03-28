@@ -63,7 +63,7 @@ compliance:
                   - epel-release
                   - python36-rpm
                   - python36-jinja2
-                  - python36-cryptography
+                  - python36-crypto
                   - python36-leveldb   # currently disabled before we change tests to give leveldb by default every where
                   - python36-simplejson
                   - python36-setproctitle
