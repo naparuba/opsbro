@@ -92,7 +92,7 @@ compliance:
             parameters   :
                packages:
                   - libgomp   # monotonic clock
-                  - rpm-python
+                  - python3-rpm
                   - python3-jinja2
                   - python3-cryptography
                   - python3-setuptools
