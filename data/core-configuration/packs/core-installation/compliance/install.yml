@@ -282,7 +282,7 @@ compliance:
                   - python-simplejson
                   - python-setuptools
                   - python-leveldb
-                  - python3-psutil
+                  - python2-psutil
                   - bash-completion  # Bash completion to enable the CLI completion
          
          
