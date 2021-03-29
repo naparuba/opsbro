@@ -275,6 +275,7 @@ compliance:
                   - python2-leveldb
                   - bash-completion  # Bash completion to enable the CLI completion
                   - python2-psutil
+                  - python2-setproctitle
          
          
          # Older open source (42.x)
@@ -316,7 +317,7 @@ compliance:
                packages:
                   - python2-setuptools
                   - python-jinja2
-                  - python2-cryptography
+                  # python2-cryptography Not with amazon
                   - python-simplejson
                   - gcc
                   - gcc-c++
@@ -325,5 +326,5 @@ compliance:
                   - python-setproctitle
                   - bash-completion
             post_commands:
-               - pip install leveldb psutil
+               - pip install leveldb psutil pycrypto
 

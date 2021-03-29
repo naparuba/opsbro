@@ -126,14 +126,14 @@ NETWORKSTATS=$(opsbro collectors show networktraffic)
 printf "%s" "$NETWORKSTATS" | grep 'recv_bytes/s'
 if [ $? != 0 ]; then
    echo "ERROR: the networkstats collector do not seems to be working"
-   printf "$NETWORKSTATS"
-   cat /var/log/opsbro/collectors*
+   printf "$NETWORKSTATS \n"
+   ls /var/log/opsbro/
    exit 2
 fi
 echo "Pack: networkstats counters are OK"
 
 # Some old distro do not like open port test (like centos6)
-if [ "X$SKIP_OPENPORTS" != "XTrue"]; then
+if [ "X$SKIP_OPENPORTS" != "XTrue" ]; then
    print_header "STANDARD LINUX PACK:  openports"
    OPENPORTS=$(opsbro collectors show openports)
 
@@ -271,9 +271,10 @@ printf "\n\n"
 ##########   Show internal threads
 print_header "Internal threads comsumption"
 
-opsbro agent internal show-threads
+OUTPUT=$(opsbro agent internal show-threads)
 if [ $? != 0 ]; then
    echo "ERROR: agent internal show-threads did fail."
+   echo "$OUTPUT"
    cat /var/log/opsbro/crash.log 2>/dev/null
    cat /var/log/opsbro/daemon.log
    exit 2
