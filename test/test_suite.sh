@@ -2,6 +2,13 @@
 
 echo "##################### Launching TEST $TEST_SUITE on $TRAVIS_OS_NAME"
 
+# no sudo on windows
+if [ "$TRAVIS_OS_NAME" == "windows" ];then
+   SUDO=""
+else
+   SUDO="sudo"
+fi
+
 # Always be sure we are loggued in docker
 if [ ! -f /root/.docker/config.json ]; then
    echo "Login to docker with credentials naparuba"
@@ -20,11 +27,11 @@ fi
 # Travis: only need to run the installation once, it it not link to a specific python version. They don't need to use CPU for nothing ;)
 if [ "$TEST_SUITE" == "PYTHON" ]; then
    # No more virtual env on Travis
-   sudo rm -fr ~/virtualenv
+   $SUDO rm -fr ~/virtualenv
    echo "Installing opsbro for TESTING (so have libs)"
    cd ..
    # NOTE: sudo because travis is under ubuntu
-   sudo python setup.py install
+   $SUDO python setup.py install
 
    # NOTE: nosetests are hooking stdout and sys.paths, and so are not in real execution, this make too much troubles
    # with tests, so switching to a real world test
