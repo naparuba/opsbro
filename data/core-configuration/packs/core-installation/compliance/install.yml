@@ -71,20 +71,25 @@ compliance:
                   - bash-completion  # Bash completion to enable the CLI completion
          
          
-         -  name      : centos8
-            if        : "{{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 8"
-            parameters:
+         -  name         : centos8
+            if           : "{{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 8"
+            parameters   :
                packages:
                   - libgomp   # monotonic clock
                   - epel-release
                   - python3-rpm
                   - python3-jinja2
-                  - python3-cryptography
-                  - python3-leveldb   # currently disabled before we change tests to give leveldb by default every where
+                  # python3-cryptography  # not working on centos8
+                  - leveldb     # no python-leveldb for centos8
                   - python3-simplejson
                   - python3-setproctitle
                   - python3-psutil
                   - bash-completion  # Bash completion to enable the CLI completion
+                  # For pycrypto
+                  - gcc
+                  - python3-devel
+            post_commands:
+               - pip3 install pycrypto
          
          
          -  name         : is_oracle_linux
@@ -302,7 +307,7 @@ compliance:
                   - python27-simplejson
                   # No Bash completion for amazon linux
             post_commands:
-               - pip install leveldb psutil
+               - pip install leveldb psutil setproctitle
          
          
          -  name         : amazon_linux2
