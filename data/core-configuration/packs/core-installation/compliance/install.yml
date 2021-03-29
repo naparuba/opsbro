@@ -290,6 +290,7 @@ compliance:
                   - python-setuptools
                   - python-leveldb
                   - python-psutil
+                  - python-setproctitle
                   - bash-completion  # Bash completion to enable the CLI completion
          
          
