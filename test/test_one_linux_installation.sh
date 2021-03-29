@@ -127,7 +127,7 @@ printf "%s" "$NETWORKSTATS" | grep 'recv_bytes/s'
 if [ $? != 0 ]; then
    echo "ERROR: the networkstats collector do not seems to be working"
    printf "$NETWORKSTATS \n"
-   ls /var/log/opsbro/collector.networktraffic.log
+   cat /var/log/opsbro/collector.networktraffic.log
    exit 2
 fi
 echo "Pack: networkstats counters are OK"
