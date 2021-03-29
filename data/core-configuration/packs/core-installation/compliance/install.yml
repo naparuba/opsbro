@@ -94,14 +94,14 @@ compliance:
                   - libgomp   # monotonic clock
                   - python3-rpm
                   - python3-jinja2
-                  - python3-cryptography
                   - python3-setuptools
                   - gcc
                   - gcc-c++
                   - python3-devel
                   - bash-completion  # Bash completion to enable the CLI completion
+                  # python3-cryptography is not the valid one
             post_commands:
-               - pip3 install leveldb simplejson setproctitle psutil
+               - pip3 install leveldb simplejson setproctitle psutil pycrypto
          
          #         - name: redhat6
          #           if:   "{{variables.is_redhat}} and {{collector.system.os.linux.major_version}} == 6"
@@ -283,7 +283,7 @@ compliance:
                   - python-simplejson
                   - python-setuptools
                   - python-leveldb
-                  - python2-psutil
+                  - python-psutil
                   - bash-completion  # Bash completion to enable the CLI completion
          
          
