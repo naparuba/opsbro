@@ -19,7 +19,7 @@ RUN        /yum_remove vim-minimal
 RUN        /yum_install   procps
 
 # Centos6 do not manage open ports (need more recent psutil lib)
-ENV      SKIP_OPENPORT=True
+ENV      SKIP_OPENPORTS=True
 
 ADD        . /root/opsbro-oss
 
