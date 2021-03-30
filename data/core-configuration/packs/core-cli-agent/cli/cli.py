@@ -10,10 +10,14 @@ import base64
 import uuid
 import time
 import os
+import sys
 
 if os.name == 'nt':
-    import win32serviceutil
-    import win32api
+    try:
+        import win32serviceutil
+        import win32api
+    except ImportError:  # missing lib, must launc hthe setup.py
+        win32serviceutil = win32api = None
 
 from opsbro.characters import CHARACTERS
 from opsbro.log import cprint, logger, sprintf
@@ -53,6 +57,9 @@ def __call_service_handler():
 def do_service_install():
     # hack argv for the install
     sys.argv = ['c:\\opsbro\\bin\\opsbro', 'install']
+    if win32api is None or win32serviceutil is None:
+        cprint('ERROR: missing win32 librairy, you must call setup.py install first', color='red')
+        sys.exit(2)
     __call_service_handler()
 
 
