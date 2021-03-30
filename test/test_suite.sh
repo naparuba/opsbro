@@ -27,10 +27,15 @@ if [ "$TRAVIS_OS_NAME" == "windows" ];then
    wevtutil cl System
    wevtutil cl Application
    python c:/opsbro/bin/opsbro agent windows service-install
-   sc start OpsBro || sc qc OpsBro && sc query OpsBro && wevtutil qe Application && wevtutil qe System && type c:\opsbro.log && bad
+   sc start OpsBro
+   sc qc OpsBro
+   sc query OpsBro
+   wevtutil qe Application
+   wevtutil qe System
 
    # ls -R 'c:\opsbro\'
-   cat 'c:\opsbro/log/daemon.log'
+   echo "LOG"
+   cat 'c:\opsbro\log\daemon.log'
    exit 2
    echo "Other commands"
    python -c "import time; time.sleep(10)"
