@@ -29,6 +29,7 @@ if [ "$TRAVIS_OS_NAME" == "windows" ];then
    python c:/opsbro/bin/opsbro agent windows service-install
    sc start OpsBro || sc qc OpsBro && sc query OpsBro && wevtutil qe Application && wevtutil qe System && type c:\opsbro.log && bad
 
+   ls -R 'c:\opsbro\'
    echo "Other commands"
    python -c "import time; time.sleep(10)"
    python c:/opsbro/bin/opsbro agent info
