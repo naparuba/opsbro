@@ -103,7 +103,7 @@ test_script:
   - echo "CLASSIC RUN"
   - python bin\opsbro agent start --one-shot
 
-  - echo "Analyser RUN
+  - echo "Analyser RUN"
   - python bin\opsbro packs overload   global.shinken-enterprise
   - python bin\opsbro packs parameters set local.shinken-enterprise.enabled True
   - python bin\opsbro packs parameters set local.shinken-enterprise.file_result "C:\shinken-local-analyzer-payload.json"
