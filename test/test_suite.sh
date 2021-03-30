@@ -18,7 +18,8 @@ if [ "$TRAVIS_OS_NAME" == "windows" ];then
    python 'bin/opsbro' packs parameters set local.shinken-enterprise.enabled True
    python 'bin/opsbro' packs parameters set local.shinken-enterprise.file_result "C:\shinken-local-analyzer-payload.json"
    python 'bin/opsbro' agent start --one-shot
-   type 'C:\shinken-local-analyzer-payload.json'
+   ls 'c:'
+   cat 'C:\shinken-local-analyzer-payload.json'
 
    echo "SERVICE RUN"
    "python -c \"import sys; print(sys.executable)\""
