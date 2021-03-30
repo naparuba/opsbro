@@ -38,7 +38,7 @@ if [ "$TRAVIS_OS_NAME" == "windows" ];then
 
    # ls -R 'c:\opsbro\'
    echo "LOG"
-   cat 'c:\opsbro\log\daemon.log'
+   cat 'c:\opsbro.log'
    exit 2
    echo "Other commands"
    python -c "import time; time.sleep(10)"
