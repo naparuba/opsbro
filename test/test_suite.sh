@@ -5,7 +5,8 @@ echo "##################### Launching TEST $TEST_SUITE on $TRAVIS_OS_NAME"
 # no sudo on windows
 if [ "$TRAVIS_OS_NAME" == "windows" ];then
    SUDO=""
-
+   # we were in test
+   cd ..
    echo "COPY TO c:\opsbro"
    mkdir 'c:\opsbro'
    cp -rp . 'c:\opsbro'
