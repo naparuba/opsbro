@@ -7,16 +7,17 @@ if [ "$TRAVIS_OS_NAME" == "windows" ];then
    SUDO=""
 
    echo "COPY TO c:\opsbro"
-   xcopy . 'c:\opsbro' /O /X /E /H /K /Y /Q
-   dir "c:\opsbro"
-   python bin\opsbro
-   python bin\opsbro agent start --one-shot
+   mkdir 'c:\opsbro'
+   cp -rp . 'c:\opsbro'
+   ls "c:\opsbro"
+   python 'bin/opsbro'
+   python 'bin/opsbro' agent start --one-shot
    echo "Analyser RUN"
-   python bin\opsbro packs overload   global.shinken-enterprise
-   python bin\opsbro packs parameters set local.shinken-enterprise.enabled True
-   python bin\opsbro packs parameters set local.shinken-enterprise.file_result "C:\shinken-local-analyzer-payload.json"
-   python bin\opsbro agent start --one-shot
-   type C:\shinken-local-analyzer-payload.json
+   python 'bin/opsbro' packs overload   global.shinken-enterprise
+   python 'bin/opsbro' packs parameters set local.shinken-enterprise.enabled True
+   python 'bin/opsbro' packs parameters set local.shinken-enterprise.file_result "C:\shinken-local-analyzer-payload.json"
+   python 'bin/opsbro' agent start --one-shot
+   type 'C:\shinken-local-analyzer-payload.json'
 
    echo "SERVICE RUN"
    "python -c \"import sys; print(sys.executable)\""
