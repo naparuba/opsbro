@@ -153,7 +153,7 @@ class Hypervisor(Collector):
             self.set_not_eligible('Cpuid/hypervisor is only available for x86 cpus')
             return res
         except Exception as exp:
-            self.set_error('Cannot get cpuid/hypervisor information: %s' % exp)
+            self.set_not_eligible('Cannot get cpuid/hypervisor information on this system: %s' % exp)
             return res
         
         hypervisor = struct.pack('IIII', *cpu(HYPERVISOR_INFO_LEAF)).decode('ascii', 'ignore')
