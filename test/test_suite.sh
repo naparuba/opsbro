@@ -22,10 +22,13 @@ if [ "$TRAVIS_OS_NAME" == "windows" ];then
    cat 'C:\shinken-local-analyzer-payload.json'
 
    echo "SERVICE RUN"
-   "python -c \"import sys; print(sys.executable)\""
+   python -c "import sys; print(sys.executable)"
    # clean all logs
    wevtutil cl System
    wevtutil cl Application
+
+   python setup.py install
+
    python c:/opsbro/bin/opsbro agent windows service-install
    sc start OpsBro
    sc qc OpsBro

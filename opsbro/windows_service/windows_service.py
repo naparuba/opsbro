@@ -89,7 +89,12 @@ class Service(win32serviceutil.ServiceFramework):
             
             LOG('CLI LOADED')
             l = Launcher(cfg_dir='c:\\opsbro\\etc')
-            LOG('LAUNCHER created, launching init & main')
+            LOG('LAUNCHER created, launching configuration objects loading')
+
+            # We did skip some configuration/objects load to boost CLI load, so do this now
+            l.finish_to_load_configuration_and_objects()
+
+            LOG('LAUNCHER loaded, now start')
             # Note: before launch the start/main, we need to start a stopper thread (on the main process)
             l.do_daemon_init_and_start(is_daemon=False, before_start_callback=self._before_start_callback)
             LOG('LAUNCHER init')
