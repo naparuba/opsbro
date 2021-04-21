@@ -40,6 +40,13 @@ if [ $? != 0 ]; then
    exit 2
 fi
 
+# python-jinja2 must be installed now, and so we can detect it :)
+grep "has python-jinja2: True" /tmp/authorized_keys.txt
+if [ $? != 0 ]; then
+   echo "ERROR: has python-jinja2: True is not in the generated file."
+   exit 2
+fi
+
 grep "ENDING LINE" /tmp/authorized_keys.txt
 if [ $? != 0 ]; then
    echo "ERROR: ENDING LINE is not in the generated file."

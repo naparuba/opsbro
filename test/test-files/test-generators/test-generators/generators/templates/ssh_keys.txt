@@ -3,5 +3,11 @@ HERE
 IS
 
 A
+{% for node in ok_nodes(group='ssh-key-sample', if_none='raise') %}
+# in OpsBro: {{node['display_name']}}
+server {{node['name']}} {{node['addr']}}  OK
+{% endfor %}
+
+has python-jinja2: {{has_package('python-jinja2')}}
 
 TEST

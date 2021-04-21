@@ -23,6 +23,12 @@ RUN        /apt_get_install iptables
 RUN        /apt_get_install python3-jinja2
 RUN        /apt_get_install python3-crypto
 RUN        /apt_get_install python3-setuptools
+RUN        /apt_get_install python3-leveldb
+RUN        /apt_get_install python3-simplejson
+RUN        /apt_get_install python3-setproctitle
+RUN        /apt_get_install python3-psutil
+RUN        /apt_get_install bash-completion
+
 #RUN        /apt_get_install python-apt
 
 #FOR DISCORD

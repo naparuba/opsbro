@@ -102,6 +102,10 @@ class Evaluater(object):
         self.cfg_data = cfg_data
     
     
+    def get_all_functions(self):
+        return functions
+    
+    
     # We want a simple string at the end, but try to be a bit smart when doing it
     def __change_to_string(self, o):
         if isinstance(o, list) or isinstance(o, set):

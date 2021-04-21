@@ -1,10 +1,8 @@
 import os
-import copy
 import traceback
 import codecs
 import stat
 import shutil
-from collections import deque
 
 from .log import LoggerFactory
 from .gossip import gossiper
@@ -21,29 +19,6 @@ GENERATOR_STATE_COLORS = {'COMPLIANT': 'green', 'ERROR': 'red', 'UNKNOWN': 'grey
 
 class NoElementsExceptions(Exception):
     pass
-
-
-# Get all nodes that are defining a service sname and where the service is OK
-# TODO: give a direct link to object, must copy it?
-def ok_nodes(group='', if_none=''):
-    res = deque()
-    if group == '':
-        res = []
-        for n in gossiper.nodes.values():  # note: nodes is a static dict
-            if n['state'] != 'alive':
-                continue
-            res.append(n)
-    else:
-        nodes_uuids = gossiper.find_group_nodes(group)
-        for node_uuid in nodes_uuids:
-            n = gossiper.get(node_uuid)
-            if n is not None:
-                res.append(n)
-    if if_none == 'raise' and len(res) == 0:
-        raise NoElementsExceptions()
-    # Be sure to always give nodes in the same order, if not, files will be generated too ofthen
-    res = sorted(res, key=lambda node: node['uuid'])
-    return res
 
 
 class Generator(object):
@@ -161,7 +136,7 @@ class Generator(object):
         
         # Now try to render all of this with real objects
         try:
-            self.output = self.template.render(nodes=gossiper.nodes, node=node, ok_nodes=ok_nodes)
+            self.output = self.template.render(nodes=gossiper.nodes, node=node, **evaluater.get_all_functions())
         except NoElementsExceptions:
             self.set_error('No nodes did match filters for template : %s %s' % (self.g['template'], self.name))
             self.output = None
