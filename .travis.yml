@@ -15,6 +15,7 @@ env     :
    - TEST_SUITE=API
    - TEST_SUITE=PYTHON
    - TEST_SUITE=OTHER
+   - TEST_SUITE=DOC
    ##### Then features (both python2 & 3)
    - TEST_SUITE=FEATURE
    - TEST_SUITE=FEATURE  TEST_PYTHON_VERSION=PYTHON3

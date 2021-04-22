@@ -16,6 +16,8 @@ DEFAULT_LANG = u'en'
 FEED_ALL_ATOM = None
 CATEGORY_FEED_ATOM = None
 TRANSLATION_FEED_ATOM = None
+AUTHOR_FEED_ATOM = None
+AUTHOR_FEED_RSS = None
 
 # Blogroll
 LINKS =  (('shinken project', 'http://www.shinken-monitoring.org/'),
@@ -29,7 +31,7 @@ SOCIAL = (('community tweets', 'https://twitter.com/shinken_monitor'),
           ('Enterprise news', 'https://twitter.com/ShinkenInc'),
           )
 
-DEFAULT_PAGINATION = 10
+DEFAULT_PAGINATION = False
 
 # Uncomment following line if you want document-relative URLs when developing
 #RELATIVE_URLS = True
@@ -53,7 +55,7 @@ AUTHOR_SAVE_AS = False
 AUTHORS_SAVE_AS = False
 ARCHIVES_SAVE_AS = False
 
-MD_EXTENSIONS = ['codehilite(css_class=highlight)']
+#MD_EXTENSIONS = ['codehilite(css_class=highlight)']
 
 
 
