@@ -37,6 +37,7 @@ def is_in_static_group(group):
         True
 </code>
     """
+    # TODO: code it ^^
     return gossiper.is_in_group(group)
 
 
@@ -130,38 +131,37 @@ def get_other_node_address(other_node_name_or_uuid):
     return node['addr']
 
 
+def _gossip_get_nodes_by_state(state, group='', if_none=''):
+    res = deque()
+    for n in gossiper.nodes.values():  # note: nodes is a static dict
+        if group and group not in n['groups']:
+            continue
+        if n['state'] != state:
+            continue
+        res.append(n)
+    if if_none == 'raise' and len(res) == 0:
+        # TODO: raise NoElementsExceptions()
+        raise Exception('no node matching')
+    # Be sure to always give nodes in the same order, if not, files will be generated too ofthen
+    res = sorted(res, key=lambda node: node['uuid'])
+    return res
+
+
 # Get all nodes that are defining a service sname and where the service is OK
 # TODO: give a direct link to object, must copy it?
 @export_evaluater_function(function_group=FUNCTION_GROUP)
-def ok_nodes(group='', if_none=''):
-    """**ok_nodes(group='', if_none='')** -> return a list with all alive nodes that match the group
+def gossip_get_alive_nodes(group='', if_none=''):
+    """**gossip_get_alive_nodes(group='', if_none='')** -> return a list with all alive nodes that match the group
 
  * group: (string) if set, will filter only nodes that are in this group
  * if_none: (string) if set to 'raise' then raise an Exception if no node is matching
 
 <code>
     Example:
-        ok_nodes(group='linux')
+        gossip_alive_nodes(group='linux')
     Returns:
         [ ... ]  <- list of nodes objects
 </code>
     """
-    res = deque()
-    if group == '':
-        res = []
-        for n in gossiper.nodes.values():  # note: nodes is a static dict
-            if n['state'] != 'alive':
-                continue
-            res.append(n)
-    else:
-        nodes_uuids = gossiper.find_group_nodes(group)
-        for node_uuid in nodes_uuids:
-            n = gossiper.get(node_uuid)
-            if n is not None:
-                res.append(n)
-    if if_none == 'raise' and len(res) == 0:
-        # TODO: raise NoElementsExceptions()
-        raise Exception('no node matching')
-    # Be sure to always give nodes in the same order, if not, files will be generated too ofthen
-    res = sorted(res, key=lambda node: node['uuid'])
+    res = _gossip_get_nodes_by_state('alive', group=group, if_none=if_none)
     return res

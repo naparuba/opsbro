@@ -3,7 +3,7 @@ HERE
 IS
 
 A
-{% for node in ok_nodes(group='ssh-key-sample', if_none='raise') %}
+{% for node in gossip_get_alive_nodes(group='ssh-key-sample', if_none='raise') %}
 # in OpsBro: {{node['display_name']}}
 server {{node['name']}} {{node['addr']}}  OK
 {% endfor %}
