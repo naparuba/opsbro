@@ -4,6 +4,7 @@ from opsbro.httpclient import get_http_exceptions, httper
 from opsbro.hostingdrivermanager import InterfaceHostingDriver, HOSTING_DRIVER_LAYER_CLOUD
 from opsbro.jsonmgr import jsoner
 
+
 class ScalewayHostingDriver(InterfaceHostingDriver):
     name = 'scaleway'
     layer = HOSTING_DRIVER_LAYER_CLOUD
@@ -31,6 +32,13 @@ class ScalewayHostingDriver(InterfaceHostingDriver):
         self.conf = jsoner.loads(s)
         self.logger.info('Get scaleway conf: %s' % self.conf)
         return self.conf
+    
+    
+    # NOTE: on scaleway, if we have a mix for our nodes with other provider on the same zone, then
+    # local address will be a problem
+    # TODO: get a way to parameter this?
+    def get_local_address(self):
+        return self.get_public_address()
     
     
     # On Scaleway need to get public IP from http://169.254.42.42/conf?format=json
