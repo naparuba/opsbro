@@ -1,0 +1,14 @@
+check:
+   interval       : 10s
+   if_group       : co2
+   
+   
+   
+   ok_output      : "'OK CO2 is great (%s ppm):\\n%s' % ({{collector.co2.co2}}, get_donut( 100 * {{collector.co2.co2}} / 2500.0) )"
+   
+   warning_if     : "{{collector.co2.co2}} > 1500"
+   warning_output : "'WARNING CO2 is bad (%s ppm > 1500ppm) OPEN YOUR WINDOW:\\n%s' % ({{collector.co2.co2}}, get_donut( 100 * {{collector.co2.co2}} / 2500.0) )"
+   
+   critical_if    : "{{collector.co2.co2}} >= 2000"
+   critical_output: "'CRITICAL CO2 is VERY bad (%s ppm > 2000ppm) STOP ALL AND OPEN YOUR WINDOW:\\n%s' % ({{collector.co2.co2}}, get_donut( 100 * {{collector.co2.co2}} / 2500.0) )"
+

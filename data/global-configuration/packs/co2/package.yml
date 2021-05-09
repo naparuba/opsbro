@@ -1,0 +1,19 @@
+name: co2
+topics:
+    - automatic detection
+types:
+    - pack
+version: "1.0"
+homepage: ""
+author: Shinken Solutions
+description: Geoloc position
+contributors:
+    - Jean Gabès
+repository: ""
+keywords:
+    - pack
+    - co2
+    - mhz19
+dependencies:
+    core: ">=1.0"
+license: ""
