@@ -47,6 +47,7 @@ from .topic import topiker, TOPIC_SERVICE_DISCOVERY, TOPIC_AUTOMATIC_DECTECTION,
 from .packer import packer
 from .agentstates import AGENT_STATES
 from .udplistener import get_udp_listener
+from .yamlmgr import have_fast_yaml
 from .zonemanager import zonemgr
 
 # Global logger for this part
@@ -382,12 +383,12 @@ class Cluster(object):
     
     def launch_replication_first_sync_thread(self):
         threader.create_and_launch(self.do_replication_first_sync_thread, name='KV First replication synchronization', essential=True, part='key-value')
-
-
+    
+    
     def launch_kv_updates_cleaning_thread(self):
         threader.create_and_launch(kvmgr.do_kv_updates_cleaning_thread, name='KV updates files cleaning', essential=True, part='key-value')
-
-
+    
+    
     def launch_http_listeners(self):
         threader.create_and_launch(self.launch_tcp_listener, name='Http backend', essential=True, part='agent')
     
@@ -455,6 +456,7 @@ class Cluster(object):
                  'is_managed_system'   : systepacketmgr.is_managed_system(),
                  'system_distro'       : system_distro,
                  'system_distroversion': system_distroversion,
+                 'have_fast_yaml'      : have_fast_yaml(),
                  }
             
             # Update the infos with modules ones
@@ -864,7 +866,7 @@ class Cluster(object):
         if 'kv' in gossiper.groups and not one_shot:
             self.launch_replication_backlog_thread()
             self.launch_replication_first_sync_thread()
-            
+        
         # In a classic daemon, we must clean our old KV updates files
         if not one_shot:
             self.launch_kv_updates_cleaning_thread()

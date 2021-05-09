@@ -152,6 +152,7 @@ def do_info(show_logs):
     compliance = d.get('compliance')
     generators = d.get('generators')
     kv_store = d.get('kv')
+    have_fast_yaml = d.get('have_fast_yaml')
     
     ################### Generic
     __print_topic_header(TOPIC_GENERIC)
@@ -354,6 +355,14 @@ def do_info(show_logs):
         if kv_store_error != '':
             cprint('    - error: '.ljust(DEFAULT_INFO_COL_SIZE), color='blue', end='')
             cprint(kv_store_error, color='red')
+    
+    # Warn if we are missing the yaml lib, because it cause a very poor launch
+    cprint(' - Fast Yaml: '.ljust(DEFAULT_INFO_COL_SIZE), end='', color='blue')
+    if not have_fast_yaml:
+        cprint('MISSING', color='yellow')
+        __print_note('you should install the python-yaml lib')
+    else:
+        cprint('OK', color='green')
     
     cprint(' - Version: '.ljust(DEFAULT_INFO_COL_SIZE), end='', color='blue')
     cprint(version, color='green')
@@ -968,7 +977,7 @@ exports = {
         'examples'   : [
             {
                 'title': 'Set the node in the production group',
-                'args' : ['agent', 'parameters', 'add', 'group', 'production'],
+                'args' : ['agent', 'parameters', 'add', 'groups', 'production'],
             },
         ],
     },

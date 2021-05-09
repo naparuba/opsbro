@@ -120,6 +120,7 @@ compliance:
                   - python-simplejson
                   - python-setproctitle
                   - python-psutil
+                  - python-yaml
                   # Bash completion to enable the CLI completion
                   - bash-completion
          
@@ -132,6 +133,7 @@ compliance:
                   - python3-simplejson
                   - python3-setproctitle
                   - python3-psutil
+                  - python3-yaml
                   # Bash completion to enable the CLI completion
                   - bash-completion
          
@@ -151,6 +153,7 @@ compliance:
                   - python-simplejson
                   - python-setproctitle
                   - python-psutil
+                  - python-yaml
                   # Bash completion to enable the CLI completion
                   - bash-completion
          
@@ -162,6 +165,7 @@ compliance:
                   - python3-simplejson
                   - python3-setproctitle
                   - python3-psutil
+                  - python3-yaml
                   # Bash completion to enable the CLI completion
                   - bash-completion
          
@@ -176,6 +180,7 @@ compliance:
                packages:
                   - python3-leveldb
                   - python3-setproctitle
+                  - python3-yaml
                   # Bash completion to enable the CLI completion
                   - bash-completion
          
@@ -190,6 +195,7 @@ compliance:
                   - redhat-rpm-config
                   - python2-pip
                   - python2-simplejson
+                  - python2-yaml
                   # Bash completion to enable the CLI completion
                   - bash-completion
             post_commands:
@@ -206,6 +212,7 @@ compliance:
                   - redhat-rpm-config
                   - python-pip
                   - python-simplejson
+                  - python-yaml
                   # Bash completion to enable the CLI completion
                   - bash-completion
             post_commands:
@@ -222,13 +229,14 @@ compliance:
                   - redhat-rpm-config
                   - python-pip
                   - python2-simplejson
+                  - python2-yaml
                   # Bash completion to enable the CLI completion
                   - bash-completion
             post_commands:
                - pip install leveldb
          
          
-
+         
          
          # Alpine 3.5->7+ have pip2 command
          -  name         : alpine3_5_6_7_8_9_10
@@ -245,6 +253,7 @@ compliance:
                   - py2-pip
                   - py2-simplejson
                   - py2-setproctitle
+                  - py2-yaml
                   # Bash completion to enable the CLI completion
                   - bash-completion
             post_commands:
@@ -265,6 +274,7 @@ compliance:
                   - python2-dev
                   - py2-pip
                   - py2-simplejson
+                  - py2-yaml
                   # Not available in alpine 11 - py2-setproctitle
                   # Bash completion to enable the CLI completion
                   - bash-completion
@@ -280,6 +290,7 @@ compliance:
                   - leveldb
                   - py3-simplejson
                   - py3-setproctitle
+                  - py3-yaml
                   # Bash completion to enable the CLI completion
                   - bash-completion
          
@@ -291,6 +302,7 @@ compliance:
                packages:
                   - python2-leveldb
                   - python2-simplejson
+                  - python2-yaml
                   # Bash completion to enable the CLI completion
                   - bash-completion
          
@@ -302,6 +314,7 @@ compliance:
                packages:
                   - python-leveldb
                   - python-simplejson
+                  - python-yaml
                   # Bash completion to enable the CLI completion
                   - bash-completion
          
@@ -314,6 +327,7 @@ compliance:
                   - python27-devel
                   - python27-pip
                   - python27-simplejson
+                  - python27-yaml
                   # No Bash completion for amazon linux
             post_commands:
                - pip install leveldb
@@ -328,6 +342,7 @@ compliance:
                   - python-devel
                   - python2-pip
                   - python-simplejson
+                  - python-yaml
                   # No Bash completion for amazon linux
             post_commands:
                - pip install leveldb
@@ -340,6 +355,7 @@ compliance:
                   - gcc
                   - gcc-c++
                   - python3-devel
+                  - python3-yaml
             post_commands:
                - pip3 install leveldb simplejson setproctitle psutil
             

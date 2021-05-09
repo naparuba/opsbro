@@ -280,6 +280,29 @@ if [ $? != 0 ]; then
    exit 2
 fi
 
+
+##########   Show internal threads
+print_header "Fast YAML lib"
+
+OUTPUT=$(opsbro agent info | grep 'Fast Yaml')
+if [ $? != 0 ]; then
+   echo "ERROR: agent info did fail."
+   echo "$OUTPUT"
+   cat /var/log/opsbro/crash.log 2>/dev/null
+   cat /var/log/opsbro/daemon.log
+   exit 2
+fi
+
+echo "$OUTPUT" | grep 'MISSING'
+if [ $? == 0 ]; then
+   echo "ERROR: The python-yaml librairy is missing"
+   echo "$OUTPUT"
+   exit 2
+fi
+
+echo "Fast YAML is OK"
+
+
 print_header "Test Gossip Encryption"
 opsbro gossip zone key import --zone internet --key "NGNjZWI2ZmEyMzEyMTFlOA=="
 

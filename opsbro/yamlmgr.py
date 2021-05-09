@@ -44,6 +44,16 @@ def get_simple_yaml():
     return simple_yaml
 
 
+# To know if we have the standard lib, because wihtout we are slow
+def have_fast_yaml():
+    # Type: () -> Bool
+    try:
+        import yaml
+        return True
+    except ImportError:
+        return False
+
+
 ENDING_SUFFIX = '#___ENDING___'
 
 
