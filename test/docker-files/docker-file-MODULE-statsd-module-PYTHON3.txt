@@ -1,10 +1,6 @@
-FROM       naparuba/debian-9-python3
+FROM       naparuba/debian-10-python3
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-ADD        test/docker-helper/  /
-
-# Set python3 as default python
-RUN        update-alternatives --install /usr/bin/python python /usr/bin/python3 1
 
 
 # Net tools because we need netstat in this test

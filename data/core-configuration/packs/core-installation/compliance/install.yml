@@ -145,6 +145,7 @@ compliance:
                   - python-setproctitle
                   - python-psutil
                   - python-yaml
+                  - bash-completion  # Bash completion to enable the CLI completion
          
          
          -  name      : debian_python3

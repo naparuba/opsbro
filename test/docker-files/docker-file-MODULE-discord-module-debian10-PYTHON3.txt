@@ -1,12 +1,6 @@
-FROM       debian:10
+FROM       naparuba/debian-10-python3
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-ADD        test/docker-helper/  /
-
-RUN        /apt_get_install python3
-RUN        /apt_get_install python3-jinja2
-RUN        /apt_get_install python3-crypto
-RUN        /apt_get_install python3-setuptools
 
 ADD        . /root/opsbro-oss
 

@@ -1,10 +1,10 @@
-FROM debian:9
+FROM debian:10
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 
 ADD        test/docker-helper/  /
 
-# THIS DOCKER FILE is USED TO PUSH TO napruba/debian-9 so tests will be faster, and won't need to recompute all of this every time
+# THIS DOCKER FILE is USED TO PUSH TO napruba/debian-10 so tests will be faster, and won't need to recompute all of this every time
 
 RUN        /apt_get_install      python
 RUN        /apt_get_install      python-jinja2
@@ -16,6 +16,5 @@ RUN        /apt_get_install      python-simplejson
 RUN        /apt_get_install      python-setproctitle
 RUN        /apt_get_install      python-psutil
 RUN        /apt_get_install      python-yaml
-
 
 ENTRYPOINT     /bin/bash

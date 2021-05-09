@@ -590,3 +590,16 @@ https://github.com/zwindler/ansible-deploy-logstash
 
 https://github.com/RaRe-Technologies/sqlitedict
 
+
+docker build -t naparuba/debian-9 -f test/docker-files/TEMPLATE-debian9.txt .
+docker push naparuba/debian-9
+
+docker build -t naparuba/debian-9-python3 -f test/docker-files/TEMPLATE-debian9-PYTHON3.txt .
+docker push naparuba/debian-9-python3
+
+
+docker build -t naparuba/debian-10 -f test/docker-files/TEMPLATE-debian10.txt .
+docker push naparuba/debian-10
+
+docker build -t naparuba/debian-10-python3 -f test/docker-files/TEMPLATE-debian10-PYTHON3.txt .
+docker push naparuba/debian-10-python3
