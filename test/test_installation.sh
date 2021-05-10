@@ -134,8 +134,10 @@ fi
 # On travis: pre-pull the base images so parallel docker build will already have a cache, and not
 # try to dowload them all
 if [ "X$TRAVIS" == "Xtrue" ]; then
-   docker pull naparuba/debian-10-python3
-   docker pull naparuba/debian-10
+   echo "Launching docker images cache warmup at `date` "
+   docker pull naparuba/debian-10-python3 > /dev/null
+   docker pull naparuba/debian-10 > /dev/null
+   echo "  -> Finish at `date` "
 fi
 
 # For compose, we are asking to docker-compose to build and run
