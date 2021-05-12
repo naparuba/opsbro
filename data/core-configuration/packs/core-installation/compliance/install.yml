@@ -51,7 +51,7 @@ compliance:
                   - python2-simplejson
                   - python-setproctitle
                   - python2-psutil
-                  - python2-pyyam
+                  - python2-pyyaml
                   # Bash completion to enable the CLI completion
                   - bash-completion
          
