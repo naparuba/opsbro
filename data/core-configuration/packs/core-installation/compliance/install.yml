@@ -101,18 +101,23 @@ compliance:
             if           : "{{variables.is_oracle_linux}}"
             parameters   :
                packages:
-                  - libgomp   # monotonic clock
+                  - oracle-epel-release-el7  # for yaml
                   - python3-rpm
                   - python3-jinja2
                   - python3-setuptools
-                  - python3-yaml
-                  - gcc
-                  - gcc-c++
-                  - python3-devel
+                  - python36-PyYAML
+                  #- gcc
+                  #- gcc-c++
+                  #- python3-devel
+                  - python36-leveldb  # in epel
+                  - python36-simplejson  # in epel
+                  - python36-setproctitle # in epel
+                  - python36-psutil  # in epel
+                  - python36-pycryptodomex  # in epel
                   - bash-completion  # Bash completion to enable the CLI completion
                   # python3-cryptography is not the valid one
-            post_commands:
-               - pip3 install leveldb simplejson setproctitle psutil pycrypto
+            #post_commands:
+            #   - pip3 install leveldb simplejson setproctitle psutil pycrypto
          
          #         - name: redhat6
          #           if:   "{{variables.is_redhat}} and {{collector.system.os.linux.major_version}} == 6"
@@ -342,7 +347,7 @@ compliance:
                   - python27-devel
                   - python27-pip
                   - python27-simplejson
-                  - python27-yaml
+                  - python27-PyYAML
                   # No Bash completion for amazon linux
             post_commands:
                - pip install leveldb psutil setproctitle
