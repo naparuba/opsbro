@@ -22,7 +22,7 @@ class Co2(Collector):
                 return False
         
         try:
-            data = mh_z19.read_all()
+            data = self.lib.read_all()
         except Exception as exp:
             err = 'Cannot call mh_z19 captor, look if is is connected: %s' % exp
             self.set_error(err)
