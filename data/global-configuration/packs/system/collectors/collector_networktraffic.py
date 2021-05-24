@@ -1,5 +1,6 @@
 import sys
 import re
+import time
 import traceback
 import os
 
@@ -22,6 +23,14 @@ class NetworkTraffic(Collector):
     
     
     def launch(self):
+        r = self._do_launch(recursif_call=False)
+        if r == 'REDO_CALL':
+            time.sleep(1)  # let the system have real values
+            r = self._do_launch(recursif_call=True)
+        return r
+    
+    
+    def _do_launch(self, recursif_call=False):
         logger = self.logger
         now = int(NOW.monotonic())
         diff = now - self.last_launch  # note: thanks to monotonic clock, we cannot have a negative diff
@@ -78,7 +87,26 @@ class NetworkTraffic(Collector):
             
             logger.debug('getNetworkTraffic: parsed, looping')
             
+            logger.debug('Network Interfaces founded: %s' % ', '.join(faces.keys()))
             interfaces = {}
+            
+            was_new_iface = False
+            # Now loop through each interface
+            for face in faces:
+                key = face.strip()
+                
+                # We need to work out the traffic since the last check so first time we store the current value
+                # then the next time we can calculate the difference
+                list_of_keys = faces[face].keys()
+                if key not in self.networkTrafficStore:  # first loop, or new interface
+                    was_new_iface = True
+                    self.networkTrafficStore[key] = {}
+                    for k in list_of_keys:
+                        self.networkTrafficStore[key][k] = long(faces[face][k])
+            
+            if was_new_iface and not recursif_call:  # the very first call after a new interface, call it again
+                # to make a comparision call
+                return 'REDO_CALL'
             
             # Now loop through each interface
             for face in faces:
@@ -104,7 +132,7 @@ class NetworkTraffic(Collector):
                             interfaces[key][k] = long(interfaces[key][k])
                             self.networkTrafficStore[key][k] = long(faces[face][k])
                     
-                    else:
+                    else:  # maybe during a recursive call we have a new iface, ok let not have value this turn
                         self.networkTrafficStore[key] = {}
                         for k in list_of_keys:
                             self.networkTrafficStore[key][k] = long(faces[face][k])
@@ -113,9 +141,9 @@ class NetworkTraffic(Collector):
                     logger.debug('getNetworkTraffic: %s = %s' % (key, self.networkTrafficStore[key]['recv_bytes']))
                     logger.debug('getNetworkTraffic: %s = %s' % (key, self.networkTrafficStore[key]['trans_bytes']))
                 
-                except KeyError as ex:
+                except KeyError:
                     logger.error('getNetworkTraffic: no data for %s' % key)
-                except ValueError as ex:
+                except ValueError:
                     logger.error('getNetworkTraffic: invalid data for %s' % key)
             
             logger.debug('getNetworkTraffic: completed, returning')
