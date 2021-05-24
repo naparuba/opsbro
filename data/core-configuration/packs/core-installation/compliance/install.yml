@@ -103,7 +103,7 @@ compliance:
                packages:
                   - oracle-epel-release-el7  # for yaml
                   - python3-rpm
-                  - python3-jinja2
+                  - python36-jinja2
                   - python3-setuptools
                   - python36-PyYAML
                   #- gcc
