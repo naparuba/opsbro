@@ -113,7 +113,7 @@ compliance:
                   - python36-simplejson  # in epel
                   - python36-setproctitle # in epel
                   - python36-psutil  # in epel
-                  - python36-pycryptodomex  # in epel
+                  - python36-crypto  # in epel
                   - bash-completion  # Bash completion to enable the CLI completion
                   # python3-cryptography is not the valid one
             #post_commands:
