@@ -360,7 +360,7 @@ def do_info(show_logs):
     cprint(' - Fast Yaml: '.ljust(DEFAULT_INFO_COL_SIZE), end='', color='blue')
     if not have_fast_yaml:
         cprint('MISSING', color='yellow')
-        __print_note('you should install the python-yaml lib')
+        __print_note('you should install the python yaml lib')
     else:
         cprint('OK', color='green')
     

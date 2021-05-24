@@ -7,17 +7,18 @@ compliance:
       type        : package-install
       # You can set variables in order to not repeat yourself in the if rules
       variables   :
-         is_debian        : "{{collector.system.os.linux.distribution}} == 'debian'"
-         is_centos        : "{{collector.system.os.linux.distribution}} == 'centos'"
-         is_fedora        : "{{collector.system.os.linux.distribution}} == 'fedora'"
-         is_alpine        : "{{collector.system.os.linux.distribution}} == 'alpine'"
-         is_alpine_11_plus: "{{collector.system.os.linux.distribution}} == 'alpine' and {{collector.system.os.linux.minor_version}} >= 11"   # in order to avoid the 2*and limitation in variables
-         is_ubuntu        : "{{collector.system.os.linux.distribution}} == 'ubuntu'"
-         is_amazon_linux  : "{{collector.system.os.linux.distribution}} == 'amazon-linux'"
-         is_amazon_linux2 : "{{collector.system.os.linux.distribution}} == 'amazon-linux2'"
-         is_redhat        : "{{collector.system.os.linux.distribution}} == 'redhat'"
-         is_oracle_linux  : "{{collector.system.os.linux.distribution}} == 'oracle-linux'"
-         is_opensuse      : "{{collector.system.os.linux.distribution}} == 'opensuse'"
+         is_debian            : "{{collector.system.os.linux.distribution}} == 'debian'"
+         is_centos            : "{{collector.system.os.linux.distribution}} == 'centos'"
+         is_fedora            : "{{collector.system.os.linux.distribution}} == 'fedora'"
+         is_alpine            : "{{collector.system.os.linux.distribution}} == 'alpine'"
+         is_alpine_11         : "{{collector.system.os.linux.distribution}} == 'alpine' and {{collector.system.os.linux.minor_version}} == 11"   # TODO: in order to avoid the 2*and limitation in variables
+         is_alpine_12_and_more: "{{collector.system.os.linux.distribution}} == 'alpine' and {{collector.system.os.linux.minor_version}} >= 12"   # TODO: in order to avoid the 2*and limitation in variables
+         is_ubuntu            : "{{collector.system.os.linux.distribution}} == 'ubuntu'"
+         is_amazon_linux      : "{{collector.system.os.linux.distribution}} == 'amazon-linux'"
+         is_amazon_linux2     : "{{collector.system.os.linux.distribution}} == 'amazon-linux2'"
+         is_redhat            : "{{collector.system.os.linux.distribution}} == 'redhat'"
+         is_oracle_linux      : "{{collector.system.os.linux.distribution}} == 'oracle-linux'"
+         is_opensuse          : "{{collector.system.os.linux.distribution}} == 'opensuse'"
       environments:
          ###### CENTOS
          -  name      : centos6
@@ -257,15 +258,33 @@ compliance:
          
          
          
-         # Alpine 3.11+ => for python 3
-         -  name      : alpine11_py3_and_more
-            if        : "{{variables.is_alpine_11_plus}} and system_is_python_3()"
+         # Alpine 3.11 => for python 3
+         -  name      : alpine11_py3
+            if        : "{{variables.is_alpine_11}} and system_is_python_3()"
             parameters:
                packages:
                   - musl-dev  # monotonic clock
                   - py3-jinja2
                   #- py3-pycryptodome   fail on alpine 11
                   - py3-crypto
+                  - py3-setuptools
+                  - leveldb
+                  - py3-simplejson
+                  - py3-setproctitle
+                  - py3-psutil
+                  - py3-yaml
+                  # Bash completion to enable the CLI completion
+                  - bash-completion
+         
+         # Alpine 3.12+ => for python 3
+         -  name      : alpine12_py3_and_more
+            if        : "{{variables.is_alpine_12_and_more}} and system_is_python_3()"
+            parameters:
+               packages:
+                  - musl-dev  # monotonic clock
+                  - py3-jinja2
+                  - py3-pycryptodome
+                  #- py3-crypto  # alias to pycryptodome
                   - py3-setuptools
                   - leveldb
                   - py3-simplejson

@@ -298,6 +298,9 @@ class Cluster(object):
         
         # Let the process title be the valid one (can be set by the configuration)
         libstore.get_processtitler().set_name(self.process_name)
+        
+        # Seems that the import have issue if launch from thread on alpine, so keep the bool on the main thread
+        self._have_fast_yaml = have_fast_yaml()
     
     
     # We update the global agent state so other known about it, and also the user via the process name
@@ -456,7 +459,7 @@ class Cluster(object):
                  'is_managed_system'   : systepacketmgr.is_managed_system(),
                  'system_distro'       : system_distro,
                  'system_distroversion': system_distroversion,
-                 'have_fast_yaml'      : have_fast_yaml(),
+                 'have_fast_yaml'      : self._have_fast_yaml,
                  }
             
             # Update the infos with modules ones
@@ -917,5 +920,7 @@ class Cluster(object):
             threader.check_alives()
             
             time.sleep(1)
+            
+            logger.info('HAVE FAST YAML: %s' % have_fast_yaml())
         
         self.__exit_path()
