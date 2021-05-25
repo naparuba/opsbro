@@ -74,6 +74,7 @@ if [ "$TEST_SUITE" == "PYTHON" ]; then
    # The travis ubuntu image have issue for old version
    if [ "X$TRAVIS_PYTHON_VERSION" == "X2.6" ]; then
       $SUDO apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 762E3157
+      curl -L https://packagecloud.io/github/git-lfs/gpgkey | $SUDO apt-key add -
    fi
 
    # No more virtual env on Travis
