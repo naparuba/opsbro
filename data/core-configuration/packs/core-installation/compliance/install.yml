@@ -332,12 +332,12 @@ compliance:
                   - python2-Jinja2
                   - python2-pycrypto
                   - python2-simplejson
-                  - python-setuptools
+                  - python2-setuptools
                   - python2-leveldb
                   - bash-completion  # Bash completion to enable the CLI completion
                   - python2-psutil
                   - python2-setproctitle
-                  - python2-yaml
+                  - python2-pyaml
          
          
          # Older open source (42.x)
