@@ -920,7 +920,5 @@ class Cluster(object):
             threader.check_alives()
             
             time.sleep(1)
-            
-            logger.info('HAVE FAST YAML: %s' % have_fast_yaml())
         
         self.__exit_path()
