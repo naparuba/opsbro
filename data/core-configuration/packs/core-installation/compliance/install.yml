@@ -97,9 +97,9 @@ compliance:
                - pip3 install pycrypto
          
          
-         -  name         : is_oracle_linux_7
-            if           : "{{variables.is_oracle_linux}} and {{collector.system.os.linux.major_version}} == 7"
-            parameters   :
+         -  name      : is_oracle_linux_7
+            if        : "{{variables.is_oracle_linux}} and {{collector.system.os.linux.major_version}} == 7"
+            parameters:
                packages:
                   - oracle-epel-release-el7  # for yaml
                   - python3-rpm
@@ -126,21 +126,19 @@ compliance:
                packages:
                   - oracle-epel-release-el8  # for yaml
                   - python3-rpm
-                  - python36-jinja2
+                  - python3-jinja2
                   - python3-setuptools
-                  - python36-PyYAML
-                  #- gcc
-                  #- gcc-c++
-                  #- python3-devel
-                  - python36-leveldb  # in epel
-                  - python36-simplejson  # in epel
-                  - python36-setproctitle # in epel
-                  - python36-psutil  # in epel
-                  - python36-crypto  # in epel
+                  - python3-pyyaml  # in epel
+                  - leveldb  # in epel
+                  - python3-simplejson  # in epel
+                  - python3-setproctitle # in epel
+                  - python3-psutil  # in epel
+                  # - python3-pycryptodomex/python3-cryptography  no valid one founded in repos
+                  - gcc                # for pycrypto
+                  - python3-devel      # for pycrypto
                   - bash-completion  # Bash completion to enable the CLI completion
-                  # python3-cryptography is not the valid one
-            #post_commands:
-            #   - pip3 install leveldb simplejson setproctitle psutil pycrypto
+            post_commands:
+               - pip3 install pycrypto
          
          #         - name: redhat6
          #           if:   "{{variables.is_redhat}} and {{collector.system.os.linux.major_version}} == 6"
