@@ -139,4 +139,6 @@ wait_event_with_timeout 'node-1-END' 30
 wait_event_with_timeout 'node-2-END' 30
 wait_event_with_timeout 'node-3-END' 30
 
+
+sleep 30
 exit_if_no_crash "node-$NODE_NB is exiting well"
