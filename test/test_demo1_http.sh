@@ -135,6 +135,9 @@ if [ $CASE == "NODE-HTTP-1" ] || [ $CASE == "NODE-HTTP-2" ]; then
    fi
    wait_step_event "ENDING"
 
+   # Be sure to wait before exiting
+   sleep 30
+
    exit_if_no_crash "$CASE exiting at $(date)"
 fi
 
@@ -266,6 +269,9 @@ if [ $CASE == "NODE-HAPROXY" ]; then
    opsbro gossip events add "ENDING-$CASE"
    wait_step_event "ENDING"
 
+   # Be sure to wait before exiting
+   sleep 30
+
    exit_if_no_crash "$CASE node exiting  $(date)"
 fi
 
@@ -322,6 +328,9 @@ if [ $CASE == "NODE-CLIENT" ]; then
 
    opsbro gossip events add "ENDING-$CASE"
    wait_step_event "ENDING"
+
+   # Be sure to wait before exiting
+   sleep 30
 
    exit_if_no_crash "Client is exiting"
 fi
