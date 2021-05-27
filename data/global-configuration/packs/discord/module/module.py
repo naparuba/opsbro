@@ -47,6 +47,7 @@ class DiscordHandlerModule(HandlerModule):
         self._bot = None
         self._asyncio_lib = None
         self._ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+        self._stacking_period = 5  # stack messages up to 5 seconds
     
     
     def prepare(self):
@@ -72,6 +73,9 @@ class DiscordHandlerModule(HandlerModule):
             return
         # The creation can take time because we need to have the iohttp lib install first
         threader.create_and_launch(self._bot_creation_thread, name='Discord bot creation thread', part='discord', essential=True)
+        
+        # Stack messages up to X seconds, and send them in a unique bulk message
+        threader.create_and_launch(self._stacking_messages_thread, name='Discord messages thread', part='discord', essential=True)
     
     
     def _bot_creation_thread(self):
@@ -102,73 +106,65 @@ class DiscordHandlerModule(HandlerModule):
                 time.sleep(1)
     
     
+    def _stacking_messages_thread(self):
+        while True:
+            # Fast switch to get our messages
+            with self._pending_messages_lock:
+                pending_messages = self._pending_messages
+                self._pending_messages = []
+            
+            # Sleep if no messages
+            if len(pending_messages) == 0:
+                self.logger.debug('No messages this turn, go sleep')
+                time.sleep(self._stacking_period)
+                continue
+            
+            # Or if the bot is not connected currently
+            if not self._bot:
+                self.logger.info('The bot is not ready, skipping sending events')
+                time.sleep(self._stacking_period)
+                continue
+            
+            # NOTE: in the loop, maybe the name can change during run
+            node_name = '%s (%s)' % (gossiper.name, gossiper.public_addr)
+            if gossiper.display_name:
+                node_name = '%s [%s]' % (node_name, gossiper.display_name)
+            
+            content = u'- ' + u'\n - '.join(pending_messages)
+            self.logger.info('Sending message: %s' % content)
+            try:
+                self._bot.post_message(node_name, content)
+            except Exception:
+                self.logger.error('Creaton thread did failed with error: %s' % traceback.format_exc())
+                time.sleep(1)
+            time.sleep(self._stacking_period)
+    
+    
     def get_info(self):
         state = 'STARTED' if self.enabled else 'DISABLED'
         log = ''
         return {'configuration': self.get_config(), 'state': state, 'log': log}
     
     
-    # def __try_to_send_message(self, slack, attachments, channel):
-    #    r = slack.chat.post_message(channel=channel, text='', as_user=True, attachments=attachments)
-    #    self.logger.debug('[SLACK] return of the send: %s %s %s' % (r.successful, r.__dict__['body']['channel'], r.__dict__['body']['ts']))
-    
-    # def __get_token(self):
-    #    token = self.get_parameter('token')
-    #    if not token:
-    #        token = os.environ.get('DISCORD_TOKEN', '')
-    #    return token
-    
     def __send_discord_check(self, check):
-        # title = '{date_num} {time_secs} [node:`%s`][addr:`%s`] Check `%s` is going %s' % (gossiper.display_name, gossiper.addr, check['name'], check['state'])
         content = check['output']
         content = self._ansi_escape.sub('', content)  # remove colors from shell
-        # channel = self.get_parameter('channel')
-        # colors = {'ok': 'good', 'warning': 'warning', 'critical': 'danger'}
         icon = {'ok': CHARACTERS.check, 'warning': CHARACTERS.double_exclamation, 'critical': CHARACTERS.cross}.get(check['state'], '')
-        node_name = '%s (%s)' % (gossiper.name, gossiper.public_addr)
-        if gossiper.display_name:
-            node_name = '%s [%s]' % (node_name, gossiper.display_name)
-        # attachment = {"pretext": ' ', "text": content, 'color': colors.get(check['state'], '#764FA5'), 'author_name': node_name, 'footer': 'Send by OpsBro on %s' % node_name, 'ts': int(time.time())}
-        # fields = [
-        #    {"title": "Node", "value": node_name, "short": True},
-        #    {"title": "Check", "value": check['name'], "short": True},
-        # ]
-        # attachment['fields'] = fields
-        # attachments = [attachment]
-        # self.__do_send_message(slack, attachments, channel)
-        self._bot.post_message('%s %s / Check %s' % (icon, node_name, check['name']), content)
+        
+        with self._pending_messages_lock:
+            message = '%s : %s' % ('%s Check %s' % (icon, check['name']), content)
+            self._pending_messages.append(message)
     
     
     def __send_discord_group(self, group, group_modification):
-        
-        # title = '{date_num} {time_secs} [node:`%s`][addr:`%s`] Check `%s` is going %s' % (gossiper.display_name, gossiper.addr, check['name'], check['state'])
         content = 'The group %s was %s' % (group, group_modification)
-        # channel = self.get_parameter('channel')
-        colors = {'remove': 'danger', 'add': 'good'}
-        node_name = '%s (%s)' % (gossiper.name, gossiper.public_addr)
-        if gossiper.display_name:
-            node_name = '%s [%s]' % (node_name, gossiper.display_name)
-        # attachment = {"pretext": ' ', "text": content, 'color': colors.get(group_modification, '#764FA5'), 'author_name': node_name, 'footer': 'Send by OpsBro on %s' % node_name, 'ts': int(time.time())}
-        # fields = [
-        #    {"title": "Node", "value": node_name, "short": True},
-        #    {"title": "Group:%s" % group_modification, "value": group, "short": True},
-        # ]
-        # attachment['fields'] = fields
-        # attachments = [attachment]
-        # self.__do_send_message(slack, attachments, channel)
-        self._bot.post_message(node_name, content)
+        with self._pending_messages_lock:
+            self._pending_messages.append(content)
     
     
     def __send_discord_compliance(self, compliance):
-        # token = self.__get_token()
-        
-        # if not token:
-        #    self.logger.error('[SLACK] token is not configured on the slack module. skipping slack messages.')
-        #    return
-        # slack = Slacker(token)
-        # title = '{date_num} {time_secs} [node:`%s`][addr:`%s`] Check `%s` is going %s' % (gossiper.display_name, gossiper.addr, check['name'], check['state'])
         content = 'The compliance %s changed from %s to %s' % (compliance.get_name(), compliance.get_state(), compliance.get_old_state())
-        # channel = self.get_parameter('channel')
+        
         icon = {
             COMPLIANCE_STATES.RUNNING     : CHARACTERS.hbar_dotted,
             COMPLIANCE_STATES.COMPLIANT   : CHARACTERS.check,
@@ -177,40 +173,11 @@ class DiscordHandlerModule(HandlerModule):
             COMPLIANCE_STATES.PENDING     : '?',
             COMPLIANCE_STATES.NOT_ELIGIBLE: ''}.get(compliance.get_state())
         
-        node_name = '%s (%s)' % (gossiper.name, gossiper.public_addr)
-        if gossiper.display_name:
-            node_name = '%s [%s]' % (node_name, gossiper.display_name)
-        # attachment = {"pretext": ' ', "text": content, 'color': color, 'author_name': node_name, 'footer': 'Send by OpsBro on %s' % node_name, 'ts': int(time.time())}
-        # fields = [
-        #    {"title": "Node", "value": node_name, "short": True},
-        #    {"title": "Compliance:%s" % compliance.get_name(), "value": compliance.get_state(), "short": True},
-        # ]
-        title = "%s %s Compliance:%s : %s" % (icon, node_name, compliance.get_name(), compliance.get_state())
-        # attachment['fields'] = fields
-        # attachments = [attachment]
-        # self.__do_send_message(slack, attachments, channel)
-        self._bot.post_message(title, content)
+        title = "%s Compliance:%s : %s" % (icon, compliance.get_name(), compliance.get_state())
+        with self._pending_messages_lock:
+            message = u'%s \n   -> %s' % (title, content)
+            self._pending_messages.append(message)
     
-    
-    # def __do_send_message(self, slack, attachments, channel):
-    #     try:
-    #         self.__try_to_send_message(slack, attachments, channel)
-    #     except Exception as exp:
-    #         self.logger.error('[SLACK] Cannot send alert: %s (%s) %s %s %s' % (exp, type(exp), str(exp), str(exp) == 'channel_not_found', exp.__dict__))
-    #         # If it's just that the channel do not exists, try to create it
-    #         if str(exp) == 'channel_not_found':
-    #             try:
-    #                 self.logger.info('[SLACK] Channel %s do no exists. Trying to create it.' % channel)
-    #                 slack.channels.create(channel)
-    #             except Exception as exp:
-    #                 self.logger.error('[SLACK] Cannot create channel %s: %s' % (channel, exp))
-    #                 return
-    #             # Now try to resend the message
-    #             try:
-    #                 self.__try_to_send_message(slack, attachments, channel)
-    #             except Exception as exp:
-    #                 self.logger.error('[SLACK] Did create channel %s but we still cannot send the message: %s' % (channel, exp))
-    #
     
     def handle(self, obj, event):
         if_group = self.get_parameter('enabled_if_group')
@@ -225,8 +192,6 @@ class DiscordHandlerModule(HandlerModule):
             self.logger.info('The bot is not ready, skipping event %s' % event)
             return
         
-        # self._bot.post_message('Mon test', 'message test')
-        # return
         evt_type = event['evt_type']
         if evt_type == 'check_execution':
             evt_data = event['evt_data']
