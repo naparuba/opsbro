@@ -29,6 +29,8 @@ from .util import get_uuid
 from .udprouter import udprouter
 from .zonemanager import zonemgr
 
+SOCKET_CLASSIC_EXCEPTIONS = (socket.timeout, socket.gaierror, socket.error)  # gaierror: host not found, not an socket.error
+
 _64K = 65535
 
 KGOSSIP = 10
@@ -1152,7 +1154,7 @@ class Gossip(BaseManager):
                     self.set_suspect(new_other)
             except ValueError:  # bad json
                 self.set_suspect(other)
-        except (socket.timeout, socket.gaierror) as exp:
+        except SOCKET_CLASSIC_EXCEPTIONS as exp:
             logger.info("PING: error joining the other node %s:%s : %s. Switching to a indirect ping mode." % (addr, port, exp))
             possible_relays = [n for n in self.nodes.values() if
                                n['uuid'] != self.uuid
@@ -1301,7 +1303,7 @@ class Gossip(BaseManager):
             enc_ret_msg = encrypter.encrypt(ret_msg, dest_zone_name=nfrom_zone)
             sock.sendto(enc_ret_msg, addr)
             sock.close()
-        except (socket.timeout, socket.gaierror) as exp:
+        except SOCKET_CLASSIC_EXCEPTIONS as exp:
             # cannot reach even us? so it's really dead, let the timeout do its job on _from
             logger.info('PING (relay): cannot ping the node %s(%s:%s) for %s: %s' % (ntgt['display_name'], tgtaddr, tgtport, nfrom['display_name'], exp))
         except Exception as exp:
@@ -1512,7 +1514,7 @@ class Gossip(BaseManager):
                 total_size += len(enc_message)
                 sock.sendto(enc_message, (addr, port))
             logger.debug('BROADCAST: sent %d messages (total size=%d) to %s:%s (uuid=%s  display_name=%s)' % (len(messages), total_size, addr, port, dest['uuid'], dest['display_name']))
-        except (socket.timeout, socket.gaierror) as exp:
+        except SOCKET_CLASSIC_EXCEPTIONS as exp:
             logger.error("ERROR: cannot sent the UDP message of len %d to %s: %s" % (len(message), dest['uuid'], exp))
         try:
             if sock is not None:
@@ -1862,7 +1864,7 @@ class Gossip(BaseManager):
                 encrypted_message = encrypter.encrypt(flat_message, dest_zone_name=dest_zone)
                 sock.sendto(encrypted_message, (dest_addr, dest_port))
             logger.debug('Sending message to (%s) (type:%s)' % (dest_node['uuid'], message['type']))
-        except (socket.timeout, socket.gaierror) as exp:
+        except SOCKET_CLASSIC_EXCEPTIONS as exp:
             logger.error('Cannot Send message to (%s) (type:%s): %s' % (dest_node['uuid'], message['type'], exp))
     
     
