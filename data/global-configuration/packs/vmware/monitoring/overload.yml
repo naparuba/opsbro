@@ -4,6 +4,6 @@ check:
     ok_output: "'OK: the virtual server stolen CPU time is low (%%ready in vSphere): %d%%' % {{collector.vmwareperformances.cpu.stolen_cpu_pct}}"
 
     warning_if: "{{collector.vmwareperformances.cpu.stolen_cpu_pct}} > 15"
-    warning_output:  "'WARNING: your virtual machine have a high stolen CPU time (%%ready in vSphere): %d%%.\nIt means that the ESX server do not have enough physical server to manage the load of its virtual servers.\nYou must add new physical CPUs or reduce the number of allocated Vcpus.' % {{collector.vmwareperformances.cpu.stolen_cpu_pct}}"
+    warning_output:  "'WARNING: your virtual machine have a high stolen CPU time (%%ready in vSphere): %d%%\nIt means that the ESX server do not have enough physical server to manage the load of its virtual servers.\nYou must add new physical CPUs or reduce the number of allocated Vcpus.' % {{collector.vmwareperformances.cpu.stolen_cpu_pct}}"
     
     interval: "60s"

@@ -34,6 +34,7 @@ class VmwarePerformances(Collector):
         self.VMGuestLib = None
         # the vmware lib DON'T manage concurrent access, lock all
         self.lock = threading.RLock()
+        self._nb_cpus = None
     
     
     def launch(self):
@@ -48,6 +49,11 @@ class VmwarePerformances(Collector):
         if lib_ptr is None:
             self.set_not_eligible('The vmware tools are not installed on this server.')
             return res
+        
+        # We will need the number of cpus, but lazy load the multiprocessing lib if possible
+        if self._nb_cpus is None:
+            from multiprocessing import cpu_count
+            self._nb_cpus = cpu_count()
         
         res['vmware_tools_available'] = True
         lib_ptr.UpdateInfo()
@@ -73,7 +79,10 @@ class VmwarePerformances(Collector):
         # Now we are sure new and old, compute the percent
         time_elapsed = new_elapsed_ms - self.prev_elapsed_ms
         used_cpu_pct = 100 * (new_used_ms - self.prev_used_ms) / time_elapsed
-        stolen_cpu_pct = 100 * (new_stolen_ms - self.prev_stolen_ms) / time_elapsed
+        # Important:
+        # * time_elasped is global
+        # * but stolen is * all cpus, so we must divide by the number of Vcpus
+        stolen_cpu_pct = 100 * (new_stolen_ms - self.prev_stolen_ms) / (time_elapsed * self._nb_cpus)
         effective_cpu_mhz = lib_ptr.GetHostProcessorSpeed() * (new_used_ms - self.prev_used_ms) / time_elapsed
         
         self.prev_stolen_ms = new_stolen_ms
