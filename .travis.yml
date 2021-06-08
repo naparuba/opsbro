@@ -116,16 +116,16 @@ matrix  :
          dist  : xenial          # required for Python >= 3.7
          env   : TEST_SUITE=PYTHON
          
-      -  os            : windows
-         language      : sh
-         python        : "3.7"
-         before_install:
-            - choco install python --version 3.8.0
-            - export PATH="/c/Python38:/c/Python38/Scripts:$PATH"
-            - python -m pip install --upgrade pip wheel
-            - python -m pip install pywin32
-            #- python -m pip install pycrypto wheel
-         env           : TEST_SUITE=PYTHON
+#      -  os            : windows
+#         language      : sh
+#         python        : "3.7"
+#         before_install:
+#            - choco install python --version 3.8.0
+#            - export PATH="/c/Python38:/c/Python38/Scripts:$PATH"
+#            - python -m pip install --upgrade pip wheel
+#            - python -m pip install pywin32
+#            #- python -m pip install pycrypto wheel
+#         env           : TEST_SUITE=PYTHON
 
 
 
