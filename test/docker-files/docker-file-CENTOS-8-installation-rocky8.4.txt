@@ -9,7 +9,6 @@ RUN        /yum_install  python3
 ENV        PYTHON_EXE=/usr/bin/python3
 
 
-
 # TCL: very little
 ENV        TEST_PACKAGE_NAME=tcl
 # centos have a virtual package to test, vi -> vim-minimal
