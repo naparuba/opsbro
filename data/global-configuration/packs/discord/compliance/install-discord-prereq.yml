@@ -12,34 +12,32 @@ compliance:
          is_debian: "{{collector.system.os.linux.distribution}} == 'debian'"
          is_centos: "{{collector.system.os.linux.distribution}} == 'centos'"
          is_rocky : "{{collector.system.os.linux.distribution}} == 'rocky-linux'"
-         
+      
       environments:
-        - name: debian
-          # Debian: already in packages
-          if:   "{{variables.is_debian}}"
-          parameters:
-             packages:
-              - python3-aiohttp
-
-        - name: centos
-          # Centos: ... nightmare mode one
-          if:   "{{variables.is_centos}}"
-          parameters:
-             packages:
-              - gcc
-              - python3-devel
-          post_commands:
-              # centos, need to go with pip3
-              - pip3 install aiohttp
+         -  name      : debian
+            # Debian: already in packages
+            if        : "{{variables.is_debian}}"
+            parameters:
+               packages:
+                  - python3-aiohttp
+         
+         -  name         : centos
+            # Centos: ... nightmare mode one
+            if           : "{{variables.is_centos}}"
+            parameters   :
+               packages:
+                  - gcc
+                  - python3-devel
+            post_commands:
+               # centos, need to go with pip3
+               - pip3 install aiohttp
+         
+         
+         -  name      : rocky
+            # Rocky linux: better than centos 8
+            if        : "{{variables.is_rocky}}"
+            parameters:
+               packages:
+                  - python3-aiohttp
               
               
-        - name: rocky
-          # Centos like: ... nightmare mode one
-          if:   "{{variables.is_rocky}}"
-          parameters:
-             packages:
-              - python3-aiohttp
-              #- python3-devel
-          #post_commands:
-          #    # centos, need to go with pip3
-          #    - pip3 install aiohttp
