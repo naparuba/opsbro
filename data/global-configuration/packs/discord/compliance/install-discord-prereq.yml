@@ -1,15 +1,18 @@
 compliance:
-   name: Install python3-aiohttp if discord module enabled
-   verify_if:   "is_in_group('discord')"
-   mode: enforcing
-   interval: 1s
-   note: This installer will install the python aiohttp librairy is the discord module goes enabled
-   rule:
-      type: package-install
+   name     : Install python3-aiohttp if discord module enabled
+   verify_if: "is_in_group('discord')"
+   mode     : enforcing
+   interval : 1s
+   note     : This installer will install the python aiohttp librairy is the discord module goes enabled
+   rule     :
+      type        : package-install
+      
       # You can set variables in order to not repeat yourself in the if rules
-      variables:
+      variables   :
          is_debian: "{{collector.system.os.linux.distribution}} == 'debian'"
          is_centos: "{{collector.system.os.linux.distribution}} == 'centos'"
+         is_rocky : "{{collector.system.os.linux.distribution}} == 'rocky-linux'"
+         
       environments:
         - name: debian
           # Debian: already in packages
@@ -28,3 +31,15 @@ compliance:
           post_commands:
               # centos, need to go with pip3
               - pip3 install aiohttp
+              
+              
+        - name: rocky
+          # Centos like: ... nightmare mode one
+          if:   "{{variables.is_rocky}}"
+          parameters:
+             packages:
+              - python3-aiohttp
+              #- python3-devel
+          #post_commands:
+          #    # centos, need to go with pip3
+          #    - pip3 install aiohttp

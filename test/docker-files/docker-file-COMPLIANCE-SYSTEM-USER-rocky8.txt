@@ -1,0 +1,22 @@
+FROM rockylinux/rockylinux:8.4
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+ADD        . /root/opsbro-oss
+
+
+RUN        /yum_install  python3
+
+# As there is no "python" in centos8, we are giving the test it's path for starting the setup.py
+ENV        PYTHON_EXE=/usr/bin/python3
+
+WORKDIR    /root/opsbro-oss
+
+RUN        python3 setup.py install
+
+# Copy the mail pack into a local one to enable modification
+RUN        opsbro  packs overload global.linux
+# Copy the new compliance value
+ADD        test/test-files/test-compliance-system-user/compliance/*.yml   /var/lib/opsbro/local-configuration/packs/linux/compliance/
+
+ENTRYPOINT     test/test_compliance-system-user.sh
