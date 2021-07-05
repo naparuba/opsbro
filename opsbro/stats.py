@@ -25,7 +25,11 @@ class Stats(object):
         self.buf.append(s)
         if len(self.buf) > 20:
             pkt = string_encode('\n'.join(self.buf))
-            self.sock.sendto(pkt, (UDP_IP, UDP_PORT))
+            try:
+                self.sock.sendto(pkt, (UDP_IP, UDP_PORT))
+            except (socket.error, IOError):
+                # not a crime to lost these
+                pass
             self.buf = []
     
     
