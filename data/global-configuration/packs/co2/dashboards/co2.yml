@@ -11,9 +11,9 @@ dashboard:
                    - horizontal_gauge:
                       title: CO2 ppm
                       value: "100 * {{collector.co2.co2}} / 2500.0"
-                      unit: "% of very bad"
+                      unit: "% of warning"
                    - horizontal_chart:
                       title: CO2
                       value: "100 * {{collector.co2.co2}} / 2500.0"
-                      unit: "% of very bad"
+                      unit: "% of warning"
 
