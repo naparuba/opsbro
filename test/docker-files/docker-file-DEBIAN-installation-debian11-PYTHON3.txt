@@ -1,0 +1,17 @@
+FROM debian:bullseye
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+
+RUN        /apt_get_install   python3
+
+# Set python3 as default python
+RUN        update-alternatives --install /usr/bin/python python /usr/bin/python3 1
+
+# For test
+RUN        /apt_get_install   procps
+
+ADD        . /root/opsbro-oss
+
+WORKDIR       /root/opsbro-oss
+ENTRYPOINT    test/test_one_linux_installation.sh  && test/assert_group.sh "debian"
