@@ -78,8 +78,11 @@ class Encrypter(object):
         self._gossip_zone_from_fingerprint = {}  # key finger print => zone name
         
         # MFK
-        self.RSA = None
         self._rsa_keys = {}  # by zones
+    
+    
+    def get_RSA(self):
+        return rsaer.get_RSA()
     
     
     def get_mf_priv_key(self):
@@ -271,7 +274,7 @@ class Encrypter(object):
     def _load_master_keys_if_need(self, zone_name):
         from .configurationmanager import configmgr
         
-        RSA = RSAer().get_RSA()
+        RSA = rsaer.get_RSA()
         private_key_file = '%s.private.key' % zone_name
         public_key_file = '%s.public.key' % zone_name
         private_key_path = os.path.join(configmgr.zone_keys_directory, private_key_file)
@@ -294,7 +297,7 @@ class Encrypter(object):
             with open(private_key_path, 'r') as f:
                 buf = unicode_to_bytes(f.read())  # the RSA lib need binary
             try:
-                mfkey_priv = RSAer().load_private(buf)  # RSA.PrivateKey.load_pkcs1(buf)
+                mfkey_priv = rsaer.load_private(buf)  # RSA.PrivateKey.load_pkcs1(buf)
                 key_pair.private_key = mfkey_priv
             except Exception as exp:
                 logger.error('Invalid master private key at %s. (%s) Exiting.' % (private_key_path, exp))
@@ -307,7 +310,7 @@ class Encrypter(object):
             with open(public_key_path, 'r') as f:
                 buf = unicode_to_bytes(f.read())  # the RSA lib need binary
             try:
-                mfkey_pub = RSAer().load_public(buf)  # RSA.PublicKey.load_pkcs1(buf)
+                mfkey_pub = rsaer.load_public(buf)  # RSA.PublicKey.load_pkcs1(buf)
                 key_pair.public_key = mfkey_pub
             except Exception as exp:
                 logger.error('Invalid master public key at %s. (%s) Exiting.' % (public_key_path, exp))
@@ -317,7 +320,7 @@ class Encrypter(object):
     
     def generate_challenge(self, zone_name):
         challenge_string = get_uuid()
-        RSA = RSAer().get_RSA()
+        RSA = rsaer.get_RSA()
         public_key = self.get_mf_pub_key()
         raw_encrypted_string = RSA.encrypt(unicode_to_bytes(challenge_string), public_key)  # encrypt 0=dummy param not used
         encrypted_challenge = bytes_to_unicode(base64.b64encode(raw_encrypted_string))  # base64 returns bytes
@@ -325,6 +328,7 @@ class Encrypter(object):
 
 
 encrypter = None
+rsaer = RSAer()
 
 
 def get_encrypter():
