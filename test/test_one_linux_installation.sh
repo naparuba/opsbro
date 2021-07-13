@@ -9,6 +9,11 @@ print_header "Installation"
 
 $PYTHON_EXE setup.py install
 if [ $? != 0 ]; then
+   # Maybe it's "NORMAL" to fail here as it is not compatible, like debian 11 + python2
+   if [ "$MUST_FAIL" == "true" ]; then
+      echo "Installation fail, but is is NORMAL. Exiting"
+      exit_if_no_crash
+   fi
    echo "ERROR: installation failed!"
    exit 2
 fi

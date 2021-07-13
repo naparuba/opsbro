@@ -417,12 +417,30 @@ if allow_black_magic:
     additionnal_pypi_repos.append('https://pypi.python.org/pypi/leveldb/')
 
 if allow_black_magic:
+    # Special case: debian 11 + python 2 do not have python-apt, so must go to python3 instead.
+    is_incompatible = False
+    incompatibility_reason = ''
+    incompatibility_solution = ''
+    if system_distro == 'debian' and system_distroversion.startswith('11.') and sys.version_info[0] == 2:
+        is_incompatible = True
+        incompatibility_reason = 'there is no python-apt (python2) librairy on debian 11, so cannot look at installed packaged in a fast way'
+        incompatibility_solution = 'restart the install with python3 instead'
+    
     if is_managed_system:
         cprint(' * Your system ', end='')
         cprint('%s (version %s.%s.%s)' % (python_exe_path, sys.version_info[0], sys.version_info[1], sys.version_info[2]), color='magenta', end='')
         cprint(' on ', end='')
         cprint('%s (version %s) ' % (system_distro, system_distroversion), color='magenta', end='')
         
+        if is_incompatible:  # debian 11 + python2 for example, cannot check for installed packages, so bail out
+            cprint(u'is ', end='')
+            cprint(u'NOT ', color='red', end='')
+            cprint(u'managed by this installer:')
+            cprint(u' - Because:  %s' % incompatibility_reason, color='red')
+            cprint(u' - Solution: %s' % incompatibility_solution, color='green')
+            cprint(u'Exiting', color='magenta')
+            sys.exit(2)
+        # all is OK :)
         cprint(u'is managed by this installer: ', end='')
         cprint(CHARACTERS.check, color='green')
         cprint('   - it will be able to use system package manager to install dependencies.', color='grey')
