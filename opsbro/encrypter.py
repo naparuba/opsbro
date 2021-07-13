@@ -4,6 +4,7 @@ import os
 import base64
 import hashlib
 import struct
+import traceback
 
 from .log import LoggerFactory
 from .util import bytes_to_unicode, unicode_to_bytes, get_uuid
@@ -26,6 +27,47 @@ class RSAKeysPair(object):
     def __init__(self):
         self.private_key = None
         self.public_key = None
+
+
+class RSAer(object):
+    def __init__(self):
+        self.RSA = None
+    
+    
+    def get_RSA(self):
+        if self.RSA is not None:
+            return self.RSA
+        # Cannot take RSA from Crypto because on centos6 the version
+        # is just toooooo old :(
+        try:
+            import rsa as RSA
+            self.RSA = RSA
+        except ImportError:
+            # NOTE: rsa lib import itself as RSA, so we must hook the sys.path to be happy with this...
+            _internal_rsa_dir = os.path.join(os.path.dirname(__file__), 'misc', 'internalrsa')
+            sys.path.insert(0, _internal_rsa_dir)
+            # ok so try the mist one
+            try:
+                import opsbro.misc.internalrsa.rsa as RSA
+                self.RSA = RSA
+            except ImportError:
+                # even local one fail? arg!
+                self.RSA = None
+                # so now we did import it, refix sys.path to do not have misc inside
+                # sys.path.pop(0)
+        return self.RSA
+    
+    
+    def load_private(self, buf):
+        RSA = self.get_RSA()
+        mfkey_priv = RSA.PrivateKey.load_pkcs1(buf)
+        return mfkey_priv
+    
+    
+    def load_public(self, buf):
+        RSA = self.get_RSA()
+        mfkey_pub = RSA.PublicKey.load_pkcs1(buf)
+        return mfkey_pub
 
 
 class Encrypter(object):
@@ -61,37 +103,17 @@ class Encrypter(object):
         return key_pair.public_key
     
     
-    def get_RSA(self):
-        if self.RSA is not None:
-            return self.RSA
-        # Cannot take RSA from Crypto because on centos6 the version
-        # is just toooooo old :(
-        try:
-            import rsa as RSA
-            self.RSA = RSA
-        except ImportError:
-            # NOTE: rsa lib import itself as RSA, so we must hook the sys.path to be happy with this...
-            _internal_rsa_dir = os.path.join(os.path.dirname(__file__), 'misc', 'internalrsa')
-            sys.path.insert(0, _internal_rsa_dir)
-            # ok so try the mist one
-            try:
-                import opsbro.misc.internalrsa.rsa as RSA
-                self.RSA = RSA
-            except ImportError:
-                # even local one fail? arg!
-                self.RSA = None
-                # so now we did import it, refix sys.path to do not have misc inside
-                # sys.path.pop(0)
-        return self.RSA
-    
-    
     def get_AES(self):
         if self.AES is not None:
             return self.AES
         try:
             from Crypto.Cipher import AES
         except ImportError:
-            AES = None
+            # Maybe we have cryptodome installed instead
+            try:
+                from Cryptodome.Cipher import AES
+            except ImportError:
+                AES = None
         self.AES = AES
         return AES
     
@@ -208,11 +230,11 @@ class Encrypter(object):
             # Be sure the data is x16 lenght
             if len(encrypted_data) % 16 != 0:
                 raw_data += ' ' * (-len(encrypted_data) % 16)
-            cypher = AES.new(encryption_key, AES.MODE_ECB)
+            cypher = AES.new(unicode_to_bytes(encryption_key), AES.MODE_ECB)
             decrypted_data = cypher.decrypt(encrypted_data).strip()
             return bytes_to_unicode(decrypted_data)
-        except Exception as exp:
-            logger.error('Decryption fail: %s' % exp)
+        except Exception:
+            logger.error('Decryption fail: %s' % traceback.format_exc())
             return None
     
     
@@ -229,8 +251,9 @@ class Encrypter(object):
         # print('TO encrypt data size: %s' % len(data))
         
         try:
-            cypher = AES.new(encryption_key, AES.MODE_ECB)
-            encrypted_data = cypher.encrypt(data)
+            print('TYPE: %s' % unicode_to_bytes(encryption_key))
+            cypher = AES.new(unicode_to_bytes(encryption_key), AES.MODE_ECB)
+            encrypted_data = cypher.encrypt(unicode_to_bytes(data))
             encrypted_data_size = len(encrypted_data)
             key_fingerprint = self._get_finger_print_from_key(encryption_key)
             
@@ -240,15 +263,15 @@ class Encrypter(object):
             # print('Final packet %s' % final_packet)
             # print('Final packet size: %s' % len(final_packet))
             return final_packet
-        except Exception as exp:
-            logger.error('Encryption fail:', exp)
+        except Exception:
+            logger.error('Encryption fail: %s' % traceback.format_exc())
             return u''
     
     
     def _load_master_keys_if_need(self, zone_name):
         from .configurationmanager import configmgr
         
-        RSA = self.get_RSA()
+        RSA = RSAer().get_RSA()
         private_key_file = '%s.private.key' % zone_name
         public_key_file = '%s.public.key' % zone_name
         private_key_path = os.path.join(configmgr.zone_keys_directory, private_key_file)
@@ -271,7 +294,7 @@ class Encrypter(object):
             with open(private_key_path, 'r') as f:
                 buf = unicode_to_bytes(f.read())  # the RSA lib need binary
             try:
-                mfkey_priv = RSA.PrivateKey.load_pkcs1(buf)
+                mfkey_priv = RSAer().load_private(buf)  # RSA.PrivateKey.load_pkcs1(buf)
                 key_pair.private_key = mfkey_priv
             except Exception as exp:
                 logger.error('Invalid master private key at %s. (%s) Exiting.' % (private_key_path, exp))
@@ -284,7 +307,7 @@ class Encrypter(object):
             with open(public_key_path, 'r') as f:
                 buf = unicode_to_bytes(f.read())  # the RSA lib need binary
             try:
-                mfkey_pub = RSA.PublicKey.load_pkcs1(buf)
+                mfkey_pub = RSAer().load_public(buf)  # RSA.PublicKey.load_pkcs1(buf)
                 key_pair.public_key = mfkey_pub
             except Exception as exp:
                 logger.error('Invalid master public key at %s. (%s) Exiting.' % (public_key_path, exp))
@@ -294,7 +317,7 @@ class Encrypter(object):
     
     def generate_challenge(self, zone_name):
         challenge_string = get_uuid()
-        RSA = self.get_RSA()
+        RSA = RSAer().get_RSA()
         public_key = self.get_mf_pub_key()
         raw_encrypted_string = RSA.encrypt(unicode_to_bytes(challenge_string), public_key)  # encrypt 0=dummy param not used
         encrypted_challenge = bytes_to_unicode(base64.b64encode(raw_encrypted_string))  # base64 returns bytes

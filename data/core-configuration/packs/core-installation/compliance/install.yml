@@ -119,7 +119,7 @@ compliance:
                   - python3-devel
             post_commands:
                - pip3 install pycrypto
-
+         
          
          -  name      : is_oracle_linux_7
             if        : "{{variables.is_oracle_linux}} and {{collector.system.os.linux.major_version}} == 7"
@@ -140,8 +140,7 @@ compliance:
                   - python36-crypto  # in epel
                   - bash-completion  # Bash completion to enable the CLI completion
                   # python3-cryptography is not the valid one
-            #post_commands:
-            #   - pip3 install leveldb simplejson setproctitle psutil pycrypto
+            
          
          
          -  name         : is_oracle_linux_8
@@ -199,14 +198,30 @@ compliance:
                   - bash-completion  # Bash completion to enable the CLI completion
          
          
-         -  name      : debian_python3
-            if        : "{{variables.is_debian}} and system_is_python_3()"
+         -  name      : debian_python3_10_and_less
+            if        : "({{variables.is_debian}} and system_is_python_3()) and {{collector.system.os.linux.major_version}} <= 10 "
             parameters:
                packages:
                   - python3-jinja2
                   - python3-crypto
                   - python3-setuptools
                   - python3-leveldb
+                  - python3-simplejson
+                  - python3-setproctitle
+                  - python3-psutil
+                  - python3-yaml
+                  - bash-completion  # Bash completion to enable the CLI completion
+         
+         
+         # Debian 11: need python3-pycryptodome for crypto
+         -  name      : debian_python3_11_and_more
+            if        : "({{variables.is_debian}} and system_is_python_3()) and {{collector.system.os.linux.major_version}} >= 11"
+            parameters:
+               packages:
+                  - python3-jinja2
+                  - python3-pycryptodome
+                  - python3-setuptools
+                  - libleveldb1d  # no native python wrapper
                   - python3-simplejson
                   - python3-setproctitle
                   - python3-psutil
@@ -404,7 +419,7 @@ compliance:
                packages:
                   - python2-setuptools
                   - python-jinja2
-                  # python2-cryptography Not with amazon
+                  # python2-cryptography # Not with amazon
                   - python-simplejson
                   - gcc
                   - gcc-c++
