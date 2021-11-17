@@ -136,8 +136,8 @@ class InterfaceHostingDriver(object):
         addr2_is_10 = addr2.startswith('10.')
         addr1_is_172 = addr1.startswith('172.')
         addr2_is_172 = addr2.startswith('172.')
-        addr1_is_127 = addr1.startswith('127.')
-        addr2_is_127 = addr2.startswith('127.')
+        addr1_is_127 = addr1.startswith('127.0.')
+        addr2_is_127 = addr2.startswith('127.0.')
         
         # lower is better
         addr1_order = 4
