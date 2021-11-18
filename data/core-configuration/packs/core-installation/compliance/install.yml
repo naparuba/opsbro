@@ -10,6 +10,7 @@ compliance:
          is_debian            : "{{collector.system.os.linux.distribution}} == 'debian'"
          is_centos            : "{{collector.system.os.linux.distribution}} == 'centos'"
          is_rocky             : "{{collector.system.os.linux.distribution}} == 'rocky-linux'"
+         is_alma         : "{{collector.system.os.linux.distribution}} == 'almalinux'"
          is_fedora            : "{{collector.system.os.linux.distribution}} == 'fedora'"
          is_alpine            : "{{collector.system.os.linux.distribution}} == 'alpine'"
          is_alpine_11         : "{{collector.system.os.linux.distribution}} == 'alpine' and {{collector.system.os.linux.minor_version}} == 11"   # TODO: in order to avoid the 2*and limitation in variables
@@ -119,7 +120,31 @@ compliance:
                   - python3-devel
             post_commands:
                - pip3 install pycrypto
-         
+
+
+         # The new centos 8 bis
+         -  name         : almalinux
+            if           : "{{variables.is_alma}} and {{collector.system.os.linux.major_version}} == 8"
+            parameters   :
+               packages:
+                  - libgomp   # monotonic clock
+                  - epel-release
+                  - python3-rpm
+                  - python3-jinja2
+                  # python3-pycryptodomex  # not the good one too
+                  # python3-cryptography  # not working on centos8
+                  - leveldb     # no python-leveldb for centos8
+                  - python3-simplejson
+                  - python3-setproctitle
+                  - python3-psutil
+                  - python3-yaml
+                  - bash-completion  # Bash completion to enable the CLI completion
+                  # For pycrypto
+                  - gcc
+                  - python3-devel
+            post_commands:
+               - pip3 install pycrypto
+
          
          -  name      : is_oracle_linux_7
             if        : "{{variables.is_oracle_linux}} and {{collector.system.os.linux.major_version}} == 7"
