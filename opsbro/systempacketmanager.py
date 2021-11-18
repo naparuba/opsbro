@@ -94,6 +94,9 @@ class SystemPacketMgr(object):
         elif 'rocky linux' in distname:
             self.distro = 'rocky-linux'
             self.managed_system = True
+        elif 'almalinux' in distname:
+            self.distro = 'almalinux'
+            self.managed_system = True
         elif 'redhat' in distname or 'red hat' in distname:
             self.distro = 'redhat'
             self.managed_system = True
@@ -124,7 +127,7 @@ class SystemPacketMgr(object):
             self.managed_system = False
         
         # Get the backend
-        if self.distro in ['redhat', 'centos', 'rocky-linux', 'amazon-linux', 'amazon-linux2', 'oracle-linux', 'fedora']:
+        if self.distro in ['redhat', 'centos', 'almalinux', 'rocky-linux', 'amazon-linux', 'amazon-linux2', 'oracle-linux', 'fedora']:
             self.backend = YumBackend()
         elif self.distro in ['debian', 'ubuntu']:
             self.backend = AptBackend()
