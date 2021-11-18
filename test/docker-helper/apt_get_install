@@ -1,17 +1,17 @@
 #!/bin/bash
 
 # Retry the install 3 times before exit in error
-apt-get update && apt-get install -y --allow-unauthenticated  $1
+apt-get --allow-releaseinfo-change update && apt-get install -y --allow-unauthenticated  $1
 if [ $? == 0 ]; then
    exit 0
 fi
 
-apt-get update && apt-get install -y --allow-unauthenticated  $1
+apt-get --allow-releaseinfo-change update && apt-get install -y --allow-unauthenticated  $1
 if [ $? == 0 ]; then
    exit 0
 fi
 
-apt-get update && apt-get install -y --allow-unauthenticated  $1
+apt-get --allow-releaseinfo-change update && apt-get install -y --allow-unauthenticated  $1
 
 # This time we exit with the install state
 exit $?

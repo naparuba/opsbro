@@ -92,9 +92,10 @@ class AptBackend(LinuxBackend):
     
     
     # apt-get -q --yes --no-install-recommends install XXXXX
+    # NOTE: --allow-releaseinfo-change => allow when repo slitly change
     def install_package(self, package):
         logger.debug('APT :: installing package: %s' % package)
-        p = subprocess.Popen(['apt-get', 'update'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        p = subprocess.Popen(['apt-get', '--allow-releaseinfo-change', 'update'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
         logger.debug('APT (apt-get update):: stdout/stderr: %s/%s' % (stdout, stderr))
         if p.returncode != 0:
@@ -110,9 +111,10 @@ class AptBackend(LinuxBackend):
     
     
     # apt-get -q --yes --no-install-recommends upgrade XXXXX
+    # NOTE: --allow-releaseinfo-change => allow when repo slitly change
     def update_package(self, package):
         logger.debug('APT :: updating package: %s' % package)
-        p = subprocess.Popen(['apt-get', 'update'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        p = subprocess.Popen(['apt-get','--allow-releaseinfo-change', 'update'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
         logger.debug('APT (apt-get update):: stdout/stderr: %s/%s' % (stdout, stderr))
         if p.returncode != 0:
