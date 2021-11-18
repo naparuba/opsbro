@@ -1,0 +1,14 @@
+FROM ubuntu:21.10
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+
+RUN        /apt_get_install  python3
+
+# As there is no "python" in ubuntu20.10, we are giving the test it's path for starting the setup.py
+ENV        PYTHON_EXE=/usr/bin/python3
+
+ADD        . /root/opsbro-oss
+
+ENTRYPOINT    test/test_one_linux_installation.sh  && test/assert_group.sh "ubuntu"
+WORKDIR       /root/opsbro-oss
