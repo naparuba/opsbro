@@ -27,7 +27,7 @@ class Stats(object):
             pkt = string_encode('\n'.join(self.buf))
             try:
                 self.sock.sendto(pkt, (UDP_IP, UDP_PORT))
-            except (socket.error, IOError):
+            except (socket.timeout, socket.gaierror, IOError):
                 # not a crime to lost these
                 pass
             self.buf = []
