@@ -140,7 +140,8 @@ class CPUID(object):
             # pythonapi is cleaned up before the object?
             ctypes.pythonapi.free.restype = None
             ctypes.pythonapi.free.argtypes = [c_void_p]
-            ctypes.pythonapi.free(self.addr)
+            if hasattr(self, 'addr'):
+                ctypes.pythonapi.free(self.addr)
 
 
 class Hypervisor(Collector):
