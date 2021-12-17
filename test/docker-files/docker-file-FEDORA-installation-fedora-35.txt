@@ -2,6 +2,10 @@ FROM fedora:35
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 ADD        test/docker-helper/  /
+
+# NOTE: there is a strange bug on travis, cannot resolv mirrors.fedoraproject.org so put 209.132.190.2
+RUN        printf "\n209.132.190.2   mirrors.fedoraproject.org\n" >> /etc/hosts
+
 RUN        /dnf_install python
 
 # For the test
