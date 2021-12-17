@@ -15,7 +15,7 @@ class MailHandlerModule(HandlerModule):
     parameters = {
         'enabled'                    : BoolParameter(default=False),
         'severities'                 : StringListParameter(default=['ok', 'warning', 'critical', 'unknown']),
-        'contacts'                   : StringListParameter(default=['naparuba@gmail.com']),
+        'contacts'                   : StringListParameter(default=['monitoring@mydomain.com']),
         'addr_from'                  : StringParameter(default='opsbro@mydomain.com'),
         'smtp_server'                : StringParameter(default='localhost'),
         'smtps'                      : BoolParameter(default=False),
