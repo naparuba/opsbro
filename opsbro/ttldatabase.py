@@ -116,7 +116,9 @@ class TTLDatabase(object):
                 f = codecs.open(os.path.join(self.ttldb_dir, '%d.ttl' % bhour), 'r', 'utf8')
                 nb_clean = 0
                 for line in f.readlines():
-                    key = line.strip()
+                    key = ''.join(list(c for c in line.strip() if c.isprintable()))  # remove bad characters that can have in file, even with codecs.open
+                    if not key:  # can be void after clean
+                        continue
                     nb_clean += 1
                     kvmgr.delete(key)
                 

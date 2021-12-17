@@ -603,3 +603,7 @@ docker push naparuba/debian-10
 
 docker build -t naparuba/debian-10-python3 -f test/docker-files/TEMPLATE-debian10-PYTHON3.txt .
 docker push naparuba/debian-10-python3
+
+
+#### Dump de mémoire:
+echo -e "GET /debug/memory HTTP/1.1\r\n\r\n" | socat unix-connect:/var/lib/opsbro/opsbro.sock STDIO
