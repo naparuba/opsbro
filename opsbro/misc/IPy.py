@@ -10,6 +10,10 @@ __version__ = '1.00'
 
 import bisect
 import collections
+try:
+    from collections import MutableSet
+except ImportError:  # python 3.10
+    from collections.abc import MutableSet
 import sys
 import types
 
@@ -1022,7 +1026,7 @@ class IP(IPint):
         raise ValueError("%s cannot be converted to an IPv4 address."
                          % repr(self))
 
-class IPSet(collections.MutableSet):
+class IPSet(MutableSet):
     def __init__(self, iterable=[]):
         # Make sure it's iterable, otherwise wrap
         if not isinstance(iterable, collections.Iterable):

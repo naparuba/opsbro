@@ -8,8 +8,10 @@ stuff to deal with comments and formatting on dict/list/ordereddict/set
 these are not really related, formatting could be factored out as
 a separate base
 """
-
-from collections import MutableSet
+try:
+    from collections import MutableSet
+except ImportError:  # python 3.10 move it
+    from collections.abc import MutableSet
 
 __all__ = ["CommentedSeq", "CommentedMap", "CommentedOrderedMap",
            "CommentedSet", 'comment_attrib', 'merge_attrib']
