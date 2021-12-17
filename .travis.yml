@@ -107,7 +107,10 @@ matrix  :
       -  python: "3.9"
          dist  : xenial          # required for Python >= 3.7
          env   : TEST_SUITE=PYTHON
-      
+      -  python: "3.10"
+         dist  : xenial          # required for Python >= 3.7
+         env   : TEST_SUITE=PYTHON
+         
       -  python: "pypy"
          dist  : xenial          # required for Python >= 3.7
          env   : TEST_SUITE=PYTHON
