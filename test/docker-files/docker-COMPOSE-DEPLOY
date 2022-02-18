@@ -1,0 +1,32 @@
+version: '2'
+services:
+  node1:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO14-deploy-node1.txt
+       args:
+          MY_PYTHON_VERSION: -python3
+    networks:
+       - deploy
+    cap_add:
+       - ALL
+
+
+  node2:
+    build:
+       context: ../..
+       dockerfile: test/docker-files/docker-file-DUO14-deploy-node2.txt
+       args:
+          MY_PYTHON_VERSION: -python3
+    networks:
+       - deploy
+    cap_add:
+       - ALL
+
+
+
+
+networks:
+  deploy:
+      driver: bridge
+

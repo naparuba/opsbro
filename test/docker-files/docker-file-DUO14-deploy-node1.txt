@@ -1,0 +1,23 @@
+# By default we are testing the python2 version, and the builder can ask for python3 with "-python3"
+ARG        MY_PYTHON_VERSION=
+FROM       naparuba/debian-10$MY_PYTHON_VERSION
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+
+# To know when the node2 will be up
+RUN        /apt_get_install   openssh-client
+
+
+ADD        . /root/opsbro-oss
+WORKDIR       /root/opsbro-oss
+
+# Copy the ssh client key into the user
+ADD       test/test-files/test-deploy/node1/.ssh  /root/.ssh
+RUN       chmod -R 600 /root/.ssh
+
+RUN       python setup.py install
+
+
+# The node1: will install by ssh onto node2
+ENTRYPOINT    test/test_duo14_deploy_node1.sh

@@ -588,6 +588,24 @@ https://github.com/zwindler/ansible-deploy-logstash
 
 
 
+##### Installeur à distance
+* Installation sur un distant
+* opsbro deploy new 192.168.0.56
+** mets dans la même zone
+** copy les clés gossip et les zones
+** copy les packs global et zone
+** ==> auto join une fois lancé de source -> dest
+
+* Update (juste le code et les globale, comme un setup.py install):
+* opsbro deploy update 192.168.0.56
+** envois l'installation, et joue l'update, sans toucher à la conf
+
+Pour avoir ça:
+* copy le package d'installation "source" dans $VAR/installation-package.tar.gz
+** tar là où il se lance pour le faire
+*** sauf les répertoires .git, tests, appveyor, spike, ui, .travis, appveyor.yml, .gitignore
+
+
 https://github.com/RaRe-Technologies/sqlitedict
 
 

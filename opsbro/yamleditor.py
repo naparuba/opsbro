@@ -146,6 +146,22 @@ def parameter_set_to_main_yml(parameter_name, str_value):
             cprint("  | The agent zone is updated too. You don't need to restart your daemon.", color='grey')
         return
     
+    # display_name can be hot changed
+    if parameter_name == 'display_name':
+        cprint("Switching to display_name %s" % str_value)
+        try:
+            r = put_opsbro_json('/agent/display_name', str_value)
+        except get_request_errors():
+            cprint('  | The agent seems to not be started. Skipping hot display_name change.', color='grey')
+            return
+        if not r['success']:
+            cprint('ERROR: %s' % r['text'], color='red')
+            sys.exit(2)
+        did_change = r['did_change']
+        if did_change:
+            cprint("  | The agent display_name is updated too. You don't need to restart your daemon.", color='grey')
+        return
+    
     cprint('NOTE: only the yml configuration file is modified. You need to restart your agent to use this modification', color='grey')
 
 

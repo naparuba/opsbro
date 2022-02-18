@@ -9,6 +9,7 @@ import stat
 import optparse
 import shutil
 import codecs
+import traceback
 
 try:
     from cStringIO import StringIO
@@ -616,9 +617,6 @@ except Exception as exp:
     print_fail_setup(exp)
     sys.exit(2)
 
-# don't print something at exit now
-setup_phase_is_done = True
-
 # We did finish the setup, and we did succeed, so we can put the result into a log, we don't fucking care about
 # printing it to everyone unless we want to fear them
 unhook_stdout()
@@ -677,64 +675,100 @@ def __do_change_bin_opsbro_python_path(scripts):
         with open(script_path, 'w') as f:
             f.write(final_file)
 
-
-# Always install standard directories (log, run, etc)
-if allow_black_magic:
-    # NOTE: start to Centos8 there is no more "python", only python2 or python3
-    # so we need to let the bin/opsbro know about it
-    __do_change_bin_opsbro_python_path(scripts)
-    __do_install_files(data_files)
-    __print_sub_install_part('OpsBro scripts & directories')
+# We want the actual error here is something get wrong
+try:
+    # Always install standard directories (log, run, etc)
+    if allow_black_magic:
+        # NOTE: start to Centos8 there is no more "python", only python2 or python3
+        # so we need to let the bin/opsbro know about it
+        __do_change_bin_opsbro_python_path(scripts)
+        __do_install_files(data_files)
+        __print_sub_install_part('OpsBro scripts & directories')
+        
+        # Also change the rights of the opsbro- scripts
+        for s in scripts:
+            bs = os.path.basename(s)
+            _chmodplusx(os.path.join(default_paths['bin'], bs))
+        __print_sub_install_part('Check daemon file rights')
+        _chmodplusx(default_paths['libexec'])
+        
+        # If not exists, won't raise an error there
+        _chmodplusx('/etc/init.d/opsbro')
+        __print_sub_install_part('Check init.d script execution rights')
     
-    # Also change the rights of the opsbro- scripts
-    for s in scripts:
-        bs = os.path.basename(s)
-        _chmodplusx(os.path.join(default_paths['bin'], bs))
-    __print_sub_install_part('Check daemon file rights')
-    _chmodplusx(default_paths['libexec'])
+    # if root is set, it's for package, so NO chown
+    # if pypi upload, don't need this
+    if not root and is_install and allow_black_magic:
+        cprint(' * Installing data & scripts (sample configuration, init.d, daemon, bash completion)')
+        
+        # Install configuration, packs
+        __do_install_files(configuration_files)
+        __print_sub_install_part('Sample configuration & core packs')
+        
+        # Also install the bash completion part if there is such a directory
+        bash_completion_dir = '/etc/bash_completion.d/'
+        if os.path.exists(bash_completion_dir):
+            dest = os.path.join(bash_completion_dir, 'opsbro')
+            shutil.copy('bash_completion/opsbro', dest)
+            _chmodplusx(dest)
+            __print_sub_install_part('bash completion rule')
     
-    # If not exists, won't raise an error there
-    _chmodplusx('/etc/init.d/opsbro')
-    __print_sub_install_part('Check init.d script execution rights')
-
-# if root is set, it's for package, so NO chown
-# if pypi upload, don't need this
-if not root and is_install and allow_black_magic:
-    cprint(' * Installing data & scripts (sample configuration, init.d, daemon, bash completion)')
+    if not root and is_update and allow_black_magic:
+        cprint(' * Updating packs configuration files')
+        __print_sub_install_part('Core packs')
+        core_configuration_dir = os.path.join(default_paths['var'], 'core-configuration')
+        shutil.rmtree(core_configuration_dir)
+        __do_install_files(configuration_files)
+        if not update_global_packs:
+            cprint('     - skipping global packs update. You can enable it with the %s parameter.' % UPDATE_GLOBAL_PACKS_PARAMETER, color='grey')
+        else:
+            # Fake print: was already done in the core call in fact :)
+            __print_sub_install_part('Global packs')
     
-    # Install configuration, packs
-    __do_install_files(configuration_files)
-    __print_sub_install_part('Sample configuration & core packs')
+    # don't print something at exit now
+    setup_phase_is_done = True
     
-    # Also install the bash completion part if there is such a directory
-    bash_completion_dir = '/etc/bash_completion.d/'
-    if os.path.exists(bash_completion_dir):
-        dest = os.path.join(bash_completion_dir, 'opsbro')
-        shutil.copy('bash_completion/opsbro', dest)
-        _chmodplusx(dest)
-        __print_sub_install_part('bash completion rule')
-
-if not root and is_update and allow_black_magic:
-    cprint(' * Updating packs configuration files')
-    __print_sub_install_part('Core packs')
-    core_configuration_dir = os.path.join(default_paths['var'], 'core-configuration')
-    shutil.rmtree(core_configuration_dir)
-    __do_install_files(configuration_files)
-    if not update_global_packs:
-        cprint('     - skipping global packs update. You can enable it with the %s parameter.' % UPDATE_GLOBAL_PACKS_PARAMETER, color='grey')
-    else:
-        # Fake print: was already done in the core call in fact :)
-        __print_sub_install_part('Global packs')
-
-if allow_black_magic:
-    print('')
-    print_h1('End', raw_title=True)
-    cprint('OpsBro ', end='')
-    cprint(what, color='magenta', end='')
-    cprint(' : ', end='')
-    cprint(' %s' % CHARACTERS.check, color='green')
+    # Save this install directory to give to deploy other nodes
+    if allow_black_magic:
+        def make_tarfile(output_filename, source_dir):
+            import tarfile
+            required_directories = ('bash_completion', 'bin',
+                                    'data/core-configuration',
+                                    'data/global-configuration',
+                                    'data/local-configuration',
+                                    'data/zone-configuration',
+                                    'doc',
+                                    'etc',
+                                    'init.d',
+                                    'opsbro',
+                                    'LICENSE',
+                                    'README.md',
+                                    'setup.py',
+                                    )
+            with tarfile.open(output_filename, "w:gz") as tar:
+                for req_dir in required_directories:
+                    tar.add(os.path.join(source_dir, req_dir), arcname=os.path.join('opsbro-%s' % VERSION, req_dir))
+        
+        
+        tarball_path = os.path.join(default_paths['var'], 'installation-source.tar.gz')
+        cprint(' * Creating the installation source file at %s' % tarball_path)
+        make_tarfile(tarball_path, my_dir)
+        
     
-    cprint('  %s Notes: ' % CHARACTERS.corner_bottom_left, color='grey')
-    start_string = 'start' if not is_update else 'restart'
-    cprint('     - you can now %s your daemon with:  service opsbro %s' % (start_string, start_string), color='grey')
-    cprint('     - you can look at all commands available with:  opsbro -h', color='grey')
+    # Show information so the user know how to start its trip :)
+    if allow_black_magic:
+        print('')
+        print_h1('End', raw_title=True)
+        cprint('OpsBro ', end='')
+        cprint(what, color='magenta', end='')
+        cprint(' : ', end='')
+        cprint(' %s' % CHARACTERS.check, color='green')
+        
+        cprint('  %s Notes: ' % CHARACTERS.corner_bottom_left, color='grey')
+        start_string = 'start' if not is_update else 'restart'
+        cprint('     - you can now %s your daemon with:  service opsbro %s' % (start_string, start_string), color='grey')
+        cprint('     - you can look at all commands available with:  opsbro -h', color='grey')
+except Exception:  # noqa: yes all
+    cprint('\nERROR: Unexepected error occurs, must stop the installation with the error: %s' % traceback.format_exc(), color='red')
+    sys.exit(2)
+    

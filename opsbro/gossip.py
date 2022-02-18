@@ -25,7 +25,7 @@ from .handlermgr import handlermgr
 from .topic import topiker, TOPIC_SERVICE_DISCOVERY
 from .basemanager import BaseManager
 from .jsonmgr import jsoner
-from .util import get_uuid
+from .util import get_uuid, bytes_to_unicode
 from .udprouter import udprouter
 from .zonemanager import zonemgr
 
@@ -525,6 +525,19 @@ class Gossip(BaseManager):
         else:
             raise Exception('Asking for an unknown broadcast type for node: %s => %s' % (myself_read_only, my_state))
         logger.info('Did have to send a new incarnation node for myself. New incarnation=%d new-node=%s' % (self.incarnation, myself_read_only))
+    
+    
+    # Hot display_nae change, and return if did changed
+    def change_display_name(self, display_name):
+        if self.display_name == display_name:
+            return False
+        logger.info('Switching to display name: %s' % display_name)
+        self.display_name = display_name
+        # Simple string change, we can change both write and read node
+        self._set_myself_atomic_property('display_name', display_name)
+        # let the others nodes know it
+        self.increase_incarnation_and_broadcast()
+        return True
     
     
     # Hot zone change, and return if did changed

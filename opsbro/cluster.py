@@ -17,7 +17,7 @@ import zlib
 
 from .log import LoggerFactory, DEFAULT_LOG_PART
 from .log import core_logger as raw_logger
-from .util import get_server_const_uuid, guess_server_const_uuid, get_cpu_consumption, get_memory_consumption, unicode_to_bytes
+from .util import get_server_const_uuid, guess_server_const_uuid, get_cpu_consumption, get_memory_consumption, bytes_to_unicode
 from .threadmgr import threader
 from .now import NOW
 from .httpclient import get_http_exceptions, httper
@@ -621,12 +621,22 @@ class Cluster(object):
         def post_zone():
             response.content_type = 'application/json'
             
-            nzone = request.body.getvalue()
+            nzone = bytes_to_unicode(request.body.getvalue())  # we want real unicode here
             logger.debug("HTTP: /agent/zone put %s" % nzone)
             try:
                 did_change = gossiper.change_zone(nzone)
             except ValueError:  # no such zone
                 return json.dumps({'success': False, 'text': 'The zone %s does not exist' % nzone})
+            return json.dumps({'success': True, 'did_change': did_change})
+        
+        
+        @http_export('/agent/display_name', method='PUT', protected=True)
+        def post_display_name():
+            response.content_type = 'application/json'
+            
+            display_name = bytes_to_unicode(request.body.getvalue())  # we want real unicode here
+            logger.debug("HTTP: /agent/display_name put %s" % display_name)
+            did_change = gossiper.change_display_name(display_name)
             return json.dumps({'success': True, 'did_change': did_change})
         
         

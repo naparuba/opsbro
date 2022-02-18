@@ -1,0 +1,25 @@
+# By default we are testing the python2 version, and the builder can ask for python3 with "-python3"
+ARG        MY_PYTHON_VERSION=
+FROM       naparuba/debian-10$MY_PYTHON_VERSION
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+
+RUN        /apt_get_install   openssh-server
+
+
+# NOTE: node2 do NOT have opsbro :)
+# but only ssh server launched
+# + need the test files
+ADD        . /root/opsbro-oss
+WORKDIR       /root/opsbro-oss
+
+
+
+# Copy the ssh client key into the user
+ADD        test/test-files/test-deploy/node2/.ssh  /root/.ssh
+RUN       chmod -R 600 /root/.ssh
+
+
+# The node2: just is a ssh server
+ENTRYPOINT    test/test_duo14_deploy_node2.sh
