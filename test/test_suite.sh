@@ -86,6 +86,7 @@ if [ "$TEST_SUITE" == "PYTHON" ]; then
    cat /sys/class/dmi/id/board_vendor
    cat /sys/class/dmi/id/*
    cat /sys/class/dmi/*
+   SUDO printf "\n169.254.169.254    metadata.google.internal metadata\n" >> /etc/hosts
    curl -v 'http://metadata.google.internal/computeMetadata/v1/?recursive=true' -H "Metadata-Flavor: Google"
 
    # NOTE: sudo because travis is under ubuntu
