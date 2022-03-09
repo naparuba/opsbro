@@ -83,6 +83,9 @@ if [ "$TEST_SUITE" == "PYTHON" ]; then
    cd ..
 
    echo "DEBUG PRE GOOGLE CLOUD TEST"
+   cat /sys/class/dmi/id/board_vendor
+   cat /sys/class/dmi/id/*
+   cat /sys/class/dmi/*
    curl -v 'http://metadata.google.internal/computeMetadata/v1/?recursive=true' -H "Metadata-Flavor: Google"
 
    # NOTE: sudo because travis is under ubuntu
