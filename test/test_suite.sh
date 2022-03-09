@@ -81,6 +81,10 @@ if [ "$TEST_SUITE" == "PYTHON" ]; then
    $SUDO rm -fr ~/virtualenv
    echo "Installing opsbro for TESTING (so have libs)"
    cd ..
+
+   echo "DEBUG PRE GOOGLE CLOUD TEST"
+   curl -v 'http://metadata.google.internal/computeMetadata/v1/?recursive=true' -H "Metadata-Flavor: Google"
+
    # NOTE: sudo because travis is under ubuntu
    $SUDO python setup.py install
 

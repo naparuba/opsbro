@@ -78,7 +78,7 @@ class GoogleCloudHostingDriver(InterfaceHostingDriver):
         try:
             s = httper.get(uri, headers={'Metadata-Flavor': 'Google'})
         except get_http_exceptions() as exp:
-            self.logger.error('Cannot get pubic IP for your Azure instance from %s. Error: %s.Exiting' % (uri, exp))
+            self.logger.error('Cannot get pubic IP for your Google Cloud instance from %s. Error: %s.Exiting' % (uri, exp))
             raise
         raw_data = jsoner.loads(s)
         
