@@ -93,9 +93,7 @@ env     :
 # run twice, even for just spawn a VM, si manage the python 2.6 / PYTHON case explicitly
 matrix  :
    include:
-      # NOTE: no 2.6 / 3.3 as it's just too old and not use
-      -  python: "3.4"
-         env   : TEST_SUITE=PYTHON
+      # NOTE: no 2.6 / 3.4 as it's just too old and not use
       -  python: "3.5"
          env   : TEST_SUITE=PYTHON
       -  python: "3.6"
