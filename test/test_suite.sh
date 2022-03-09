@@ -89,6 +89,8 @@ if [ "$TEST_SUITE" == "PYTHON" ]; then
    SUDO printf "\n169.254.169.254    metadata.google.internal metadata\n" >> /etc/hosts
    curl -v 'http://metadata.google.internal/computeMetadata/v1/?recursive=true' -H "Metadata-Flavor: Google"
 
+   curl -v 'http://169.254.169.254/computeMetadata/v1/?recursive=true' -H "Metadata-Flavor: Google"
+
    # NOTE: sudo because travis is under ubuntu
    $SUDO python setup.py install
 
