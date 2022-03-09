@@ -745,9 +745,11 @@ try:
                                     'README.md',
                                     'setup.py',
                                     )
-            with tarfile.open(output_filename, "w:gz") as tar:
-                for req_dir in required_directories:
-                    tar.add(os.path.join(source_dir, req_dir), arcname=os.path.join('opsbro-%s' % VERSION, req_dir))
+            # NOTE: cannot use with tarfile.open because of python 2.6 :(
+            tar = tarfile.open(output_filename, "w:gz")
+            for req_dir in required_directories:
+                tar.add(os.path.join(source_dir, req_dir), arcname=os.path.join('opsbro-%s' % VERSION, req_dir))
+            tar.close()
         
         
         tarball_path = os.path.join(default_paths['var'], 'installation-source.tar.gz')
