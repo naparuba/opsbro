@@ -4,6 +4,8 @@ language: python
 python  :
    - "2.7"
 
+# Ask for a recent ubuntu server
+dist  : focal
 
 # We need docker for our scripts that test various installations
 services:
@@ -107,8 +109,9 @@ matrix  :
       -  python: "3.9"
          dist  : xenial          # required for Python >= 3.7
          env   : TEST_SUITE=PYTHON
+
       -  python: "3.10"
-         dist  : xenial          # required for Python >= 3.7
+         dist  : focal          # required for Python >= 3.10
          env   : TEST_SUITE=PYTHON
          
       -  python: "pypy"
