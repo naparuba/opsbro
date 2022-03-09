@@ -73,8 +73,9 @@ class GoogleCloudHostingDriver(InterfaceHostingDriver):
     def get_meta_data(self):
         if self.__meta_data is not None:
             return self.__meta_data
-        
-        uri = 'http://metadata.google.internal/computeMetadata/v1/?recursive=true'
+        # NOTE: I use 169.254.169.254 instead of metadata.google.internal because on some
+        # systems, the DNS entry fail to be found! (ex: travis server march/2022)
+        uri = 'http://169.254.169.254/computeMetadata/v1/?recursive=true'
         try:
             s = httper.get(uri, headers={'Metadata-Flavor': 'Google'})
         except get_http_exceptions() as exp:
