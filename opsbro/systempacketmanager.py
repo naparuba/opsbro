@@ -111,6 +111,8 @@ class SystemPacketMgr(object):
             # Old version (amaonz1) start with the date
             if distversion.startswith('201'):
                 self.distro = 'amazon-linux'
+            elif distversion == '2022':
+                self.distro = 'amazon-linux2022'
             else:
                 self.distro = 'amazon-linux2'
         elif distname == 'windows':
@@ -127,7 +129,7 @@ class SystemPacketMgr(object):
             self.managed_system = False
         
         # Get the backend
-        if self.distro in ['redhat', 'centos', 'almalinux', 'rocky-linux', 'amazon-linux', 'amazon-linux2', 'oracle-linux', 'fedora']:
+        if self.distro in ['redhat', 'centos', 'almalinux', 'rocky-linux', 'amazon-linux', 'amazon-linux2', 'amazon-linux2022',  'oracle-linux', 'fedora']:
             self.backend = YumBackend()
         elif self.distro in ['debian', 'ubuntu']:
             self.backend = AptBackend()

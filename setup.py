@@ -407,7 +407,7 @@ is_managed_system = systepacketmgr.is_managed_system()
 system_distro, system_distroversion, _ = systepacketmgr.get_distro()
 
 # In this list of distro, the dependecies are installed with the internal system compliant
-compliant_system_distros = ['debian', 'centos', 'rocky-linux', 'almalinux', 'alpine', 'fedora', 'ubuntu', 'amazon-linux2', 'amazon-linux', 'opensuse', 'oracle-linux']
+compliant_system_distros = ['debian', 'centos', 'rocky-linux', 'almalinux', 'alpine', 'fedora', 'ubuntu', 'amazon-linux2022', 'amazon-linux2', 'amazon-linux', 'opensuse', 'oracle-linux']
 
 is_compliant_system_distro = system_distro in compliant_system_distros
 
@@ -527,11 +527,11 @@ if allow_black_magic and (
         or
         (system_distro == 'opensuse' and system_distroversion.startswith('15'))
         or
-        (system_distro == 'amazon-linux2')
+        (system_distro == 'amazon-linux2' or system_distro == 'amazon-linux2022')
 ):
     setup_py_path = '/usr/local/lib/python%d.%d/site-packages/' % (sys.version_info[0], sys.version_info[1])
     if not os.path.exists(setup_py_path):
-        cprint(' * Fixing a know bug on Centos 8/Opensuse/AmazonLinux2:')
+        cprint(' * Fixing a know bug on Centos 8/Opensuse/AmazonLinux2-2022:')
         cprint('   - have a know bug that you cannot install a python package before run pip first.', color='grey')
         cprint('   - Creating the directory %s' % setup_py_path, color='grey')
         make_dir(setup_py_path)
@@ -675,6 +675,7 @@ def __do_change_bin_opsbro_python_path(scripts):
         with open(script_path, 'w') as f:
             f.write(final_file)
 
+
 # We want the actual error here is something get wrong
 try:
     # Always install standard directories (log, run, etc)
@@ -755,7 +756,6 @@ try:
         tarball_path = os.path.join(default_paths['var'], 'installation-source.tar.gz')
         cprint(' * Creating the installation source file at %s' % tarball_path)
         make_tarfile(tarball_path, my_dir)
-        
     
     # Show information so the user know how to start its trip :)
     if allow_black_magic:
@@ -773,4 +773,3 @@ try:
 except Exception:  # noqa: yes all
     cprint('\nERROR: Unexepected error occurs, must stop the installation with the error: %s' % traceback.format_exc(), color='red')
     sys.exit(2)
-    

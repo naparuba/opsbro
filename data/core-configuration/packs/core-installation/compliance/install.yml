@@ -18,6 +18,7 @@ compliance:
          is_ubuntu            : "{{collector.system.os.linux.distribution}} == 'ubuntu'"
          is_amazon_linux      : "{{collector.system.os.linux.distribution}} == 'amazon-linux'"
          is_amazon_linux2     : "{{collector.system.os.linux.distribution}} == 'amazon-linux2'"
+         is_amazon_linux2022  : "{{collector.system.os.linux.distribution}} == 'amazon-linux2022'"
          is_redhat            : "{{collector.system.os.linux.distribution}} == 'redhat'"
          is_oracle_linux      : "{{collector.system.os.linux.distribution}} == 'oracle-linux'"
          is_opensuse          : "{{collector.system.os.linux.distribution}} == 'opensuse'"
@@ -438,6 +439,7 @@ compliance:
                - pip install leveldb psutil setproctitle
          
          
+         # old versinon of amazonlinux2
          -  name         : amazon_linux2
             if           : "{{variables.is_amazon_linux2}}"
             parameters   :
@@ -455,4 +457,26 @@ compliance:
                   - bash-completion
             post_commands:
                - pip install leveldb psutil pycrypto
+
+
+         # new amazonlinux2, 2022 edition, with python3 + fedora based
+         -  name         : amazon_linux2022
+            if           : "{{variables.is_amazon_linux2022}}"
+            parameters   :
+               packages:
+                  - python3-rpm
+                  - python3-jinja2
+                  - python3-crypto
+                  - bash-completion  # Bash completion to enable the CLI completion
+                  - python3-setproctitle
+                  - python3-psutil
+                  - python3-pyyaml
+                  # For leveldb: need to go with pip
+                  - python3-pip
+                  - gcc
+                  - gcc-c++
+                  - python3-setuptools
+                  - python3-devel
+            post_commands:
+               - pip install simplejson leveldb
 
