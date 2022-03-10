@@ -414,8 +414,8 @@ is_compliant_system_distro = system_distro in compliant_system_distros
 # Hack for debian & centos 6 that is not configure to access leveldb on pypi because pypi did remove http (no S) on november 2017.
 # great....
 additionnal_pypi_repos = []
-if allow_black_magic:
-    additionnal_pypi_repos.append('https://pypi.python.org/pypi/leveldb/')
+#if allow_black_magic:
+#    additionnal_pypi_repos.append('https://pypi.python.org/pypi/leveldb/')
 
 if allow_black_magic:
     # Special case: debian 11 + python 2 do not have python-apt, so must go to python3 instead.
