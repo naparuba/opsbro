@@ -1,6 +1,9 @@
 FROM ubuntu:20.10
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
+RUN        cat /etc/apt/sources.list
+RUN        sed -i -re 's/([a-z]{2}\.)?archive.ubuntu.com|security.ubuntu.com/old-releases.ubuntu.com/g' /etc/apt/sources.list
+
 ADD        test/docker-helper/  /
 
 RUN        /apt_get_install  python3
