@@ -3,6 +3,10 @@ MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 ADD        test/docker-helper/  /
 
+# Fix: archived centos8, RIP
+RUN        sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-Linux-*
+RUN        sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.epel.cloud|g' /etc/yum.repos.d/CentOS-Linux-*
+
 RUN        /yum_install  python3
 
 # As there is no "python" in centos8, we are giving the test it's path for starting the setup.py
