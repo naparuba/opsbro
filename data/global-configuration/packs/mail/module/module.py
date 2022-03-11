@@ -57,7 +57,7 @@ class MailHandlerModule(HandlerModule):
         try:
             self.logger.debug("Handler: MAIL connection to %s" % smtp_server)
             s = self.smtplib.SMTP(smtp_server, timeout=30)
-            r = s.sendmail(addr_from, contacts, msg.as_string())
+            s.sendmail(addr_from, contacts, msg.as_string())
             s.quit()
             self.logger.info('Did send an email to %d contacts (%s) about %s' % (len(contacts), ','.join(contacts), about_what))
         except Exception:
