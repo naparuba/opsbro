@@ -1,4 +1,3 @@
-import shutil
 import os
 import time
 import threading
@@ -7,9 +6,9 @@ import codecs
 from .now import NOW
 from .stats import STATS
 from .threadmgr import threader
-from .dbwrapper import dbwrapper
 from .log import LoggerFactory
 from .stop import stopper
+from .util import is_character_printable
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('key-value')
@@ -116,7 +115,7 @@ class TTLDatabase(object):
                 f = codecs.open(os.path.join(self.ttldb_dir, '%d.ttl' % bhour), 'r', 'utf8')
                 nb_clean = 0
                 for line in f.readlines():
-                    key = ''.join(list(c for c in line.strip() if c.isprintable()))  # remove bad characters that can have in file, even with codecs.open
+                    key = ''.join(list(c for c in line.strip() if is_character_printable(c)))  # remove bad characters that can have in file, even with codecs.open
                     if not key:  # can be void after clean
                         continue
                     nb_clean += 1

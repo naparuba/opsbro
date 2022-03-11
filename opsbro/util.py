@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import sys
 import os
 import shutil
@@ -7,6 +9,7 @@ import hashlib
 import time
 import uuid as libuuid
 import base64
+import re
 
 PY3 = sys.version_info >= (3,)
 if PY3:
@@ -16,6 +19,10 @@ from .log import LoggerFactory, DEFAULT_LOG_PART
 
 logger = LoggerFactory.create_logger(DEFAULT_LOG_PART)
 
+
+# FROM : https://stackoverflow.com/questions/14383937/check-printable-for-unicode
+# match characters from ¿ to the end of the JSON-encodable range
+IS_PRINTABLE_EXCLUDE_RANGE = re.compile(r'[\u00bf-\uffff]')
 
 def b64_into_unicode(b64_string):
     return bytes_to_unicode(base64.b64decode(b64_string))
@@ -32,6 +39,14 @@ def string_to_b64unicode(s):
 def epoch_to_human_string(t_epoch):
     return time.strftime("%Y-%b-%d %H:%M:%S", time.localtime(t_epoch))
 
+
+def is_character_printable(c):
+    # type: (unicode) -> bool
+    if PY3:
+        return c.isprintable()
+    # python 2: need to go with a regexp
+    return not bool(IS_PRINTABLE_EXCLUDE_RANGE.search(c))
+        
 
 # Make a directory with recursive creation if need
 # Can send IOError if a file already exists with the name
