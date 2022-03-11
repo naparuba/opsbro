@@ -146,6 +146,31 @@ compliance:
             post_commands:
                - pip3 install pycrypto
 
+
+         -  name         : redhat8
+            if           : "{{variables.is_redhat}} and {{collector.system.os.linux.major_version}} == 8"
+            parameters   :
+               packages:
+                  #- libgomp   # monotonic clock
+                  #- epel-release
+                  - python3-rpm
+                  - python3-jinja2
+                  # python3-cryptography  # not working on centos8
+                  #- leveldb     # no python-leveldb for centos8
+                  #- python3-simplejson
+                  #- python3-setproctitle
+                  #- python3-psutil
+                  - python3-yaml
+                  - bash-completion  # Bash completion to enable the CLI completion
+                  # For pycrypto
+                  - gcc
+                  - gcc-c++
+                  - python3-devel
+                  - python3-cryptography
+            post_commands:
+               #- pip3 install pycrypto
+                - pip3 install simplejson setproctitle leveldb psutil pycrypto
+         
          
          -  name      : is_oracle_linux_7
             if        : "{{variables.is_oracle_linux}} and {{collector.system.os.linux.major_version}} == 7"
@@ -189,23 +214,7 @@ compliance:
             post_commands:
                - pip3 install pycrypto
          
-         #         - name: redhat6
-         #           if:   "{{variables.is_redhat}} and {{collector.system.os.linux.major_version}} == 6"
-         #           parameters:
-         #             packages:
-         #                - epel-release
-         #                - gcc-c++
-         #                - curl
-         #                - gcc
-         #                - python-devel
-         #                - python-pip
-         #                - python-simplejson
-         #                - python-setproctitle
-         #                - python-psutil
-         #                # Bash completion to enable the CLI completion
-         #                - bash-completion
-         #           post_commands:
-         #              - pip install leveldb
+
          
          
          

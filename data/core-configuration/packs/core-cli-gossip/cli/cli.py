@@ -465,7 +465,7 @@ def do_zone_key_generate(zone, erase=False):
     key_path = os.path.join(DEFAULT_CFG_DIR, ZONE_KEYS_DIRECTORY_NAME, GOSSIP_KEY_FILE_FORMAT % zone)
     
     if os.path.exists(key_path) and not erase:
-        cprint('ERROR: the key %s is already existing', color='red')
+        cprint('ERROR: the key %s is already existing' % key_path, color='red')
         cprint('  %s Note: You can use the --erase parameter to erase over an existing key' % (CHARACTERS.corner_bottom_left), color='grey')
         sys.exit(2)
     
@@ -486,7 +486,7 @@ def do_zone_key_import(zone, key, erase=False):
     key_path = os.path.join(DEFAULT_CFG_DIR, ZONE_KEYS_DIRECTORY_NAME, GOSSIP_KEY_FILE_FORMAT % zone)
     
     if os.path.exists(key_path) and not erase:
-        cprint('ERROR: the key %s is already existing', color='red')
+        cprint('ERROR: the key %s is already existing' % key_path, color='red')
         cprint('  %s Note: You can use the --erase parameter to erase over an existing key' % (CHARACTERS.corner_bottom_left), color='grey')
         sys.exit(2)
     # check key is base64(len16)

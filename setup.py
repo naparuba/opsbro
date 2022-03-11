@@ -407,7 +407,7 @@ is_managed_system = systepacketmgr.is_managed_system()
 system_distro, system_distroversion, _ = systepacketmgr.get_distro()
 
 # In this list of distro, the dependecies are installed with the internal system compliant
-compliant_system_distros = ['debian', 'centos', 'rocky-linux', 'almalinux', 'alpine', 'fedora', 'ubuntu', 'amazon-linux2022', 'amazon-linux2', 'amazon-linux', 'opensuse', 'oracle-linux']
+compliant_system_distros = ['debian', 'centos', 'rocky-linux', 'almalinux', 'alpine', 'fedora', 'ubuntu', 'amazon-linux2022', 'amazon-linux2', 'amazon-linux', 'opensuse', 'oracle-linux', 'redhat']
 
 is_compliant_system_distro = system_distro in compliant_system_distros
 
