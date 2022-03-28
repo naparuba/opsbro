@@ -631,3 +631,7 @@ echo -e "GET /debug/memory HTTP/1.1\r\n\r\n" | socat unix-connect:/var/lib/opsbr
 intéressant, mais ça demande de lancer des commandes, donc pas l'idéal si on peux l'éviter
 mais pour faire rapidement des collecteurs, c'est pas mal, quitte à revenir dessus après
 https://github.com/kellyjonbrazil/jc
+
+
+#### LMSensors
+https://pypi.org/project/PySensors/
