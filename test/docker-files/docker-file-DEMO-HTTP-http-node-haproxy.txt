@@ -3,7 +3,6 @@ ARG        MY_PYTHON_VERSION=
 FROM       naparuba/debian-10$MY_PYTHON_VERSION
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-ADD        test/docker-helper/  /
 
 
 # To check localy the haproxy
@@ -19,7 +18,7 @@ RUN        printf '\n$InputTCPServerRun 514\n' >> /etc/rsyslog.conf
 ADD        . /root/opsbro-oss
 WORKDIR       /root/opsbro-oss
 
-RUN       python setup.py install
+RUN       $PYTHON_EXE setup.py install
 
 # Ask for an encrypted test
 RUN       opsbro gossip zone key import --zone internet --key "NGNjZWI2ZmEyMzEyMTFlOA=="

@@ -623,6 +623,12 @@ docker build -t naparuba/debian-10-python3 -f test/docker-files/TEMPLATE-debian1
 docker push naparuba/debian-10-python3
 
 
+docker build -t naparuba/centos-7 -f test/docker-files/TEMPLATE-centos7.txt .
+docker push naparuba/centos-7
+
+docker build -t naparuba/centos-7-python3 -f test/docker-files/TEMPLATE-centos7-PYTHON3.txt .
+docker push naparuba/centos-7-python3
+
 #### Dump de mémoire:
 echo -e "GET /debug/memory HTTP/1.1\r\n\r\n" | socat unix-connect:/var/lib/opsbro/opsbro.sock STDIO
 

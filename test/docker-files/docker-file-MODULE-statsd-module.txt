@@ -1,7 +1,8 @@
-FROM       naparuba/debian-10
+# By default we are testing the python2 version, and the builder can ask for python3 with "-python3"
+ARG        MY_PYTHON_VERSION=
+FROM       naparuba/debian-10$MY_PYTHON_VERSION
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-ADD        test/docker-helper/  /
 
 # Net tools because we need netstat in this test
 RUN        /apt_get_install net-tools
@@ -12,7 +13,7 @@ ADD        . /root/opsbro-oss
 
 WORKDIR    /root/opsbro-oss
 
-RUN        python setup.py install
+RUN        $PYTHON_EXE setup.py install
 
 
 ENTRYPOINT     test/test_module_statsd.sh

@@ -13,11 +13,14 @@ RUN        /yum_install  python-crypto
 RUN        /yum_install  python-setuptools
 RUN        /yum_install  nss  # for epel https
 RUN        /yum_install  rpm-python
-RUN        /yum_install  python2-leveldb   # currently disabled before we change tests to give leveldb by default every where
+RUN        /yum_install  python2-leveldb
 RUN        /yum_install  python2-simplejson
 RUN        /yum_install  python-setproctitle
 RUN        /yum_install  python2-psutil
-RUN        /yum_install  python2-yaml
+RUN        /yum_install  python2-pyyaml
 RUN        /yum_install  bash-completion
+
+# Tests with , we are giving the test it's path for starting the setup.py
+ENV        PYTHON_EXE=/usr/bin/python2
 
 ENTRYPOINT     /bin/bash

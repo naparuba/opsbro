@@ -70,7 +70,7 @@ compliance:
                   - python36-rpm
                   - python36-jinja2
                   - python36-crypto
-                  - python36-leveldb   # currently disabled before we change tests to give leveldb by default every where
+                  - python36-leveldb
                   - python36-simplejson
                   - python36-setproctitle
                   - python36-psutil

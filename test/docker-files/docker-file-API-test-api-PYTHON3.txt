@@ -1,7 +1,5 @@
-FROM       naparuba/debian-9-python3
+FROM       naparuba/debian-10-python3
 MAINTAINER Jean Gabes <naparuba@gmail.com>
-
-ADD        test/docker-helper/  /
 
 
 RUN        /apt_get_install jq
@@ -11,6 +9,6 @@ RUN        /apt_get_install curl
 ADD        . /root/opsbro-oss
 WORKDIR       /root/opsbro-oss
 
-RUN       python setup.py install
+RUN       $PYTHON_EXE setup.py install
 
 ENTRYPOINT      cd test;bash test_apis.sh

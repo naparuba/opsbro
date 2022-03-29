@@ -1,14 +1,13 @@
 FROM       naparuba/debian-10-python3
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-ADD        test/docker-helper/  /
 
 ADD        . /root/opsbro-oss
 
 
 WORKDIR    /root/opsbro-oss
 
-RUN        python setup.py install
+RUN        $PYTHON_EXE setup.py install
 
 # Copy the mail pack into a local one to enable modification
 RUN        opsbro  packs overload global.linux

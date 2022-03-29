@@ -1,11 +1,11 @@
-FROM debian:bullseye
+FROM       debian:bullseye
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 ADD        test/docker-helper/  /
 
 RUN        /apt_get_install   python
 
-# debian 11 + python2 is failing due to no pyhton-apt
+# debian 11 + python2 is failing due to no python-apt
 ENV        MUST_FAIL=true
 
 # For test

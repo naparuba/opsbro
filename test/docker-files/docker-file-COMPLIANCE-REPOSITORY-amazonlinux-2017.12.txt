@@ -1,10 +1,10 @@
-FROM amazonlinux:2017.12
+FROM       amazonlinux:2017.12
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 # NOTE: there is a bug in this version (like fedora 26) with a pypi connection impossible without the glibc update
 ADD        test/docker-helper/  /
-RUN        /yum_update glibc
-RUN        /yum_install python
+RUN        /yum_update   glibc
+RUN        /yum_install  python
 RUN        /yum_install  python-jinja2
 RUN        /yum_install  python-setuptools
 

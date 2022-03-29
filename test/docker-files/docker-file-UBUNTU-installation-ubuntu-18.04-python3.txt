@@ -5,8 +5,11 @@ ADD        test/docker-helper/  /
 
 RUN        /apt_get_install  python3
 
+# Tests with , we are giving the test it's path for starting the setup.py
+ENV        PYTHON_EXE=/usr/bin/python3
+
 # Set python3 as default python
-RUN        update-alternatives --install /usr/bin/python python /usr/bin/python3 1
+#RUN        update-alternatives --install /usr/bin/python python /usr/bin/python3 1
 
 RUN        /apt_get_install  python3-jinja2
 RUN        /apt_get_install  python3-crypto
@@ -16,7 +19,7 @@ RUN        /apt_get_install  python3-setuptools
 ADD        . /root/opsbro-oss
 
 WORKDIR       /root/opsbro-oss
-#ENTRYPOINT    test/test_one_linux_installation.sh  && test/assert_group.sh "ubuntu"
+ENTRYPOINT    test/test_one_linux_installation.sh  && test/assert_group.sh "ubuntu"
 
 # Currently, this test is disabled until I fix all python3 issues
-ENTRYPOINT    /bin/true
+#ENTRYPOINT    /bin/true

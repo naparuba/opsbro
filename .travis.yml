@@ -20,8 +20,9 @@ env     :
    - TEST_SUITE=DOC
    ##### Then features (both python2 & 3)
    - TEST_SUITE=FEATURE
-   - TEST_SUITE=FEATURE  TEST_PYTHON_VERSION=PYTHON3
+   - TEST_SUITE=FEATURE     TEST_PYTHON_VERSION=PYTHON3
    - TEST_SUITE=MONITORING
+   - TEST_SUITE=MONITORING  TEST_PYTHON_VERSION=PYTHON3
    ##### Compliance rules
    - TEST_SUITE=COMPLIANCE-FILE-RIGHTS
    - TEST_SUITE=COMPLIANCE-GET-URL
@@ -29,6 +30,7 @@ env     :
    - TEST_SUITE=COMPLIANCE-REPOSITORY
    - TEST_SUITE=COMPLIANCE-SYSTEM-USER
    - TEST_SUITE=MODULE
+   - TEST_SUITE=MODULE   TEST_PYTHON_VERSION=PYTHON3
    - TEST_SUITE=PACK
    ##### Then complexe scenarios
    # Some tests are with 2 docker that must run together. I hope it will be maintainable

@@ -1,8 +1,6 @@
 FROM       naparuba/debian-10-python3
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-ADD        test/docker-helper/  /
-
 
 # Install mysql
 RUN        /apt_get_install mariadb-server
@@ -11,7 +9,7 @@ RUN        mysql_install_db --user=mysql --basedir=/usr/ --ldata=/var/lib/mysql/
 ADD        . /root/opsbro-oss
 WORKDIR    /root/opsbro-oss
 
-RUN        python setup.py install
+RUN        $PYTHON_EXE setup.py install
 
 ENTRYPOINT      test/test_pack_mysql.sh
 

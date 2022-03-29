@@ -1,14 +1,13 @@
 FROM       naparuba/debian-9-python3
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-ADD        test/docker-helper/  /
 
 RUN        /apt_get_install  redis-server
 
 ADD        . /root/opsbro-oss
 WORKDIR    /root/opsbro-oss
 
-RUN        python setup.py install
+RUN        $PYTHON_EXE setup.py install
 
 ENTRYPOINT      test/test_pack_redis.sh
 

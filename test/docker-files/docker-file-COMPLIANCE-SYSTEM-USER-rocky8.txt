@@ -1,4 +1,4 @@
-FROM rockylinux/rockylinux:8.4
+FROM       rockylinux/rockylinux:8.4
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 ADD        test/docker-helper/  /
@@ -12,7 +12,7 @@ ENV        PYTHON_EXE=/usr/bin/python3
 
 WORKDIR    /root/opsbro-oss
 
-RUN        python3 setup.py install
+RUN        $PYTHON_EXE setup.py install
 
 # Copy the mail pack into a local one to enable modification
 RUN        opsbro  packs overload global.linux

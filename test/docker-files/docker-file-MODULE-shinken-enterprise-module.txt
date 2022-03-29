@@ -1,7 +1,8 @@
-FROM       naparuba/debian-10
+# By default we are testing the python2 version, and the builder can ask for python3 with "-python3"
+ARG        MY_PYTHON_VERSION=
+FROM       naparuba/debian-10$MY_PYTHON_VERSION
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-ADD        test/docker-helper/  /
 
 RUN        /apt_get_install jq
 

@@ -1,7 +1,8 @@
-FROM       naparuba/debian-9
+# By default we are testing the python2 version, and the builder can ask for python3 with "-python3"
+ARG        MY_PYTHON_VERSION=
+FROM       naparuba/debian-9$MY_PYTHON_VERSION
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-ADD        test/docker-helper/  /
 
 # DNS: need dig
 RUN        /apt_get_install  dnsutils
@@ -13,7 +14,7 @@ ADD        . /root/opsbro-oss
 
 WORKDIR    /root/opsbro-oss
 
-RUN        python setup.py install
+RUN        $PYTHON_EXE setup.py install
 
 
 ENTRYPOINT     test/test_module_dns.sh

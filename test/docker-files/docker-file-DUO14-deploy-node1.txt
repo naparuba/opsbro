@@ -3,7 +3,6 @@ ARG        MY_PYTHON_VERSION=
 FROM       naparuba/debian-10$MY_PYTHON_VERSION
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-ADD        test/docker-helper/  /
 
 # To know when the node2 will be up
 RUN        /apt_get_install   openssh-client

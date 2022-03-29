@@ -3,7 +3,6 @@ ARG        MY_PYTHON_VERSION=
 FROM       naparuba/debian-10$MY_PYTHON_VERSION
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-ADD        test/docker-helper/  /
 
 RUN        /apt_get_install   openssh-server
 

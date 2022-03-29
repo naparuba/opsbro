@@ -3,7 +3,6 @@ ARG        MY_PYTHON_VERSION=
 FROM       naparuba/debian-10$MY_PYTHON_VERSION
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-ADD        test/docker-helper/  /
 
 ADD        . /root/opsbro-oss
 WORKDIR       /root/opsbro-oss

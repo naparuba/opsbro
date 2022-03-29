@@ -1,13 +1,11 @@
-FROM centos:7
+FROM       naparuba/centos-7
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-ADD        test/docker-helper/  /
+
 ADD        . /root/opsbro-oss
-
-
 WORKDIR    /root/opsbro-oss
 
-RUN        python setup.py install
+RUN        $PYTHON_EXE setup.py install
 
 # Copy the mail pack into a local one to enable modification
 RUN        opsbro  packs overload global.linux

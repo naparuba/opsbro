@@ -1,4 +1,4 @@
-FROM centos:6
+FROM       centos:6
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 ADD        test/docker-helper/  /

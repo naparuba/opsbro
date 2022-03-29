@@ -5,8 +5,11 @@ ADD        test/docker-helper/  /
 
 RUN        /apt_get_install   python3
 
+# Tests with , we are giving the test it's path for starting the setup.py
+ENV        PYTHON_EXE=/usr/bin/python3
+
 # Set python3 as default python
-RUN        update-alternatives --install /usr/bin/python python /usr/bin/python3 1
+#RUN        update-alternatives --install /usr/bin/python python /usr/bin/python3 1
 
 # For test
 RUN        /apt_get_install   procps

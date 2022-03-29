@@ -7,13 +7,13 @@ MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 print_header "Starting to test Shinken Enterprise module"
 
 print_header "Configuring"
-python -u bin/opsbro packs overload global.shinken-enterprise
-python -u bin/opsbro packs parameters set local.shinken-enterprise.enabled True
-python -u bin/opsbro packs parameters set local.shinken-enterprise.file_result "/tmp/shinken-local-analyzer-payload.json"
+$PYTHON_EXE -u bin/opsbro packs overload global.shinken-enterprise
+$PYTHON_EXE -u bin/opsbro packs parameters set local.shinken-enterprise.enabled True
+$PYTHON_EXE -u bin/opsbro packs parameters set local.shinken-enterprise.file_result "/tmp/shinken-local-analyzer-payload.json"
 
 # Be sure to disable websocket, we do not want it
-python -u bin/opsbro packs overload global.websocket
-python -u bin/opsbro packs parameters set local.websocket.enabled False
+$PYTHON_EXE -u bin/opsbro packs overload global.websocket
+$PYTHON_EXE -u bin/opsbro packs parameters set local.websocket.enabled False
 
 print_header "Launch"
 
@@ -21,7 +21,7 @@ print_header "Launch"
 # Timeout after 125s (120 from the ssh + 5s bonus so the timeout will be the ssh one)
 # NOTE: --preserve-status => cannot be used because centos6 do not have it
 # --signal=9 => when timeout, just kill it and all it's sons
-timeout --signal=9 125s python -u bin/opsbro agent start --one-shot
+timeout --signal=9 125s $PYTHON_EXE -u bin/opsbro agent start --one-shot
 
 print_header "Look at final result"
 cat /tmp/shinken-local-analyzer-payload.json

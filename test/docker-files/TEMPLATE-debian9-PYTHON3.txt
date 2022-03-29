@@ -18,7 +18,7 @@ RUN        /apt_get_install    python3-psutil
 RUN        /apt_get_install    python3-yaml
 
 
-# Set python3 as default python
-RUN        update-alternatives --install /usr/bin/python python /usr/bin/python3 1
+# Tests with , we are giving the test it's path for starting the setup.py
+ENV        PYTHON_EXE=/usr/bin/python3
 
 ENTRYPOINT     /bin/bash

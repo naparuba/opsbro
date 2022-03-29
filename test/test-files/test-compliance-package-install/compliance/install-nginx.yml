@@ -21,8 +21,8 @@ compliance:
               # on centos6, there is no "service" command available for nginx
               - nginx
 
-         - name: debian9
-           if: "{{variables.is_debian}} and {{collector.system.os.linux.major_version}} == 9"
+         - name: debian
+           if: "{{variables.is_debian}}"
            parameters:
              packages:
                 - nginx

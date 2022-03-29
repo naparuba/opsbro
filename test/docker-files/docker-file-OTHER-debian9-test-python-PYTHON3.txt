@@ -7,6 +7,6 @@ ADD        test/docker-helper/  /
 ADD        . /root/opsbro-oss
 WORKDIR       /root/opsbro-oss
 
-RUN       python setup.py install
+RUN       $PYTHON_EXE setup.py install
 
 ENTRYPOINT      test/launch_python_tests.sh

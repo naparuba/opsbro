@@ -17,4 +17,7 @@ RUN        /apt_get_install      python-setproctitle
 RUN        /apt_get_install      python-psutil
 RUN        /apt_get_install      python-yaml
 
+# Tests with , we are giving the test it's path for starting the setup.py
+ENV        PYTHON_EXE=/usr/bin/python2
+
 ENTRYPOINT     /bin/bash

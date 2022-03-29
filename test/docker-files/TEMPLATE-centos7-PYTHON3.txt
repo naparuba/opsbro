@@ -1,0 +1,24 @@
+FROM       centos:7.9.2009
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+
+ADD        test/docker-helper/  /
+
+# THIS DOCKER FILE is USED TO PUSH TO napruba/centos-7 so tests will be faster, and won't need to recompute all of this every module/pack test
+
+RUN        /yum_install  libgomp
+RUN        /yum_install  epel-release
+RUN        /yum_install  python36-rpm
+RUN        /yum_install  python36-jinja2
+RUN        /yum_install  python36-crypto
+RUN        /yum_install  python36-leveldb
+RUN        /yum_install  python36-simplejson
+RUN        /yum_install  python36-setproctitle
+RUN        /yum_install  python36-psutil
+RUN        /yum_install  python36-PyYAML
+RUN        /yum_install  bash-completion
+
+# Tests with , we are giving the test it's path for starting the setup.py
+ENV        PYTHON_EXE=/usr/bin/python3
+
+ENTRYPOINT     /bin/bash

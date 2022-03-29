@@ -1,20 +1,12 @@
-FROM centos:7
+FROM       naparbua/centos-7
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-ADD        test/docker-helper/  /
-
-RUN        /yum_install  epel-release
-RUN        /yum_install  python-jinja2
-RUN        /yum_install  python-crypto
-RUN        /yum_install  python-setuptools
 
 
 ADD        . /root/opsbro-oss
-
-
 WORKDIR    /root/opsbro-oss
 
-RUN        python setup.py install
+RUN        $PYTHON_EXE setup.py install
 
 # Copy the mail pack into a local one to enable modification
 RUN        opsbro  packs overload global.nginx

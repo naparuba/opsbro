@@ -3,18 +3,13 @@ ARG        MY_PYTHON_VERSION=
 FROM       naparuba/debian-10$MY_PYTHON_VERSION
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-ADD        test/docker-helper/  /
-
-
-# To select the leveldb, just install it
-RUN        /apt_get_install   python-leveldb
 
 ADD        . /root/opsbro-oss
 
 
 WORKDIR    /root/opsbro-oss
 
-RUN        python setup.py install
+RUN        $PYTHON_EXE setup.py install
 
 
 ENTRYPOINT     test/test_feature_cli_kv_store.sh
