@@ -1,4 +1,4 @@
-FROM       naparbua/centos-7
+FROM       naparuba/centos-7
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 
