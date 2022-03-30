@@ -165,7 +165,16 @@ if [[ $TEST_SUITE == COMPOSE* ]]; then
       print_color "[$ii] BUILD  $COMPOSE_FILE : BUILD starting at $NOW \n" "magenta"
       LOG=/tmp/build-and-run.docker-$TEST_SUITE.log
       >$LOG
-      docker-compose -f $COMPOSE_FILE build 2>>$LOG >>$LOG
+
+      # If we are with python3, we are adding a new parameter for building
+      export ADD_BUILDS_ARGS=""
+      if [ "X$IS_PYTHON3" == "XYES" ]; then
+         export ADD_BUILDS_ARGS=" --build-arg MY_PYTHON_VERSION=-python3 "
+         # Also give as shell var so "compose up" will have it (need in build AND run, with != methods to give the param..)
+         export MY_PYTHON_VERSION=-python3
+      fi
+
+      docker-compose -f $COMPOSE_FILE build  $ADD_BUILDS_ARGS  2>>$LOG >>$LOG
       if [ $? != 0 ]; then
          print_color "$ii BUILD ERROR: $COMPOSE_FILE" "red"
          printf " $(date) Cannot build. Look at $LOG\n"
@@ -177,7 +186,8 @@ if [[ $TEST_SUITE == COMPOSE* ]]; then
       print_color "[$ii] RUN  $COMPOSE_FILE : RUN starting at $NOW \n" "magenta"
       # Build was ok, we can clean the log
       >$LOG
-      docker-compose -f $COMPOSE_FILE up --build 2>>$LOG >>$LOG
+      # NOTE: NOT --build because we NEED --build-arg not manage here
+      docker-compose -f $COMPOSE_FILE up 2>>$LOG >>$LOG
       # NOTE: compose up do not exit with worse state, so must look at the
       # docker-copose ps to have exit states
       # +3=> remvoe the first 2 line of the ps (header)

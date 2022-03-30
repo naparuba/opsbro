@@ -1,9 +1,11 @@
-version: '2'
+version: '3'
 services:
   node1:
     build:
        context: ../..
        dockerfile: test/docker-files/docker-file-DUO14-deploy-node1.txt
+       args:
+          MY_PYTHON_VERSION: "${MY_PYTHON_VERSION}"
     networks:
        - deploy
     cap_add:
@@ -14,6 +16,8 @@ services:
     build:
        context: ../..
        dockerfile: test/docker-files/docker-file-DUO14-deploy-node2.txt
+       args:
+          MY_PYTHON_VERSION: "${MY_PYTHON_VERSION}"
     networks:
        - deploy
     cap_add:

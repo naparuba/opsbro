@@ -15,7 +15,7 @@ hostname -I
 
 show_my_system_ip
 
-python --version
+$PYTHON_EXE --version
 
 # Set a valid display name for debug
 opsbro agent parameters set display_name "node-$NODE_NB"

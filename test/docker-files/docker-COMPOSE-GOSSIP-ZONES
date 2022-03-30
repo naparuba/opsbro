@@ -1,9 +1,11 @@
-version: '2'
+version: '3'
 services:
   node1:
     build:
        context: ../..
        dockerfile: test/docker-files/docker-file-DUO3-gossip-zones-1.txt
+       args:
+          MY_PYTHON_VERSION: "${MY_PYTHON_VERSION}"
     networks:
        - gossip-zones
     cap_add:
@@ -13,6 +15,8 @@ services:
     build:
        context: ../..
        dockerfile: test/docker-files/docker-file-DUO3-gossip-zones-2.txt
+       args:
+          MY_PYTHON_VERSION: "${MY_PYTHON_VERSION}"
     networks:
        - gossip-zones
     cap_add:
@@ -22,6 +26,8 @@ services:
     build:
        context: ../..
        dockerfile: test/docker-files/docker-file-DUO3-gossip-zones-3.txt
+       args:
+          MY_PYTHON_VERSION: "${MY_PYTHON_VERSION}"
     networks:
        - gossip-zones
     cap_add:
@@ -31,6 +37,8 @@ services:
     build:
        context: ../..
        dockerfile: test/docker-files/docker-file-DUO3-gossip-zones-4.txt
+       args:
+          MY_PYTHON_VERSION: "${MY_PYTHON_VERSION}"
     networks:
        - gossip-zones
     cap_add:

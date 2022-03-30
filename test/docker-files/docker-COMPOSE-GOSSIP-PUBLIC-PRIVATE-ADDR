@@ -9,6 +9,8 @@ services:
     build:
        context: ../..
        dockerfile: test/docker-files/docker-file-DUO13-gossip-public-private-addr-node1.txt
+       args:
+          MY_PYTHON_VERSION: "${MY_PYTHON_VERSION}"
     networks:
        - gossip-separate-networks-private
        - gossip-separate-networks-public
@@ -19,6 +21,8 @@ services:
     build:
        context: ../..
        dockerfile: test/docker-files/docker-file-DUO13-gossip-public-private-addr-node2.txt
+       args:
+          MY_PYTHON_VERSION: "${MY_PYTHON_VERSION}"
     networks:
        - gossip-separate-networks-private
        - gossip-separate-networks-public
@@ -29,6 +33,8 @@ services:
     build:
        context: ../..
        dockerfile: test/docker-files/docker-file-DUO13-gossip-public-private-addr-node3.txt
+       args:
+          MY_PYTHON_VERSION: "${MY_PYTHON_VERSION}"
     networks:
        - gossip-separate-networks-public
     cap_add:

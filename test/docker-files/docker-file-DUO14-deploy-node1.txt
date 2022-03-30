@@ -15,7 +15,7 @@ WORKDIR       /root/opsbro-oss
 ADD       test/test-files/test-deploy/node1/.ssh  /root/.ssh
 RUN       chmod -R 600 /root/.ssh
 
-RUN       python setup.py install
+RUN       $PYTHON_EXE setup.py install
 
 
 # The node1: will install by ssh onto node2

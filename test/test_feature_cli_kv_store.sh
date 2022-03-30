@@ -8,9 +8,9 @@ KV_UPDATES_DIR=/var/lib/opsbro/kv_updates/
 
 # Fake generate old updates.lst to test cleaning
 print_header " Creating update files"
-NOW=$(python -c 'import time;print(int(time.time()))')
+NOW=$($PYTHON_EXE -c 'import time;print(int(time.time()))')
 
-TWO_WEEKS_AGO=$(python -c 'import time;print(int(time.time()) - (86400 * 15))')
+TWO_WEEKS_AGO=$($PYTHON_EXE -c 'import time;print(int(time.time()) - (86400 * 15))')
 
 mkdir $KV_UPDATES_DIR 2>/dev/null
 for ii in $(seq $TWO_WEEKS_AGO 60 $NOW); do

@@ -9,7 +9,7 @@ MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 CASE=$1
 
-python --version
+$PYTHON_EXE --version
 
 ping -c 1 http1
 ping -c 1 http2

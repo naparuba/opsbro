@@ -21,7 +21,7 @@ echo "Ips:"
 show_my_system_ip
 
 echo "Python:"
-python --version
+$PYTHON_EXE --version
 
 echo "Ping"
 ping -c 1 node1
