@@ -8,6 +8,6 @@ A
 server {{node['name']}} {{node['addr']}}  OK
 {% endfor %}
 
-has python-jinja2: {{has_package('python-jinja2')}}
+has python-jinja2: {{has_package('python-jinja2') or has_package('python3-jinja2')}}
 
 TEST
