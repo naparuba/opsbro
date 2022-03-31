@@ -13,5 +13,11 @@ RUN       $PYTHON_EXE setup.py install
 # Ask for an encrypted test
 RUN       opsbro gossip zone key import --zone internet --key "NGNjZWI2ZmEyMzEyMTFlOA=="
 
-# 3 nodes will be joined, and then we look at the raft state
-ENTRYPOINT    test/test_duo8_raft_init.sh "4"
+
+# NOTE: ARG must be AFTER the FROM, and with ENV to access it
+ARG        NODE_NB=
+ENV        NODE_NB=$NODE_NB
+
+
+# The node1 will try to connect to node2 and auto join it
+ENTRYPOINT    test/test_duo1_udp_auto_join.sh "NODE$NODE_NB"

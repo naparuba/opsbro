@@ -5,6 +5,8 @@ MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 
 
+# Need for tests
+RUN        /apt_get_install   sqlite
 
 ADD        . /root/opsbro-oss
 WORKDIR       /root/opsbro-oss
@@ -14,5 +16,10 @@ RUN       $PYTHON_EXE setup.py install
 # Ask for an encrypted test
 RUN       opsbro gossip zone key import --zone internet --key "NGNjZWI2ZmEyMzEyMTFlOA=="
 
+
+# NOTE: ARG must be AFTER the FROM, and with ENV to access it
+ARG        NODE_NB=
+ENV        NODE_NB=$NODE_NB
+
 # The node1 will try to connect to node2 and auto join it
-ENTRYPOINT    test/set_network_simulated_type WAN && test/test_duo5_join_sync_events.sh "NODE2"
+ENTRYPOINT    test/test_duo7_collect_agregate.sh "NODE$NODE_NB"

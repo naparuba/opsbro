@@ -4,7 +4,6 @@ FROM       naparuba/debian-10$MY_PYTHON_VERSION
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 
-
 ADD        . /root/opsbro-oss
 WORKDIR       /root/opsbro-oss
 
@@ -12,6 +11,14 @@ RUN       $PYTHON_EXE setup.py install
 
 # Ask for an encrypted test
 RUN       opsbro gossip zone key import --zone internet --key "NGNjZWI2ZmEyMzEyMTFlOA=="
+# MFkey priv & pub setup
+ADD       test/test-files/test-executors   /etc/opsbro/zone_keys
 
-# 3 nodes will be joined, and then we look at the raft state
-ENTRYPOINT    test/test_duo8_raft_init.sh "2"
+
+# NOTE: ARG must be AFTER the FROM, and with ENV to access it
+ARG        NODE_NB=
+ENV        NODE_NB=$NODE_NB
+
+
+# The node1 will try to connect to node2 & node3 and execute commands based on groups
+ENTRYPOINT    test/test_duo11_executor.sh $NODE_NB

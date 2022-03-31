@@ -4,7 +4,7 @@ FROM       naparuba/debian-10$MY_PYTHON_VERSION
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 
-
+RUN        /apt_get_install   iptables
 
 ADD        . /root/opsbro-oss
 WORKDIR       /root/opsbro-oss
@@ -14,5 +14,10 @@ RUN       $PYTHON_EXE setup.py install
 # Ask for an encrypted test
 RUN       opsbro gossip zone key import --zone internet --key "NGNjZWI2ZmEyMzEyMTFlOA=="
 
-# The node1 will try to connect to node2 and auto join it
-ENTRYPOINT    test/set_network_simulated_type WAN && test/test_duo5_join_sync_events.sh "NODE1"
+
+# NOTE: ARG must be AFTER the FROM, and with ENV to access it
+ARG        NODE_NB=
+ENV        NODE_NB=$NODE_NB
+
+
+ENTRYPOINT    test/test_duo6_indirect_ping.sh "NODE$NODE_NB"

@@ -3,9 +3,10 @@ services:
   node1:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DUO4-gossip-zones-multi-1.txt
+       dockerfile: test/docker-files/docker-file-DUO4-gossip-zones-multi-x.txt
        args:
           MY_PYTHON_VERSION: "${MY_PYTHON_VERSION}"
+          NODE_NB:  1
     networks:
        - gossip-zones-multi
     cap_add:
@@ -14,9 +15,10 @@ services:
   node2:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DUO4-gossip-zones-multi-2.txt
+       dockerfile: test/docker-files/docker-file-DUO4-gossip-zones-multi-x.txt
        args:
           MY_PYTHON_VERSION: "${MY_PYTHON_VERSION}"
+          NODE_NB:  2
     networks:
        - gossip-zones-multi
     cap_add:
@@ -25,9 +27,10 @@ services:
   node3:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DUO4-gossip-zones-multi-3.txt
+       dockerfile: test/docker-files/docker-file-DUO4-gossip-zones-multi-x.txt
        args:
           MY_PYTHON_VERSION: "${MY_PYTHON_VERSION}"
+          NODE_NB:  3
     networks:
        - gossip-zones-multi
     cap_add:
@@ -36,9 +39,10 @@ services:
   node4:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DUO4-gossip-zones-multi-4.txt
+       dockerfile: test/docker-files/docker-file-DUO4-gossip-zones-multi-x.txt
        args:
           MY_PYTHON_VERSION: "${MY_PYTHON_VERSION}"
+          NODE_NB:  4
     networks:
        - gossip-zones-multi
     cap_add:

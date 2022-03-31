@@ -4,8 +4,6 @@ FROM       naparuba/debian-10$MY_PYTHON_VERSION
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 
-
-
 ADD        . /root/opsbro-oss
 WORKDIR       /root/opsbro-oss
 
@@ -14,5 +12,11 @@ RUN       $PYTHON_EXE setup.py install
 # Ask for an encrypted test
 RUN       opsbro gossip zone key import --zone internet --key "NGNjZWI2ZmEyMzEyMTFlOA=="
 
+
+# NOTE: ARG must be AFTER the FROM, and with ENV to access it
+ARG        NODE_NB=
+ENV        NODE_NB=$NODE_NB
+
+
 # The node1 will try to connect to node2 and auto join it
-ENTRYPOINT    test/test_duo2_gossip_connect.sh "2"
+ENTRYPOINT    test/test_duo2_gossip_connect.sh "$NODE_NB"

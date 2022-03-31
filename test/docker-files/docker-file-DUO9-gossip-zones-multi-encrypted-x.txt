@@ -11,12 +11,18 @@ WORKDIR       /root/opsbro-oss
 RUN       $PYTHON_EXE setup.py install
 
 
+
 # NODE1= LAN
 # NODE2= LAN
 # NODE3= internet
 # NODE4= customer-1
 RUN       rm -fr /etc/opsbro/zones/*
-ADD       test/test-files/test-gossip-zones-multi-encrypted/internet/   /etc/opsbro/
+ADD       test/test-files/test-gossip-zones-multi-encrypted/lan/   /etc/opsbro/
 
 
-ENTRYPOINT    test/test_duo9_gossip_zones_multi_encrypted.sh "3"
+# NOTE: ARG must be AFTER the FROM, and with ENV to access it
+# NOTE2: if possible at the END so cache can works
+ARG        NODE_NB=
+ENV        NODE_NB=$NODE_NB
+
+ENTRYPOINT    test/test_duo9_gossip_zones_multi_encrypted.sh "$NODE_NB"
