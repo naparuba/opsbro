@@ -1,10 +1,8 @@
-FROM       naparuba/debian-9-python3
+FROM       naparuba/debian-10-python3
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 
 ADD        . /root/opsbro-oss
-
-
 WORKDIR    /root/opsbro-oss
 
 RUN        $PYTHON_EXE setup.py install

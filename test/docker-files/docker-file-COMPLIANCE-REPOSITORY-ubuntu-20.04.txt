@@ -1,0 +1,38 @@
+FROM       ubuntu:20.04
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+ADD        test/docker-helper/  /
+
+RUN        /apt_get_install  python3
+
+# As there is no "python" in ubuntu20.04, we are giving the test it's path for starting the setup.py
+ENV        PYTHON_EXE=/usr/bin/python3
+
+
+# Need for debug and test
+RUN        /apt_get_install   procps
+
+# For faster debug runs:
+#RUN        /apt_get_install   python3-jinja2
+#RUN        /apt_get_install   python3-crypto
+#RUN        /apt_get_install   python3-setuptools
+#RUN        /apt_get_install   python3-simplejson
+#RUN        /apt_get_install   python3-setproctitle
+#RUN        /apt_get_install   python3-psutil
+#RUN        /apt_get_install   python3-yaml
+#RUN        /apt_get_install   libleveldb1d
+#RUN        /apt_get_install   bash-completion
+#RUN        /apt_get_install   gnupg
+
+ADD        . /root/opsbro-oss
+WORKDIR    /root/opsbro-oss
+
+RUN        $PYTHON_EXE setup.py install
+
+
+# Copy the mail pack into a local one to enable modification
+RUN        opsbro  packs overload global.mongodb
+# Copy the new compliance value
+ADD        test/test-files/test-compliance-repository/compliance/*   /var/lib/opsbro/local-configuration/packs/mongodb/compliance/
+
+ENTRYPOINT     test/test_compliance-repository.sh

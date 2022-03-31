@@ -294,6 +294,8 @@ compliance:
                   - python-leveldb
                   - python-yaml
                   - bash-completion  # Bash completion to enable the CLI completion
+                  - gnupg          # for repositories
+                  - ca-certificates  # for repositories
          
          # ubuntu 18.10 do not have libleveldb1d but libleveldb1d
          -  name      : ubuntu_18_04_python3
@@ -309,6 +311,8 @@ compliance:
                   - python3-yaml
                   - libleveldb1v5   # no python3-leveldb, only python3-plyvel
                   - bash-completion  # Bash completion to enable the CLI completion
+                  - gnupg          # for repositories
+                  - ca-certificates  # for repositories
          
          -  name      : ubuntu_python3
             if        : "{{variables.is_ubuntu}} and system_is_python_3()"
@@ -323,6 +327,9 @@ compliance:
                   - python3-yaml
                   - libleveldb1d   # no python3-leveldb, only python3-plyvel
                   - bash-completion  # Bash completion to enable the CLI completion
+                  - gnupg          # for repositories
+                  - ca-certificates  # for repositories
+         
          
          ##### FEDORA:
          #      ______         __

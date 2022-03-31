@@ -1,8 +1,6 @@
 FROM       naparuba/debian-9-python3
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-ADD        test/docker-helper/  /
-
 
 ADD        . /root/opsbro-oss
 WORKDIR       /root/opsbro-oss

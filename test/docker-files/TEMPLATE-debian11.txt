@@ -1,0 +1,23 @@
+FROM debian:11
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+
+ADD        test/docker-helper/  /
+
+# THIS DOCKER FILE is USED TO PUSH TO napruba/debian-11 so tests will be faster, and won't need to recompute all of this every time
+
+RUN        /apt_get_install      python
+RUN        /apt_get_install      python-jinja2
+RUN        /apt_get_install      python-setuptools
+RUN        /apt_get_install      python-apt
+RUN        /apt_get_install      python-leveldb
+RUN        /apt_get_install      python-simplejson
+RUN        /apt_get_install      python-setproctitle
+RUN        /apt_get_install      python-psutil
+RUN        /apt_get_install      python-yaml
+RUN        /apt_get_install      gnupg    # apt repo add
+
+# Tests with , we are giving the test it's path for starting the setup.py
+ENV        PYTHON_EXE=/usr/bin/python2
+
+ENTRYPOINT     /bin/bash

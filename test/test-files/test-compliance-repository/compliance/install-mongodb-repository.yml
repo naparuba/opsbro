@@ -20,7 +20,7 @@ compliance:
              parameters:
                # TOOK the key by looking at https://keyserver.ubuntu.com/pks/lookup?search=mongodb&fingerprint=on&op=index
                name:       mongodb-org-5.0
-               url:        http://repo.mongodb.org/apt/debian buster/mongodb-org/5.0 main
+               url:        "http://repo.mongodb.org/apt/debian buster/mongodb-org/5.0 main"
                key:        f5679a222c647c87527c2f8cb00a0bd1e2c63c11
                key-server: hkp://keyserver.ubuntu.com:80
 
@@ -28,9 +28,9 @@ compliance:
            - name: ubuntu
              if: "{{variables.is_ubuntu}}"
              parameters:
-               name:       mongodb-org-3.6
-               url:        "[ arch=amd64,arm64 ] http://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.6 multiverse"
-               key:        2930ADAE8CAF5059EE73BB4B58712A2291FA4AD5
+               name:       mongodb-org-5.0
+               url:        "[ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/5.0 multiverse"
+               key:        f5679a222c647c87527c2f8cb00a0bd1e2c63c11
                key-server: hkp://keyserver.ubuntu.com:80
 
 

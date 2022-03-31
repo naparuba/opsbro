@@ -2,14 +2,17 @@ FROM       naparuba/centos-7
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 
-RUN        printf '[mongodb-org-3.4]\nname=MongoDB Repository\nbaseurl=https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/3.4/x86_64/\ngpgcheck=1\nenabled=1\ngpgkey=https://www.mongodb.org/static/pgp/server-3.4.asc\n[mongodb-org-3.2]\nname=MongoDB Repository\nbaseurl=https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/3.2/x86_64/\ngpgcheck=1\nenabled=1\ngpgkey=https://www.mongodb.org/static/pgp/server-3.2.asc\n' > /etc/yum.repos.d/mongodb-org.repo
-RUN        /yum_install  mongodb-org
-
 
 ADD        . /root/opsbro-oss
 WORKDIR    /root/opsbro-oss
 
 RUN        $PYTHON_EXE setup.py install
+
+# Reuse the compliance test to have mongodb installation rule
+RUN        opsbro  packs overload global.mongodb
+# Copy the new compliance value
+ADD        test/test-files/test-compliance-repository/compliance/*   /var/lib/opsbro/local-configuration/packs/mongodb/compliance/
+
 
 ENTRYPOINT     test/test_pack_mongodb.sh
 

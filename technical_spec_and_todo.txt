@@ -623,6 +623,13 @@ docker build -t naparuba/debian-10-python3 -f test/docker-files/TEMPLATE-debian1
 docker push naparuba/debian-10-python3
 
 
+docker build -t naparuba/debian-11 -f test/docker-files/TEMPLATE-debian11.txt .
+docker push naparuba/debian-11
+
+docker build -t naparuba/debian-11-python3 -f test/docker-files/TEMPLATE-debian11-PYTHON3.txt .
+docker push naparuba/debian-11-python3
+
+
 docker build -t naparuba/centos-7 -f test/docker-files/TEMPLATE-centos7.txt .
 docker push naparuba/centos-7
 

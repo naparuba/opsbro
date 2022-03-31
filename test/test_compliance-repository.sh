@@ -9,7 +9,7 @@ print_header "Starting to test Compliance for mongodb install with repository"
 # Start daemon
 /etc/init.d/opsbro start
 
-opsbro compliance wait-compliant "MONGODB-INSTALL" --timeout=120
+opsbro compliance wait-compliant "MONGODB-INSTALL" --timeout=5
 if [ $? != 0 ]; then
    echo "ERROR: cannot have the repository compliance rule compliant."
    opsbro compliance state

@@ -1,5 +1,6 @@
-FROM       naparuba/centos-7
+FROM       naparuba/debian-10-python3
 MAINTAINER Jean Gabes <naparuba@gmail.com>
+
 
 
 ADD        . /root/opsbro-oss
@@ -7,9 +8,12 @@ WORKDIR    /root/opsbro-oss
 
 RUN        $PYTHON_EXE setup.py install
 
-# Copy the mail pack into a local one to enable modification
+# Reuse the compliance test to have mongodb installation rule
 RUN        opsbro  packs overload global.mongodb
 # Copy the new compliance value
 ADD        test/test-files/test-compliance-repository/compliance/*   /var/lib/opsbro/local-configuration/packs/mongodb/compliance/
 
-ENTRYPOINT     test/test_compliance-repository.sh
+
+ENTRYPOINT     test/test_pack_mongodb.sh
+
+

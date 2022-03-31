@@ -4,10 +4,22 @@
 MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . $MYDIR/common_shell_functions.sh
 
-# Start mongodb
-nohup mongod -f /etc/mongod.conf &
+
 
 /etc/init.d/opsbro start
+
+opsbro compliance wait-compliant "MONGODB-INSTALL" --timeout=120
+if [ $? != 0 ]; then
+   echo "ERROR: cannot have the repository compliance rule compliant."
+   opsbro compliance state
+   opsbro compliance history
+   exit 2
+fi
+
+# Start mongodb when installed
+nohup mongod -f /etc/mongod.conf &
+
+sleep 10
 
 test/assert_group.sh "mongodb"
 if [ $? != 0 ]; then

@@ -18,8 +18,8 @@ WORKDIR    /root/opsbro-oss
 RUN        python setup.py install
 
 # Copy the mail pack into a local one to enable modification
-RUN        opsbro  packs overload global.nginx
+RUN        opsbro  packs overload global.mongodb
 # Copy the new compliance value
-ADD        test/test-files/test-compliance-repository/compliance/*   /var/lib/opsbro/local-configuration/packs/nginx/compliance/
+ADD        test/test-files/test-compliance-repository/compliance/*   /var/lib/opsbro/local-configuration/packs/mongodb/compliance/
 
 ENTRYPOINT     test/test_compliance-repository.sh

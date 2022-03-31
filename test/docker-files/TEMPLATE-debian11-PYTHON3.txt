@@ -1,0 +1,25 @@
+FROM debian:11
+MAINTAINER Jean Gabes <naparuba@gmail.com>
+
+# THIS DOCKER FILE is USED TO PUSH TO napruba/debian-11-PYTHON3 so tests will be faster, and won't need to recompute all of this every time
+
+ADD        test/docker-helper/  /
+
+RUN        /apt_get_install  python3
+# All need for debian, so faster test (we are testging feature here, not install)
+RUN        /apt_get_install  python3-jinja2
+RUN        /apt_get_install  python3-pycryptodome
+RUN        /apt_get_install  python3-setuptools
+RUN        /apt_get_install  libleveldb1d  # no native python wrapper
+RUN        /apt_get_install  python3-simplejson
+RUN        /apt_get_install  python3-setproctitle
+RUN        /apt_get_install  python3-psutil
+RUN        /apt_get_install  python3-yaml
+RUN        /apt_get_install  gnupg            # for  apt-key adv  (repository)
+RUN        /apt_get_install  bash-completion
+
+
+# Tests with , we are giving the test it's path for starting the setup.py
+ENV        PYTHON_EXE=/usr/bin/python3
+
+ENTRYPOINT     /bin/bash
