@@ -10,7 +10,7 @@ echo "   *********   Python unitary tests  ***********"
 
 for ii in $(ls -1 test_*py); do
    printf " - %-50s" "$ii"
-   OUTPUT=$(python $ii 2>&1)
+   OUTPUT=$($PYTHON_EXE $ii 2>&1)
    if [ $? != 0 ]; then
       echo ""
       echo "TEST: $ii FAIL:"

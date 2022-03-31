@@ -643,3 +643,7 @@ https://github.com/kellyjonbrazil/jc
 
 #### LMSensors
 https://pypi.org/project/PySensors/
+
+
+### Gros (GROS) pack de sondes en python, licence OK
+https://github.com/Linuxfabrik/monitoring-plugins/
