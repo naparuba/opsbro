@@ -16,7 +16,7 @@ logger = LoggerFactory.create_logger('system-packages')
 class YumBackend(LinuxBackend):
     RPM_PACKAGE_FILE_PATH = '/var/lib/rpm/Packages'  # seems to be list of installed packages
     RPM_PACKAGE_FILE_PATH_FED33 = '/var/lib/rpm/rpmdb.sqlite'  # after Fedora 33, this is the new file
-    
+    RPM_PACKAGE_FILE_PATH_FED36 = '/usr/lib/sysimage/rpm/rpmdb.sqlite' # after Fedora 36, this is the new file
     
     def __init__(self):
         self.yumbase_lock = threading.RLock()
@@ -47,7 +47,11 @@ class YumBackend(LinuxBackend):
     def _get_rpm_package_file_path(self):
         if os.path.exists(self.RPM_PACKAGE_FILE_PATH):
             return self.RPM_PACKAGE_FILE_PATH
-        return self.RPM_PACKAGE_FILE_PATH_FED33
+        if os.path.exists(self.RPM_PACKAGE_FILE_PATH_FED33):
+            return self.RPM_PACKAGE_FILE_PATH_FED33
+        if os.path.exists(self.RPM_PACKAGE_FILE_PATH_FED36):
+            return self.RPM_PACKAGE_FILE_PATH_FED36
+        raise Exception('Cannot find any rpm package file on the system')
     
     
     def _assert_valid_cache(self):
