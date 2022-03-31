@@ -10,7 +10,7 @@ compliance:
          is_debian            : "{{collector.system.os.linux.distribution}} == 'debian'"
          is_centos            : "{{collector.system.os.linux.distribution}} == 'centos'"
          is_rocky             : "{{collector.system.os.linux.distribution}} == 'rocky-linux'"
-         is_alma         : "{{collector.system.os.linux.distribution}} == 'almalinux'"
+         is_alma              : "{{collector.system.os.linux.distribution}} == 'almalinux'"
          is_fedora            : "{{collector.system.os.linux.distribution}} == 'fedora'"
          is_alpine            : "{{collector.system.os.linux.distribution}} == 'alpine'"
          is_alpine_11         : "{{collector.system.os.linux.distribution}} == 'alpine' and {{collector.system.os.linux.minor_version}} == 11"   # TODO: in order to avoid the 2*and limitation in variables
@@ -23,7 +23,13 @@ compliance:
          is_oracle_linux      : "{{collector.system.os.linux.distribution}} == 'oracle-linux'"
          is_opensuse          : "{{collector.system.os.linux.distribution}} == 'opensuse'"
       environments:
-         ###### CENTOS
+         # NOTE: figlet -f slant "XXX"
+         ### Centos
+         #     ______           __
+         #   / ____/__  ____  / /_____  _____
+         #  / /   / _ \/ __ \/ __/ __ \/ ___/
+         # / /___/  __/ / / / /_/ /_/ (__  )
+         # \____/\___/_/ /_/\__/\____/____/
          -  name      : centos6
             if        : "{{variables.is_centos}} and {{collector.system.os.linux.major_version}} == 6"
             parameters:
@@ -121,8 +127,8 @@ compliance:
                   - python3-devel
             post_commands:
                - pip3 install pycrypto
-
-
+         
+         
          # The new centos 8 bis
          -  name         : almalinux
             if           : "{{variables.is_alma}} and {{collector.system.os.linux.major_version}} == 8"
@@ -145,8 +151,8 @@ compliance:
                   - python3-devel
             post_commands:
                - pip3 install pycrypto
-
-
+         
+         # We can have redhat8 in docker, but not 7... ok redhat...
          -  name         : redhat8
             if           : "{{variables.is_redhat}} and {{collector.system.os.linux.major_version}} == 8"
             parameters   :
@@ -169,7 +175,7 @@ compliance:
                   - python3-cryptography
             post_commands:
                #- pip3 install pycrypto
-                - pip3 install simplejson setproctitle leveldb psutil pycrypto
+               - pip3 install simplejson setproctitle leveldb psutil pycrypto
          
          
          -  name      : is_oracle_linux_7
@@ -191,7 +197,7 @@ compliance:
                   - python36-crypto  # in epel
                   - bash-completion  # Bash completion to enable the CLI completion
                   # python3-cryptography is not the valid one
-            
+         
          
          
          -  name         : is_oracle_linux_8
@@ -213,11 +219,14 @@ compliance:
                   - bash-completion  # Bash completion to enable the CLI completion
             post_commands:
                - pip3 install pycrypto
-         
 
          
-         
-         
+         ### DEBIAN
+         #      ____       __    _
+         #    / __ \___  / /_  (_)___ _____
+         #   / / / / _ \/ __ \/ / __ `/ __ \
+         #  / /_/ /  __/ /_/ / / /_/ / / / /
+         # /_____/\___/_.___/_/\__,_/_/ /_/
          -  name      : debian
             if        : "{{variables.is_debian}} and system_is_python_2()"
             parameters:
@@ -230,6 +239,7 @@ compliance:
                   - python-setproctitle
                   - python-psutil
                   - python-yaml
+                  - gnupg            # for  apt-key adv  (repository)
                   - bash-completion  # Bash completion to enable the CLI completion
          
          
@@ -245,6 +255,7 @@ compliance:
                   - python3-setproctitle
                   - python3-psutil
                   - python3-yaml
+                  - gnupg            # for  apt-key adv  (repository)
                   - bash-completion  # Bash completion to enable the CLI completion
          
          
@@ -261,9 +272,15 @@ compliance:
                   - python3-setproctitle
                   - python3-psutil
                   - python3-yaml
+                  - gnupg            # for  apt-key adv  (repository)
                   - bash-completion  # Bash completion to enable the CLI completion
-         
-         
+
+         ### Ubuntu
+         #    __  ____                __
+         #   / / / / /_  __  ______  / /___  __
+         #  / / / / __ \/ / / / __ \/ __/ / / /
+         # / /_/ / /_/ / /_/ / / / / /_/ /_/ /
+         # \____/_.___/\__,_/_/ /_/\__/\__,_/
          -  name      : ubuntu_python2
             if        : "{{variables.is_ubuntu}} and system_is_python_2()"
             parameters:
@@ -278,6 +295,20 @@ compliance:
                   - python-yaml
                   - bash-completion  # Bash completion to enable the CLI completion
          
+         # ubuntu 18.10 do not have libleveldb1d but libleveldb1d
+         -  name      : ubuntu_18_04_python3
+            if        : "({{variables.is_ubuntu}} and system_is_python_3()) and {{collector.system.os.linux.version}} == '18.04' "
+            parameters:
+               packages:
+                  - python3-jinja2
+                  - python3-crypto
+                  - python3-setuptools
+                  - python3-simplejson
+                  - python3-setproctitle
+                  - python3-psutil
+                  - python3-yaml
+                  - libleveldb1v5   # no python3-leveldb, only python3-plyvel
+                  - bash-completion  # Bash completion to enable the CLI completion
          
          -  name      : ubuntu_python3
             if        : "{{variables.is_ubuntu}} and system_is_python_3()"
@@ -293,8 +324,12 @@ compliance:
                   - libleveldb1d   # no python3-leveldb, only python3-plyvel
                   - bash-completion  # Bash completion to enable the CLI completion
          
-         
          ##### FEDORA:
+         #      ______         __
+         #    / ____/__  ____/ /___  _________ _
+         #   / /_  / _ \/ __  / __ \/ ___/ __ `/
+         #  / __/ /  __/ /_/ / /_/ / /  / /_/ /
+         # /_/    \___/\__,_/\____/_/   \__,_/
          # there are rules for 24, 25, 26 -> 30 (python2) and 31+ (python3)
          # and So fedora 31 and more
          -  name      : fedora_python2
@@ -311,8 +346,6 @@ compliance:
                   - bash-completion  # Bash completion to enable the CLI completion
                   - leveldb
          
-         
-         ##### FEDORA:
          # there are rules for 24, 25, 26 -> 30 (python2) and 31+ (python3)
          # and So fedora 31 and more
          -  name      : fedora_python3
@@ -329,7 +362,13 @@ compliance:
                   - python3-psutil
                   - python3-yaml
          
-         
+         ### Alpine
+         #     ___    __      _
+         #    /   |  / /___  (_)___  ___
+         #   / /| | / / __ \/ / __ \/ _ \
+         #  / ___ |/ / /_/ / / / / /  __/
+         # /_/  |_/_/ .___/_/_/ /_/\___/
+         #         /_/
          # Alpine 3.5->7+ have pip2 command
          -  name         : alpine3_5_6_7_8_9_10
             if           : "{{variables.is_alpine}} and ( {{collector.system.os.linux.minor_version}} >= 5 and {{collector.system.os.linux.minor_version}} <= 10 )"
@@ -356,8 +395,7 @@ compliance:
             post_commands:
                - pip2 install leveldb
          
-         
-         
+               
          # Alpine 3.11 => for python 3
          -  name      : alpine11_py3
             if        : "{{variables.is_alpine_11}} and system_is_python_3()"
@@ -393,8 +431,15 @@ compliance:
                   - py3-yaml
                   # Bash completion to enable the CLI completion
                   - bash-completion
+
          
-         
+         ### Opensuse
+         #    ____
+         #   / __ \____  ___  ____  _______  __________
+         #  / / / / __ \/ _ \/ __ \/ ___/ / / / ___/ _ \
+         # / /_/ / /_/ /  __/ / / (__  ) /_/ (__  )  __/
+         # \____/ .___/\___/_/ /_/____/\__,_/____/\___/
+         #     /_/
          # Open suse 15 have specific packages names
          -  name      : opensuse_15
             if        : "{{variables.is_opensuse}} and {{collector.system.os.linux.major_version}} == 15"
@@ -427,8 +472,14 @@ compliance:
                   - python-setproctitle
                   - python-yaml
                   - bash-completion  # Bash completion to enable the CLI completion
+
          
-         
+         ### Amazon
+         #      ___
+         #    /   |  ____ ___  ____ _____  ____  ____
+         #   / /| | / __ `__ \/ __ `/_  / / __ \/ __ \
+         #  / ___ |/ / / / / / /_/ / / /_/ /_/ / / / /
+         # /_/  |_/_/ /_/ /_/\__,_/ /___/\____/_/ /_/
          -  name         : amazon_linux
             if           : "{{variables.is_amazon_linux}}"
             parameters   :
@@ -466,8 +517,7 @@ compliance:
                   - bash-completion
             post_commands:
                - pip install leveldb psutil pycrypto
-
-
+               
          # new amazonlinux2, 2022 edition, with python3 + fedora based
          -  name         : amazon_linux2022
             if           : "{{variables.is_amazon_linux2022}}"

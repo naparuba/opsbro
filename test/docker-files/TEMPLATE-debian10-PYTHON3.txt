@@ -1,7 +1,7 @@
 FROM debian:10
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
-# THIS DOCKER FILE is USED TO PUSH TO napruba/debian-9-PYTHON3 so tests will be faster, and won't need to recompute all of this every time
+# THIS DOCKER FILE is USED TO PUSH TO napruba/debian-10-PYTHON3 so tests will be faster, and won't need to recompute all of this every time
 
 ADD        test/docker-helper/  /
 
@@ -16,6 +16,7 @@ RUN        /apt_get_install    python3-simplejson
 RUN        /apt_get_install    python3-setproctitle
 RUN        /apt_get_install    python3-psutil
 RUN        /apt_get_install    python3-yaml
+RUN        /apt_get_install      gnupg    # apt repo add
 
 
 # Set python3 as default python

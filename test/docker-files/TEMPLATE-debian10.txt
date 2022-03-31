@@ -16,6 +16,7 @@ RUN        /apt_get_install      python-simplejson
 RUN        /apt_get_install      python-setproctitle
 RUN        /apt_get_install      python-psutil
 RUN        /apt_get_install      python-yaml
+RUN        /apt_get_install      gnupg    # apt repo add
 
 # Tests with , we are giving the test it's path for starting the setup.py
 ENV        PYTHON_EXE=/usr/bin/python2
