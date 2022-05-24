@@ -1020,6 +1020,8 @@ class Gossip(BaseManager):
             if topiker.is_topic_enabled(TOPIC_SERVICE_DISCOVERY):
                 self.launch_gossip()
             self.__clean_old_events()
+            # Also be sure to clean old stacked broadcaster messages
+            broadcaster.clean_and_sort()
             time.sleep(1)
     
     
