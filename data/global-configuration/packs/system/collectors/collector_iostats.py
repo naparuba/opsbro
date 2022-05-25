@@ -65,12 +65,9 @@ class IoStats(Collector):
             data = dict(zip(columns, split))
             
             device_name = data['device']
-            
-            # If there is a number in the device, we drop (don't look at partition)
-            # NOTE: car in digit is faster than regexp re.search('\d+', value)
-            # (⌐■_■)==ε╦╤─   regexp
-            if any(char in digits for char in device_name):
-                self.logger.debug('Skipping partition line: %s' % device_name)
+
+            # we only want real device, NOT partition, so check with the presence in /sys/block/
+            if not os.path.exists('/sys/block/%s' % device_name):
                 continue
             
             for key in data:
