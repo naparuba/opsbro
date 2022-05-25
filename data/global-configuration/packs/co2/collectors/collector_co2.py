@@ -18,7 +18,7 @@ class Co2(Collector):
                 import mh_z19
                 self.lib = mh_z19
             except ImportError:
-                self.set_error('You need the python mh-z19 librairy to collect for Co2.')
+                self.set_error('You need the python mh_z19 librairy to collect for Co2.')
                 return False
         
         try:
