@@ -89,10 +89,10 @@ def fstatfs(fd):
 
 class DiskUsage(Collector):
     not_wish_fs_type = set(['sysfs', 'devtmpfs', 'securityfs',
-                            'devpts', 'cgroup', 'pstore', 'configfs',
+                            'devpts', 'cgroup', 'cgroup2', 'pstore', 'configfs',
                             'mqueue', 'hugetlbfs', 'autofs', 'fusectl',
                             'proc', 'smbfs', 'cifs', 'iso9660', 'udf',
-                            'nfsv4', 'udev'])
+                            'nfsv4', 'udev', 'bpf'])
     
     
     def _get_volume_paths(self):
@@ -153,6 +153,9 @@ class DiskUsage(Collector):
             self.logger.debug("%s => f_bfree: free blocks in fs: %s" % (path, details.f_bfree))
             block_size = details.f_bsize
             total_size = int(details.f_blocks * block_size / (1024.0 * 1024.0))
+            if total_size == 0:  # bad type, like bpf for kernel, skip this
+                self.logger.debug("%s => f_bfree: is void, skipping it" % (path))
+                continue
             free_size = int(details.f_bfree * block_size / (1024.0 * 1024.0))
             used_size = total_size - free_size
             pct_used = round(float(100 * float(used_size) / total_size), 1)
