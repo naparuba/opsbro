@@ -384,7 +384,7 @@ class Logger(object):
         @http_export('/log/parts/')
         def list_parts():
             response.content_type = 'application/json'
-            return json.dumps(loggers.keys())
+            return json.dumps(list(loggers.keys()))  # py3
 
 
 core_logger = Logger()
