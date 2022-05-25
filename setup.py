@@ -407,14 +407,14 @@ is_managed_system = systepacketmgr.is_managed_system()
 system_distro, system_distroversion, _ = systepacketmgr.get_distro()
 
 # In this list of distro, the dependecies are installed with the internal system compliant
-compliant_system_distros = ['debian', 'centos', 'rocky-linux', 'almalinux', 'alpine', 'fedora', 'ubuntu', 'amazon-linux2022', 'amazon-linux2', 'amazon-linux', 'opensuse', 'oracle-linux', 'redhat']
+compliant_system_distros = ['debian', 'raspbian', 'centos', 'rocky-linux', 'almalinux', 'alpine', 'fedora', 'ubuntu', 'amazon-linux2022', 'amazon-linux2', 'amazon-linux', 'opensuse', 'oracle-linux', 'redhat']
 
 is_compliant_system_distro = system_distro in compliant_system_distros
 
 # Hack for debian & centos 6 that is not configure to access leveldb on pypi because pypi did remove http (no S) on november 2017.
 # great....
 additionnal_pypi_repos = []
-#if allow_black_magic:
+# if allow_black_magic:
 #    additionnal_pypi_repos.append('https://pypi.python.org/pypi/leveldb/')
 
 if allow_black_magic:
@@ -471,7 +471,7 @@ if allow_black_magic and is_compliant_system_distro:
         cprint('   - ERROR: cannot install the prerequite from the system (%s - %s). Please reports a bug.' % (system_distro, system_distroversion), color='red')
         sys.exit(2)
 
-# windows black magic: we ned pywin32
+# windows black magic: we need pywin32
 if os.name == 'nt':
     try:
         import win32api

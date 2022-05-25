@@ -7,7 +7,7 @@ compliance:
       type        : package-install
       # You can set variables in order to not repeat yourself in the if rules
       variables   :
-         is_debian            : "{{collector.system.os.linux.distribution}} == 'debian'"
+         is_debian            : "{{collector.system.os.linux.distribution}} == 'debian' or {{collector.system.os.linux.distribution}} == 'raspbian'"
          is_centos            : "{{collector.system.os.linux.distribution}} == 'centos'"
          is_rocky             : "{{collector.system.os.linux.distribution}} == 'rocky-linux'"
          is_alma              : "{{collector.system.os.linux.distribution}} == 'almalinux'"

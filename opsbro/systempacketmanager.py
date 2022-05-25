@@ -85,6 +85,9 @@ class SystemPacketMgr(object):
         if 'debian' in distname:
             self.distro = 'debian'
             self.managed_system = True
+        elif 'raspbian' in distname:
+            self.distro = 'raspbian'
+            self.managed_system = True
         elif 'ubuntu' in distname:
             self.distro = 'ubuntu'
             self.managed_system = True
@@ -131,7 +134,7 @@ class SystemPacketMgr(object):
         # Get the backend
         if self.distro in ['redhat', 'centos', 'almalinux', 'rocky-linux', 'amazon-linux', 'amazon-linux2', 'amazon-linux2022',  'oracle-linux', 'fedora']:
             self.backend = YumBackend()
-        elif self.distro in ['debian', 'ubuntu']:
+        elif self.distro in ['debian', 'ubuntu', 'raspbian']:
             self.backend = AptBackend()
         elif self.distro == 'alpine':
             self.backend = ApkBackend()
