@@ -59,13 +59,20 @@ class Mysql(Collector):
         mysql_socket = self.get_parameter('socket')
         
         # You can connect with socket or TCP
-        if not mysql_socket:
+        if not mysql_socket or not os.path.exists(mysql_socket):  # no socket or not existing
             try:
                 db = self.MySQLdb.connect(host=host, user=user, passwd=password, port=port)
             except self.MySQLdb.OperationalError as exp:  # ooooups
-                self.set_error('MySQL connection error (server): %s' % exp)
+                # Did try to fail back
+                if mysql_socket and not os.path.exists(mysql_socket):
+                    self.set_error('MySQL connection error (server= %s:%s) because unix socket %s is missing: %s' % (host, port, mysql_socket, exp))
+                else:  # we did really try to connect to server
+                    self.set_error('MySQL connection error (server= %s:%s): %s' % (host, port, exp))
                 return False
         elif hasattr(socket, 'AF_UNIX'):
+            if not os.path.exists(mysql_socket):
+                self.set_error('MySQL the mysql socket defined is missing: %s' % mysql_socket)
+                return False
             try:
                 db = self.MySQLdb.connect(host='localhost', user=user, passwd=password, port=port, unix_socket=mysql_socket)
             except self.MySQLdb.OperationalError as exp:
