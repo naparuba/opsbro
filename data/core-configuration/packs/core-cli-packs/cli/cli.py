@@ -40,7 +40,7 @@ def __get_pack_breadcumb(pack_name, pack_level, end='', topic_picto='large'):
     return res
 
 
-def __print_element_parameters(elt, pack_name, pack_level, main_topic_color, what, offset):
+def __print_element_parameters(elt, pack_name, pack_level, main_topic_color, offset):
     __print_line_header(main_topic_color)
     cprint('   %sParameters: ' % (' ' * offset), color='grey', end='')
     config_snapshot = elt.get_configuration_snapshot()
@@ -53,7 +53,7 @@ def __print_element_parameters(elt, pack_name, pack_level, main_topic_color, wha
     for parameter_name, parameter_snap in config_snapshot['parameters'].items():
         __print_line_header(main_topic_color)
         cprint('   %s- ' % (' ' * offset), end='')
-        cprint('%s.packs.%s.%s.' % (pack_level, pack_name, what), color='grey', end='')
+        cprint('%s.%s.' % (pack_level, pack_name), color='grey', end='')
         cprint('%-15s' % parameter_name, color='magenta', end='')
         cprint(' %s ' % CHARACTERS.arrow_left, color='grey', end='')
         is_valid = parameter_snap['is_valid']
@@ -211,7 +211,7 @@ def do_packs_show(name=''):
                 # cprint(' : configuration=', end='')
                 cprint('')
                 offset = 0
-                __print_element_parameters(module, pack_name, level, main_topic_color, 'parameters', offset)
+                __print_element_parameters(module, pack_name, level, main_topic_color, offset)
             
             # collectors
             collectors = pack_entry['collectors']
@@ -228,7 +228,7 @@ def do_packs_show(name=''):
                     cprint('collectors > %-15s' % colname, end='', color='cyan')
                     cprint('')
                     offset = 1
-                    __print_element_parameters(collector, pack_name, level, main_topic_color, 'parameters', offset)
+                    __print_element_parameters(collector, pack_name, level, main_topic_color, offset)
             
             # generators
             generators = pack_entry['generators']
