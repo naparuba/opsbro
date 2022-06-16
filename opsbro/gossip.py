@@ -1626,7 +1626,12 @@ class Gossip(BaseManager):
             events = copy.deepcopy(self.events)
         
         logger.debug('do_push_pull:: giving %s informations about nodes: %s' % (other[0], [n['name'] for n in nodes_to_send.values()]))
-        m = {'type': 'push-pull-msg', 'ask-from-zone': self.zone, 'nodes': nodes_to_send, 'events': events}
+        m = {'type'         : 'push-pull-msg',
+             'ask-from-zone': self.zone,
+             'ask-from'     : {'name': self.name, 'display_name': self.display_name, 'uuid': self.uuid},
+             'nodes'        : nodes_to_send,
+             'events'       : events
+             }
         message = jsoner.dumps(m)
         
         (addr, port) = other
@@ -1668,11 +1673,18 @@ class Gossip(BaseManager):
     #   * not the other sub zones of my, because they don't have to see which who I am linked (can be an other customer for example)
     #     * but if the sub-zone is their own, then ok give it
     # * too much sub zones: give nothing
-    def get_nodes_for_push_pull_response(self, other_node_zone):
-        logger.debug('PUSH-PULL: get a push pull from a node zone: %s' % other_node_zone)
+    def _get_nodes_for_push_pull_response(self, other_node_zone, ask_from):
+        ask_from_str = 'FROM:unknown'  # old version
+        if ask_from:
+            _name = ask_from.get('name', '')
+            _display_name = ask_from.get('display_name', '')
+            _uuid = ask_from.get('uuid', '')
+            ask_from_str = 'FROM:%s%s uuid=%s' % (_name, _display_name, _uuid)
+        
+        logger.debug('PUSH-PULL: [%s] get a push pull from zone: "%s"' % (ask_from_str, other_node_zone))
         # Same zone: give all we know about
         if other_node_zone == self.zone:
-            logger.debug('PUSH-PULL same zone ask us, give back all we know about')
+            logger.debug('PUSH-PULL: [%s] same zone ask us, give back all we know about' % ask_from_str)
             nodes = self.nodes
             return nodes
         
@@ -1685,26 +1697,26 @@ class Gossip(BaseManager):
         
         # Not my zone and not a top zone, so lower zone. Must be a proxy to allow to give some infos
         if not self.is_proxy:
-            logger.info('PUSH-PULL: another node ask us a push_pull from a not my zone or top zone: %s' % other_node_zone)
+            logger.info('PUSH-PULL: [%s] another node ask us a push_pull from a not my zone or top zone: "%s"' % (ask_from_str, other_node_zone))
             return None
         
-        # But only answer if it's from a directly sub zone (low-low zone should not see us)
+        # But only answer if it's from a direct sub zone (low-low zone should not see us)
         # give my zone proxy nodes
         if zonemgr.is_direct_sub_zone_from(self.zone, other_node_zone):
             my_zone_proxies_and_its_zone = {}
             for (nuuid, node) in self.nodes.items():
                 if node['is_proxy'] and node['zone'] == self.zone:
                     my_zone_proxies_and_its_zone[nuuid] = node
-                    logger.debug('PUSH-PULL: give back data about proxy node of my own zone: %s' % node['name'])
+                    logger.debug('PUSH-PULL: [%s] give back data about proxy node of my own zone: "%s"' % (ask_from_str, node['name']))
                     continue
                 if node['zone'] == other_node_zone:
                     my_zone_proxies_and_its_zone[nuuid] = node
-                    logger.debug('PUSH-PULL: give back data about a node of the caller zone: %s' % node['name'])
+                    logger.debug('PUSH-PULL: [%s] give back data about a node of the caller zone: "%s"' % (ask_from_str, node['name']))
                     continue
             return my_zone_proxies_and_its_zone
         
         # Other level (brother like zones or sub-sub zones)
-        logger.warning('SECURITY: a node from an unallowed zone %s did ask us push_pull' % other_node_zone)
+        logger.warning('SECURITY: [%s] The node from an unallowed zone "%s" did ask us push_pull' % (ask_from_str, other_node_zone))
         return None
     
     
@@ -1992,12 +2004,14 @@ class Gossip(BaseManager):
             if t is None or t != 'push-pull-msg':  # bad message, skip it
                 return
             
+            ask_from = msg.get('ask-from', {})  # who is doing the request
+            
             self.merge_nodes(msg['nodes'])
             self.merge_events(msg.get('events', {}))
             
             # And look where does the message came from: if it's the same
             # zone: we can give all, but it it's a lower zone, only give our proxy nodes informations
-            nodes = self.get_nodes_for_push_pull_response(msg['ask-from-zone'])
+            nodes = self._get_nodes_for_push_pull_response(msg['ask-from-zone'], ask_from)
             if nodes is None:
                 return jsoner.dumps({'error': 'You are not from a valid zone'})
             
