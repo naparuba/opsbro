@@ -93,7 +93,40 @@ def do_new(ip, timeout=30, join_us=True):
     cprint(CHARACTERS.check, color='green')
     
     cprint(u'  - executing the installation:', end='')
-    __ssh_command(ip, u'cd /root;tar xfz installation-source.tar.gz;ls -thor;cd opsbro-%s;(python3 setup.py install ||python2 setup.py install);/etc/init.d/opsbro start' % VERSION)
+    __ssh_command(ip, u'cd /root;rm -fr opsbro-%s;tar xfz installation-source.tar.gz;ls -thor;cd opsbro-%s;(python3 setup.py install ||python2 setup.py install);/etc/init.d/opsbro start' % (VERSION, VERSION))
+    cprint(CHARACTERS.check, color=u'green')
+    
+    if join_us:
+        cprint(u'  - Asking the other node to join us at %s:' % our_ip, end='')
+        __ssh_command(ip, u'opsbro gossip join "%s"' % our_ip)
+        cprint(CHARACTERS.check, color='green')
+
+
+def do_update(ip, timeout=30, join_us=False):
+    # If we are asking to join us, we will have our public ip
+    our_ip = u''
+    if join_us:
+        try:
+            d = get_opsbro_json('/agent/info')
+        except get_request_errors() as exp:
+            logger.error('Cannot join opsbro agent for get our IP: %s' % exp)
+            sys.exit(1)
+        our_ip = d.get('public_addr', None)
+        if our_ip is None:
+            cprint('Cannot get our public IP, exiting')
+            sys.exit(1)
+    
+    cprint(u'Launching the update on %s to version %s:' % (ip, VERSION))
+    
+    cprint(u'  - copying the installation source:', end='')
+    __scp_file(ip, u'/var/lib/opsbro/installation-source.tar.gz', '/root')
+    cprint(CHARACTERS.check, color='green')
+    
+    cprint(u'  - executing the update:', end='')
+    sys.stdout.flush()
+    __ssh_command(ip,
+                  u'/etc/init.d/opsbro stop;cd /root;rm -fr opsbro-%s;tar xfz installation-source.tar.gz;ls -thor;cd opsbro-%s;(python3 setup.py install --update --update-global-packs||python2 setup.py install --update --update-global-packs);/etc/init.d/opsbro start' % (
+                      VERSION, VERSION))
     cprint(CHARACTERS.check, color=u'green')
     
     if join_us:
@@ -103,13 +136,25 @@ def do_new(ip, timeout=30, join_us=True):
 
 
 exports = {
-    do_new: {
+    do_new   : {
         'keywords'             : ['deploy', 'new'],
         'description'          : 'Deploy the agent to another server',
         'args'                 : [
             {'name': 'ip', 'description': 'IP of the new server'},
             {'name': '--timeout', 'type': 'int', 'default': 30, 'description': 'Timeout to let the initialization'},
             {'name': '--join-us', 'type': 'bool', 'default': True, 'description': 'If enabled (default), it will join the other node with our public address'},
+        ],
+        'allow_temporary_agent': {'enabled': True, },
+        
+    },
+    
+    do_update: {
+        'keywords'             : ['deploy', 'update'],
+        'description'          : 'Update the agent to another server with your version',
+        'args'                 : [
+            {'name': 'ip', 'description': 'IP of the new server'},
+            {'name': '--timeout', 'type': 'int', 'default': 30, 'description': 'Timeout to let the update'},
+            {'name': '--join-us', 'type': 'bool', 'default': False, 'description': 'If enabled (disabledby default), it will join the other node with our public address'},
         ],
         'allow_temporary_agent': {'enabled': True, },
         
