@@ -10,15 +10,14 @@ class OpenPorts(Collector):
             try:
                 import psutil
                 self.psutil_lib = psutil
-                
-                if not hasattr(self.psutil_lib, 'net_connections'):  # old lib version
-                    self.set_not_eligible('get_open_ports: the psutil lib version is too old, plase update it.')
-                    return False
-                
             except ImportError as exp:
                 self.set_not_eligible('get_open_ports: cannot import psutil lib %s. Please install it.' % exp)
                 return False
-        
+
+        if not hasattr(self.psutil_lib, 'net_connections'):  # old lib version
+            self.set_not_eligible('get_open_ports: the psutil lib version is too old, plase update it.')
+            return False
+
         listening_connexions = [con for con in self.psutil_lib.net_connections() if con.status == 'LISTEN']
         for con in listening_connexions:
             # UDP: sconn(fd=7, family=10, type=1, laddr=('::', 53)

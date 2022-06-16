@@ -93,5 +93,5 @@ wait_event_with_timeout 'NODE1-DID-SEE-NODE2-UPDATE' 20
 wait_event_with_timeout 'NODE2-DID-SEE-NODE1-UPDATE' 20
 
 
-sleep 10
+sleep 10  # always sleep a bit to be ok with all events
 exit_if_no_crash "Installation + update from node-1 is OK"
