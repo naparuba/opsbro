@@ -59,8 +59,12 @@ done
 # Set a valid display name for debug
 opsbro agent parameters set display_name "node-1"
 
-print_header "Deploy node2"
+print_header "INSTALL: Deploy node2"
 opsbro deploy new node2
+if [ $? != 0 ]; then
+      echo "ERROR: fail to DEPLOY"
+      exit 2
+fi
 
 print_header "Wait for node-2 to show"
 wait_member_display_name_with_timeout  "node-2"  30
@@ -71,5 +75,22 @@ wait_event_with_timeout 'NODE1-DID-SEE-NODE2' 20
 wait_event_with_timeout 'NODE2-DID-SEE-NODE1' 20
 
 
-exit_if_no_crash "Distant installation to node-2 was OK"
+# Now the update
+print_header "UPDATE: Update node2"
+opsbro deploy update node2
+if [ $? != 0 ]; then
+      echo "ERROR: fail to UPDATE"
+      exit 2
+fi
+
+print_header "Wait for node-2 to show"
+wait_member_display_name_with_timeout  "node-2"  30
+
+print_header "Wait for event from node2"
+opsbro gossip events add "NODE1-DID-SEE-NODE2-UPDATE"
+wait_event_with_timeout 'NODE1-DID-SEE-NODE2-UPDATE' 20
+wait_event_with_timeout 'NODE2-DID-SEE-NODE1-UPDATE' 20
+
+sleep 10
+exit_if_no_crash "Distant installation + update to node-2 was OK"
 

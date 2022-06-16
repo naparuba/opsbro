@@ -73,7 +73,7 @@ print_header "Rename ourselve into node-2"
 opsbro agent parameters set display_name "node-2"
 opsbro gossip members
 
-print_header "Wait for event from node1"
+print_header "INSTALLATION: Wait for event from node1"
 
 opsbro gossip members
 # Let the node-1 know we did see it
@@ -82,4 +82,16 @@ wait_event_with_timeout 'NODE1-DID-SEE-NODE2' 20
 wait_event_with_timeout 'NODE2-DID-SEE-NODE1' 20
 
 
-exit_if_no_crash "Installation from node-1 is OK"
+
+# Now the update
+print_header "UPDATE: Wait for event from node1"
+
+opsbro gossip members
+# Let the node-1 know we did see it
+opsbro gossip events add "NODE2-DID-SEE-NODE1-UPDATE"
+wait_event_with_timeout 'NODE1-DID-SEE-NODE2-UPDATE' 20
+wait_event_with_timeout 'NODE2-DID-SEE-NODE1-UPDATE' 20
+
+
+sleep 10
+exit_if_no_crash "Installation + update from node-1 is OK"
