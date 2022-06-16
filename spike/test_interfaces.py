@@ -1,4 +1,9 @@
 import socket
+
+import time
+
+before = time.time()
+
 from binascii import hexlify
 
 from ctypes import (
@@ -463,23 +468,25 @@ class Interface(object):
         return r
 
 
+print('IMPORT: %.3fs' % (time.time() - before))
+
 import traceback
 import time
 
 t0 = time.time()
 i = 1
-while True:
+for i in range(100):
     try:
         iface = Interface(index=i)
         i = i + 1
         
         iface_dict = iface._iface2dict()
         print('INTERFACE: %s' % iface_dict)
-    except OSError as exp:
+    except (OSError, IOError) as exp:
         if exp.errno == 19:  # no such device: quit
-            break
+            continue
         print('FAIL: %s' % traceback.format_exc())
     except Exception as exp:
         print('FAIL: %s' % traceback.format_exc())
-        break
+
 print('FINISH: %.3f' % (time.time() - t0))
