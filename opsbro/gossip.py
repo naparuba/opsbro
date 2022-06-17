@@ -25,9 +25,13 @@ from .handlermgr import handlermgr
 from .topic import topiker, TOPIC_SERVICE_DISCOVERY
 from .basemanager import BaseManager
 from .jsonmgr import jsoner
-from .util import get_uuid, bytes_to_unicode
+from .util import get_uuid
 from .udprouter import udprouter
 from .zonemanager import zonemgr
+from .type_hint import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from opsbro.type_hint import Tuple, Optional, List, Dict, Any
 
 SOCKET_CLASSIC_EXCEPTIONS = (socket.timeout, socket.gaierror, socket.error)  # gaierror: host not found, not an socket.error
 
@@ -78,6 +82,7 @@ class Gossip(BaseManager):
     
     
     def init(self, nodes_file, local_addr, public_addr, port, name, display_name, incarnation, uuid, groups, seeds, bootstrap, zone, is_proxy):
+        # type: (str, str, str, int, str, str, int, str, List[str], List[str], bool, str, bool) -> None
         self.uuid = uuid
         self._nodes_file = nodes_file
         self.local_addr = local_addr
@@ -119,6 +124,7 @@ class Gossip(BaseManager):
     
     
     def __getitem__(self, uuid):
+        # type: (str) -> Dict
         return self.nodes[uuid]
     
     
@@ -175,6 +181,7 @@ class Gossip(BaseManager):
     
     
     def have_event_type(self, event_type):
+        # type: (str) -> bool
         with self.events_lock:
             for e in self.events.values():
                 e_type = e.get('payload', {}).get('type', None)
@@ -184,6 +191,7 @@ class Gossip(BaseManager):
     
     
     def add_event(self, event):
+        # type: (Dict) -> None
         logger.info('ADD NEW EVENT %s' % event)
         eventid = event.get('eventid', None)
         if eventid is None:
@@ -194,6 +202,7 @@ class Gossip(BaseManager):
     
     # We cant nodes that are not officially off, so not down, leave, but suspect is ok
     def get_uuids_of_my_zone_not_off_nodes(self):
+        # type: () -> List[Dict]
         return [node['uuid'] for node in self.nodes.values() if node['zone'] == self.zone and node['state'] in [NODE_STATES.ALIVE, NODE_STATES.SUSPECT]]
     
     
@@ -238,6 +247,7 @@ class Gossip(BaseManager):
     
     
     def get(self, uuid, default=None):
+        # type: (str, Optional[Any]) -> Dict
         return self.nodes.get(uuid, default)
     
     
@@ -246,6 +256,7 @@ class Gossip(BaseManager):
     
     
     def __contains__(self, uuid):
+        # type: (str) -> bool
         return uuid in self.nodes
     
     
@@ -255,6 +266,7 @@ class Gossip(BaseManager):
     
     
     def _set_or_update_node(self, nuuid, new_node):
+        # type: (str, Dict) -> None
         # The node came from a gossip mesage, so we need to:
         # * compute the addr property from our point of view
         # * clean the 'type' entry that came from the gossip message
@@ -284,10 +296,12 @@ class Gossip(BaseManager):
     
     
     def is_in_group(self, group):
+        # type: (str) -> bool
         return group in self.groups
     
     
     def __add_group_change_history_entry(self, group, action):
+        # type: (str, str) -> None
         node = self._get_myself_read_only()
         history_entry = {'type': 'group-%s' % action,
                          'name': node['name'], 'display_name': node.get('display_name', ''),
@@ -298,6 +312,7 @@ class Gossip(BaseManager):
     
     
     def __add_node_state_change_history_entry(self, node, old_state, new_state):
+        # type: (Dict, str, str) -> None
         history_entry = {'type': 'node-state-change',
                          'name': node['name'], 'display_name': node.get('display_name', ''),
                          'uuid': node['uuid'], 'old_state': old_state, 'state': new_state,
@@ -307,6 +322,7 @@ class Gossip(BaseManager):
     
     
     def __add_node_zone_change_history_entry(self, node, old_zone, new_zone):
+        # type: (Dict, str, str) -> None
         history_entry = {'type': 'node-zone-change',
                          'name': node['name'], 'display_name': node.get('display_name', ''),
                          'uuid': node['uuid'], 'old_zone': old_zone, 'zone': new_zone,
@@ -323,6 +339,7 @@ class Gossip(BaseManager):
     
     
     def add_group(self, group, broadcast_when_change=True):
+        # type: (str, bool) -> bool
         with self.nodes_lock:
             # if group already in exit with False (don't changed)
             if group in self.groups:
@@ -349,6 +366,7 @@ class Gossip(BaseManager):
     
     
     def remove_group(self, group, broadcast_when_change=True):
+        # type: (str, bool) -> bool
         with self.nodes_lock:
             if group not in self.groups:
                 return False
@@ -375,6 +393,7 @@ class Gossip(BaseManager):
     
     # find all nearly alive nodes with a specific group
     def find_group_nodes(self, group):
+        # type: (str) -> List[Dict]
         nodes = []
         for (uuid, node) in self.nodes.items():
             if node['state'] in [NODE_STATES.DEAD, NODE_STATES.LEAVE]:
@@ -387,6 +406,7 @@ class Gossip(BaseManager):
     
     # find all nearly alive nodes with a specific name or display_name
     def find_alive_nodes_uuids_by_name_or_display_name(self, name):
+        # type: (str) -> List[Dict]
         nodes = []
         for (uuid, node) in self.nodes.items():
             if node['state'] in [NODE_STATES.DEAD, NODE_STATES.LEAVE]:
@@ -398,6 +418,7 @@ class Gossip(BaseManager):
     
     # find all nearly alive nodes with a specific name or display_name
     def find_nodes_by_name_or_display_name(self, name):
+        # type: (str) -> List[Dict]
         nodes = []
         for (uuid, node) in self.nodes.items():
             if name == node.get('name') or name == node.get('display_name'):
@@ -407,6 +428,7 @@ class Gossip(BaseManager):
     
     # find the good ring node for a group and for a key
     def find_group_node(self, group, hkey):
+        # type: (str, str) -> str
         group_nodes = self.find_group_nodes(group)
         
         # No kv nodes? oups, set myself so
@@ -421,6 +443,7 @@ class Gossip(BaseManager):
     
     
     def count(self, state='', group=''):
+        # type: (str, str) -> int
         if group:
             if state:
                 return len([n for n in self.nodes.values() if group in n['groups'] and n['state'] == state])
@@ -436,9 +459,10 @@ class Gossip(BaseManager):
     # Another module/part did give a new group, take it and warn others node about this
     # change if there is really a change
     def update_detected_groups(self, detected_groups):
+        # type: (set) -> bool
         # if no change, we finish, job done
         if self.detected_groups == detected_groups:
-            return
+            return False
         logger.debug('We have an update for the detected groups. GROUPS=%s  old-detected_groups=%s new-detected_groups=%s' % (self.groups, self.detected_groups, detected_groups))
         # ok here we will change things
         did_change = False
@@ -470,16 +494,19 @@ class Gossip(BaseManager):
     
     
     def _get_myself_read_only(self):
+        # type: () -> Dict
         return self.nodes[self.uuid]
     
     
     def _get_myself_write_allowed(self):
+        # type: () -> Dict
         return self._nodes_writing[self.uuid]
     
     
     # We are updating a property of myself, so we must do in both read only and
     # write allowed myself node
     def _set_myself_atomic_property(self, prop, value):
+        # type: (str, Any) -> None
         with self.nodes_lock:
             myself_read_only = self._get_myself_read_only()
             myself_read_only[prop] = value
@@ -496,6 +523,7 @@ class Gossip(BaseManager):
     # A check did change it's state (we did check this), update it in our structure
     # but beware: in an ATOMIC way from the node poitn of view
     def update_check_state_id(self, cname, state_id):
+        # type: (str, str) -> None
         with self.nodes_lock:
             myself = self._get_myself_write_allowed()
             check_entry = myself['checks'].get(cname, None)
@@ -527,8 +555,9 @@ class Gossip(BaseManager):
         logger.info('Did have to send a new incarnation node for myself. New incarnation=%d new-node=%s' % (self.incarnation, myself_read_only))
     
     
-    # Hot display_nae change, and return if did changed
+    # Hot display_nae change, and return if did change
     def change_display_name(self, display_name):
+        # type: (str) -> bool
         if self.display_name == display_name:
             return False
         logger.info('Switching to display name: %s' % display_name)
@@ -540,8 +569,9 @@ class Gossip(BaseManager):
         return True
     
     
-    # Hot zone change, and return if did changed
+    # Hot zone change, and return if did change
     def change_zone(self, zname):
+        # type: (str) -> bool
         if self.zone == zname:
             return False
         logger.info('Switching to zone: %s' % zname)
@@ -558,6 +588,7 @@ class Gossip(BaseManager):
     
     
     def get_zone_from_node(self, node_uuid=''):
+        # type: (str) -> str
         if not node_uuid:
             node_uuid = self.uuid
         node = self.nodes.get(node_uuid, None)
@@ -569,11 +600,13 @@ class Gossip(BaseManager):
     
     
     def get_number_of_nodes(self):
+        # type: () -> int
         return len(self.nodes)
     
     
     # get my own node entry
     def __get_boostrap_node(self):
+        # type: () -> Dict
         node = {'public_addr': self.public_addr, 'local_addr': self.local_addr,
                 'port'       : self.port, 'name': self.name, 'display_name': self.display_name,
                 'incarnation': self.incarnation, 'uuid': self.uuid, 'state': NODE_STATES.ALIVE, 'groups': self.groups,
@@ -583,6 +616,7 @@ class Gossip(BaseManager):
     
     # Definitivly remove a node from our list, and warn others about it
     def delete_node(self, nid):
+        # type: (str) -> None
         if nid not in self.nodes:
             return
         with self.nodes_lock:
@@ -594,6 +628,7 @@ class Gossip(BaseManager):
     
     
     def delete_nodes(self, nodes_uuids):
+        # type: (List[str]) -> None
         with self.nodes_lock:
             did_delete = False
             for node_uuid in nodes_uuids:
@@ -613,6 +648,7 @@ class Gossip(BaseManager):
     # * same zone: local address
     # * other zone: public address only
     def _compute_node_address(self, node):
+        # type: (Dict) -> None
         node_zone = node['zone']
         if node_zone != self.zone:
             node['addr'] = node.get('public_addr', node.get('addr'))  # old version <0.5 do not have public_addr
@@ -623,6 +659,7 @@ class Gossip(BaseManager):
     # Got a new node, great! Warn others about this
     # but if it's a bootstrap, only change memory, do not export to other nodes
     def __add_new_node(self, node, bootstrap=False):
+        # type: (Dict, bool) -> None
         logger.info("New node detected", node)
         nuuid = node['uuid']
         node_zone = node['zone']
@@ -661,6 +698,7 @@ class Gossip(BaseManager):
     # Warn other about a node that is not new or remove, but just did change it's internals data
     @staticmethod
     def node_did_change(nid):
+        # type: (str) -> None
         pubsub.pub('change-node', node_uuid=nid)
     
     
@@ -670,6 +708,7 @@ class Gossip(BaseManager):
     # * It can be us if we allow the bootstrap node (only at startup).
     # * If strong it means we did the check, so we believe us :)
     def set_alive(self, node, bootstrap=False, strong=False):
+        # type: (Dict, bool, bool) -> None
         name = node['name']
         incarnation = node['incarnation']
         uuid = node['uuid']
@@ -724,6 +763,7 @@ class Gossip(BaseManager):
     
     # Someone suspect a node, so believe it
     def set_suspect(self, suspect):
+        # type: (Dict) -> None
         incarnation = suspect['incarnation']
         uuid = suspect['uuid']
         state = NODE_STATES.SUSPECT
@@ -791,6 +831,7 @@ class Gossip(BaseManager):
     # FORCE: if True, means we can believe it, it's not from gossip, but from
     #        a protected HTTP call
     def set_leave(self, leaved, force=False):
+        # type: (Dict, bool) -> None
         incarnation = leaved['incarnation']
         uuid = leaved['uuid']
         state = NODE_STATES.LEAVE
@@ -857,6 +898,7 @@ class Gossip(BaseManager):
     
     # Someone suspect a node, so believe it
     def set_dead(self, suspect):
+        # type: (Dict) -> None
         incarnation = suspect['incarnation']
         uuid = suspect['uuid']
         state = NODE_STATES.DEAD
@@ -906,6 +948,7 @@ class Gossip(BaseManager):
     # but we will drop the one we should not see (like if a top node
     # send nodes it should not)
     def merge_nodes(self, nodes):
+        # type: (Dict[str, Dict]) -> None
         for (k, node) in nodes.items():
             # Maybe it's me? bail out
             if node['uuid'] == self.uuid:
@@ -937,6 +980,7 @@ class Gossip(BaseManager):
     
     
     def merge_events(self, events):
+        # type: (Dict[str, Dict]) -> None
         with self.events_lock:
             for (eventid, event) in events.items():
                 logger.debug('Try to merge event', eventid, event)
@@ -960,6 +1004,7 @@ class Gossip(BaseManager):
     # * top zone: only proxy node
     # * lower zone: NO: we don't initialize sync to lower zone, they will do it themselve
     def __get_valid_nodes_to_full_sync(self):
+        # type: () -> List[Tuple[str, int]]
         nodes = self.nodes
         top_zones = zonemgr.get_top_zones_from(self.zone)
         
@@ -1070,6 +1115,7 @@ class Gossip(BaseManager):
     # * top zone: only proxy node and if we are a proxy node
     # * lower zone: only proxy node and if we are a proxy node
     def __get_valid_nodes_to_ping(self):
+        # type: () -> List[Dict]
         nodes = self.nodes
         # If we are a proxy, we are allowed to talk to other zone
         if self.is_proxy:
@@ -1237,6 +1283,7 @@ class Gossip(BaseManager):
     
     
     def manage_ping_message(self, m, addr):
+        # type: (Dict, str) -> None
         # if it me that the other is pinging? because it can think to
         # thing another but in my addr, like it I did change my name
         did_want_to_ping_uuid = m.get('node', None)
@@ -1273,12 +1320,14 @@ class Gossip(BaseManager):
     
     
     def send_raft_message(self, dest_uuid, message):
+        # type: (str, Dict) -> None
         self.send_message_to_other(dest_uuid, message)  # raft is just a standard message
     
     
     # We are ask to do a indirect ping to tgt and return the ack to
     # _from, do this in a thread so we don't lock here
     def do_indirect_ping(self, tgt, _from, addr):
+        # type: (str, str, str) -> None
         logger.info('do_indirect_ping', tgt, _from)
         ntgt = self.get(tgt, None)
         nfrom = self.get(_from, None)
@@ -1326,6 +1375,7 @@ class Gossip(BaseManager):
     
     
     def manage_ping_relay_message(self, m, addr):
+        # type: (Dict, str) -> None
         tgt = m.get('tgt')
         _from = m.get('from', '')
         if not tgt or not _from:
@@ -1341,6 +1391,7 @@ class Gossip(BaseManager):
     # * if directly lower zone: give us only if we are a proxy
     # * lower 2 or less zones: give nothing
     def manage_detect_ping_message(self, m, addr):
+        # type: (Dict, str) -> None
         requestor_zone = m.get('from_zone', None)
         if requestor_zone is None:
             return
@@ -1384,6 +1435,7 @@ class Gossip(BaseManager):
     # NOTE: we are launching a UDP probe packet every seconds, so even if the others nodes did start during ourtimeout
     #       we will see them
     def launch_gossip_detect_ping(self, timeout):
+        # type: (int) -> List
         logger.info('Launching UDP detection with a %d second timeout' % timeout)
         received_nodes = {}
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -1461,6 +1513,7 @@ class Gossip(BaseManager):
     # KGOSSIP others nodes
     # consume: if True (default) then a message will be decremented
     def __do_gossip_push(self, dest, consume=True):
+        # type: (Dict, bool) -> None
         messages = deque()
         message = ''
         to_del = []
@@ -1556,6 +1609,7 @@ class Gossip(BaseManager):
     
     
     def _wait_join_nodes(self, other_nodes):
+        # type: (List[Dict]) -> None
         while not stopper.is_stop():
             logger.log('JOINING myself %s is joining %s nodes' % (self.name, other_nodes))
             nb = 0
@@ -1575,6 +1629,7 @@ class Gossip(BaseManager):
     
     # Will try to join a node cluster and do a push-pull with at least one of them
     def join_bootstrap(self, force_wait_proxy):
+        # type: (bool) -> None
         # If we have seeds nodes, respect them
         seeds_nodes = self._get_seeds_nodes()
         if seeds_nodes is not None:
@@ -1611,6 +1666,7 @@ class Gossip(BaseManager):
     # * the upper zone
     # * NEVER lower zone. They will connect to us
     def do_push_pull(self, other):
+        # type: (Dict) -> bool
         nodes = self.nodes
         sub_zones = zonemgr.get_sub_zones_from(self.zone)
         nodes_to_send = {}
@@ -1674,6 +1730,7 @@ class Gossip(BaseManager):
     #     * but if the sub-zone is their own, then ok give it
     # * too much sub zones: give nothing
     def _get_nodes_for_push_pull_response(self, other_node_zone, ask_from):
+        # type: (str, Dict) -> Optional[Dict[Dict]]
         ask_from_str = 'FROM:unknown'  # old version
         if ask_from:
             _name = ask_from.get('name', '')
@@ -1765,6 +1822,7 @@ class Gossip(BaseManager):
     
     @staticmethod
     def __get_node_basic_msg(node):
+        # type: () -> Dict
         return {
             'name'       : node['name'], 'display_name': node.get('display_name', ''),
             'public_addr': node.get('public_addr', node.get('addr')), 'local_addr': node.get('local_addr', node.get('addr')),  # pre 0.5 field: addr
@@ -1777,6 +1835,7 @@ class Gossip(BaseManager):
     
     ########## Message managment
     def create_alive_msg(self, node):
+        # type: (Dict) -> Dict
         r = self.__get_node_basic_msg(node)
         r['type'] = PACKET_TYPES.ALIVE
         r['state'] = NODE_STATES.ALIVE
@@ -1784,11 +1843,13 @@ class Gossip(BaseManager):
     
     
     def create_event_msg(self, payload):
+        # type: (Any) -> Dict
         return {'type'   : 'event', 'from': self.uuid, 'payload': payload, 'ctime': int(time.time()),
                 'eventid': get_uuid()}
     
     
     def create_suspect_msg(self, node):
+        # type: (Dict) -> Dict
         r = self.__get_node_basic_msg(node)
         r['type'] = PACKET_TYPES.SUSPECT
         r['state'] = NODE_STATES.SUSPECT
@@ -1796,6 +1857,7 @@ class Gossip(BaseManager):
     
     
     def create_dead_msg(self, node):
+        # type: (Dict) -> Dict
         r = self.__get_node_basic_msg(node)
         r['type'] = PACKET_TYPES.DEAD
         r['state'] = NODE_STATES.DEAD
@@ -1803,6 +1865,7 @@ class Gossip(BaseManager):
     
     
     def create_leave_msg(self, node):
+        # type: (Dict) -> Dict
         r = self.__get_node_basic_msg(node)
         r['type'] = PACKET_TYPES.LEAVE
         r['state'] = NODE_STATES.LEAVE
@@ -1810,6 +1873,7 @@ class Gossip(BaseManager):
     
     
     def stack_alive_broadcast(self, node):
+        # type: (Dict) -> None
         msg = self.create_alive_msg(node)
         # Node messages are before all others
         b = {'send': 0, 'msg': msg, 'prioritary': True}
@@ -1820,6 +1884,7 @@ class Gossip(BaseManager):
     
     
     def stack_event_broadcast(self, payload, prioritary=False):
+        # type: (Any, bool) -> None
         msg = self.create_event_msg(payload)
         b = {'send': 0, 'msg': msg, 'prioritary': prioritary}
         broadcaster.append(b)
@@ -1829,6 +1894,7 @@ class Gossip(BaseManager):
     
     
     def stack_suspect_broadcast(self, node):
+        # type: (Dict) -> Dict
         msg = self.create_suspect_msg(node)
         # Node messages are before all others
         b = {'send': 0, 'msg': msg, 'prioritary': True}
@@ -1839,6 +1905,7 @@ class Gossip(BaseManager):
     
     
     def stack_leave_broadcast(self, node):
+        # type: (Dict) -> Dict
         msg = self.create_leave_msg(node)
         # Node messages are before all others
         b = {'send': 0, 'msg': msg, 'prioritary': True}
@@ -1849,6 +1916,7 @@ class Gossip(BaseManager):
     
     
     def stack_dead_broadcast(self, node):
+        # type: (Dict) -> Dict
         msg = self.create_dead_msg(node)
         # Node messages are before all others
         b = {'send': 0, 'msg': msg, 'prioritary': True}
@@ -1859,6 +1927,7 @@ class Gossip(BaseManager):
     
     @staticmethod
     def forward_to_websocket(msg):
+        # type: (Dict) -> None
         websocketmgr.forward({'channel': 'gossip', 'payload': msg})
     
     
@@ -1867,6 +1936,7 @@ class Gossip(BaseManager):
     # use for this
     # maybe we need to exchange to a specific port (like for executor)
     def send_message_to_other(self, dest_uuid, message, force_addr=None):
+        # type: (str, Dict, Optional[str]) -> None
         if dest_uuid == self.uuid:  # me? skip this
             return
         
@@ -1897,6 +1967,7 @@ class Gossip(BaseManager):
     
     # We did receive a UDP message from the listener, look for it
     def manage_message(self, message_type, message, source_addr):
+        # type: (str, Dict, str) -> None
         if message_type == PACKET_TYPES.PING:
             gossiper.manage_ping_message(message, source_addr)
         
@@ -1924,6 +1995,7 @@ class Gossip(BaseManager):
     
     
     def query_by_name_or_uuid(self, name_or_uuid):
+        # type: (str) -> Optional[Dict]
         for node in self.nodes.values():
             if node['uuid'] == name_or_uuid or node['name'] == name_or_uuid or node['display_name'] == name_or_uuid:
                 return node
@@ -1938,16 +2010,19 @@ class Gossip(BaseManager):
         
         @http_export('/agent/name')
         def get_name():
+            # type: () -> str
             return jsoner.dumps(self._get_myself_read_only()['name'])
         
         
         @http_export('/agent/uuid')
         def get_name():
+            # type: () -> str
             return jsoner.dumps(self.uuid)
         
         
         @http_export('/agent/leave/:nuuid', protected=True)
         def set_node_leave(nuuid):
+            # type: (str) -> None
             # First try to look by uuid
             node = self.nodes.get(nuuid, None)
             if node is None:
@@ -1967,12 +2042,14 @@ class Gossip(BaseManager):
         
         @http_export('/agent/members')
         def agent_members():
+            # type: () -> Dict
             response.content_type = 'application/json'
             return self.nodes
         
         
         @http_export('/agent/members/history', method='GET')
         def agent_members_history():
+            # type: () -> str
             response.content_type = 'application/json'
             r = gossiper.get_history()
             return jsoner.dumps(r)
@@ -1980,6 +2057,7 @@ class Gossip(BaseManager):
         
         @http_export('/agent/join/:other', protected=True)
         def agent_join(other):
+            # type: (str) -> str
             response.content_type = 'application/json'
             addr = other
             port = self.port
@@ -1994,6 +2072,7 @@ class Gossip(BaseManager):
         
         @http_export('/agent/push-pull')
         def interface_push_pull():
+            # type: () -> str
             response.content_type = 'application/json'
             
             data = request.GET.get('msg')
@@ -2025,6 +2104,7 @@ class Gossip(BaseManager):
         
         @http_export('/agent/detect', protected=True)
         def agent_detect():
+            # type: () -> str
             response.content_type = 'application/json'
             timeout = int(request.GET.get('timeout', '5'))
             try:
@@ -2038,6 +2118,7 @@ class Gossip(BaseManager):
         # Add a group should only be allowed by unix socket (local)
         @http_export('/agent/parameters/add/groups/:gname', protected=True)
         def agent_add_group(gname):
+            # type: (str) -> str
             response.content_type = 'application/json'
             r = self.add_group(gname)
             return jsoner.dumps(r)
@@ -2046,6 +2127,7 @@ class Gossip(BaseManager):
         # Add a group should only be allowed by unix socket (local)
         @http_export('/agent/parameters/remove/groups/:gname', protected=True)
         def agent_remove_group(gname):
+            # type: (str) -> str
             response.content_type = 'application/json'
             r = self.remove_group(gname)
             return jsoner.dumps(r)
@@ -2053,6 +2135,7 @@ class Gossip(BaseManager):
         
         @http_export('/agent/zones', method='GET', protected=True)
         def get_zones():
+            # type: () -> str
             response.content_type = 'application/json'
             r = copy.deepcopy(zonemgr.get_zones())
             for zname, zone in r.items():
@@ -2065,6 +2148,7 @@ class Gossip(BaseManager):
         # Reload the key for the zone: zone_name
         @http_export('/agent/zones-keys/reload/:zone_name', method='GET', protected=True)
         def get_reload_zone_key(zone_name):
+            # type: (str) -> str
             response.content_type = 'application/json'
             encrypter = libstore.get_encrypter()
             return jsoner.dumps(encrypter.load_or_reload_key_for_zone_if_need(zone_name))
@@ -2072,12 +2156,14 @@ class Gossip(BaseManager):
         
         @http_export('/agent/query/guess/:name_or_uuid', method='GET', protected=True)
         def get_query_by_name(name_or_uuid):
+            # type: (str) -> Optional[Dict]
             response.content_type = 'application/json'
             return self.query_by_name_or_uuid(name_or_uuid)
         
         
         @http_export('/agent/ping/:node_uuid', method='GET', protected=True)
         def get_ping_node(node_uuid):
+            # type: (str) -> Dict
             response.content_type = 'application/json'
             node = self.get(node_uuid)
             if node is None:
@@ -2089,6 +2175,7 @@ class Gossip(BaseManager):
         
         @http_export('/agent/event/:event_type', method='GET', protected=True)
         def get_event(event_type):
+            # type: (str) -> str
             response.content_type = 'application/json'
             evt = None
             with self.events_lock:
@@ -2101,6 +2188,7 @@ class Gossip(BaseManager):
         
         @http_export('/agent/event', method='POST', protected=True)
         def agent_eval_check():
+            # type: () -> str
             response.content_type = 'application/json'
             event_type = request.POST.get('event_type')
             if not event_type:
