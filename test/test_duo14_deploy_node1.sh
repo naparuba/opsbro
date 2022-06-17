@@ -60,7 +60,7 @@ done
 opsbro agent parameters set display_name "node-1"
 
 print_header "INSTALL: Deploy node2"
-opsbro deploy new node2
+opsbro deploy new --ip node2
 if [ $? != 0 ]; then
       echo "ERROR: fail to DEPLOY"
       exit 2
@@ -77,7 +77,7 @@ wait_event_with_timeout 'NODE2-DID-SEE-NODE1' 20
 
 # Now the update
 print_header "UPDATE: Update node2"
-opsbro deploy update node2
+opsbro deploy update --ip node2
 if [ $? != 0 ]; then
       echo "ERROR: fail to UPDATE"
       exit 2
