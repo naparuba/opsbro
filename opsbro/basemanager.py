@@ -1,10 +1,15 @@
 import glob
-import threading
 import os
+import threading
 import time
 
-from .util import make_dir, epoch_to_human_string
 from .jsonmgr import jsoner
+from .type_hint import TYPE_CHECKING
+from .util import make_dir, epoch_to_human_string
+
+if TYPE_CHECKING:
+    from .type_hint import List, Dict
+    from .log import PartLogger
 
 
 # This class is an abstract for various manager
@@ -15,6 +20,7 @@ class BaseManager(object):
     
     
     def __init__(self, logger):
+        # type: (PartLogger) -> None
         self.logger = logger
         self.history_directory = None
         self._current_history_entry = []
@@ -34,6 +40,7 @@ class BaseManager(object):
     
     
     def add_history_entry(self, history_entry):
+        # type: (Dict) -> None
         with self._current_history_entry_lock:
             self._current_history_entry.append(history_entry)
     
@@ -85,6 +92,7 @@ class BaseManager(object):
     
     
     def get_history(self):
+        # type: () -> List[Dict]
         r = []
         current_size = 0
         max_size = 1024 * 1024

@@ -31,7 +31,7 @@ from .zonemanager import zonemgr
 from .type_hint import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from opsbro.type_hint import Tuple, Optional, List, Dict, Any
+    from .type_hint import Tuple, Optional, List, Dict, Any
 
 SOCKET_CLASSIC_EXCEPTIONS = (socket.timeout, socket.gaierror, socket.error)  # gaierror: host not found, not an socket.error
 
