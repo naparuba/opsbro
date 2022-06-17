@@ -1,8 +1,9 @@
 import traceback
 
-from opsbro.httpclient import get_http_exceptions, httper
 from opsbro.collector import Collector
+from opsbro.httpclient import get_http_exceptions, httper
 from opsbro.parameters import StringParameter
+from opsbro.util import bytes_to_unicode
 
 
 class Apache(Collector):
@@ -12,11 +13,11 @@ class Apache(Collector):
         'password': StringParameter(default=''),
     }
     
-
+    
     def __init__(self):
         super(Apache, self).__init__()
         self.apacheTotalAccesses = None
-        
+    
     
     def launch(self):
         
@@ -26,28 +27,12 @@ class Apache(Collector):
         
         logger = self.logger
         logger.debug('getApacheStatus: start')
-        '''
-                    passwordMgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
-                    passwordMgr.add_password(None, self.config['apacheStatusUrl'], self.config['apacheStatusUser'],
-                                             self.config['apacheStatusPass'])
-
-                    handler = urllib2.HTTPBasicAuthHandler(passwordMgr)
-
-                    # create "opener" (OpenerDirector instance)
-                    opener = urllib2.build_opener(handler)
-
-                    # use the opener to fetch a URL
-                    opener.open(self.config['apacheStatusUrl'])
-
-                    # Install the opener.
-                    # Now all calls to urllib2.urlopen use our opener.
-                    urllib2.install_opener(opener)
-        '''
         try:
             uri = 'http://%s/server-status/?auto' % self.get_parameter('hostname')
             user = self.get_parameter('user')
             password = self.get_parameter('password')
-            response = httper.get(uri, timeout=3,user=user, password=password)
+            self.logger.debug('Requesting: %s:%s  %s' % (user, password, uri))
+            response = httper.get(uri, timeout=3, user=user, password=password)
         except get_http_exceptions() as exp:
             stack = traceback.format_exc()
             self.log = stack
@@ -56,16 +41,19 @@ class Apache(Collector):
         
         logger.debug('getApacheStatus: urlopen success, start parsing')
         # Split out each line
-        lines = response.split('\n')
+        lines = bytes_to_unicode(response).split('\n')
         
         # Loop over each line and get the values
         apacheStatus = {}
         
-        logger.debug('getApacheStatus: parsing, loop')
+        self.logger.debug('getApacheStatus: parsing, loop')
         
         # Loop through and extract the numerical values
         for line in lines:
-            values = line.split(': ')
+            self.logger.debug('LINE: %s' % line)
+            if ':' not in line:
+                continue
+            values = line.split(': ', 1)
             try:
                 apacheStatus[str(values[0])] = values[1]
             except IndexError:
