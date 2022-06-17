@@ -21,6 +21,7 @@ class Mysql(Collector):
     def __init__(self):
         super(Mysql, self).__init__()
         self.MySQLdb = None
+        self._mysql_exceptions = tuple([])  # by default void
         self.mysqlVersion = None
         self.mysqlConnectionsStore = None
         self.mysqlSlowQueriesStore = None
@@ -40,6 +41,7 @@ class Mysql(Collector):
             try:
                 import MySQLdb
                 self.MySQLdb = MySQLdb
+                self._mysql_exceptions = (self.MySQLdb.OperationalError,)
             except ImportError as exp1:
                 try:
                     mydir = os.path.dirname(__file__)
@@ -47,6 +49,7 @@ class Mysql(Collector):
                     import pymysql as MySQLdb
                     self.MySQLdb = MySQLdb
                     sys.path = sys.path[1:]
+                    self._mysql_exceptions = (self.MySQLdb.OperationalError, self.MySQLdb.err.InternalError)
                 except ImportError as exp2:
                     sys.path = sys.path[1:]
                     self.set_error('Unable to import MySQLdb (%s) or embedded pymsql (%s)' % (exp1, exp2))
@@ -62,10 +65,10 @@ class Mysql(Collector):
         if not mysql_socket or not os.path.exists(mysql_socket):  # no socket or not existing
             try:
                 db = self.MySQLdb.connect(host=host, user=user, passwd=password, port=port)
-            except self.MySQLdb.OperationalError as exp:  # ooooups
+            except self._mysql_exceptions as exp:  # ooooups
                 # Did try to fail back
                 if mysql_socket and not os.path.exists(mysql_socket):
-                    self.set_error('MySQL connection error (server= %s:%s) because unix socket %s is missing: %s' % (host, port, mysql_socket, exp))
+                    self.set_error('MySQL connection error (server= %s:%s) (because unix socket %s is missing): %s' % (host, port, mysql_socket, exp))
                 else:  # we did really try to connect to server
                     self.set_error('MySQL connection error (server= %s:%s): %s' % (host, port, exp))
                 return False
@@ -75,8 +78,8 @@ class Mysql(Collector):
                 return False
             try:
                 db = self.MySQLdb.connect(host='localhost', user=user, passwd=password, port=port, unix_socket=mysql_socket)
-            except self.MySQLdb.OperationalError as exp:
-                self.set_error('MySQL connection error (socket): %s' % exp)
+            except self._mysql_exceptions as exp:
+                self.set_error('MySQL connection error (socket=%s, user=%s): %s' % (mysql_socket, user, exp))
                 return False
         else:
             self.set_error('MySQL is set to connect with unix socket but it is not available for windows.')
@@ -91,7 +94,7 @@ class Mysql(Collector):
                 cursor = db.cursor()
                 cursor.execute('SELECT VERSION()')
                 result = cursor.fetchone()
-            except self.MySQLdb.OperationalError as message:
+            except self._mysql_exceptions as message:
                 logger.error('getMySQLStatus: MySQL query error when getting version: %s', message)
             
             version = result[0].split('-')  # Might include a description e.g. 4.1.26-log. See http://dev.mysql.com/doc/refman/4.1/en/information-functions.html#function_version
@@ -110,7 +113,7 @@ class Mysql(Collector):
             cursor = db.cursor()
             cursor.execute('SHOW STATUS LIKE "Connections"')
             result = cursor.fetchone()
-        except self.MySQLdb.OperationalError as message:
+        except self._mysql_exceptions as message:
             logger.error('getMySQLStatus: MySQL query error when getting Connections = %s', message)
         
         if self.mysqlConnectionsStore is None:
@@ -140,7 +143,7 @@ class Mysql(Collector):
             cursor = db.cursor()
             cursor.execute(query)
             result = cursor.fetchone()
-        except self.MySQLdb.OperationalError as message:
+        except self._mysql_exceptions as message:
             logger.error('getMySQLStatus: MySQL query error when getting Created_tmp_disk_tables = %s', message)
         
         createdTmpDiskTables = float(result[1])
@@ -154,7 +157,7 @@ class Mysql(Collector):
             cursor = db.cursor()
             cursor.execute('SHOW STATUS LIKE "Max_used_connections"')
             result = cursor.fetchone()
-        except self.MySQLdb.OperationalError as message:
+        except self._mysql_exceptions as message:
             logger.error('getMySQLStatus: MySQL query error when getting Max_used_connections = %s', message)
         
         maxUsedConnections = int(result[1])
@@ -167,7 +170,7 @@ class Mysql(Collector):
             cursor = db.cursor()
             cursor.execute('SHOW STATUS LIKE "Open_files"')
             result = cursor.fetchone()
-        except self.MySQLdb.OperationalError as message:
+        except self._mysql_exceptions as message:
             logger.error('getMySQLStatus: MySQL query error when getting Open_files = %s', message)
         
         openFiles = int(result[1])
@@ -187,7 +190,7 @@ class Mysql(Collector):
             cursor = db.cursor()
             cursor.execute(query)
             result = cursor.fetchone()
-        except self.MySQLdb.OperationalError as message:
+        except self._mysql_exceptions as message:
             logger.error('getMySQLStatus: MySQL query error when getting Slow_queries = %s', message)
         
         if self.mysqlSlowQueriesStore is None:
@@ -213,7 +216,7 @@ class Mysql(Collector):
             cursor = db.cursor()
             cursor.execute('SHOW STATUS LIKE "Table_locks_waited"')
             result = cursor.fetchone()
-        except self.MySQLdb.OperationalError as message:
+        except self._mysql_exceptions as message:
             logger.error('getMySQLStatus: MySQL query error when getting Table_locks_waited = %s', message)
         
         tableLocksWaited = float(result[1])
@@ -227,7 +230,7 @@ class Mysql(Collector):
             cursor = db.cursor()
             cursor.execute('SHOW STATUS LIKE "Threads_connected"')
             result = cursor.fetchone()
-        except self.MySQLdb.OperationalError as message:
+        except self._mysql_exceptions as message:
             logger.error('getMySQLStatus: MySQL query error when getting Threads_connected = %s', message)
         
         threadsConnected = int(result[1])
@@ -242,7 +245,7 @@ class Mysql(Collector):
                 cursor = db.cursor(self.MySQLdb.cursors.DictCursor)
                 cursor.execute('SHOW SLAVE STATUS')
                 result = cursor.fetchone()
-            except self.MySQLdb.OperationalError as message:
+            except self._mysql_exceptions as message:
                 self.set_error('getMySQLStatus: MySQL query error when getting SHOW SLAVE STATUS = %s' % message)
                 result = None
             
