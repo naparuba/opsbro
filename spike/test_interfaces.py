@@ -12,6 +12,20 @@ from ctypes import (
 
 import fcntl
 import struct
+import sys
+
+PY3 = sys.version_info >= (3,)
+if PY3:
+    basestring = str
+
+
+def bytes_to_unicode(s):
+    if isinstance(s, str) and not PY3:  # python3 already is unicode in str
+        return s.decode('utf8', 'ignore')
+    if PY3 and (isinstance(s, bytes) or isinstance(s, bytearray)):  # bytearray is bytes that can mutate
+        return s.decode('utf8', 'ignore')
+    return s
+
 
 # Complete list of InterfaceReq flags for linux as of2013
 
@@ -286,7 +300,7 @@ class Interface(object):
         if self._name is None:
             self._name = self.name
         else:
-            self._name = (c_ubyte * IFNAMSIZ)(*bytearray(self._name))
+            self._name = bytes_to_unicode((c_ubyte * IFNAMSIZ)(*bytearray(self._name, u'utf8')))
             self._index = self.index
     
     
@@ -345,7 +359,7 @@ class Interface(object):
         ifr.data.ifr_ifindex = self._index
         self.__doIoctl(ifr, SIOCGIFNAME)
         self._name = ifr.ifr_name
-        return string_at(self._name)
+        return bytes_to_unicode(string_at(self._name))
     
     
     @property
@@ -477,6 +491,9 @@ t0 = time.time()
 i = 1
 for i in range(100):
     try:
+        iface = Interface(name=u'ens3')
+        iface_dict = iface._iface2dict()
+        
         iface = Interface(index=i)
         i = i + 1
         

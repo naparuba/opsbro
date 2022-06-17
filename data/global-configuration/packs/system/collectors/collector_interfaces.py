@@ -2,6 +2,7 @@ import os
 import traceback
 
 from opsbro.collector import Collector
+from opsbro.util import bytes_to_unicode
 
 
 def _get_interface_klass():  # Lazy load
@@ -281,7 +282,7 @@ def _get_interface_klass():  # Lazy load
             if self._name is None:
                 self._name = self.name
             else:
-                self._name = (c_ubyte * IFNAMSIZ)(*bytearray(self._name))
+                self._name = bytes_to_unicode((c_ubyte * IFNAMSIZ)(*bytearray(self._name, 'utf8')))
                 self._index = self.index
         
         
@@ -340,7 +341,7 @@ def _get_interface_klass():  # Lazy load
             ifr.data.ifr_ifindex = self._index
             self.__doIoctl(ifr, SIOCGIFNAME)
             self._name = ifr.ifr_name
-            return string_at(self._name)
+            return bytes_to_unicode(string_at(self._name))
         
         
         @property
