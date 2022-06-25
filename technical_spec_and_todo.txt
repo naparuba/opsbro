@@ -639,7 +639,7 @@ docker push naparuba/centos-7-python3
 
 
 #### Dump de mémoire:
-echo -e "GET /debug/memory HTTP/1.1\r\n\r\n" | socat unix-connect:/var/lib/opsbro/opsbro.sock STDIO
+printf "GET /debug/memory HTTP/1.1\r\n\r\n" | socat unix-connect:/var/lib/opsbro/opsbro.sock STDIO
 
 
 #### Parsing de commandes déjà codé:

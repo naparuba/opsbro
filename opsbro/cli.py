@@ -12,20 +12,21 @@ import subprocess
 
 if os.name == 'nt':
     import msvcrt
-    #import ctypes
+    # import ctypes
     from ctypes import windll, byref, wintypes, GetLastError, WinError
-    #from ctypes.wintypes import HANDLE, DWORD, POINTER, BOOL
     
-    #TerminateProcess = ctypes.windll.kernel32.TerminateProcess
+    # from ctypes.wintypes import HANDLE, DWORD, POINTER, BOOL
+    
+    # TerminateProcess = ctypes.windll.kernel32.TerminateProcess
     
     # Use for  setting a socket to not blocking
-    #LPDWORD = POINTER(DWORD)
+    # LPDWORD = POINTER(DWORD)
     PIPE_NOWAIT = wintypes.DWORD(0x00000001)
     ERROR_NO_DATA = 232
     # Function used to set pipe to not blocking mode
-    #SetNamedPipeHandleState = windll.kernel32.SetNamedPipeHandleState
-    #SetNamedPipeHandleState.argtypes = [HANDLE, LPDWORD, LPDWORD, LPDWORD]
-    #SetNamedPipeHandleState.restype = BOOL
+    # SetNamedPipeHandleState = windll.kernel32.SetNamedPipeHandleState
+    # SetNamedPipeHandleState.argtypes = [HANDLE, LPDWORD, LPDWORD, LPDWORD]
+    # SetNamedPipeHandleState.restype = BOOL
 
 # Try to read in non-blocking mode, from now this only from now on  Unix systems
 try:
@@ -198,23 +199,23 @@ class AnyAgent(object):
             setproctitle("Temporary agent")
         except ImportError:
             pass
-
-
+    
+    
     @staticmethod
     def __windows_set_pipe_no_wait(pipefd):
         h = msvcrt.get_osfhandle(pipefd)
-    
+        
         res = windll.kernel32.SetNamedPipeHandleState(h, byref(PIPE_NOWAIT), None, None)
         if res == 0:
             logger.error('Cannot set the command execution to not blocking. Please join the support. %s' % WinError())
-
-
+    
+    
     @staticmethod
     def __unix_set_pipe_no_wait(pipefd):
         fl = fcntl.fcntl(pipefd, fcntl.F_GETFL)
         fcntl.fcntl(pipefd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
-
-
+    
+    
     # Try to read a fd in a non blocking mode
     @staticmethod
     def no_block_read(output):
@@ -224,7 +225,7 @@ class AnyAgent(object):
             # we will have to work wot hthe file descriptor directly
             # and loop until we void the full buffer
             AnyAgent.__windows_set_pipe_no_wait(fd)
-        
+            
             all_buffers = []
             while True:  # will be break when the buffer will be empty so we don't block the command execution
                 try:
@@ -244,6 +245,7 @@ class AnyAgent(object):
                 return output.read()  # will void the whole buffer
             except:  # no more in the buffer
                 return ''
+    
     
     # For some CLI we don't care if we have a running agent or just a dummy send (like
     # quick dashboards)
@@ -302,8 +304,6 @@ def wait_for_agent_stopped(timeout=5, visual_wait=False):
     return agent_state
 
 
-
-
 # Maybe the agent is initializing or not even started (as unix socket).
 # Timeout: wait as much time
 # visual_wait: during the wait, we can show a spinner and a text to enjoy the user
@@ -330,7 +330,7 @@ def wait_for_agent_started(timeout=30, visual_wait=False, exit_if_stopped=False,
                 # If there was a sub process, stop means a problem
                 if sub_agent_process.returncode is not None:
                     return agent_state
-
+            
             # Maybe we need to exit of the daemon is stopped
             if exit_if_stopped:
                 cprint('\r', end='')

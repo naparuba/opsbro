@@ -109,7 +109,7 @@ class Mongodb(Collector):
         # Older versions of pymongo did not support the command()
         # method below.
         try:
-            db = conn['local']
+            db = conn['test']  # test is better than local, because local can't be used through mongos
             
             # Server status
             statusOutput = db.command('serverStatus')  # Shorthand for {'serverStatus': 1}
