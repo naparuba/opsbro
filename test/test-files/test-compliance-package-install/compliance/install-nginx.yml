@@ -41,8 +41,6 @@ compliance:
               packages:
                  - nginx
            post_commands:
-              # on alpine, you must create the run dir first
-              - mkdir /run/nginx/
               - nginx
 
       # Same post commands for every env

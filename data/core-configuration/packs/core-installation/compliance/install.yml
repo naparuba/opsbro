@@ -467,6 +467,24 @@ compliance:
          # / /_/ / /_/ /  __/ / / (__  ) /_/ (__  )  __/
          # \____/ .___/\___/_/ /_/____/\__,_/____/\___/
          #     /_/
+
+         # Open suse 15.4 have specific packages names
+         -  name      : opensuse_15_04
+            if        : "({{variables.is_opensuse}} and {{collector.system.os.linux.major_version}} == 15) and and {{collector.system.os.linux.minor_version}} == 4"
+            parameters:
+               packages:
+                  - python3-rpm
+                  - python3-Jinja2
+                  - python3-pycryptodome
+                  - python3-simplejson
+                  - python3-setuptools
+                  - python3-leveldb
+                  - bash-completion  # Bash completion to enable the CLI completion
+                  - python3-psutil
+                  - python3-setproctitle
+                  - python3-pyaml
+
+
          # Open suse 15 have specific packages names
          -  name      : opensuse_15
             if        : "{{variables.is_opensuse}} and {{collector.system.os.linux.major_version}} == 15"

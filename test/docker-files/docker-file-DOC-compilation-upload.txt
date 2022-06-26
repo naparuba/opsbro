@@ -1,4 +1,4 @@
-FROM debian:10
+FROM       debian:10
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 ADD        test/docker-helper/  /

@@ -1,8 +1,13 @@
 # By default we are testing the python2 version, and the builder can ask for python3 with "-python3"
 ARG        MY_PYTHON_VERSION=
-FROM       naparuba/debian-10$MY_PYTHON_VERSION
+FROM       naparuba/debian-11$MY_PYTHON_VERSION
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
+
+# DNS: need dig
+RUN        /apt_get_install  dnsutils
+RUN        /apt_get_install  procps
+RUN        /apt_get_install  net-tools
 
 ADD        . /root/opsbro-oss
 
@@ -12,4 +17,4 @@ WORKDIR    /root/opsbro-oss
 RUN        $PYTHON_EXE setup.py install
 
 
-ENTRYPOINT     test/test_feature_cli_kv_store.sh
+ENTRYPOINT     test/test_module_dns.sh

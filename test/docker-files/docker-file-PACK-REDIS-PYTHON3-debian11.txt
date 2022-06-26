@@ -1,13 +1,14 @@
-FROM       naparuba/debian-10-python3
+FROM       naparuba/debian-11-python3
 MAINTAINER Jean Gabes <naparuba@gmail.com>
 
 
-RUN        /apt_get_install rabbitmq-server
-
+RUN        /apt_get_install  redis-server
 
 ADD        . /root/opsbro-oss
 WORKDIR    /root/opsbro-oss
 
 RUN        $PYTHON_EXE setup.py install
 
-ENTRYPOINT   test/test_pack_rabbitmq.sh
+ENTRYPOINT      test/test_pack_redis.sh
+
+

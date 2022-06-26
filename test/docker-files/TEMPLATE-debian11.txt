@@ -9,13 +9,13 @@ ADD        test/docker-helper/  /
 RUN        /apt_get_install      python
 RUN        /apt_get_install      python-jinja2
 RUN        /apt_get_install      python-setuptools
-RUN        /apt_get_install      python-apt
-RUN        /apt_get_install      python-leveldb
-RUN        /apt_get_install      python-simplejson
-RUN        /apt_get_install      python-setproctitle
-RUN        /apt_get_install      python-psutil
-RUN        /apt_get_install      python-yaml
-RUN        /apt_get_install      gnupg    # apt repo add
+RUN        /apt_get_install      python-apt-common
+RUN        /apt_get_install      libleveldb1d
+#RUN        /apt_get_install      python-simplejson
+#RUN        /apt_get_install      python-setproctitle
+#RUN        /apt_get_install      python-psutil
+#RUN        /apt_get_install      python-yaml
+#RUN        /apt_get_install      gnupg    # apt repo add
 
 # Tests with , we are giving the test it's path for starting the setup.py
 ENV        PYTHON_EXE=/usr/bin/python2
