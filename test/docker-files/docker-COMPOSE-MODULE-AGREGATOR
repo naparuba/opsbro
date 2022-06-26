@@ -15,7 +15,7 @@ services:
   node2:
     build:
        context: ../..
-       dockerfile: test/docker-files/docker-file-DUO7-collect-agregate-node2.txt
+       dockerfile: test/docker-files/docker-file-DUO7-collect-agregate-x.txt
        args:
           MY_PYTHON_VERSION: "${MY_PYTHON_VERSION}"
           NODE_NB:  2
