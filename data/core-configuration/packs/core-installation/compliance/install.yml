@@ -297,6 +297,7 @@ compliance:
                   - gnupg          # for repositories
                   - ca-certificates  # for repositories
          
+         
          # ubuntu 18.10 do not have libleveldb1d but libleveldb1d
          -  name      : ubuntu_18_04_python3
             if        : "({{variables.is_ubuntu}} and system_is_python_3()) and {{collector.system.os.linux.version}} == '18.04' "
@@ -314,6 +315,25 @@ compliance:
                   - gnupg          # for repositories
                   - ca-certificates  # for repositories
          
+         
+         # This ubuntu version have a special crypto package
+         -  name      : ubuntu_22_04_python3
+            if        : "({{variables.is_ubuntu}} and system_is_python_3()) and {{collector.system.os.linux.version}} == '22.04'"
+            parameters:
+               packages:
+                  - python3-jinja2
+                  - python3-pycryptodome  # this version exception
+                  - python3-setuptools
+                  - python3-simplejson
+                  - python3-setproctitle
+                  - python3-psutil
+                  - python3-yaml
+                  - libleveldb1d   # no python3-leveldb, only python3-plyvel
+                  - bash-completion  # Bash completion to enable the CLI completion
+                  - gnupg          # for repositories
+                  - ca-certificates  # for repositories
+         
+                  
          -  name      : ubuntu_python3
             if        : "{{variables.is_ubuntu}} and system_is_python_3()"
             parameters:

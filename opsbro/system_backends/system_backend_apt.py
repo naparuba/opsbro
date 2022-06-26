@@ -91,6 +91,14 @@ class AptBackend(LinuxBackend):
         return b
     
     
+    # NOTE: we must be sure that apt will NEVER ask us anything. Like tzdata on ubuntu 22.04 for example...
+    # (yes, event with -y for apt-get install)
+    def _get_apt_env(self):
+        env = os.environ.copy()
+        env.update({'DEBIAN_FRONTEND': 'noninteractive'})
+        return env
+    
+    
     # apt-get -q --yes --no-install-recommends install XXXXX
     def install_package(self, package):
         logger.debug('APT :: installing package: %s' % package)
@@ -99,7 +107,8 @@ class AptBackend(LinuxBackend):
         logger.debug('APT (apt-get update):: stdout/stderr: %s/%s' % (stdout, stderr))
         if p.returncode != 0:
             raise Exception('APT: apt-get update did not succeed (%s), exiting from package installation (%s)' % (stdout + stderr, package))
-        p = subprocess.Popen(['apt-get', '-q', '--yes', '--no-install-recommends', 'install', r'%s' % package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        env = self._get_apt_env()
+        p = subprocess.Popen(['apt-get', '-q', '--yes', '--no-install-recommends', 'install', r'%s' % package], stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
         stdout, stderr = p.communicate()
         logger.debug('APT (apt-get install) (%s):: stdout/stderr: %s/%s' % (package, stdout, stderr))
         if p.returncode != 0:
@@ -117,7 +126,8 @@ class AptBackend(LinuxBackend):
         logger.debug('APT (apt-get update):: stdout/stderr: %s/%s' % (stdout, stderr))
         if p.returncode != 0:
             raise UpdateFailedException('APT: apt-get update did not succeed (%s), exiting from package installation (%s)' % (stdout + stderr, package))
-        p = subprocess.Popen(['apt-get', '-q', '--yes', '--no-install-recommends', 'upgrade', r'%s' % package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        env = self._get_apt_env()
+        p = subprocess.Popen(['apt-get', '-q', '--yes', '--no-install-recommends', 'upgrade', r'%s' % package], stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
         stdout, stderr = p.communicate()
         logger.debug('APT (apt-get update) (%s):: stdout/stderr: %s/%s' % (package, stdout, stderr))
         if p.returncode != 0:
