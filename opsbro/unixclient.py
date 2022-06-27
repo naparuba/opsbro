@@ -30,7 +30,7 @@ except ImportError:
 
 from .log import logger
 from .jsonmgr import jsoner
-from .util import string_encode, string_decode
+from .util import unicode_to_bytes, bytes_to_unicode
 
 #### For local socket handling
 DEFAULT_SOCKET_TIMEOUT = 5
@@ -99,24 +99,24 @@ def get_local(u, local_socket, params={}, method='GET', timeout=10):
     special_headers = []
     
     if method == 'GET' and params:
-        u = "%s?%s" % (u, urlencode(params))
+        u = u"%s?%s" % (u, urlencode(params))
     if method == 'POST' and params:
-        data = string_encode(urlencode(params))
+        data = unicode_to_bytes(urlencode(params))
     if method == 'PUT' and params:
-        special_headers.append(('Content-Type', 'your/contenttype'))
-        data = string_encode(params)
+        special_headers.append(('Content-Type', 'application/octet-stream'))
+        data = unicode_to_bytes(params)
     
     # not the same way to connect
     # * windows: TCP
     # * unix   : unix socket
     if os.name == 'nt':
         url_opener = build_opener(HTTPHandler)
-        uri = 'http://127.0.0.1:6770%s' % u
+        uri = u'http://127.0.0.1:6770%s' % u
     else:  # unix
         url_opener = build_opener(UnixSocketHandler())
-        uri = 'unix:/%s%s' % (local_socket, u)
+        uri = u'unix:/%s%s' % (local_socket, u)
     
-    logger.debug("Connecting to local http/unix socket at: %s with method %s" % (uri, method))
+    logger.debug(u"Connecting to local http/unix socket at: %s with method %s" % (uri, method))
     
     req = Request(uri, data)
     req.get_method = lambda: method
@@ -139,6 +139,7 @@ def get_request_errors():
 
 # get a json on the local server, and parse the result    
 def get_json(uri, local_socket='', params={}, multi=False, method='GET', timeout=10):
+    
     try:
         (code, r) = get_local(uri, local_socket=local_socket, params=params, method=method, timeout=timeout)
     except get_request_errors() as exp:
@@ -146,7 +147,7 @@ def get_json(uri, local_socket='', params={}, multi=False, method='GET', timeout
         raise
     
     # From bytes to string
-    r = string_decode(r)
+    r = bytes_to_unicode(r)
     
     if r == '':
         return r

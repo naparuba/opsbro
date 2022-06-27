@@ -52,12 +52,14 @@ def do_kv_store_put(key_name, value):
         cprint("Need a key-name parameter", color='red')
         sys.exit(2)
     
+    value_u = bytes_to_unicode(value)
+    
     cprint(' - Set key ', end='')
     cprint(key_name, color='magenta', end='')
     cprint(' : ', end='')
     sys.stdout.flush()
     try:
-        put_opsbro_json('/kv/%s' % key_name, value)
+        put_opsbro_json(u'/kv/%s' % key_name, value_u)
     except get_request_errors() as exp:
         cprint(CHARACTERS.cross, color='red')
         logger.error(exp)

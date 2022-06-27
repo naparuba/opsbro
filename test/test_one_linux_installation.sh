@@ -156,35 +156,36 @@ fi
 print_header "KV Store (sqlite/leveldb)"
 
 function test_key_store() {
-   KEY="SUPERKEY/33"
-   VALUE="SUPERVALUE"
+   # We want to have LARGE key and value lenght, to detect some bug on leveldb
+   KEY=$(printf '%*s' "100" | sed 's/ /KEY/g')     # noqa  SIZE = 300
+   VALUE=$(printf '%*s' "100" | sed 's/ /VALUé/g') # noqa  SIZE = 500
 
    echo " - do not exists"
-   GET=$(opsbro kv-store get $KEY)
+   GET=$(opsbro kv-store get "$KEY")
    if [ $? == 0 ]; then
       echo "There should not be key $KEY"
-      echo $GET
+      echo "$GET"
       exit 2
    fi
 
    echo " - set"
-   SET=$(opsbro kv-store put $KEY $VALUE)
+   SET=$(opsbro kv-store put "$KEY" "$VALUE")
    if [ $? != 0 ]; then
       echo "There should be ok in set $KEY $VALUE"
-      echo $SET
+      echo "ERROR: $SET"
       exit 2
    fi
 
    echo " - get"
-   GET=$(opsbro kv-store get $KEY)
+   GET=$(opsbro kv-store get "$KEY")
    if [ $? != 0 ]; then
       echo "There should be key $KEY"
-      echo $GET
+      echo "$GET"
       exit 2
    fi
 
    echo " - grep get"
-   GET_GREP=$(echo $GET | grep $VALUE)
+   GET_GREP=$(echo "$GET" | grep "$VALUE")
    if [ $? != 0 ]; then
       echo "There should be key $KEY $VALUE"
       opsbro --debug kv-store get $KEY
@@ -194,15 +195,15 @@ function test_key_store() {
    fi
 
    echo " - delete"
-   DELETE=$(opsbro kv-store delete $KEY)
+   DELETE=$(opsbro kv-store delete "$KEY")
    if [ $? != 0 ]; then
       echo "There should be no more key $KEY"
-      echo $DELETE
+      echo "$DELETE"
       exit 2
    fi
 
    echo " - get after delete"
-   GET=$(opsbro kv-store get $KEY)
+   GET=$(opsbro kv-store get "$KEY")
    if [ $? == 0 ]; then
       echo "There should not be key $KEY after delete"
       echo $GET
@@ -285,7 +286,6 @@ if [ $? != 0 ]; then
    exit 2
 fi
 
-
 ##########   Show internal threads
 print_header "Fast YAML lib"
 
@@ -306,7 +306,6 @@ if [ $? == 0 ]; then
 fi
 
 echo "Fast YAML is OK"
-
 
 print_header "Test Gossip Encryption"
 opsbro gossip zone key import --zone internet --key "NGNjZWI2ZmEyMzEyMTFlOA=="
@@ -377,6 +376,5 @@ if [ $? != 0 ]; then
    exit 2
 fi
 echo "Agent is with setproctitle name"
-
 
 exit_if_no_crash "**** One linux installation is OK *****"
