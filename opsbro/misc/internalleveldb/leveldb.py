@@ -54,7 +54,11 @@ import ctypes
 import ctypes.util
 import weakref
 import threading
+import sys
 from collections import namedtuple
+
+if sys.version_info >= (3,):  # PY3
+    long = int
 
 _pth = ctypes.util.find_library('leveldb')
 if _pth is None:

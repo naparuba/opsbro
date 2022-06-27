@@ -51,7 +51,14 @@ EXPORTED_CHECKS=$(cat /var/nagios/nagios.log | grep 'PROCESS_SERVICE_CHECK_RESUL
 
 if [ $EXPORTED_CHECKS == 0 ]; then
    echo "ERROR: the checks executions are not send into nagios"
+   echo "==== Nagios LOG:"
    cat /var/nagios/nagios.log
+   echo "==== Monitoring LOG:"
+   cat /var/log/opsbro/monitoring.log
+   echo "==== Module LOG:"
+   cat /var/log/opsbro/module.shinken.log
+   echo "==== Crash (if any:) LOG:"
+   assert_no_crash  # maybe the daemon did crash, if so, show it clear
    exit 2
 fi
 

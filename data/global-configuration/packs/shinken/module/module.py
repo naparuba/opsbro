@@ -3,6 +3,7 @@ import glob
 import time
 import shutil
 import codecs
+import traceback
 
 from opsbro.module import ConnectorModule
 from opsbro.parameters import StringParameter, BoolParameter
@@ -13,7 +14,7 @@ from opsbro.detectormgr import detecter
 from opsbro.gossip import gossiper
 from opsbro.kv import kvmgr
 from opsbro.jsonmgr import jsoner
-from opsbro.util import exec_command, get_sha1_hash, PY3
+from opsbro.util import exec_command, get_sha1_hash, PY3, bytes_to_unicode
 
 
 class ShinkenModule(ConnectorModule):
@@ -107,16 +108,24 @@ class ShinkenModule(ConnectorModule):
         p = self.external_command_file
         
         v = kvmgr.get_key('__health/%s' % nuuid)
+        #v = bytes_to_unicode(v)
         if v is None or v == '':
             self.logger.error('Cannot access to the checks list for', nuuid)
             return
-        
-        lst = jsoner.loads(v)
+        try:
+            lst = jsoner.loads(v)
+        except ValueError:  # outch, bad format? we will crash, dump all possible info before this
+            self.logger.error('Cannot load as json the string """%s"""(len=%s, %s) from check %s: %s' % (v, len(v), type(v), nuuid, traceback.format_exc()))
+            raise
         for cname in lst:
             v = kvmgr.get_key('__health/%s/%s' % (nuuid, cname))
             if v is None:  # missing check entry? not a real problem
                 continue
-            check = jsoner.loads(v)
+            try:
+                check = jsoner.loads(v)
+            except ValueError:  # outch, bad format? we will crash, dump all possible info before this
+                self.logger.error('Cannot load as json the string "%s" from cname %s: %s' % (v, cname, traceback.format_exc()))
+                raise
             self.logger.debug('CHECK VALUE %s' % check)
             try:
                 mode = 'w' if PY3 else 'a'  # codecs.open got issue with a in python 3
