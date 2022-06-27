@@ -236,10 +236,11 @@ class Evaluater(object):
             v = names.get(str(key), None)  # note: valus is alrady the final value, must lookup it to assert only what we want
             return v
         elif isinstance(node, ast.Subscript):  # {}['key'] access
-            # NOTE: the 'key' is node.slice.value.s
+            # NOTE: the 'key' is node.slice.value.s for PY2, node.slice.value for PY3
             # and the node.value is a ast.Dict, so must be eval_
             _d = self.eval_(node.value)
-            v = _d[node.slice.value.s]
+            _key = node.slice.value if PY3 else node.slice.value.s
+            v = _d[_key]
             return v
         #        elif isinstance(node, _ast.Attribute):  # o.f() call
         #            # NOTE: for security reason, only accept functons on basic types
