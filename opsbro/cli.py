@@ -400,7 +400,7 @@ class CLIEntry(object):
     def _print_default_value(self, arg):
         default_value = arg.get('default', None)
         arg_type = arg.get('type', None)
-        if arg_type is 'bool':
+        if arg_type == 'bool':
             if default_value:
                 cprint('[default=set]    ', color='white', end='')
             else:

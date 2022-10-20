@@ -157,7 +157,7 @@ print_header "KV Store (sqlite/leveldb)"
 
 function test_key_store() {
    # We want to have LARGE key and value lenght, to detect some bug on leveldb
-   KEY=$(printf '%*s' "100" | sed 's/ /KEY/g')     # noqa  SIZE = 300
+   KEY=$(printf '%*s' "100" | sed 's/ /KéY/g')     # noqa  SIZE = 300
    VALUE=$(printf '%*s' "100" | sed 's/ /VALUé/g') # noqa  SIZE = 500
 
    echo " - do not exists"
