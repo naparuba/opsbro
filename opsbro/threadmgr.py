@@ -187,7 +187,7 @@ class ThreadMgr(object):
         return {'thread': None, 'tid': tid, 'name': name, 'essential': essential, 'user_time': -1, 'system_time': -1, 'part': part}
     
     
-    def create_and_launch(self, f, args=(), name='', essential=False, part=''):
+    def create_and_launch(self, f, args=(), name='', essential=False, part='', kwargs={}):
         # If no name, try to give a name even a raw one, to help debug
         if not name:
             name = '(unamed thread:%s)' % f.__name__
@@ -195,7 +195,7 @@ class ThreadMgr(object):
         d = self.__get_thread_entry(name, essential, part=part)
         
         # and exception catchs
-        t = threading.Thread(None, target=w, name=name, args=(d, f, name, essential, args))
+        t = threading.Thread(None, target=w, name=name, args=(d, f, name, essential, args), kwargs=kwargs)
         t.daemon = True
         d['thread'] = t
         t.start()

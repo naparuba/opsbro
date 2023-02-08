@@ -8,6 +8,11 @@ import json
 import requests
 import requests_unixsocket
 
+from flask import Flask
+from flask import request as flask_request
+
+app = Flask(__name__)
+
 requests_unixsocket.monkeypatch()
 
 try:  # Python2
@@ -35,7 +40,7 @@ SOCKET_PATH = '/tmp/test_unix_socket.sock'
 # test/docker_run.sh test   docker-file-CENTOS-7-installation-centos7.9.txt
 # yum install -y python-requests;cd test/;python test_unixclient.py  TestUnixClient.test_unixclient_POST_simple_ret_utf8_arg_utf8_REQUESTS
 # test/docker_run.sh test docker-file-ALPINE-alpine3.16.txt
-# apk add py3-requests;cd test/;python3 test_unixclient.py TestUnixClient.test_unixclient_GET_simple_ret_utf8_arg_utf8_REQUESTS
+# apk add py3-flask;apk add py3-requests;cd test/;python3 test_unixclient.py TestUnixClient.test_unixclient_GET_simple_ret_utf8_arg_utf8_REQUESTS
 
 def fake_get_local_socket():
     cprint('FAKING: %s' % SOCKET_PATH)
@@ -77,6 +82,10 @@ def get_from_POST(req, arg_name):
 
 
 def get_from_GET(req, arg_name):
+    cprint(u'[SERVER][FLASK] raw get: %s' % flask_request.args)
+    v = flask_request.args.get(arg_name, None)
+    cprint(u'[SERVER][FLASK] raw get: %s -> %s' % (arg_name, v))
+    return v
     if 'dict' not in req.GET.__dict__:
         raise Exception('Cannot find dict in %s' % req.GET.__dict__)
     for (k, v) in req.GET.__dict__['dict'].items():
@@ -136,7 +145,7 @@ class TestUnixClient(OpsBroTest):
         
         
         def _generic_GET(key_name, key_value, res, call_name):
-            cprint('SERVER:: _generic_GET:: %s' % request.GET.__dict__)
+            #cprint('SERVER:: _generic_GET:: %s' % request.GET.__dict__)
             value = get_from_GET(request, key_name)  # request.GET.get(key_name)
             value = bytes_to_unicode(value)
             return _generic_call(key_name, key_value, res, call_name, value)
@@ -214,7 +223,8 @@ class TestUnixClient(OpsBroTest):
         ##### ARG+value/UTF8     RET/UTF8
         ############################
         
-        @http_export(u'/get_ret_utf8_arg_utf8')
+        #@http_export(u'/get_ret_utf8_arg_utf8')
+        @app.route(u'/get_ret_utf8_arg_utf8')
         def f_get_ret_utf8_arg_utf8():
             return _generic_GET(ARG_UTF8_KEY, ARG_UTF8_VALUE, RES_UTF8, u'get_ret_utf8_arg_utf8')
         
@@ -245,10 +255,17 @@ class TestUnixClient(OpsBroTest):
         def f_get_uri_utf8_ret_utf8(arg):
             arg = bytes_to_unicode(arg)
             return _check_uri_call(ARG_UTF8_VALUE, RES_UTF8, u'/get_uri_utf8_ret_utf8/:arg', arg)
-        
-        
-        threader.create_and_launch(httpdaemon.run, name='Internal HTTP', args=('', 0, SOCKET_PATH,), essential=True, part='TEST')
-        threader.create_and_launch(httpdaemon.run, name='Internal HTTP', args=('127.0.0.1', 35888, '',), essential=True, part='TEST')
+
+        import threading
+        t = threading.Thread(None, target=app.run, name='flask', kwargs={'debug': True,
+                                                                         'host': 'unix://%s' % SOCKET_PATH,
+                                                                         'use_reloader' : False,
+                                                                         })
+        t.daemon = True
+        t.start()
+        # app.run(debug=True, host='unix://%s' % SOCKET_PATH)
+        # threader.create_and_launch(httpdaemon.run, name='Internal HTTP', args=('', 0, SOCKET_PATH,), essential=True, part='TEST')
+        #threader.create_and_launch(httpdaemon.run, name='Internal HTTP', args=('127.0.0.1', 35888, '',), essential=True, part='TEST')
         time.sleep(5)
     
     
