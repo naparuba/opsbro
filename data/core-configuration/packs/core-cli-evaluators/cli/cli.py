@@ -8,6 +8,7 @@ from __future__ import print_function
 import sys
 import base64
 import time
+import traceback
 
 PY3 = sys.version_info >= (3,)
 if PY3:
@@ -79,8 +80,8 @@ def do_evaluator_eval(expr, short):
     expr_64 = base64.b64encode(expr)
     try:
         r = post_opsbro_json('/agent/evaluator/eval', {'expr': expr_64}, timeout=30)
-    except Exception as exp:
-        logger.error(exp)
+    except Exception:
+        logger.error('Error while evaluating the expression %s:%s' % (expr, traceback.format_exc()))
         sys.exit(2)
     if not short:
         print_info_title('Result')

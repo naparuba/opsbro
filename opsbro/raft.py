@@ -123,7 +123,7 @@ class RaftNode(object):
         self._term = 0
         
         self._leader = None
-        self._last_leader_hearthbeat_date = 0.0  # epoch of when we did send a heatbeat as leader
+        self._last_leader_hearthbeat_date = 0.0  # epoch of when we did send a heartbeat as leader
         
         self._pending_messages_lock = threading.RLock()
         self._pending_messages = []
@@ -326,7 +326,7 @@ class RaftNode(object):
             self._last_leader_talk_epoch = time.time()
     
     
-    # A new leader is elected, take it
+
     def _manage_leader_heartbeat(self, msg):
         leader_id = msg['leader']
         if self._leader is None:
@@ -453,6 +453,7 @@ class RaftNode(object):
         while not self._interrrupted:
             msg = None
             wait_time = 0.1  # if no message, wait a lot
+            
             with self._pending_messages_lock:
                 if len(self._pending_messages) >= 1:
                     msg = self._pending_messages.pop()

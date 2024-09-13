@@ -131,7 +131,7 @@ class UnixSocketHandler(AbstractHTTPHandler):
             new_req.timeout = req.timeout
             new_req.get_method = req.get_method  # Also copy specific method from the original header
             # return self.do_open(UnixHTTPConnection(unix_socket), new_req)
-            cprint(u'UnixSocketHandler:: unix_open :: url="%s" / req_data="%s"   new_req=%s' % (url, _req_data, new_req.__dict__))
+            #cprint(u'UnixSocketHandler:: unix_open :: url="%s" / req_data="%s"   new_req=%s' % (url, _req_data, new_req.__dict__))
             r = self.do_open(UnixHTTPConnection(unix_socket), new_req)
         except UnicodeEncodeError as exp:
             raise
@@ -164,7 +164,7 @@ def to_unicode_recursive_obj(in_obj):
             return in_obj.encode('utf-8')
     else:
         if isinstance(in_obj, bytes):
-            return in_obj.encode('utf-8')
+            return in_obj.decode('utf-8')
     if isinstance(in_obj, list):
         return encode_list(in_obj)
     elif isinstance(in_obj, tuple):
@@ -200,8 +200,8 @@ def get_local(u, local_socket, params={}, method=u'GET', timeout=10):
     else:  # unix
         url_opener = build_opener(UnixSocketHandler())
         uri = u'unix:/%s%s' % (local_socket, u)
-    cprint(u'CALLING: uri type=%s' % type(uri))
-    cprint(u'CALLING: %s:%s' % (method, uri))
+    #cprint(u'CALLING: uri type=%s' % type(uri))
+    #cprint(u'CALLING: %s:%s' % (method, uri))
     logger.debug(u"Connecting to local http/unix socket at: %s with method %s" % (uri, method))
     
     req = Request(uri, data)
