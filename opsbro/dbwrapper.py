@@ -76,7 +76,7 @@ class FailbackLevelDBBackend(object):
         
         if assert_value:
             if v_as_unicode != assert_value:
-                raise ValueError('[Failback leveldb] [key=%s] The expected value """%s""" was get as """%s""" (before unicode=%s) (raw_b64=%s) but is different' % (key, assert_value, v_as_unicode, v))
+                raise ValueError('[Failback leveldb] [key=%s] The expected value """%s""" was get as """%s""" (before unicode=%s) but is different' % (key, assert_value, v_as_unicode, v))
         
         return v_as_unicode
     
