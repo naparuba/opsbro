@@ -16,7 +16,7 @@ jobs:
       runs-on: [ self-hosted, X64 ]
       strategy:
          matrix:
-                        TEST_SUITE:
+            TEST_SUITE:
                ##### First basic tests
                - API
                - PYTHON
