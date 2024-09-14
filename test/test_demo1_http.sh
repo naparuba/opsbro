@@ -27,7 +27,7 @@ function wait_step_event() {
    wait_event_with_timeout "$1-NODE-CLIENT" 180
 }
 
-print_header "$CASE starts to run $(date) $TRAVIS"
+print_header "$CASE starts to run $(date) "
 
 # Set a valid display name for debug
 opsbro agent parameters set display_name "$CASE"

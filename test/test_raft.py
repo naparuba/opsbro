@@ -202,7 +202,7 @@ class TestRaft(OpsBroTest):
         NB_NODES_BY_CPU = int(os.environ.get('NB_NODES_BY_CPU', '75'))
         TEST_TIMEOUT = int(os.environ.get('TEST_TIMEOUT', '30'))
         N = NB_NODES_BY_CPU  # * NB_CPUS
-        wait = TEST_TIMEOUT  # for very slow computing like travis?
+        wait = TEST_TIMEOUT  # for very slow computing like github actions?
         
         # launch this test as a sub process so we can kill it as fast as possible when finish (no close and such log things)
         process = Process(None, target=self.create_and_wait, args=(N, wait))

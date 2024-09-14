@@ -71,18 +71,12 @@ fi
 
 # Travis: only need to run the installation once, it it not link to a specific python version. They don't need to use CPU for nothing ;)
 if [ "$TEST_SUITE" == "PYTHON" ]; then
-   # The travis ubuntu image have issue for old version
-   if [ "X$TRAVIS_PYTHON_VERSION" == "X2.6" ]; then
-      $SUDO apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 762E3157
-      curl -L https://packagecloud.io/github/git-lfs/gpgkey | $SUDO apt-key add -
-   fi
-
    # No more virtual env on Travis
    $SUDO rm -fr ~/virtualenv
    echo "Installing opsbro for TESTING (so have libs)"
    cd ..
 
-   # NOTE: sudo because travis is under ubuntu
+   # NOTE: sudo because github actions is under ubuntu
    $SUDO python3 setup.py install
 
    # NOTE: nosetests are hooking stdout and sys.paths, and so are not in real execution, this make too much troubles

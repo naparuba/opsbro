@@ -4,11 +4,6 @@
 MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . $MYDIR/common_shell_functions.sh
 
-# Travis: only need to run the installation once, it it not link to a specific python version. They don't need to use CPU for nothing ;)
-if [ "X$TRAVIS_PYTHON_VERSION" == "X2.6" ]; then
-   echo "Skippping installation tests for travis 2.6 configuration, only need one launch (2.7)"
-   exit 0
-fi
 
 print_header "Launching installations tests for SUITE: $TEST_SUITE"
 
@@ -112,31 +107,16 @@ export -f launch_docker_file
 
 NB_CPUS=$(python3 -c "import multiprocessing;print(multiprocessing.cpu_count())")
 echo "Detected number of CPUs: $NB_CPUS"
-# Travis: be sure to use the 2 CPU available, and in fact to allow // connections so we keep the test time bellow the limit
-#if [ "X$TRAVIS" == "Xtrue" ]; then
-#   NB_CPUS=10
-#   echo "Travis detected, using $NB_CPUS CPUs"
-# if stats with DUO, allow far more than this
-#if [[ $TEST_SUITE == DUO* ]] || [[ $TEST_SUITE == DEMO* ]]; then
-#   NB_CPUS=6
-#   echo "Travis detected, and also DUO test based. Allow more CPUs; $NB_CPUS"
-#fi
-#fi
+
 
 NB_DISTRIBUTED_LAUNCHS=1
-# On TRAVIS: 5 launchs
-if [ "X$TRAVIS" == "Xtrue" ]; then
-   # NOTE: ask 5 runs each travis run is long, so i set 1 for normal commits, and before releases I'll set
-   # manually to 5
-   NB_DISTRIBUTED_LAUNCHS=1
-fi
 
-# On travis: pre-pull the base images so parallel docker build will already have a cache, and not
-# try to dowload them all
-if [ "X$TRAVIS" == "Xtrue" ]; then
+
+# On CI: pre-pull the base images so parallel docker build will already have a cache, and not
+# try to download them all
+if [ "$GITHUB_ACTIONS" == "true" ]; then
    echo "Launching docker images cache warmup at `date` "
-   docker pull naparuba/debian-10-python3 > /dev/null
-   docker pull naparuba/debian-10 > /dev/null
+   docker pull naparuba/debian-12 > /dev/null
    echo "  -> Finish at `date` "
 fi
 
@@ -155,7 +135,7 @@ if [[ $TEST_SUITE == COMPOSE* ]]; then
    # Compose should be run numerous time to be sure they are stable
    for ii in $(seq 1 $NB_DISTRIBUTED_LAUNCHS); do
       # In compose, we MUST be sure we are the only launched instance with no state before us
-      if [ "X$TRAVIS" == "Xtrue" ]; then
+      if [ "$GITHUB_ACTIONS" == "true" ]; then
          docker system prune --force >/dev/null
       fi
 
@@ -214,11 +194,12 @@ fi
 # Only do the test suite we must do
 DOCKER_FILES=$(ls -1 test/docker-files/docker-file-$TEST_SUITE-*txt)
 
-# export TRAVIS var so xargs calls with have it
-export TRAVIS=$TRAVIS
+# export GITHUB_ACTIONS var so xargs calls with have it
+export GITHUB_ACTIONS=$GITHUB_ACTIONS
 echo "================================================= Building all images first:"
-# NOTE: builds are unlimited because it's mainly network
-echo $DOCKER_FILES | xargs --delimiter=' ' --no-run-if-empty -n 1 -P 99 -I {} bash -c 'launch_docker_file "{}" "BUILD_ONLY"'
+
+# NOTE: builds are limited to 4 because it's mainly IO bound, and we don't want to have too much for memory usage
+echo $DOCKER_FILES | xargs --delimiter=' ' --no-run-if-empty -n 1 -P 4 -I {} bash -c 'launch_docker_file "{}" "BUILD_ONLY"'
 
 # Run must be synchronizer if possible, will allow to have less issues in synchronized tests (like DUO or DEMO)
 printf "\n\n\n"
