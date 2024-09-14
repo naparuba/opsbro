@@ -1,4 +1,4 @@
-FROM       rockylinux/rockylinux:8.4
+FROM       rockylinux/rockylinux:8.9
 LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
 

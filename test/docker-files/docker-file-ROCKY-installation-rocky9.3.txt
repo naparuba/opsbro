@@ -1,4 +1,4 @@
-FROM rockylinux/rockylinux:9.3
+FROM rockylinux:9.3
 LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
 ADD        test/docker-helper/  /

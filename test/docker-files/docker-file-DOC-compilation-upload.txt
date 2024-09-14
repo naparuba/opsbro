@@ -1,4 +1,4 @@
-FROM       debian:10
+FROM       debian:12
 LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
 ADD        test/docker-helper/  /

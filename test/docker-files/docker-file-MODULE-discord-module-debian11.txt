@@ -1,5 +1,4 @@
-# NOTE: discord only for python3
-FROM       naparuba/debian-11-python3
+FROM       naparuba/debian-12
 LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
 

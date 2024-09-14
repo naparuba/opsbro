@@ -1,4 +1,4 @@
-FROM oraclelinux:7.9
+FROM oraclelinux:8.9
 LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
 ADD        test/docker-helper/  /

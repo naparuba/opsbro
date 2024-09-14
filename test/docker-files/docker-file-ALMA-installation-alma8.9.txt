@@ -1,11 +1,11 @@
-FROM       registry.access.redhat.com/ubi8/ubi:8.6
+FROM almalinux:8.9
 LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
 ADD        test/docker-helper/  /
 
 RUN        /yum_install  python3
 
-# As there is no "python" in redhat8, we are giving the test it's path for starting the setup.py
+# As there is no "python" in centos8, we are giving the test it's path for starting the setup.py
 ENV        PYTHON_EXE=/usr/bin/python3
 
 
@@ -26,6 +26,6 @@ WORKDIR    /root/opsbro-oss
 
 # TCL: very little
 ENV        TEST_PACKAGE_NAME=tcl
-ENTRYPOINT        test/test_one_linux_installation.sh  && test/assert_group.sh "redhat"
+ENTRYPOINT        test/test_one_linux_installation.sh  && test/assert_group.sh "almalinux"
 
 
