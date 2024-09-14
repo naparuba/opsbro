@@ -1,4 +1,4 @@
-FROM       naparuba/alpine-python3
+FROM       naparuba/alpine
 LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
 
