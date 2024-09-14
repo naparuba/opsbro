@@ -140,12 +140,12 @@ if [ "X$TRAVIS" == "Xtrue" ]; then
    echo "  -> Finish at `date` "
 fi
 
-# For compose, we are asking to docker-compose to build and run
+# For compose, we are asking to docker compose to build and run
 if [[ $TEST_SUITE == COMPOSE* ]]; then
 
    # Show various informations
    echo " * docker compose version"
-   docker-compose version
+   docker compose version
    echo " ----"
 
    # Be sure to clean all networks before launch, as we can maybe recreate some of them
@@ -174,7 +174,7 @@ if [[ $TEST_SUITE == COMPOSE* ]]; then
          export MY_PYTHON_VERSION=-python3
       fi
 
-      docker-compose -f $COMPOSE_FILE build  $ADD_BUILDS_ARGS  2>>$LOG >>$LOG
+      docker compose -f $COMPOSE_FILE build  $ADD_BUILDS_ARGS  2>>$LOG >>$LOG
       if [ $? != 0 ]; then
          print_color "$ii BUILD ERROR: $COMPOSE_FILE" "red"
          printf " $(date) Cannot build. Look at $LOG\n"
@@ -187,11 +187,11 @@ if [[ $TEST_SUITE == COMPOSE* ]]; then
       # Build was ok, we can clean the log
       >$LOG
       # NOTE: NOT --build because we NEED --build-arg not manage here
-      docker-compose -f $COMPOSE_FILE up 2>>$LOG >>$LOG
+      docker compose -f $COMPOSE_FILE up 2>>$LOG >>$LOG
       # NOTE: compose up do not exit with worse state, so must look at the
-      # docker-copose ps to have exit states
-      # +3=> remvoe the first 2 line of the ps (header)
-      PS_STATES=$(docker-compose -f $COMPOSE_FILE ps | tail -n +3)
+      # docker compose ps to have exit states
+      # +3=> remove the first 2 line of the ps (header)
+      PS_STATES=$(docker compose -f $COMPOSE_FILE ps | tail -n +3)
       echo "$PS_STATES" >>$LOG
       echo "[$ii] Container results:"
       echo "$PS_STATES"

@@ -1,4 +1,4 @@
-FROM       naparuba/debian-9
+FROM       naparuba/debian-12
 LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
 
