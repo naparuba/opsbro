@@ -110,7 +110,7 @@ function launch_docker_file() {
 
 export -f launch_docker_file
 
-NB_CPUS=$(python3 -c "import multiprocessing;print multiprocessing.cpu_count()")
+NB_CPUS=$(python3 -c "import multiprocessing;print(multiprocessing.cpu_count())")
 echo "Detected number of CPUs: $NB_CPUS"
 # Travis: be sure to use the 2 CPU available, and in fact to allow // connections so we keep the test time bellow the limit
 #if [ "X$TRAVIS" == "Xtrue" ]; then
