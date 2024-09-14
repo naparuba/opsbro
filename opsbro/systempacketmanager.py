@@ -54,6 +54,8 @@ class SystemPacketMgr(object):
                 with open('/etc/os-release') as f:
                     inf = {}
                     for line in f:
+                        if '=' not in line:  # redhat 9 seems to have issue with basic things
+                            continue
                         k, v = line.rstrip().split("=")
                         # .strip('"') will remove if there or else do nothing
                         inf[k] = v.strip('"')
@@ -64,6 +66,8 @@ class SystemPacketMgr(object):
                 with open('/etc.defaults/VERSION') as f:
                     inf = {}
                     for line in f:
+                        if '=' not in line:  # redhat 9 seems to have issue with basic things
+                            continue
                         k, v = line.rstrip().split("=")
                         # .strip('"') will remove if there or else do nothing
                         inf[k] = v.strip('"')
