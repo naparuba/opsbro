@@ -1,7 +1,7 @@
-FROM       alpine:3.16
+FROM       alpine:3.20
 LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
-# THIS DOCKER FILE is USED TO PUSH TO naparuba/alpine-PYTHON3 so tests will be faster, and won't need to recompute all of this every time
+# THIS DOCKER FILE is USED TO PUSH TO naparuba/alpine so tests will be faster, and won't need to recompute all of this every time
 
 ADD        test/docker-helper/  /
 RUN        /apk_add bash

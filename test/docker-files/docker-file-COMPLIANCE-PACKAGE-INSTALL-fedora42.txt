@@ -1,8 +1,8 @@
-FROM       fedora:28
+FROM       fedora:42
 LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
 ADD        test/docker-helper/  /
-RUN        /dnf_install python2
+RUN        /dnf_install python3
 
 # Need for debug and test
 RUN        /dnf_install   procps
@@ -13,7 +13,7 @@ ADD        . /root/opsbro-oss
 
 WORKDIR    /root/opsbro-oss
 
-RUN        python setup.py install
+RUN        python3 setup.py install
 
 # Copy the mail pack into a local one to enable modification
 RUN        opsbro  packs overload global.nginx

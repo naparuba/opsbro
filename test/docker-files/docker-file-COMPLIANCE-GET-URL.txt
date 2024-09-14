@@ -1,5 +1,8 @@
-FROM       naparuba/debian-11-python3
+FROM       naparuba/debian-12
 LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
+
+
+RUN        /apt_get_install   procps
 
 ADD        . /root/opsbro-oss
 WORKDIR    /root/opsbro-oss
@@ -9,6 +12,6 @@ RUN        $PYTHON_EXE setup.py install
 # Copy the mail pack into a local one to enable modification
 RUN        opsbro  packs overload global.linux
 # Copy the new compliance value
-ADD        test/test-files/test-compliance-file-rights/compliance/passwd.yml   /var/lib/opsbro/local-configuration/packs/linux/compliance/
+ADD        test/test-files/test-compliance-get-uri/compliance/install-cockroachdb.yml   /var/lib/opsbro/local-configuration/packs/linux/compliance/
 
-ENTRYPOINT     test/test_compliance-file-rights.sh
+ENTRYPOINT     test/test_compliance-get-url.sh
