@@ -1,5 +1,5 @@
-FROM       alpine:3.15
-MAINTAINER Jean Gabes <naparuba@gmail.com>
+FROM       alpine:3.18
+LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
 ADD        test/docker-helper/  /
 RUN        /apk_add bash

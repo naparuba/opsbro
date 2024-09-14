@@ -1,5 +1,5 @@
 FROM       naparuba/debian-11-python3
-MAINTAINER Jean Gabes <naparuba@gmail.com>
+LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
 
 # Need for debug and test

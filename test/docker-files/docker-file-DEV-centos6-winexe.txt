@@ -1,5 +1,5 @@
 FROM centos:6
-MAINTAINER Jean Gabes <naparuba@gmail.com>
+LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
 RUN        yum --nogpgcheck  -y  upgrade
 

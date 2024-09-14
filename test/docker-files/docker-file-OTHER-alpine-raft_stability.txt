@@ -1,5 +1,5 @@
 FROM       naparuba/alpine-python3
-MAINTAINER Jean Gabes <naparuba@gmail.com>
+LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
 
 # Need by the test

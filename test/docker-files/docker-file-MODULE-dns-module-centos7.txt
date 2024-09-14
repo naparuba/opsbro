@@ -1,5 +1,5 @@
 FROM       naparuba/centos-7
-MAINTAINER Jean Gabes <naparuba@gmail.com>
+LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
 
 # DNS: need dig

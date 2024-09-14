@@ -18,7 +18,7 @@ function launch_trys() {
       >$LOG
       # RESET BASH COUNTER
       SECONDS=0
-      python test_raft.py TestRaft.test_raft_large_leader_election >>$LOG 2>>$LOG
+      python3 test_raft.py TestRaft.test_raft_large_leader_election >>$LOG 2>>$LOG
       if [ $? != 0 ]; then
          echo "ERROR: fail after $ii try:"
          #cat /tmp/try.log

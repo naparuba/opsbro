@@ -1,5 +1,5 @@
 FROM       registry.access.redhat.com/ubi8/ubi:8.5
-MAINTAINER Jean Gabes <naparuba@gmail.com>
+LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
 RUN        yum --nogpgcheck  -y  upgrade
 

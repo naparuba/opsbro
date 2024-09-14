@@ -1,5 +1,5 @@
 FROM debian:9
-MAINTAINER Jean Gabes <naparuba@gmail.com>
+LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
 RUN        apt-get update && apt-get install -y python
 RUN        apt-get update && apt-get install -y curl

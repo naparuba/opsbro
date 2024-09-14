@@ -1,5 +1,5 @@
 FROM       amazonlinux:2017.12
-MAINTAINER Jean Gabes <naparuba@gmail.com>
+LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
 # NOTE: there is a bug in this version (like fedora 26) with a pypi connection impossible without the glibc update
 ADD        test/docker-helper/  /

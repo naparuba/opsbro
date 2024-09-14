@@ -1,0 +1,21 @@
+FROM       amazonlinux:2023
+LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
+
+
+ADD        test/docker-helper/  /
+
+
+
+# For the test
+RUN        /yum_install procps
+
+
+ADD        . /root/opsbro-oss
+
+WORKDIR       /root/opsbro-oss
+
+ENV        PYTHON_EXE=/usr/bin/python3
+
+# TCL: very little
+ENV        TEST_PACKAGE_NAME=tcl
+ENTRYPOINT    test/test_one_linux_installation.sh && test/assert_group.sh "amazon-linux2022"

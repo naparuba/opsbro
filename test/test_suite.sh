@@ -11,25 +11,25 @@ if [ "$TRAVIS_OS_NAME" == "windows" ];then
    mkdir 'c:\opsbro'
    cp -rp . 'c:\opsbro'
    ls "c:\opsbro"
-   python 'bin/opsbro'
-   python 'bin/opsbro' agent start --one-shot
+   python3 'bin/opsbro'
+   python3 'bin/opsbro' agent start --one-shot
    echo "Analyser RUN"
-   python 'bin/opsbro' packs overload   global.shinken-enterprise
-   python 'bin/opsbro' packs parameters set local.shinken-enterprise.enabled True
-   python 'bin/opsbro' packs parameters set local.shinken-enterprise.file_result "C:\shinken-local-analyzer-payload.json"
-   python 'bin/opsbro' agent start --one-shot
+   python3 'bin/opsbro' packs overload   global.shinken-enterprise
+   python3 'bin/opsbro' packs parameters set local.shinken-enterprise.enabled True
+   python3 'bin/opsbro' packs parameters set local.shinken-enterprise.file_result "C:\shinken-local-analyzer-payload.json"
+   python3 'bin/opsbro' agent start --one-shot
    ls 'c:'
    cat 'C:\shinken-local-analyzer-payload.json'
 
    echo "SERVICE RUN"
-   python -c "import sys; print(sys.executable)"
+   python3 -c "import sys; print(sys.executable)"
    # clean all logs
    wevtutil cl System
    wevtutil cl Application
 
-   python setup.py install
+   python3 setup.py install
 
-   python c:/opsbro/bin/opsbro agent windows service-install
+   python3 c:/opsbro/bin/opsbro agent windows service-install
    sc start OpsBro
    sc qc OpsBro
    sc query OpsBro
@@ -41,12 +41,12 @@ if [ "$TRAVIS_OS_NAME" == "windows" ];then
    cat 'c:\opsbro.log'
    exit 2
    echo "Other commands"
-   python -c "import time; time.sleep(10)"
-   python c:/opsbro/bin/opsbro agent info
-   python c:/opsbro/bin/opsbro collectors state
-   python c:/opsbro/bin/opsbro monitoring state
-   python c:/opsbro/bin/opsbro compliance state
-   python c:/opsbro/bin/opsbro collectors show
+   python3 -c "import time; time.sleep(10)"
+   python3 c:/opsbro/bin/opsbro agent info
+   python3 c:/opsbro/bin/opsbro collectors state
+   python3 c:/opsbro/bin/opsbro monitoring state
+   python3 c:/opsbro/bin/opsbro compliance state
+   python3 c:/opsbro/bin/opsbro collectors show
    sc stop OpsBro
 
    exit 0
@@ -83,7 +83,7 @@ if [ "$TEST_SUITE" == "PYTHON" ]; then
    cd ..
 
    # NOTE: sudo because travis is under ubuntu
-   $SUDO python setup.py install
+   $SUDO python3 setup.py install
 
    # NOTE: nosetests are hooking stdout and sys.paths, and so are not in real execution, this make too much troubles
    # with tests, so switching to a real world test

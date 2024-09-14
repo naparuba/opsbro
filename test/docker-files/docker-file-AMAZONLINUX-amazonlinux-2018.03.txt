@@ -1,5 +1,5 @@
 FROM amazonlinux:2018.03
-MAINTAINER Jean Gabes <naparuba@gmail.com>
+LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
 
 ADD        test/docker-helper/  /
