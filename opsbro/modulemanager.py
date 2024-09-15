@@ -1,6 +1,6 @@
 import os
 import sys
-import imp
+import importlib.util
 import traceback
 
 from .log import logger, LoggerFactory
@@ -45,11 +45,10 @@ class ModuleManager(object):
             # another way to give the information to the inner class inside, I take it ^^
             short_mod_name = 'module___%s___%s___%s' % (pack_level, pack_name, dirname)
             try:
-                if mod_file.endswith('.py'):
-                    # important, equivalent to import fname from module.py
-                    imp.load_source(short_mod_name, mod_file)
-                else:
-                    imp.load_compiled(short_mod_name, mod_file)
+                # important, equivalent to import fname from module.py
+                spec = importlib.util.spec_from_file_location(short_mod_name, mod_file)
+                m = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(m)
             except Exception:
                 err = 'The module %s did fail to be imported: %s' % (dirname, str(traceback.format_exc()))
                 self._fail_and_hard_exit(err)

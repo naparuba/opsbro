@@ -2,7 +2,7 @@ import time
 import os
 import json
 import glob
-import imp
+import importlib.util
 from collections import deque
 import traceback
 
@@ -547,7 +547,9 @@ class ComplianceManager(BaseManager):
             try:
                 # NOTE: KEEP THE ___ as they are used to let the class INSIDE te module in which pack/level they are. If you have
                 # another way to give the information to the inner class inside, I take it ^^
-                m = imp.load_source('compliancebackend___%s___%s___%s' % (pack_level, pack_name, fname), f)
+                spec = importlib.util.spec_from_file_location('compliancebackend___%s___%s___%s' % (pack_level, pack_name, fname), f)
+                m = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(m)
                 logger.debug('Compliance driver module loaded: %s' % m)
             except Exception as exp:
                 logger.error('Cannot load compliance driver %s: %s' % (fname, exp))

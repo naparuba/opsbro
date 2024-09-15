@@ -188,15 +188,10 @@ except ImportError as exp:  # great, first install so
 
 # Now look at loading the local opsbro lib for version and banner
 my_dir = os.path.dirname(os.path.abspath(__file__))
-if PY3:  # imp is deprecated on python3
-    import importlib.machinery
-    
-    mod_path = importlib.machinery.PathFinder().find_spec('opsbro', [os.path.realpath(my_dir)])
-    opsbro = mod_path.loader.load_module()
-else:
-    import imp
-    
-    opsbro = imp.load_module('opsbro', *imp.find_module('opsbro', [os.path.realpath(my_dir)]))
+import importlib.machinery
+
+mod_path = importlib.machinery.PathFinder().find_spec('opsbro', [os.path.realpath(my_dir)])
+opsbro = mod_path.loader.load_module()
 
 from opsbro.info import VERSION, BANNER, TXT_BANNER
 from opsbro.topic import TOPICS_COLORS, TOPIC_SYSTEM_COMPLIANCE

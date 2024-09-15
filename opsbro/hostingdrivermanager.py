@@ -1,6 +1,6 @@
 import os
 import glob
-import imp
+import importlib.util
 import socket
 import sys
 import time
@@ -323,7 +323,9 @@ class HostingDriverMgr(object):
             try:
                 # NOTE: KEEP THE ___ as they are used to let the class INSIDE te module in which pack/level they are. If you have
                 # another way to give the information to the inner class inside, I take it ^^
-                m = imp.load_source('hostingdriver___%s___%s___%s' % (pack_level, pack_name, fname), f)
+                spec = importlib.util.spec_from_file_location('hostingdriver___%s___%s___%s' % (pack_level, pack_name, fname), f)
+                m = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(m)
                 logger.debug('Hosting driver module loaded: %s' % m)
             except Exception as exp:
                 logger.error('Cannot load hosting driver %s: %s' % (fname, exp))
