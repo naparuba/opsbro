@@ -67,23 +67,23 @@ class FailbackLevelDBBackend(object):
         logger.info('[Failback leveldb] KV database at path %s is opened: %s' % (self.path, self.db))
     
     
-    def Get(self, key, fill_cache=False, assert_value=None):
+    def Get(self, key, fill_cache=False, expected_value=None):
         v = self.db.get(key, fill_cache=fill_cache)
         if v is None:
             raise KeyError()
         
-        v_as_unicode = bytes_to_unicode(v)
+        #v_as_unicode = bytes_to_unicode(v)
         
-        if assert_value:
-            if v_as_unicode != assert_value:
-                raise ValueError('[Failback leveldb] [key=%s] The expected value """%s""" was get as """%s""" (before unicode=%s) but is different' % (key, assert_value, v_as_unicode, v))
+        if expected_value:
+            if v != expected_value:
+                raise ValueError('[Failback leveldb] [key=%s] The expected value """%s""" was get as """%s""" but is different' % (key, expected_value, v))
         
-        return v_as_unicode
+        return v
     
     
     def Put(self, key, value):
         self.db.put(key, unicode_to_bytes(value))
-        self.Get(key, assert_value=value)
+        self.Get(key, expected_value=value)
     
     
     def Delete(self, key):

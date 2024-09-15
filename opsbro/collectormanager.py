@@ -4,7 +4,7 @@ import traceback
 import random
 import threading
 import glob
-import imp
+import importlib.util
 import copy
 import json
 
@@ -35,7 +35,9 @@ def get_collectors(self):
     for f in collector_files:
         fname = os.path.splitext(os.path.basename(f))[0]
         try:
-            imp.load_source('collector%s' % fname, f)
+            spec = importlib.util.spec_from_file_location('collector%s' % fname, f)
+            m = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(m)
         except Exception as exp:
             logger.error('Cannot load collector %s: %s' % (fname, exp))
             continue

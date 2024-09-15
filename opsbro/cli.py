@@ -2,7 +2,7 @@
 
 from __future__ import print_function
 import os
-import imp
+import importlib.util
 import traceback
 import sys
 import optparse
@@ -618,7 +618,9 @@ class CLICommander(object):
                 # Let's load it, but first att it to sys.path
                 sys.path.insert(0, dir)
                 # Load this PATH/cli.py file
-                m = imp.load_source(dname, f)
+                spec = importlib.util.spec_from_file_location(dname, f)
+                m = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(m)
                 # Unset this sys.path hook, we do not need anymore
                 sys.path = sys.path[1:]
                 
