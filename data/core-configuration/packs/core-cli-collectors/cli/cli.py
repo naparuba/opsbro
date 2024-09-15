@@ -4,7 +4,6 @@
 # Copyright (C) 2014:
 #    Gabes Jean, naparuba@gmail.com
 
-from __future__ import print_function
 import sys
 import time
 
@@ -26,7 +25,7 @@ def _extract_data_from_results(d, prefix, res):
         for v in d:
             _extract_data_from_results(v, prefix + '.%d' % _idx, res)
             _idx += 1
-    elif isinstance(d, int) or isinstance(d, float) or isinstance(d, basestring) or d is None:
+    elif isinstance(d, int) or isinstance(d, float) or isinstance(d, str) or d is None:
         res.append((prefix, d))
     else:
         logger.do_debug('ERROR: data %s is not managed: prefix=%s' % (str(d), prefix))

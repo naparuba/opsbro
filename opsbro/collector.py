@@ -1,11 +1,6 @@
 import sys
 import traceback
 
-PY3 = sys.version_info >= (3,)
-if PY3:
-    unicode = str
-    basestring = str
-    long = int
 
 from .misc.six import add_metaclass
 from .log import LoggerFactory
@@ -138,9 +133,9 @@ class Collector(ParameterBasedType):
     # 'bla':{'foo':bar, 'titi': toto} => bla.foo.bar bla.titi.toto
     def create_ts_from_data(self, d, l, s):
         if not isinstance(d, dict):
-            if isinstance(d, basestring):  # bad value
+            if isinstance(d, str):  # bad value
                 return
-            if isinstance(d, float) or isinstance(d, int) or isinstance(d, long):
+            if isinstance(d, float) or isinstance(d, int):
                 # print "FINISH HIM!"
                 _t = l[:]
                 # _t.append(d)
