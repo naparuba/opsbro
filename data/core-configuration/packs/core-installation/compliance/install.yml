@@ -470,7 +470,7 @@ compliance:
 
          # Open suse 15.4 have specific packages names
          -  name      : opensuse_15_04
-            if        : "({{variables.is_opensuse}} and {{collector.system.os.linux.major_version}} == 15) and and {{collector.system.os.linux.minor_version}} == 4"
+            if        : "({{variables.is_opensuse}} and {{collector.system.os.linux.major_version}} == 15) and ({{collector.system.os.linux.minor_version}} == 4)"
             parameters:
                packages:
                   - python3-rpm
