@@ -5,9 +5,9 @@ name: Distro tests X64
 
 on:
    push:
-      branches: [ "main" ]
+      branches: [ "main", "0.7-dev" ]
    pull_request:
-      branches: [ "main" ]
+      branches: [ "main", "0.7-dev" ]
    workflow_dispatch:
 
 jobs:
