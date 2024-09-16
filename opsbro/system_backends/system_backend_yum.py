@@ -51,7 +51,7 @@ class YumBackend(LinuxBackend):
             return
         try:
             p = subprocess.Popen(['dnf5', '--version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        except subprocess.SubprocessError:
+        except (subprocess.SubprocessError, FileNotFoundError):
             self._is_dnf = False
             self._is_dnf_detected = True
             return
