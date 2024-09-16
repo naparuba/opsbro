@@ -72,18 +72,19 @@ class FailbackLevelDBBackend(object):
         if v is None:
             raise KeyError()
         
-        v_as_unicode = bytes_to_unicode(v)
+        #v = bytes_to_unicode(v)
         
         if expected_value:
-            if v_as_unicode != expected_value:
-                raise ValueError(f'[Failback leveldb] [{key=}] The expected value {expected_value=}{type(expected_value)} != {v_as_unicode=}{type(v_as_unicode)}')
+            if v != expected_value:
+                raise ValueError(f'[Failback leveldb] [{key=}] The expected value {expected_value=}{type(expected_value)} != {v=}{type(v)}')
         
-        return v_as_unicode
+        return v
     
     
     def Put(self, key, value):
-        self.db.put(key, unicode_to_bytes(value))
-        self.Get(key, expected_value=value)
+        as_bytes = unicode_to_bytes(value)
+        self.db.put(key, as_bytes)
+        self.Get(key, expected_value=as_bytes)  # check if the value is correctly set
     
     
     def Delete(self, key):
