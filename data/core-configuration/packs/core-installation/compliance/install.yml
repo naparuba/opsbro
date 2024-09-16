@@ -130,8 +130,8 @@ compliance:
          
          
          # The new centos 8 bis
-         -  name         : almalinux
-            if           : "{{variables.is_alma}} and {{collector.system.os.linux.major_version}} == 8"
+         -  name         : almalinux_8_and_9
+            if           : "{{variables.is_alma}} and {{collector.system.os.linux.major_version}} >= 8"
             parameters   :
                packages:
                   - libgomp   # monotonic clock
@@ -153,8 +153,8 @@ compliance:
                - pip3 install pycrypto
          
          # We can have redhat8 in docker, but not 7... ok redhat...
-         -  name         : redhat8
-            if           : "{{variables.is_redhat}} and {{collector.system.os.linux.major_version}} == 8"
+         -  name         : redhat8_and_9
+            if           : "{{variables.is_redhat}} and {{collector.system.os.linux.major_version}} >= 8"
             parameters   :
                packages:
                   #- libgomp   # monotonic clock
@@ -200,8 +200,8 @@ compliance:
          
          
          
-         -  name         : is_oracle_linux_8
-            if           : "{{variables.is_oracle_linux}} and {{collector.system.os.linux.major_version}} == 8"
+         -  name         : oracle_linux_8_and_9
+            if           : "{{variables.is_oracle_linux}} and {{collector.system.os.linux.major_version}} >= 8"
             parameters   :
                packages:
                   - oracle-epel-release-el8  # for yaml
@@ -272,6 +272,7 @@ compliance:
                   - python3-setproctitle
                   - python3-psutil
                   - python3-yaml
+                  - python3-requests
                   - gnupg            # for  apt-key adv  (repository)
                   - bash-completion  # Bash completion to enable the CLI completion
 
@@ -543,7 +544,27 @@ compliance:
             post_commands:
                - pip install leveldb psutil setproctitle
          
-         
+         # 2023 version of amazonlinux2
+         - name: amazon_linux2
+           if: "{{variables.is_amazon_linux2}} and {{collector.system.os.linux.major_version}} == 2023"
+           parameters:
+              packages:
+                 - python3-rpm
+                 - python3-jinja2
+                 - python3-crypto
+                 - bash-completion  # Bash completion to enable the CLI completion
+                 - python3-setproctitle
+                 - python3-psutil
+                 - python3-pyyaml
+                 # For leveldb: need to go with pip
+                 - python3-pip
+                 - gcc
+                 - gcc-c++
+                 - python3-setuptools
+                 - python3-devel
+           post_commands:
+              - pip install simplejson leveldb
+
          # old versinon of amazonlinux2
          -  name         : amazon_linux2
             if           : "{{variables.is_amazon_linux2}}"

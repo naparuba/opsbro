@@ -24,6 +24,11 @@ import warnings
 UPDATE_GLOBAL_PACKS_PARAMETER = '--update-global-packs'
 
 PY3 = sys.version_info >= (3,)
+
+if not PY3:
+    print('ERROR: OpsBro require Python 3, sorry')
+    sys.exit(2)
+
 if PY3:
     basestring = str  # no basestring in python 3
 
