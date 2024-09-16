@@ -1,15 +1,17 @@
 #!/bin/bash
 
-dnf  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install $1
+# NOTE: dnf have less parameter than yum
+
+dnf  --nogpgcheck  -y     install $1
 if [ $? == 0 ]; then
    exit 0
 fi
 
-dnf  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install $1
+dnf  --nogpgcheck  -y    install $1
 if [ $? == 0 ]; then
    exit 0
 fi
 
-dnf  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto install $1
+dnf  --nogpgcheck  -y   install $1
 
 exit $?

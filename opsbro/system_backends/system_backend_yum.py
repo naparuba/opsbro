@@ -31,6 +31,8 @@ class YumBackend(LinuxBackend):
         self._installed_packages_cache = set()
         self._rpm_package_file_age = None
     
+        self._is_dnf_detected = False
+        self._is_dnf = False
     
     def _try_to_import_lib(self, allow_logs=True):
         if self.rpm is not None:  # already done
@@ -43,6 +45,17 @@ class YumBackend(LinuxBackend):
             rpm = None
         self.rpm = rpm
     
+    # try to launch "dnf5 --version" and if available then we are in dnf and don't use yum but dnf instead
+    def _try_detect_dnf(self):
+        if self._is_dnf_detected:
+            return
+        p = subprocess.Popen(['dnf5', '--version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        _, _ = p.communicate()
+        if p.returncode == 0:
+            self._is_dnf = True
+        self._is_dnf_detected = True
+        return
+        
     
     def _get_rpm_package_file_path(self):
         if os.path.exists(self.RPM_PACKAGE_FILE_PATH):
@@ -118,10 +131,13 @@ class YumBackend(LinuxBackend):
     
     
     # yum  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto  install  XXXXX
-    @staticmethod
-    def install_package(package):
+    def install_package(self, package):
+        self._try_detect_dnf()
         logger.debug('YUM :: installing package: %s' % package)
-        args = ['yum', '--nogpgcheck', '-y', '--rpmverbosity=error', '--errorlevel=1', '--color=auto', 'install', package]
+        if self._is_dnf:
+            args = ['dnf', '--nogpgcheck', '-y', 'install', package]
+        else:
+            args = ['yum', '--nogpgcheck', '-y', '--rpmverbosity=error', '--errorlevel=1', '--color=auto', 'install', package]
         p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
         logger.debug('YUM (%s):: stdout: %s' % (package, stdout))
@@ -132,10 +148,15 @@ class YumBackend(LinuxBackend):
     
     
     # yum  --nogpgcheck  -y  --rpmverbosity=error  --errorlevel=1  --color=auto  install  XXXXX
-    @staticmethod
-    def update_package(package):
+    # OR if dnf available:
+    # dnf  --nogpgcheck  -y  install  XXXXX
+    def update_package(self, package):
+        self._try_detect_dnf()
         logger.debug('YUM :: update package: %s' % package)
-        p = subprocess.Popen(['yum', '--nogpgcheck', '-y', '--rpmverbosity=error', '--errorlevel=1', '--color=auto', 'update', package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if self._is_dnf:
+            p = subprocess.Popen(['dnf', '--nogpgcheck', '-y', 'install', package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        else:
+            p = subprocess.Popen(['yum', '--nogpgcheck', '-y', '--rpmverbosity=error', '--errorlevel=1', '--color=auto', 'update', package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
         logger.debug('YUM (%s):: stdout: %s' % (package, stdout))
         logger.debug('YUM (%s):: stderr: %s' % (package, stderr))
