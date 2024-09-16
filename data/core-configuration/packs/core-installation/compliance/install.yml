@@ -200,8 +200,8 @@ compliance:
          
          
          
-         -  name         : oracle_linux_8_and_9
-            if           : "{{variables.is_oracle_linux}} and {{collector.system.os.linux.major_version}} >= 8"
+         -  name         : oracle_linux_8
+            if           : "{{variables.is_oracle_linux}} and {{collector.system.os.linux.major_version}} == 8"
             parameters   :
                packages:
                   - oracle-epel-release-el8  # for yaml
@@ -219,6 +219,23 @@ compliance:
                   - bash-completion  # Bash completion to enable the CLI completion
             post_commands:
                - pip3 install pycrypto
+
+
+         -  name         : oracle_linux__9
+            if           : "{{variables.is_oracle_linux}} and {{collector.system.os.linux.major_version}} == 9"
+            parameters   :
+               packages:
+                  - oracle-epel-release-el9  # for yaml
+                  - python3-rpm
+                  - python3-jinja2
+                  - python3-setuptools
+                  - python3-pyyaml  # in epel
+                  - leveldb  # in epel
+                  - python3-simplejson  # in epel
+                  - python3-setproctitle # in epel
+                  - python3-psutil  # in epel
+                  - python3-pycryptodomex
+                  - bash-completion  # Bash completion to enable the CLI completion
 
          
          ### DEBIAN
