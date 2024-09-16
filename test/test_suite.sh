@@ -69,22 +69,6 @@ if [ ! -f ~/.docker_env ]; then
 fi
 #--env-file ~/.docker_env
 
-# Travis: only need to run the installation once, it it not link to a specific python version. They don't need to use CPU for nothing ;)
-if [ "$TEST_SUITE" == "PYTHON" ]; then
-   # No more virtual env on Travis
-   $SUDO rm -fr ~/virtualenv
-   echo "Installing opsbro for TESTING (so have libs)"
-   cd ..
-
-   # NOTE: sudo because github actions is under ubuntu
-   $SUDO python3 setup.py install
-
-   # NOTE: nosetests are hooking stdout and sys.paths, and so are not in real execution, this make too much troubles
-   # with tests, so switching to a real world test
-   test/launch_python_tests.sh
-   exit $?
-fi
-
 echo "Test installations for SUITE  $TEST_SUITE"
 # If not python, launch installations, and only a sub part if possible
 ./test_installation.sh
