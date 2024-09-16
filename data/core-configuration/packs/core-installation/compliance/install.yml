@@ -385,7 +385,7 @@ compliance:
                   - python3-crypto
                   - python3-simplejson
                   - bash-completion  # Bash completion to enable the CLI completion
-                  - python3-leveldb
+                  - leveldb
                   - python3-setproctitle
                   - python3-psutil
                   - python3-yaml
