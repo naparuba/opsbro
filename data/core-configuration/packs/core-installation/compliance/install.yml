@@ -107,7 +107,7 @@ compliance:
          
          # The new centos 8
          -  name         : rockylinux
-            if           : "{{variables.is_rocky}} and {{collector.system.os.linux.major_version}} == 8"
+            if           : "{{variables.is_rocky}}"
             parameters   :
                packages:
                   - libgomp   # monotonic clock
@@ -130,8 +130,8 @@ compliance:
          
          
          # The new centos 8 bis
-         -  name         : almalinux_8_and_9
-            if           : "{{variables.is_alma}} and {{collector.system.os.linux.major_version}} >= 8"
+         -  name         : almalinux
+            if           : "{{variables.is_alma}}"
             parameters   :
                packages:
                   - libgomp   # monotonic clock
