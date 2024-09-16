@@ -49,7 +49,12 @@ class YumBackend(LinuxBackend):
     def _try_detect_dnf(self):
         if self._is_dnf_detected:
             return
-        p = subprocess.Popen(['dnf5', '--version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            p = subprocess.Popen(['dnf5', '--version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        except subprocess.SubprocessError:
+            self._is_dnf = False
+            self._is_dnf_detected = True
+            return
         _, _ = p.communicate()
         if p.returncode == 0:
             self._is_dnf = True
