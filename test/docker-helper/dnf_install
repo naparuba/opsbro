@@ -2,6 +2,8 @@
 
 # NOTE: dnf have less parameter than yum
 
+dnf clean all  # be sure to clean repos before installing
+
 dnf  --nogpgcheck  -y     install $1
 if [ $? == 0 ]; then
    exit 0

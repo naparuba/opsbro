@@ -4,7 +4,7 @@ LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 ADD        test/docker-helper/  /
 
 
-RUN        /dnf_install python
+RUN        /dnf_install python3
 
 # For the test
 RUN        /dnf_install procps
