@@ -104,7 +104,7 @@ class SystemPacketMgr(object):
         elif 'almalinux' in distname:
             self.distro = 'almalinux'
             self.managed_system = True
-        elif 'redhat' in distname or 'red hat' in distname:
+        elif 'redhat' in distname or 'red hat' in distname or 'rhel' in distname:
             self.distro = 'redhat'
             self.managed_system = True
         elif 'fedora' in distname:

@@ -176,8 +176,8 @@ compliance:
             post_commands:
                #- pip3 install pycrypto
                - pip3 install simplejson setproctitle leveldb psutil pycrypto
-         
-         
+
+
          -  name      : is_oracle_linux_7
             if        : "{{variables.is_oracle_linux}} and {{collector.system.os.linux.major_version}} == 7"
             parameters:
