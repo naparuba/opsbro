@@ -318,8 +318,8 @@ compliance:
          
          
          # This ubuntu version have a special crypto package
-         -  name      : ubuntu_22_04_python3
-            if        : "({{variables.is_ubuntu}} and system_is_python_3()) and {{collector.system.os.linux.version}} == '22.04'"
+         -  name      : ubuntu_22_04_and_24_04
+            if        : "({{variables.is_ubuntu}} and system_is_python_3()) and ({{collector.system.os.linux.version}} in ('22.04', '24.04') ) "
             parameters:
                packages:
                   - python3-jinja2
