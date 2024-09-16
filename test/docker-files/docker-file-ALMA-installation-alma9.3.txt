@@ -1,4 +1,4 @@
-FROM almalinux:9.3
+FROM  almalinux:9.3
 LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
 ADD        test/docker-helper/  /
