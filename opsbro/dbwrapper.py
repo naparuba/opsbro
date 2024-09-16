@@ -76,7 +76,7 @@ class FailbackLevelDBBackend(object):
         
         if expected_value:
             if v != expected_value:
-                raise ValueError(f'[Failback leveldb] [{key=}] The expected value {expected_value=}{type(expected_value)} != {v=}{type(v)}')
+                raise ValueError(f'[Failback leveldb] [key={key}] The expected value expected_value={expected_value}{type(expected_value)} != v={v}{type(v)}')
         
         return v
     
