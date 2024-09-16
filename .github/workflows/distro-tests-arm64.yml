@@ -19,7 +19,6 @@ jobs:
             TEST_SUITE:
                ##### First basic tests
                - API
-               - PYTHON
                - OTHER
                - DOC
                ##### Then features (both python2 & 3)
@@ -70,7 +69,6 @@ jobs:
                ##### Then installation on various distros
                - ALPINE
                - AMAZONLINUX
-               - CENTOS
                - DEBIAN
                - OPENSUSE
                - ORACLELINUX

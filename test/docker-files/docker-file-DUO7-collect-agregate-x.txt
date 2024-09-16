@@ -4,7 +4,7 @@ LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
 
 # Need for tests
-RUN        /apt_get_install   sqlite
+RUN        /apt_get_install   sqlite3
 
 ADD        . /root/opsbro-oss
 WORKDIR       /root/opsbro-oss

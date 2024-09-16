@@ -3,6 +3,8 @@ LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
 
 RUN        /apt_get_install   procps
+# tc command: iproute2
+RUN        /apt_get_install   iproute2
 
 ADD        . /root/opsbro-oss
 

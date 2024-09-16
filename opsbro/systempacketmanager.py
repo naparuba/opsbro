@@ -98,7 +98,7 @@ class SystemPacketMgr(object):
         elif 'centos' in distname:
             self.distro = 'centos'
             self.managed_system = True
-        elif 'rocky linux' in distname:
+        elif 'rocky linux' in distname or 'rocky' in distname:
             self.distro = 'rocky-linux'
             self.managed_system = True
         elif 'almalinux' in distname:
@@ -110,7 +110,7 @@ class SystemPacketMgr(object):
         elif 'fedora' in distname:
             self.distro = 'fedora'
             self.managed_system = True
-        elif 'oracle linux' in distname:
+        elif 'oracle linux' in distname or 'ol' == distname: # ol=oracle linux 9
             self.distro = 'oracle-linux'
             self.managed_system = True
         elif 'amzn' in distname:

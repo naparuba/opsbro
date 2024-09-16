@@ -2,8 +2,12 @@ FROM       naparuba/debian-12
 LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
 
+RUN        /apt_get_install python3-flask
+
 ADD        . /root/opsbro-oss
 WORKDIR       /root/opsbro-oss
+
+
 
 RUN       $PYTHON_EXE setup.py install
 
