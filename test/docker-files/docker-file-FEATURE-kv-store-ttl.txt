@@ -4,6 +4,7 @@ LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
 # We need to faketime to force day end in the container
 RUN        /apt_get_install   faketime libfaketime
+RUN        /apt_get_install   curl  # to put a key and so force a ttl
 
 ADD        . /root/opsbro-oss
 

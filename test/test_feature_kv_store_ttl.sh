@@ -30,6 +30,10 @@ launch_as_start_of_day_day 01
 
 # Must exists /var/lib/opsbro/kv_ttl/1549069200.ttl
 
+sleep 2
+# Force to put a TTL key
+curl --unix-socket /var/lib/opsbro/opsbro.sock -X PUT http://localhost/kv/keykey?ttl=3600 -d 'AAAAAA' -H "Content-Type: application/json"
+
 sleep 30
 echo "Looking at /var/lib/opsbro/kv_ttl/"
 ls -thor /var/lib/opsbro/kv_ttl/
