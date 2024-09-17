@@ -562,8 +562,8 @@ compliance:
                - pip install leveldb psutil setproctitle
          
          # 2023 version of amazonlinux2
-         - name: amazon_linux2
-           if: "{{variables.is_amazon_linux2}} and {{collector.system.os.linux.major_version}} == 2023"
+         - name: amazon_linux2023
+           if: "{{variables.is_amazon_linux2}} and {{collector.system.os.linux.major_version}}  ==2023"
            parameters:
               packages:
                  - python3-rpm
@@ -582,24 +582,27 @@ compliance:
            post_commands:
               - pip install simplejson leveldb
 
-         # old versinon of amazonlinux2
-         -  name         : amazon_linux2
-            if           : "{{variables.is_amazon_linux2}}"
-            parameters   :
-               packages:
-                  - python2-setuptools
-                  - python-jinja2
-                  # python2-cryptography # Not with amazon
-                  - python-simplejson
-                  - gcc
-                  - gcc-c++
-                  - python-devel
-                  - python2-pip
-                  - python-setproctitle
-                  - python-yaml
-                  - bash-completion
-            post_commands:
-               - pip install leveldb psutil pycrypto
+         # amazonlinux2
+         - name: amazon_linux2
+           if: "{{variables.is_amazon_linux2}} and {{collector.system.os.linux.major_version}}  == 2"
+           parameters:
+              packages:
+                 - python3-rpm
+                 - python3-jinja2
+                 #- python3-crypto   # no such package
+                 - bash-completion  # Bash completion to enable the CLI completion
+                 #- python3-setproctitle
+                 - python3-psutil
+                 - python3-PyYAML
+                 - python3-simplejson
+                 # For leveldb: need to go with pip
+                 - python3-pip
+                 - gcc
+                 - gcc-c++
+                 - python3-setuptools
+                 - python3-devel
+           post_commands:
+              - pip3 install leveldb setproctitle pycrypto
                
          # new amazonlinux2, 2022 edition, with python3 + fedora based
          -  name         : amazon_linux2022
