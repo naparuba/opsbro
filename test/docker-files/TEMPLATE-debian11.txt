@@ -1,23 +1,25 @@
 FROM debian:11
 LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
+# THIS DOCKER FILE is USED TO PUSH TO napruba/debian-11 so tests will be faster, and won't need to recompute all of this every time
 
 ADD        test/docker-helper/  /
 
-# THIS DOCKER FILE is USED TO PUSH TO napruba/debian-11 so tests will be faster, and won't need to recompute all of this every time
+RUN        /apt_get_install  python3
+# All need for debian, so faster test (we are testging feature here, not install)
+RUN        /apt_get_install  python3-jinja2
+RUN        /apt_get_install  python3-pycryptodome
+RUN        /apt_get_install  python3-setuptools
+RUN        /apt_get_install  libleveldb1d  # no native python wrapper
+RUN        /apt_get_install  python3-simplejson
+RUN        /apt_get_install  python3-setproctitle
+RUN        /apt_get_install  python3-psutil
+RUN        /apt_get_install  python3-yaml
+RUN        /apt_get_install  gnupg            # for  apt-key adv  (repository)
+RUN        /apt_get_install  bash-completion
 
-RUN        /apt_get_install      python
-RUN        /apt_get_install      python-jinja2
-RUN        /apt_get_install      python-setuptools
-RUN        /apt_get_install      python-apt-common
-RUN        /apt_get_install      libleveldb1d
-#RUN        /apt_get_install      python-simplejson
-#RUN        /apt_get_install      python-setproctitle
-#RUN        /apt_get_install      python-psutil
-#RUN        /apt_get_install      python-yaml
-#RUN        /apt_get_install      gnupg    # apt repo add
 
 # Tests with , we are giving the test it's path for starting the setup.py
-ENV        PYTHON_EXE=/usr/bin/python2
+ENV        PYTHON_EXE=/usr/bin/python3
 
 ENTRYPOINT     /bin/bash
