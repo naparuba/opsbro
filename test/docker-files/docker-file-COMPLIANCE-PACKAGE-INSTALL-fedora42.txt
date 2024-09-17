@@ -1,8 +1,6 @@
-FROM       fedora:42
-LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
+FROM       naparuba/fedora-42
+LABEL      maintainer="Jean Gabes <naparuba@gmail.com>"
 
-ADD        test/docker-helper/  /
-RUN        /dnf_install python3
 
 # Need for debug and test
 RUN        /dnf_install   procps

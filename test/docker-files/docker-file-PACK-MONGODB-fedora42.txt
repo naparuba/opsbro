@@ -1,7 +1,7 @@
 FROM       fedora:42
 LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
-
+ADD        test/docker-helper/  /
 
 ADD        . /root/opsbro-oss
 WORKDIR    /root/opsbro-oss

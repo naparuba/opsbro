@@ -1,8 +1,8 @@
-FROM       fedora:42
-LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
+FROM       naparuba/fedora-42
+LABEL      maintainer="Jean Gabes <naparuba@gmail.com>"
 
 
-RUN        /yum_install rabbitmq-server
+RUN        /dnf_install rabbitmq-server
 
 ADD        . /root/opsbro-oss
 WORKDIR    /root/opsbro-oss

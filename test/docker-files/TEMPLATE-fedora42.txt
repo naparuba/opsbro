@@ -1,0 +1,21 @@
+FROM       fedora:42
+LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
+
+# THIS DOCKER FILE is USED TO PUSH TO naparuba/fedora-42 so tests will be faster, and won't need to recompute all of this every time
+
+ADD        test/docker-helper/  /
+
+RUN        /dnf_install   python3-rpm
+RUN        /dnf_install   python3-jinja2
+RUN        /dnf_install   python3-crypto
+RUN        /dnf_install   python3-simplejson
+RUN        /dnf_install   bash-completion  # Bash completion to enable the CLI completion
+RUN        /dnf_install   leveldb
+RUN        /dnf_install   python3-setproctitle
+RUN        /dnf_install   python3-psutil
+RUN        /dnf_install   python3-yaml
+
+ENV        PYTHON_EXE=/usr/bin/python3
+
+
+ENTRYPOINT     /bin/bash
