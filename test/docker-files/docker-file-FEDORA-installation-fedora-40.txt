@@ -13,6 +13,8 @@ ENV        TEST_PACKAGE_NAME_VIRTUAL=vi
 # But need to delete it first as it is installed by default
 RUN        /yum_remove vim-minimal
 
+ENV        PYTHON_EXE=/usr/bin/python3
+
 ADD        . /root/opsbro-oss
 
 ENTRYPOINT    test/test_one_linux_installation.sh  && test/assert_group.sh "fedora"
