@@ -12,7 +12,7 @@ on:
 
 jobs:
    distro_tests:
-      timeout-minutes: 30
+      timeout-minutes: 60
       runs-on: [ self-hosted, X64 ]
       strategy:
          matrix:

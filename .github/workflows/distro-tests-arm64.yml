@@ -12,7 +12,7 @@ on:
 
 jobs:
    distro_tests:
-      timeout-minutes: 30
+      timeout-minutes: 60  # features can take up to 30min
       runs-on: [ self-hosted, ARM64 ]
       strategy:
          matrix:
