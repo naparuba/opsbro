@@ -1,0 +1,41 @@
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: Distro tests Root only tests
+
+on:
+   push:
+      branches: [ "main", "0.7-dev" ]
+   pull_request:
+      branches: [ "main", "0.7-dev" ]
+   workflow_dispatch:
+
+concurrency:
+   group: ci-root
+   cancel-in-progress: true
+
+
+jobs:
+   distro_tests:
+      timeout-minutes: 60
+      runs-on: "ubuntu-24.04"
+      strategy:
+         matrix:
+            TEST_SUITE:
+               # these tests need to run as root, and hosting runners cannot :(
+               - FEATURE-ROOT
+         # Do not stop at first error, each one are independent
+         fail-fast: false
+      env: # we set this variable, so we know we are on GitHub actions, and so azure servers
+         RUN_ON_GITHUB_ACTIONS: "TRUE"
+         RUN_ON_ARCH:           "X64"
+         DATACENTER_COUNTRY:    "US"  # X64=Google cloud, so US
+      steps:
+         -  uses: actions/checkout@v4
+
+         -  name: Run on distros
+            run:  |
+                  chmod a+x test/*
+                  chmod a+x test/docker-helper/*
+                  cd test
+                  TEST_SUITE=${{ matrix.TEST_SUITE }} ./test_suite.sh
+
