@@ -3,6 +3,7 @@ LABEL      maintainer="Jean Gabes <naparuba@gmail.com>"
 
 
 RUN        /dnf_install rabbitmq-server
+RUN        /dnf_install util-linux   # for su -, need by rabbit server
 
 ADD        . /root/opsbro-oss
 WORKDIR    /root/opsbro-oss
