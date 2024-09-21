@@ -11,7 +11,7 @@ on:
    workflow_dispatch:
 
 concurrency:
-   group: ${{ github.head_ref }}
+   group: ci-x64
    cancel-in-progress: true
 
 
