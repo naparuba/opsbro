@@ -10,6 +10,11 @@ on:
       branches: [ "main", "0.7-dev" ]
    workflow_dispatch:
 
+concurrency:
+  group: ${{ github.head_ref }}
+  cancel-in-progress: true
+
+
 jobs:
    distro_tests:
       timeout-minutes: 60
