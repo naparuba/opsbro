@@ -11,8 +11,8 @@ on:
    workflow_dispatch:
 
 concurrency:
-  group: ${{ github.head_ref }}
-  cancel-in-progress: true
+   group: ${{ github.head_ref }}
+   cancel-in-progress: true
 
 
 jobs:
@@ -93,7 +93,7 @@ jobs:
          DISCORD_CHANNEL: ${{ secrets.DISCORD_CHANNEL }}
       steps:
          -  uses: actions/checkout@v4
-         
+
          -  name: Run on distros
             run:  |
                   chmod a+x test/*
