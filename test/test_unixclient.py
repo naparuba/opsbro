@@ -224,7 +224,7 @@ class TestUnixClient(OpsBroTest):
         ############################
         
         #@http_export(u'/get_ret_utf8_arg_utf8')
-        @app.route(u'/get_ret_utf8_arg_utf8')
+        @http_export(u'/get_ret_utf8_arg_utf8')
         def f_get_ret_utf8_arg_utf8():
             return _generic_GET(ARG_UTF8_KEY, ARG_UTF8_VALUE, RES_UTF8, u'get_ret_utf8_arg_utf8')
         
@@ -256,15 +256,15 @@ class TestUnixClient(OpsBroTest):
             arg = bytes_to_unicode(arg)
             return _check_uri_call(ARG_UTF8_VALUE, RES_UTF8, u'/get_uri_utf8_ret_utf8/:arg', arg)
 
-        import threading
-        t = threading.Thread(None, target=app.run, name='flask', kwargs={'debug': True,
-                                                                         'host': 'unix://%s' % SOCKET_PATH,
-                                                                         'use_reloader' : False,
-                                                                         })
-        t.daemon = True
-        t.start()
+        #import threading
+        #t = threading.Thread(None, target=app.run, name='flask', kwargs={'debug': True,
+        #                                                                 'host': 'unix://%s' % SOCKET_PATH,
+        #                                                                 'use_reloader' : False,
+        #                                                                 })
+        #t.daemon = True
+        #t.start()
         # app.run(debug=True, host='unix://%s' % SOCKET_PATH)
-        # threader.create_and_launch(httpdaemon.run, name='Internal HTTP', args=('', 0, SOCKET_PATH,), essential=True, part='TEST')
+        threader.create_and_launch(httpdaemon.run, name='Internal HTTP', args=('', 0, SOCKET_PATH,), essential=True, part='TEST')
         #threader.create_and_launch(httpdaemon.run, name='Internal HTTP', args=('127.0.0.1', 35888, '',), essential=True, part='TEST')
         time.sleep(5)
     
