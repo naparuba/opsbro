@@ -1,7 +1,7 @@
-FROM       fedora:42
+FROM       fedora:41
 LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
-# THIS DOCKER FILE is USED TO PUSH TO naparuba/fedora-42 so tests will be faster, and won't need to recompute all of this every time
+# THIS DOCKER FILE is USED TO PUSH TO naparuba/fedora-41 so tests will be faster, and won't need to recompute all of this every time
 
 ADD        test/docker-helper/  /
 
