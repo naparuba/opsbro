@@ -12,6 +12,7 @@ compliance:
            is_debian: "{{collector.system.os.linux.distribution}} == 'debian'"
            is_centos: "{{collector.system.os.linux.distribution}} == 'centos'"
            is_ubuntu: "{{collector.system.os.linux.distribution}} == 'ubuntu'"
+           is_fedora: "{{collector.system.os.linux.distribution}} == 'fedora'"
            is_amazon: "{{collector.system.os.linux.distribution}} == 'amazon-linux2'"
 
         environments:
@@ -49,6 +50,14 @@ compliance:
                key:        https://www.mongodb.org/static/pgp/server-3.6.asc
 
 
+           - name: fedora
+             if: "{{variables.is_fedora}}"
+             parameters:
+               name: mongodb-org-3.6
+               url: "https://repo.mongodb.org/yum/redhat/9Server/mongodb-org/8.0/x86_64/"
+               key: https://pgp.mongodb.com/server-8.0.asc
+
+
      -  name: "Install the mongodb package"
         type: package-install
         # You can set variables in order to not repeat yourself in the if rules
@@ -56,6 +65,7 @@ compliance:
            is_debian: "{{collector.system.os.linux.distribution}} == 'debian'"
            is_centos: "{{collector.system.os.linux.distribution}} == 'centos'"
            is_ubuntu: "{{collector.system.os.linux.distribution}} == 'ubuntu'"
+           is_fedora: "{{collector.system.os.linux.distribution}} == 'fedora'"
            is_amazon: "{{collector.system.os.linux.distribution}} == 'amazon-linux2'"
         environments:
            - name: debian
@@ -85,3 +95,9 @@ compliance:
                    # do not have this command
                    - shadow-utils
                    - mongodb-org-server
+
+           - name: fedora
+             if: "{{variables.is_fedora}}"
+             parameters:
+               packages:
+                 - mongodb-org-server

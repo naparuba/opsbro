@@ -1,5 +1,5 @@
-FROM       fedora:41
-LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
+FROM       naparuba/fedora-41
+LABEL      maintainer="Jean Gabes <naparuba@gmail.com>"
 
 ADD        test/docker-helper/  /
 
