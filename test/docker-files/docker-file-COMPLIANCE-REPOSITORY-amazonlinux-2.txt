@@ -1,21 +1,19 @@
-FROM       amazonlinux:2017.12
+FROM       amazonlinux:2
 LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
-# NOTE: there is a bug in this version (like fedora 26) with a pypi connection impossible without the glibc update
 ADD        test/docker-helper/  /
-RUN        /yum_update   glibc
-RUN        /yum_install  python
-RUN        /yum_install  python-jinja2
-RUN        /yum_install  python-setuptools
+# Amazon can be slow and it broke tests...
+RUN        /yum_install yum-plugin-fastestmirror
+RUN        /yum_install python3
 
-
+ENV        PYTHON_EXE=/usr/bin/python3
 
 ADD        . /root/opsbro-oss
 
 
 WORKDIR    /root/opsbro-oss
 
-RUN        python setup.py install
+RUN        python3 setup.py install
 
 # Copy the mail pack into a local one to enable modification
 RUN        opsbro  packs overload global.mongodb

@@ -1,11 +1,15 @@
-FROM       naparuba/debian-11
+FROM       ubuntu:24.04
 LABEL maintainer="Jean Gabes <naparuba@gmail.com>"
 
+ADD        test/docker-helper/  /
+RUN        /apt_get_install python3
 
 ADD        . /root/opsbro-oss
+
+
 WORKDIR    /root/opsbro-oss
 
-RUN        $PYTHON_EXE setup.py install
+RUN        python3 setup.py install
 
 # Copy the mail pack into a local one to enable modification
 RUN        opsbro  packs overload global.linux

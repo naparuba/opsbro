@@ -24,7 +24,7 @@ You will need:
 
 Just launch:
 
-    python setup.py install
+    python3 setup.py install
 
 Example of the installation at:
 
