@@ -94,4 +94,4 @@ jobs:
                chmod a+x test/*
                chmod a+x test/docker-helper/*
                cd test
-               TEST_SUITE=${{ matrix.TEST_SUITE }} sudo -E ./test_suite.sh
+               TEST_SUITE=${{ matrix.TEST_SUITE }} ./test_suite.sh
