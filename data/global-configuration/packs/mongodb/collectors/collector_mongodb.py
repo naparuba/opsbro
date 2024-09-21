@@ -329,7 +329,9 @@ class Mongodb(Collector):
             # db.stats()
             logger.debug('getMongoDBStatus: db.stats() too')
             status['dbStats'] = {}
-            for database in conn.database_names():
+            # take all database from conn:
+            
+            for database in conn.list_database_names():
                 if database != 'config' and database != 'local' and database != 'admin' and database != 'test':
                     logger.debug('getMongoDBStatus: executing db.stats() for %s', database)
                     status['dbStats'][database] = conn[database].command('dbstats')

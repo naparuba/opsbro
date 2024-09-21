@@ -1,4 +1,4 @@
-# Copyright 2016 MongoDB, Inc.
+# Copyright 2016-present MongoDB, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,13 +14,19 @@
 
 """Tools for working with `collations`_.
 
-.. _collations: http://userguide.icu-project.org/collation/concepts
+.. _collations: https://www.mongodb.com/docs/manual/reference/collation/
+
+.. seealso:: This module is compatible with both the synchronous and asynchronous PyMongo APIs.
 """
+from __future__ import annotations
+
+from typing import Any, Mapping, Optional, Union
 
 from pymongo import common
+from pymongo.write_concern import validate_boolean
 
 
-class CollationStrength(object):
+class CollationStrength:
     """
     An enum that defines values for `strength` on a
     :class:`~pymongo.collation.Collation`.
@@ -42,16 +48,16 @@ class CollationStrength(object):
     """Differentiate unicode code point (characters are exactly identical)."""
 
 
-class CollationAlternate(object):
+class CollationAlternate:
     """
     An enum that defines values for `alternate` on a
     :class:`~pymongo.collation.Collation`.
     """
 
-    NON_IGNORABLE = 'non-ignorable'
+    NON_IGNORABLE = "non-ignorable"
     """Spaces and punctuation are treated as base characters."""
 
-    SHIFTED = 'shifted'
+    SHIFTED = "shifted"
     """Spaces and punctuation are *not* considered base characters.
 
     Spaces and punctuation are distinguished regardless when the
@@ -61,54 +67,53 @@ class CollationAlternate(object):
     """
 
 
-class CollationMaxVariable(object):
+class CollationMaxVariable:
     """
     An enum that defines values for `max_variable` on a
     :class:`~pymongo.collation.Collation`.
     """
 
-    PUNCT = 'punct'
+    PUNCT = "punct"
     """Both punctuation and spaces are ignored."""
 
-    SPACE = 'space'
+    SPACE = "space"
     """Spaces alone are ignored."""
 
 
-class CollationCaseFirst(object):
+class CollationCaseFirst:
     """
     An enum that defines values for `case_first` on a
     :class:`~pymongo.collation.Collation`.
     """
 
-    UPPER = 'upper'
+    UPPER = "upper"
     """Sort uppercase characters first."""
 
-    LOWER = 'lower'
+    LOWER = "lower"
     """Sort lowercase characters first."""
 
-    OFF = 'off'
+    OFF = "off"
     """Default for locale or collation strength."""
 
 
-class Collation(object):
+class Collation:
     """Collation
 
-    :Parameters:
-      - `locale`: (string) The locale of the collation. This should be a string
+    :param locale: (string) The locale of the collation. This should be a string
         that identifies an `ICU locale ID` exactly. For example, ``en_US`` is
         valid, but ``en_us`` and ``en-US`` are not. Consult the MongoDB
         documentation for a list of supported locales.
-      - `caseLevel`: (optional) If ``True``, turn on case sensitivity if
+    :param caseLevel: (optional) If ``True``, turn on case sensitivity if
         `strength` is 1 or 2 (case sensitivity is implied if `strength` is
         greater than 2). Defaults to ``False``.
-      - `caseFirst`: (optional) Specify that either uppercase or lowercase
+    :param caseFirst: (optional) Specify that either uppercase or lowercase
         characters take precedence. Must be one of the following values:
 
           * :data:`~CollationCaseFirst.UPPER`
           * :data:`~CollationCaseFirst.LOWER`
           * :data:`~CollationCaseFirst.OFF` (the default)
 
-      - `strength`: (optional) Specify the comparison strength. This is also
+    :param strength: Specify the comparison strength. This is also
         known as the ICU comparison level. This must be one of the following
         values:
 
@@ -122,27 +127,27 @@ class Collation(object):
         `strength` of :data:`~CollationStrength.SECONDARY` differentiates
         characters based both on the unadorned base character and its accents.
 
-      - `numericOrdering`: (optional) If ``True``, order numbers numerically
+    :param numericOrdering: If ``True``, order numbers numerically
         instead of in collation order (defaults to ``False``).
-      - `alternate`: (optional) Specify whether spaces and punctuation are
+    :param alternate: Specify whether spaces and punctuation are
         considered base characters. This must be one of the following values:
 
           * :data:`~CollationAlternate.NON_IGNORABLE` (the default)
           * :data:`~CollationAlternate.SHIFTED`
 
-      - `maxVariable`: (optional) When `alternate` is
+    :param maxVariable: When `alternate` is
         :data:`~CollationAlternate.SHIFTED`, this option specifies what
         characters may be ignored. This must be one of the following values:
 
           * :data:`~CollationMaxVariable.PUNCT` (the default)
           * :data:`~CollationMaxVariable.SPACE`
 
-      - `normalization`: (optional) If ``True``, normalizes text into Unicode
+    :param normalization: If ``True``, normalizes text into Unicode
         NFD. Defaults to ``False``.
-      - `backwards`: (optional) If ``True``, accents on characters are
+    :param backwards: If ``True``, accents on characters are
         considered from the back of the word to the front, as it is done in some
         French dictionary ordering traditions. Defaults to ``False``.
-      - `kwargs`: (optional) Keyword arguments supplying any additional options
+    :param kwargs: Keyword arguments supplying any additional options
         to be sent with this Collation object.
 
     .. versionadded: 3.4
@@ -151,46 +156,43 @@ class Collation(object):
 
     __slots__ = ("__document",)
 
-    def __init__(self, locale,
-                 caseLevel=None,
-                 caseFirst=None,
-                 strength=None,
-                 numericOrdering=None,
-                 alternate=None,
-                 maxVariable=None,
-                 normalization=None,
-                 backwards=None,
-                 **kwargs):
-        locale = common.validate_string('locale', locale)
-        self.__document = {'locale': locale}
+    def __init__(
+        self,
+        locale: str,
+        caseLevel: Optional[bool] = None,
+        caseFirst: Optional[str] = None,
+        strength: Optional[int] = None,
+        numericOrdering: Optional[bool] = None,
+        alternate: Optional[str] = None,
+        maxVariable: Optional[str] = None,
+        normalization: Optional[bool] = None,
+        backwards: Optional[bool] = None,
+        **kwargs: Any,
+    ) -> None:
+        locale = common.validate_string("locale", locale)
+        self.__document: dict[str, Any] = {"locale": locale}
         if caseLevel is not None:
-            self.__document['caseLevel'] = common.validate_boolean(
-                'caseLevel', caseLevel)
+            self.__document["caseLevel"] = validate_boolean("caseLevel", caseLevel)
         if caseFirst is not None:
-            self.__document['caseFirst'] = common.validate_string(
-                'caseFirst', caseFirst)
+            self.__document["caseFirst"] = common.validate_string("caseFirst", caseFirst)
         if strength is not None:
-            self.__document['strength'] = common.validate_integer(
-                'strength', strength)
+            self.__document["strength"] = common.validate_integer("strength", strength)
         if numericOrdering is not None:
-            self.__document['numericOrdering'] = common.validate_boolean(
-                'numericOrdering', numericOrdering)
+            self.__document["numericOrdering"] = validate_boolean(
+                "numericOrdering", numericOrdering
+            )
         if alternate is not None:
-            self.__document['alternate'] = common.validate_string(
-                'alternate', alternate)
+            self.__document["alternate"] = common.validate_string("alternate", alternate)
         if maxVariable is not None:
-            self.__document['maxVariable'] = common.validate_string(
-                'maxVariable', maxVariable)
+            self.__document["maxVariable"] = common.validate_string("maxVariable", maxVariable)
         if normalization is not None:
-            self.__document['normalization'] = common.validate_boolean(
-                'normalization', normalization)
+            self.__document["normalization"] = validate_boolean("normalization", normalization)
         if backwards is not None:
-            self.__document['backwards'] = common.validate_boolean(
-                'backwards', backwards)
+            self.__document["backwards"] = validate_boolean("backwards", backwards)
         self.__document.update(kwargs)
 
     @property
-    def document(self):
+    def document(self) -> dict[str, Any]:
         """The document representation of this collation.
 
         .. note::
@@ -199,27 +201,26 @@ class Collation(object):
         """
         return self.__document.copy()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         document = self.document
-        return 'Collation(%s)' % (
-            ', '.join('%s=%r' % (key, document[key]) for key in document),)
+        return "Collation({})".format(", ".join(f"{key}={document[key]!r}" for key in document))
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, Collation):
             return self.document == other.document
         return NotImplemented
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         return not self == other
 
 
-def validate_collation_or_none(value):
+def validate_collation_or_none(
+    value: Optional[Union[Mapping[str, Any], Collation]]
+) -> Optional[dict[str, Any]]:
     if value is None:
         return None
     if isinstance(value, Collation):
         return value.document
     if isinstance(value, dict):
         return value
-    raise TypeError(
-        'collation must be a dict, an instance of collation.Collation, '
-        'or None.')
+    raise TypeError("collation must be a dict, an instance of collation.Collation, or None.")

@@ -13,11 +13,21 @@
 # limitations under the License.
 
 """Type codes for MongoDB servers."""
+from __future__ import annotations
 
-from collections import namedtuple
+from typing import NamedTuple
 
 
-SERVER_TYPE = namedtuple('ServerType',
-                         ['Unknown', 'Mongos', 'RSPrimary', 'RSSecondary',
-                          'RSArbiter', 'RSOther', 'RSGhost',
-                          'Standalone'])(*range(8))
+class _ServerType(NamedTuple):
+    Unknown: int
+    Mongos: int
+    RSPrimary: int
+    RSSecondary: int
+    RSArbiter: int
+    RSOther: int
+    RSGhost: int
+    Standalone: int
+    LoadBalancer: int
+
+
+SERVER_TYPE = _ServerType(*range(9))

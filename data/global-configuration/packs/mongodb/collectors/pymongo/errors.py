@@ -1,4 +1,4 @@
-# Copyright 2009-2015 MongoDB, Inc.
+# Copyright 2009-present MongoDB, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,18 +12,52 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Exceptions raised by PyMongo."""
+"""Exceptions raised by PyMongo.
 
-from bson.errors import *
+.. seealso:: This module is compatible with both the synchronous and asynchronous PyMongo APIs.
+"""
+from __future__ import annotations
 
-try:
-    from ssl import CertificateError
-except ImportError:
-    from pymongo.ssl_match_hostname import CertificateError
+from ssl import SSLCertVerificationError as _CertificateError  # noqa: F401
+from typing import TYPE_CHECKING, Any, Iterable, Mapping, Optional, Sequence, Union
+
+from bson.errors import InvalidDocument
+
+if TYPE_CHECKING:
+    from pymongo.results import ClientBulkWriteResult
+    from pymongo.typings import _DocumentOut
 
 
 class PyMongoError(Exception):
     """Base class for all PyMongo exceptions."""
+
+    def __init__(self, message: str = "", error_labels: Optional[Iterable[str]] = None) -> None:
+        super().__init__(message)
+        self._message = message
+        self._error_labels = set(error_labels or [])
+
+    def has_error_label(self, label: str) -> bool:
+        """Return True if this error contains the given label.
+
+        .. versionadded:: 3.7
+        """
+        return label in self._error_labels
+
+    def _add_error_label(self, label: str) -> None:
+        """Add the given label to this error."""
+        self._error_labels.add(label)
+
+    def _remove_error_label(self, label: str) -> None:
+        """Remove the given label from this error."""
+        self._error_labels.discard(label)
+
+    @property
+    def timeout(self) -> bool:
+        """True if this error was caused by a timeout.
+
+        .. versionadded:: 4.2
+        """
+        return False
 
 
 class ProtocolError(PyMongoError):
@@ -32,6 +66,19 @@ class ProtocolError(PyMongoError):
 
 class ConnectionFailure(PyMongoError):
     """Raised when a connection to the database cannot be made or is lost."""
+
+
+class WaitQueueTimeoutError(ConnectionFailure):
+    """Raised when an operation times out waiting to checkout a connection from the pool.
+
+    Subclass of :exc:`~pymongo.errors.ConnectionFailure`.
+
+    .. versionadded:: 4.2
+    """
+
+    @property
+    def timeout(self) -> bool:
+        return True
 
 
 class AutoReconnect(ConnectionFailure):
@@ -46,9 +93,19 @@ class AutoReconnect(ConnectionFailure):
 
     Subclass of :exc:`~pymongo.errors.ConnectionFailure`.
     """
-    def __init__(self, message='', errors=None):
+
+    errors: Union[Mapping[str, Any], Sequence[Any]]
+    details: Union[Mapping[str, Any], Sequence[Any]]
+
+    def __init__(
+        self, message: str = "", errors: Optional[Union[Mapping[str, Any], Sequence[Any]]] = None
+    ) -> None:
+        error_labels = None
+        if errors is not None:
+            if isinstance(errors, dict):
+                error_labels = errors.get("errorLabels")
+        super().__init__(message, error_labels)
         self.errors = self.details = errors or []
-        ConnectionFailure.__init__(self, message)
 
 
 class NetworkTimeout(AutoReconnect):
@@ -60,9 +117,21 @@ class NetworkTimeout(AutoReconnect):
     Subclass of :exc:`~pymongo.errors.AutoReconnect`.
     """
 
+    @property
+    def timeout(self) -> bool:
+        return True
 
-class NotMasterError(AutoReconnect):
-    """The server responded "not master" or "node is recovering".
+
+def _format_detailed_error(
+    message: str, details: Optional[Union[Mapping[str, Any], list[Any]]]
+) -> str:
+    if details is not None:
+        message = f"{message}, full error: {details}"
+    return message
+
+
+class NotPrimaryError(AutoReconnect):
+    """The server responded "not primary" or "node is recovering".
 
     These errors result from a query, write, or command. The operation failed
     because the client thought it was using the primary but the primary has
@@ -73,7 +142,14 @@ class NotMasterError(AutoReconnect):
     its view of the server as soon as possible after throwing this exception.
 
     Subclass of :exc:`~pymongo.errors.AutoReconnect`.
+
+    .. versionadded:: 3.12
     """
+
+    def __init__(
+        self, message: str = "", errors: Optional[Union[Mapping[str, Any], list[Any]]] = None
+    ) -> None:
+        super().__init__(_format_detailed_error(message, errors), errors=errors)
 
 
 class ServerSelectionTimeoutError(AutoReconnect):
@@ -88,10 +164,13 @@ class ServerSelectionTimeoutError(AutoReconnect):
     Preference that the replica set cannot satisfy.
     """
 
+    @property
+    def timeout(self) -> bool:
+        return True
+
 
 class ConfigurationError(PyMongoError):
-    """Raised when something is incorrectly configured.
-    """
+    """Raised when something is incorrectly configured."""
 
 
 class OperationFailure(PyMongoError):
@@ -101,19 +180,32 @@ class OperationFailure(PyMongoError):
        The :attr:`details` attribute.
     """
 
-    def __init__(self, error, code=None, details=None):
+    def __init__(
+        self,
+        error: str,
+        code: Optional[int] = None,
+        details: Optional[Mapping[str, Any]] = None,
+        max_wire_version: Optional[int] = None,
+    ) -> None:
+        error_labels = None
+        if details is not None:
+            error_labels = details.get("errorLabels")
+        super().__init__(_format_detailed_error(error, details), error_labels=error_labels)
         self.__code = code
         self.__details = details
-        PyMongoError.__init__(self, error)
+        self.__max_wire_version = max_wire_version
 
     @property
-    def code(self):
-        """The error code returned by the server, if any.
-        """
+    def _max_wire_version(self) -> Optional[int]:
+        return self.__max_wire_version
+
+    @property
+    def code(self) -> Optional[int]:
+        """The error code returned by the server, if any."""
         return self.__code
 
     @property
-    def details(self):
+    def details(self) -> Optional[Mapping[str, Any]]:
         """The complete error document returned by the server.
 
         Depending on the error that occurred, the error document
@@ -123,6 +215,10 @@ class OperationFailure(PyMongoError):
         on multiple shards.
         """
         return self.__details
+
+    @property
+    def timeout(self) -> bool:
+        return self.__code in (50,)
 
 
 class CursorNotFound(OperationFailure):
@@ -141,6 +237,10 @@ class ExecutionTimeout(OperationFailure):
 
     .. versionadded:: 2.7
     """
+
+    @property
+    def timeout(self) -> bool:
+        return True
 
 
 class WriteConcernError(OperationFailure):
@@ -167,9 +267,18 @@ class WTimeoutError(WriteConcernError):
     .. versionadded:: 2.7
     """
 
+    @property
+    def timeout(self) -> bool:
+        return True
+
 
 class DuplicateKeyError(WriteError):
     """Raised when an insert or update fails due to a duplicate key error."""
+
+
+def _wtimeout_error(error: Any) -> bool:
+    """Return True if this writeConcernError doc is a caused by a timeout."""
+    return error.get("code") == 50 or ("errInfo" in error and error["errInfo"].get("wtimeout"))
 
 
 class BulkWriteError(OperationFailure):
@@ -177,9 +286,83 @@ class BulkWriteError(OperationFailure):
 
     .. versionadded:: 2.7
     """
-    def __init__(self, results):
-        OperationFailure.__init__(
-            self, "batch op errors occurred", 65, results)
+
+    details: _DocumentOut
+
+    def __init__(self, results: _DocumentOut) -> None:
+        super().__init__("batch op errors occurred", 65, results)
+
+    def __reduce__(self) -> tuple[Any, Any]:
+        return self.__class__, (self.details,)
+
+    @property
+    def timeout(self) -> bool:
+        # Check the last writeConcernError and last writeError to determine if this
+        # BulkWriteError was caused by a timeout.
+        wces = self.details.get("writeConcernErrors", [])
+        if wces and _wtimeout_error(wces[-1]):
+            return True
+
+        werrs = self.details.get("writeErrors", [])
+        if werrs and werrs[-1].get("code") == 50:
+            return True
+        return False
+
+
+class ClientBulkWriteException(OperationFailure):
+    """Exception class for client-level bulk write errors."""
+
+    details: _DocumentOut
+    verbose: bool
+
+    def __init__(self, results: _DocumentOut, verbose: bool) -> None:
+        super().__init__("batch op errors occurred", 65, results)
+        self.verbose = verbose
+
+    def __reduce__(self) -> tuple[Any, Any]:
+        return self.__class__, (self.details,)
+
+    @property
+    def error(self) -> Optional[Any]:
+        """A top-level error that occurred when attempting to
+        communicate with the server or execute the bulk write.
+
+        This value may not be populated if the exception was
+        thrown due to errors occurring on individual writes.
+        """
+        return self.details.get("error", None)
+
+    @property
+    def write_concern_errors(self) -> Optional[list[WriteConcernError]]:
+        """Write concern errors that occurred during the bulk write.
+
+        This list may have multiple items if more than one
+        server command was required to execute the bulk write.
+        """
+        return self.details.get("writeConcernErrors", [])
+
+    @property
+    def write_errors(self) -> Optional[list[WriteError]]:
+        """Errors that occurred during the execution of individual write operations.
+
+        This list will contain at most one entry if the bulk write was ordered.
+        """
+        return self.details.get("writeErrors", {})
+
+    @property
+    def partial_result(self) -> Optional[ClientBulkWriteResult]:
+        """The results of any successful operations that were
+        performed before the error was encountered.
+        """
+        from pymongo.results import ClientBulkWriteResult
+
+        if self.details.get("anySuccessful"):
+            return ClientBulkWriteResult(
+                self.details,  # type: ignore[arg-type]
+                acknowledged=True,
+                has_verbose_results=self.verbose,
+            )
+        return None
 
 
 class InvalidOperation(PyMongoError):
@@ -198,16 +381,56 @@ class InvalidURI(ConfigurationError):
     """Raised when trying to parse an invalid mongodb URI."""
 
 
-class ExceededMaxWaiters(Exception):
-    """Raised when a thread tries to get a connection from a pool and
-    ``maxPoolSize * waitQueueMultiple`` threads are already waiting.
-
-    .. versionadded:: 2.6
-    """
-    pass
-
-
 class DocumentTooLarge(InvalidDocument):
-    """Raised when an encoded document is too large for the connected server.
+    """Raised when an encoded document is too large for the connected server."""
+
+
+class EncryptionError(PyMongoError):
+    """Raised when encryption or decryption fails.
+
+    This error always wraps another exception which can be retrieved via the
+    :attr:`cause` property.
+
+    .. versionadded:: 3.9
     """
-    pass
+
+    def __init__(self, cause: Exception) -> None:
+        super().__init__(str(cause))
+        self.__cause = cause
+
+    @property
+    def cause(self) -> Exception:
+        """The exception that caused this encryption or decryption error."""
+        return self.__cause
+
+    @property
+    def timeout(self) -> bool:
+        if isinstance(self.__cause, PyMongoError):
+            return self.__cause.timeout
+        return False
+
+
+class EncryptedCollectionError(EncryptionError):
+    """Raised when creating a collection with encrypted_fields fails.
+
+    .. versionadded:: 4.4
+    """
+
+    def __init__(self, cause: Exception, encrypted_fields: Mapping[str, Any]) -> None:
+        super().__init__(cause)
+        self.__encrypted_fields = encrypted_fields
+
+    @property
+    def encrypted_fields(self) -> Mapping[str, Any]:
+        """The encrypted_fields document that allows inferring which data keys are *known* to be created.
+
+        Note that the returned document is not guaranteed to contain information about *all* of the data keys that
+        were created, for example in the case of an indefinite error like a timeout. Use the `cause` property to
+        determine whether a definite or indefinite error caused this error, and only rely on the accuracy of the
+        encrypted_fields if the error is definite.
+        """
+        return self.__encrypted_fields
+
+
+class _OperationCancelled(AutoReconnect):
+    """Internal error raised when a socket operation is cancelled."""

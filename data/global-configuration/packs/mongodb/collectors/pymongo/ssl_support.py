@@ -1,4 +1,4 @@
-# Copyright 2014-2015 MongoDB, Inc.
+# Copyright 2014-present MongoDB, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License.  You
@@ -13,151 +13,106 @@
 # permissions and limitations under the License.
 
 """Support for SSL in PyMongo."""
+from __future__ import annotations
 
-import atexit
-import sys
-import threading
+import warnings
+from typing import Optional
 
-HAVE_SSL = True
-try:
-    import ssl
-except ImportError:
-    HAVE_SSL = False
-
-HAVE_CERTIFI = False
-try:
-    import certifi
-    HAVE_CERTIFI = True
-except ImportError:
-    pass
-
-HAVE_WINCERTSTORE = False
-try:
-    from wincertstore import CertFile
-    HAVE_WINCERTSTORE = True
-except ImportError:
-    pass
-
-from bson.py3compat import string_type
 from pymongo.errors import ConfigurationError
 
-_WINCERTSLOCK = threading.Lock()
-_WINCERTS = None
+HAVE_SSL = True
+
+try:
+    import pymongo.pyopenssl_context as _ssl
+except (ImportError, AttributeError) as exc:
+    if isinstance(exc, AttributeError):
+        warnings.warn(
+            "Failed to use the installed version of PyOpenSSL. "
+            "Falling back to stdlib ssl, disabling OCSP support. "
+            "This is likely caused by incompatible versions "
+            "of PyOpenSSL < 23.2.0 and cryptography >= 42.0.0. "
+            "Try updating PyOpenSSL >= 23.2.0 to enable OCSP.",
+            UserWarning,
+            stacklevel=2,
+        )
+    try:
+        import pymongo.ssl_context as _ssl  # type: ignore[no-redef]
+    except ImportError:
+        HAVE_SSL = False
+
 
 if HAVE_SSL:
-    try:
-        # Python 2.7.9+, 3.2+, PyPy 2.5.1+, etc.
-        from ssl import SSLContext
-    except ImportError:
-        from pymongo.ssl_context import SSLContext
+    # Note: The validate* functions below deal with users passing
+    # CPython ssl module constants to configure certificate verification
+    # at a high level. This is legacy behavior, but requires us to
+    # import the ssl module even if we're only using it for this purpose.
+    import ssl as _stdlibssl  # noqa: F401
+    from ssl import CERT_NONE, CERT_REQUIRED
 
-    def validate_cert_reqs(option, value):
-        """Validate the cert reqs are valid. It must be None or one of the
-        three values ``ssl.CERT_NONE``, ``ssl.CERT_OPTIONAL`` or
-        ``ssl.CERT_REQUIRED``.
-        """
-        if value is None:
-            return value
-        elif isinstance(value, string_type) and hasattr(ssl, value):
-            value = getattr(ssl, value)
+    HAS_SNI = _ssl.HAS_SNI
+    IPADDR_SAFE = True
+    SSLError = _ssl.SSLError
+    BLOCKING_IO_ERRORS = _ssl.BLOCKING_IO_ERRORS
+    BLOCKING_IO_READ_ERROR = _ssl.BLOCKING_IO_READ_ERROR
+    BLOCKING_IO_WRITE_ERROR = _ssl.BLOCKING_IO_WRITE_ERROR
+    BLOCKING_IO_LOOKUP_ERROR = BLOCKING_IO_READ_ERROR
 
-        if value in (ssl.CERT_NONE, ssl.CERT_OPTIONAL, ssl.CERT_REQUIRED):
-            return value
-        raise ValueError("The value of %s must be one of: "
-                         "`ssl.CERT_NONE`, `ssl.CERT_OPTIONAL` or "
-                         "`ssl.CERT_REQUIRED`" % (option,))
-
-    def _load_wincerts():
-        """Set _WINCERTS to an instance of wincertstore.Certfile."""
-        global _WINCERTS
-
-        certfile = CertFile()
-        certfile.addstore("CA")
-        certfile.addstore("ROOT")
-        atexit.register(certfile.close)
-
-        _WINCERTS = certfile
-
-    # XXX: Possible future work.
-    # - OCSP? Not supported by python at all.
-    #   http://bugs.python.org/issue17123
-    # - Adding an ssl_context keyword argument to MongoClient? This might
-    #   be useful for sites that have unusual requirements rather than
-    #   trying to expose every SSLContext option through a keyword/uri
-    #   parameter.
-    def get_ssl_context(*args):
+    def get_ssl_context(
+        certfile: Optional[str],
+        passphrase: Optional[str],
+        ca_certs: Optional[str],
+        crlfile: Optional[str],
+        allow_invalid_certificates: bool,
+        allow_invalid_hostnames: bool,
+        disable_ocsp_endpoint_check: bool,
+    ) -> _ssl.SSLContext:
         """Create and return an SSLContext object."""
-        certfile, keyfile, passphrase, ca_certs, cert_reqs, crlfile = args
-        # Note PROTOCOL_SSLv23 is about the most misleading name imaginable.
-        # This configures the server and client to negotiate the
-        # highest protocol version they both support. A very good thing.
-        ctx = SSLContext(ssl.PROTOCOL_SSLv23)
+        verify_mode = CERT_NONE if allow_invalid_certificates else CERT_REQUIRED
+        ctx = _ssl.SSLContext(_ssl.PROTOCOL_SSLv23)
+        if verify_mode != CERT_NONE:
+            ctx.check_hostname = not allow_invalid_hostnames
+        else:
+            ctx.check_hostname = False
+        if hasattr(ctx, "check_ocsp_endpoint"):
+            ctx.check_ocsp_endpoint = not disable_ocsp_endpoint_check
         if hasattr(ctx, "options"):
             # Explicitly disable SSLv2, SSLv3 and TLS compression. Note that
             # up to date versions of MongoDB 2.4 and above already disable
             # SSLv2 and SSLv3, python disables SSLv2 by default in >= 2.7.7
-            # and >= 3.3.4 and SSLv3 in >= 3.4.3. There is no way for us to do
-            # any of this explicitly for python 2.6 or 2.7 before 2.7.9.
-            ctx.options |= getattr(ssl, "OP_NO_SSLv2", 0)
-            ctx.options |= getattr(ssl, "OP_NO_SSLv3", 0)
-            # OpenSSL >= 1.0.0
-            ctx.options |= getattr(ssl, "OP_NO_COMPRESSION", 0)
+            # and >= 3.3.4 and SSLv3 in >= 3.4.3.
+            ctx.options |= _ssl.OP_NO_SSLv2
+            ctx.options |= _ssl.OP_NO_SSLv3
+            ctx.options |= _ssl.OP_NO_COMPRESSION
+            ctx.options |= _ssl.OP_NO_RENEGOTIATION
         if certfile is not None:
             try:
-                if passphrase is not None:
-                    vi = sys.version_info
-                    # Since python just added a new parameter to an existing method
-                    # this seems to be about the best we can do.
-                    if (vi[0] == 2 and vi < (2, 7, 9) or
-                            vi[0] == 3 and vi < (3, 3)):
-                        raise ConfigurationError(
-                            "Support for ssl_pem_passphrase requires "
-                            "python 2.7.9+ (pypy 2.5.1+) or 3.3+")
-                    ctx.load_cert_chain(certfile, keyfile, passphrase)
-                else:
-                    ctx.load_cert_chain(certfile, keyfile)
-            except ssl.SSLError as exc:
-                raise ConfigurationError(
-                    "Private key doesn't match certificate: %s" % (exc,))
+                ctx.load_cert_chain(certfile, None, passphrase)
+            except _ssl.SSLError as exc:
+                raise ConfigurationError(f"Private key doesn't match certificate: {exc}") from None
         if crlfile is not None:
-            if not hasattr(ctx, "verify_flags"):
-                raise ConfigurationError(
-                    "Support for ssl_crlfile requires "
-                    "python 2.7.9+ (pypy 2.5.1+) or  3.4+")
+            if _ssl.IS_PYOPENSSL:
+                raise ConfigurationError("tlsCRLFile cannot be used with PyOpenSSL")
             # Match the server's behavior.
-            ctx.verify_flags = ssl.VERIFY_CRL_CHECK_LEAF
+            ctx.verify_flags = getattr(  # type:ignore[attr-defined]
+                _ssl, "VERIFY_CRL_CHECK_LEAF", 0
+            )
             ctx.load_verify_locations(crlfile)
         if ca_certs is not None:
             ctx.load_verify_locations(ca_certs)
-        elif cert_reqs != ssl.CERT_NONE:
-            # CPython >= 2.7.9 or >= 3.4.0, pypy >= 2.5.1
-            if hasattr(ctx, "load_default_certs"):
-                ctx.load_default_certs()
-            # Python >= 3.2.0, useless on Windows.
-            elif (sys.platform != "win32" and
-                  hasattr(ctx, "set_default_verify_paths")):
-                ctx.set_default_verify_paths()
-            elif sys.platform == "win32" and HAVE_WINCERTSTORE:
-                with _WINCERTSLOCK:
-                    if _WINCERTS is None:
-                        _load_wincerts()
-                ctx.load_verify_locations(_WINCERTS.name)
-            elif HAVE_CERTIFI:
-                ctx.load_verify_locations(certifi.where())
-            else:
-                raise ConfigurationError(
-                    "`ssl_cert_reqs` is not ssl.CERT_NONE and no system "
-                    "CA certificates could be loaded. `ssl_ca_certs` is "
-                    "required.")
-        ctx.verify_mode = ssl.CERT_REQUIRED if cert_reqs is None else cert_reqs
+        elif verify_mode != CERT_NONE:
+            ctx.load_default_certs()
+        ctx.verify_mode = verify_mode
         return ctx
-else:
-    def validate_cert_reqs(option, dummy):
-        """No ssl module, raise ConfigurationError."""
-        raise ConfigurationError("The value of %s is set but can't be "
-                                 "validated. The ssl module is not available"
-                                 % (option,))
 
-    def get_ssl_context(*dummy):
+else:
+
+    class SSLError(Exception):  # type: ignore
+        pass
+
+    HAS_SNI = False
+    IPADDR_SAFE = False
+    BLOCKING_IO_ERRORS = ()  # type:ignore[assignment]
+
+    def get_ssl_context(*dummy):  # type: ignore
         """No ssl module, raise ConfigurationError."""
         raise ConfigurationError("The ssl module is not available.")
