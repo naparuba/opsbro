@@ -69,6 +69,10 @@ class TestEvaluater(OpsBroTest):
             {'rule': 'False and missing_function()', 'expected': False},
             # Do not execute functions at right in Or if the first part is True
             {'rule': 'True or missing_function()', 'expected': True},
+            
+            # Multi operators
+            {'rule': 'True and False and True', 'expected': False},
+            {'rule': 'True or False or True', 'expected': True},
         
         ]
         for r in rules:
@@ -83,7 +87,7 @@ class TestEvaluater(OpsBroTest):
             print("Expected: %s" % str(expected))
             print("Result: %s" % str(r))
             print("Is The same?: %s" % (r == expected))
-            self.assert_(r == expected)
+            self.assertEqual(expected, r)
 
 
 if __name__ == '__main__':

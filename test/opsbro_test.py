@@ -2,7 +2,7 @@
 
 import sys
 import time
-import imp
+import importlib.util
 import datetime
 import os
 import string
@@ -63,10 +63,17 @@ class OpsBroTestCoreFunctions(OpsBroTest):
         core_functions_dir = os.path.join(my_dir, '..', 'data', 'core-configuration', 'packs', 'core-functions', 'module')
         print("** From directory", core_functions_dir)
         sys.path.insert(0, core_functions_dir)
-        m = imp.load_source('module___titi___toto___tata', os.path.join(core_functions_dir, 'module.py'))
+        
+        spec = importlib.util.spec_from_file_location('module___titi___toto___tata', os.path.join(core_functions_dir, 'module.py'))
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        
         print("** Core functionns module is loaded:", m)
         self.assert_(m.CoreFunctionsModule is not None)
 
+    # for backport
+    def assert_(self, expr):
+        self.assertTrue(expr)
 
 if __name__ == '__main__':
     unittest.main()

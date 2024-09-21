@@ -1,5 +1,6 @@
 detector:
     add_groups:
         - redis
-    apply_if: "file_exists('/etc/redis/redis.conf') or file_exists('/etc/redis.conf')"
+    # redis == valkey
+    apply_if: "file_exists('/etc/redis/redis.conf') or file_exists('/etc/redis.conf') or file_exists('/etc/valkey/valkey.conf')"
     interval: "10s"
