@@ -83,6 +83,9 @@ jobs:
          RUN_ON_GITHUB_ACTIONS: "TRUE"
          RUN_ON_ARCH:           "ARM64"
          DATACENTER_COUNTRY:    "FR"  # ARM=Oraclecloud, so Paris, so FR
+         # for discord test
+         DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+         DISCORD_CHANNEL: ${{ secrets.DISCORD_CHANNEL }}
       steps:
          -  uses: actions/checkout@v4
          

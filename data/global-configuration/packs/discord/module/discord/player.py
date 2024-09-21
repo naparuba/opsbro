@@ -27,7 +27,7 @@ DEALINGS IN THE SOFTWARE.
 import threading
 import traceback
 import subprocess
-import audioop
+#import audioop   NOT NEED for opsbro
 import asyncio
 import logging
 import shlex

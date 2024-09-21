@@ -93,7 +93,8 @@ class DiscordHandlerModule(HandlerModule):
                 if self._bot is None:
                     # We have the class, try to init the bot
                     self.logger.info('Preparing the asyncio loop environnement before starting the discord bot')
-                    self._asyncio_lib.set_event_loop(self._asyncio_lib.new_event_loop())
+                    loop = self._asyncio_lib.new_event_loop()
+                    self._asyncio_lib.set_event_loop(loop)
                     self._bot = self._bot_klass(self._channel_id, self.logger)
                     # We are in a thread, so asyncio need a bit hack to work
                     

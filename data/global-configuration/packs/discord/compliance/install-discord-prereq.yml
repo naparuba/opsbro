@@ -12,6 +12,7 @@ compliance:
          is_debian: "{{collector.system.os.linux.distribution}} == 'debian'"
          is_centos: "{{collector.system.os.linux.distribution}} == 'centos'"
          is_rocky : "{{collector.system.os.linux.distribution}} == 'rocky-linux'"
+         is_fedora: "{{collector.system.os.linux.distribution}} == 'fedora'"
       
       environments:
          -  name      : debian
@@ -40,4 +41,8 @@ compliance:
                packages:
                   - python3-aiohttp
               
-              
+         - name: fedora
+           if: "{{variables.is_fedora}}"
+           parameters:
+              packages:
+                 - python3-aiohttp

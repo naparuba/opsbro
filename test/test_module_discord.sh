@@ -12,7 +12,7 @@ opsbro agent parameters set display_name "node-discord"
 opsbro packs overload global.discord
 
 if [ "X$DISCORD_TOKEN" == "X" ] || [ "X$DISCORD_CHANNEL" == "X" ]; then
-   do_bad_exit_and_logs "ERROR: DISCORD_TOKEN or DISCORD_CHANNEL env variable for this test"
+   do_bad_exit_and_logs "ERROR: DISCORD_TOKEN or DISCORD_CHANNEL env variable missing for this test"
 fi
 
 echo "Using channel : $DISCORD_CHANNEL"
