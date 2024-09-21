@@ -7,9 +7,16 @@ MYDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Fix: centos do not have mysqld on the PATH
 export PATH=/usr/libexec/:$PATH
 
+
+PLUGIN_DIR=/usr/lib/mysql/plugin/   # debian
+if [ ! -d $PLUGIN_DIR ]; then
+   PLUGIN_DIR=/usr/lib64/mariadb/plugin   # fedora
+fi
+
+
 # Start mysql
 # NOTE: /tmp because we are launched for debian & centos, so cannot have the same directories
-mysqld --basedir=/usr --datadir=/var/lib/mysql --plugin-dir=/usr/lib64/mariadb/plugin --log-error=/tmp/mariadb.log --pid-file=/tmp/mariadb.pid --socket=/var/lib/mysql/mysql.sock --user=mysql &
+mysqld --basedir=/usr --datadir=/var/lib/mysql --plugin-dir=$PLUGIN_DIR --log-error=/tmp/mariadb.log --pid-file=/tmp/mariadb.pid --socket=/var/lib/mysql/mysql.sock --user=mysql &
 sleep 10
 # Set root account available (set socket because debian try network)
 /usr/bin/mysqladmin --socket=/var/lib/mysql/mysql.sock -u root password 'secret'

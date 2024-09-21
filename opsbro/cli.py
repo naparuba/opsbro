@@ -791,7 +791,7 @@ class CLICommander(object):
                 f(*cmd_args, **cmd_opts.__dict__)
             except TypeError as exp:
                 logger.debug('Cannot launch function: %s' % str(traceback.format_exc()))
-                err = 'Bad arguments'
+                err = f'Bad arguments {traceback.format_exc()}'
                 self.print_fatal_error(err)
                 self._print_help_from_cli_entry(entry)
                 sys.exit(2)
