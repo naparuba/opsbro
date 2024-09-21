@@ -9,7 +9,7 @@ export PATH=/usr/libexec/:$PATH
 
 # Start mysql
 # NOTE: /tmp because we are launched for debian & centos, so cannot have the same directories
-mysqld --basedir=/usr --datadir=/var/lib/mysql --plugin-dir=/usr/lib64/mysql/plugin --log-error=/tmp/mariadb.log --pid-file=/tmp/mariadb.pid --socket=/var/lib/mysql/mysql.sock --user=mysql &
+mysqld --basedir=/usr --datadir=/var/lib/mysql --plugin-dir=/usr/lib64/mariadb/plugin --log-error=/tmp/mariadb.log --pid-file=/tmp/mariadb.pid --socket=/var/lib/mysql/mysql.sock --user=mysql &
 sleep 10
 # Set root account available (set socket because debian try network)
 /usr/bin/mysqladmin --socket=/var/lib/mysql/mysql.sock -u root password 'secret'
