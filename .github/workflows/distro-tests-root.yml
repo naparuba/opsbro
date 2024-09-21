@@ -22,7 +22,7 @@ jobs:
          matrix:
             TEST_SUITE:
                # these tests need to run as root, and hosting runners cannot :(
-               - FEATURE-ROOT
+               - FEATUROOT
          # Do not stop at first error, each one are independent
          fail-fast: false
       env: # we set this variable, so we know we are on GitHub actions, and so azure servers

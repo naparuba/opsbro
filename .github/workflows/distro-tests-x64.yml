@@ -39,11 +39,11 @@ jobs:
                ##### Then complexe scenarios
                # Some tests are with 2 docker that must run together. I hope it will be maintainable
                - COMPOSE-GOSSIP-UDP-DETECT
-               # check that with different udp key, then cannot join (no clear message failback)
+               # check that with different udp key, then cannot join (no clear message fallback)
                - COMPOSE-GOSSIP-UDP-DETECT-BAD-KEY
-               # This one is with 4 containers, in 2 zones, one is sub level of another
+               # This one is with 4 containers, in 2 zones, one is sub-level of another
                - COMPOSE-GOSSIP-ZONES
-               # This one is with 4 containers, in 3 zones, one is sub level of another
+               # This one is with 4 containers, in 3 zones, one is sub-level of another
                - COMPOSE-GOSSIP-ZONES-MULTI
                # The same, but with multi level encryption
                - COMPOSE-GOSSIP-ZONES-MULTI-ENCRYPTED
