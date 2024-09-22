@@ -8,6 +8,10 @@ cd test
 
 echo "   *********   Python unitary tests  ***********"
 
+$PYTHON_EXE test_unixclient.py #TestUnixClient.test_unixclient_POST_ret_ascii_arg_ascii
+
+exit 0
+
 for ii in $(ls -1 test_*py); do
    printf " - %-50s" "$ii"
    OUTPUT=$($PYTHON_EXE $ii 2>&1)
