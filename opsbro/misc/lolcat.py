@@ -14,8 +14,6 @@ import re
 import sys
 import time
 
-PY3 = sys.version_info >= (3,)
-
 STRIP_ANSI = re.compile(r'\x1b\[(\d+)(;\d+)?(;\d+)?[m|K]')
 COLOR_ANSI = (
     (0x00, 0x00, 0x00), (0xcd, 0x00, 0x00),
@@ -96,23 +94,19 @@ class LolCat(object):
     def get_line(self, s, offset, spread=3.0):
         if spread is None:
             spread = 99999.0
-
+        
         # if options.force or self.output.isatty():
         s = STRIP_ANSI.sub('', s)
         r = ''
-        if isinstance(s, str) and not PY3:  # str are alrady utf8 in python3
-            s = s.decode('utf-8', 'replace')
-
+        
         # We must consider the classic CMD as a no tty, as it's just too limited
         if os.name == 'nt':
             if os.environ.get('ANSICON', '') == '':
                 return s
-            
+        
         for i, c in enumerate(s):
             rgb = self.rainbow(0.1, offset + i / spread)
-            if isinstance(c, str) and not PY3:
-                c = c.encode('utf-8', 'replace')
-            r += u''.join([self.wrap(self.ansi(rgb)), c if PY3 else c, ])
+            r += u''.join([self.wrap(self.ansi(rgb)), c, ])
         r += '\x1b[0m'
         return r
     
@@ -144,11 +138,11 @@ class LolCat(object):
     
     
     def println_plain(self, s, options):
-        for i, c in enumerate(s if PY3 else s.decode(options.charset_py2, 'replace')):
+        for i, c in enumerate(s):
             rgb = self.rainbow(options.freq, options.os + i / 3.0)
             self.output.write(''.join([
                 self.wrap(self.ansi(rgb)),
-                c if PY3 else c.encode(options.charset_py2, 'replace'),
+                c,
             ]))
 
 

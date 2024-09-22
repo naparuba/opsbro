@@ -3,11 +3,6 @@
 import sys
 import os
 import time
-from string import digits
-
-PY3 = sys.version_info >= (3,)
-if PY3:
-    basestring = str
 
 from opsbro.collector import Collector
 from opsbro.now import NOW
@@ -29,14 +24,17 @@ class IoStats(Collector):
         # Columns for disk entry in /proc/diskstats
         # NOTE: based on the kernel version, there a 3 formats (linux 4.18+, linux 5.5+)
         self.columns_disk = {
-            14: ['major', 'minor', 'device', 'reads', 'reads_merged', 'read_sectors', 'read_ms', 'writes', 'writes_merged', 'write_sectors', 'write_ms', 'cur_ios', 'total_io_ms', 'total_io_weighted_ms']
+            14: ['major', 'minor', 'device', 'reads', 'reads_merged', 'read_sectors', 'read_ms', 'writes', 'writes_merged', 'write_sectors',
+                 'write_ms', 'cur_ios', 'total_io_ms', 'total_io_weighted_ms']
         }
         self.columns_disk[18] = self.columns_disk[14] + ['discard_success', 'discard_merged', 'discard_sectors', 'discard_time']
         self.columns_disk[20] = self.columns_disk[18] + ['flush_requests', 'flush_time']
         
         # We don't care about theses fields
         # NOTE: write_ms and read_ms are over the sleep time, not sure about what it means
-        self.columns_to_del_in_raw = ('major', 'minor', 'cur_ios', 'total_io_weighted_ms', 'read_ms', 'write_ms', 'discard_success', 'discard_merged', 'discard_sectors', 'discard_time', 'flush_requests', 'flush_time')
+        self.columns_to_del_in_raw = (
+        'major', 'minor', 'cur_ios', 'total_io_weighted_ms', 'read_ms', 'write_ms', 'discard_success', 'discard_merged', 'discard_sectors',
+        'discard_time', 'flush_requests', 'flush_time')
     
     
     def _get_disk_stats(self):
@@ -59,13 +57,14 @@ class IoStats(Collector):
             # Maybe this is a new combination of collumns, again...
             if columns is None:
                 # No match, drop partitions too
-                self.logger.debug('Skipping an invalid line (nb fields=%s) != expected in list %s : %s' % (len(split), ' or '.join(['%s' % nb for nb in self.columns_disk.keys()]), line))
+                self.logger.debug('Skipping an invalid line (nb fields=%s) != expected in list %s : %s' % (
+                len(split), ' or '.join(['%s' % nb for nb in self.columns_disk.keys()]), line))
                 continue
             
             data = dict(zip(columns, split))
             
             device_name = data['device']
-
+            
             # we only want real device, NOT partition, so check with the presence in /sys/block/
             if not os.path.exists('/sys/block/%s' % device_name):
                 continue
@@ -98,7 +97,7 @@ class IoStats(Collector):
                 old_v = old_stats[k]
                 
                 # String= device name, but we already have it in the key path
-                if isinstance(old_v, basestring):
+                if isinstance(old_v, str):
                     continue
                 # Some columns are finally computed in /s (diff/time)
                 elif k in ('reads', 'reads_merged', 'writes', 'writes_merged'):

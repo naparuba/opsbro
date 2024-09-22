@@ -1,4 +1,3 @@
-from __future__ import print_function
 import json
 from opsbro.misc.websocketserver import WebSocket, SimpleWebSocketServer
 from opsbro.log import LoggerFactory

@@ -5,10 +5,6 @@ import sys
 import codecs
 import time
 
-PY3 = sys.version_info >= (3,)
-if PY3:
-    basestring = str  # no basestring in python 3
-
 from .defaultpaths import DEFAULT_DATA_DIR
 from .log import LoggerFactory
 from .yamlmgr import yamler
@@ -26,26 +22,26 @@ class ConfigurationManager(object):
     # The parameter for the main cluster class is list here, and we will give back to it what we did read in the
     # local.yaml file (one set ones)
     cluster_parameters = {
-        'display_name'                          : {'type': 'string', 'mapto': 'display_name'},
-        'process_name'                          : {'type': 'string', 'mapto': 'process_name'},
-        'port'                                  : {'type': 'int', 'mapto': 'port'},
-        'data'                                  : {'type': 'path', 'mapto': 'data_dir'},
-        'libexec'                               : {'type': 'path', 'mapto': 'libexec_dir'},
-        'log'                                   : {'type': 'path', 'mapto': 'log_dir'},
-        'lock'                                  : {'type': 'path', 'mapto': 'lock_path'},
-        'socket'                                : {'type': 'path', 'mapto': 'socket_path'},
-        'log_level'                             : {'type': 'string', 'mapto': 'log_level'},
-        'bootstrap'                             : {'type': 'bool', 'mapto': 'bootstrap'},
-        'seeds'                                 : {'type': 'list', 'mapto': 'seeds'},
-        'groups'                                : {'type': 'list', 'mapto': 'groups'},
-        'zone'                                  : {'type': 'string', 'mapto': 'zone'},
-        'proxy-node'                            : {'type': 'bool', 'mapto': 'is_proxy'},
-        'service_discovery_topic_enabled'       : {'type': 'bool', 'mapto': 'service_discovery_topic_enabled'},
-        'automatic_detection_topic_enabled'     : {'type': 'bool', 'mapto': 'automatic_detection_topic_enabled'},
-        'monitoring_topic_enabled'              : {'type': 'bool', 'mapto': 'monitoring_topic_enabled'},
-        'metrology_topic_enabled'               : {'type': 'bool', 'mapto': 'metrology_topic_enabled'},
+        'display_name':                           {'type': 'string', 'mapto': 'display_name'},
+        'process_name':                           {'type': 'string', 'mapto': 'process_name'},
+        'port':                                   {'type': 'int', 'mapto': 'port'},
+        'data':                                   {'type': 'path', 'mapto': 'data_dir'},
+        'libexec':                                {'type': 'path', 'mapto': 'libexec_dir'},
+        'log':                                    {'type': 'path', 'mapto': 'log_dir'},
+        'lock':                                   {'type': 'path', 'mapto': 'lock_path'},
+        'socket':                                 {'type': 'path', 'mapto': 'socket_path'},
+        'log_level':                              {'type': 'string', 'mapto': 'log_level'},
+        'bootstrap':                              {'type': 'bool', 'mapto': 'bootstrap'},
+        'seeds':                                  {'type': 'list', 'mapto': 'seeds'},
+        'groups':                                 {'type': 'list', 'mapto': 'groups'},
+        'zone':                                   {'type': 'string', 'mapto': 'zone'},
+        'proxy-node':                             {'type': 'bool', 'mapto': 'is_proxy'},
+        'service_discovery_topic_enabled':        {'type': 'bool', 'mapto': 'service_discovery_topic_enabled'},
+        'automatic_detection_topic_enabled':      {'type': 'bool', 'mapto': 'automatic_detection_topic_enabled'},
+        'monitoring_topic_enabled':               {'type': 'bool', 'mapto': 'monitoring_topic_enabled'},
+        'metrology_topic_enabled':                {'type': 'bool', 'mapto': 'metrology_topic_enabled'},
         'configuration_automation_topic_enabled': {'type': 'bool', 'mapto': 'configuration_automation_topic_enabled'},
-        'system_compliance_topic_enabled'       : {'type': 'bool', 'mapto': 'system_compliance_topic_enabled'},
+        'system_compliance_topic_enabled':        {'type': 'bool', 'mapto': 'system_compliance_topic_enabled'},
     }
     
     
@@ -214,7 +210,7 @@ class ConfigurationManager(object):
                         logger.error('The parameter %s is not an int' % k)
                         return
                 elif _type in ['path', 'string']:
-                    if not isinstance(v, basestring):
+                    if not isinstance(v, str):
                         logger.error('The parameter %s is not a string' % k)
                         return
                 elif _type == 'bool':
@@ -447,7 +443,8 @@ class ConfigurationManager(object):
             return False, 'The parameter %s is not declared by the pack %s' % (parameter_name, pack_name)
         is_valid = parameter.is_valid(value)
         if not is_valid:
-            return False, "The parameter '%s' of the pack %s cannot accept the value '%s' as it's not of type '%s'." % (parameter_name, pack_name, value, parameter.get_my_type())
+            return False, "The parameter '%s' of the pack %s cannot accept the value '%s' as it's not of type '%s'." % (
+            parameter_name, pack_name, value, parameter.get_my_type())
         return True, 'no error'
     
     

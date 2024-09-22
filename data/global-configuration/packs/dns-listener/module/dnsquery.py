@@ -1,16 +1,12 @@
-from __future__ import print_function
 import re
 import socket
 import copy
 import sys
 
-PY3 = sys.version_info >= (3,)
-if PY3:
-    def byte_to_int(byte):  # already byte
-        return byte
-else:  # Python 2
-    def byte_to_int(byte):
-        return ord(byte)
+
+def byte_to_int(byte):  # already byte
+    return byte
+
 
 from opsbro.gossip import gossiper
 from opsbro.util import bytes_to_unicode, unicode_to_bytes
@@ -48,10 +44,7 @@ class DNSQuery:
     
     @staticmethod
     def _int_to_byte(n):
-        if PY3:
-            return bytes([int(n)])
-        else:
-            return chr(int(n))
+        return bytes([int(n)])
     
     
     # TODO: add a cache

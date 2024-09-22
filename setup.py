@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-from __future__ import print_function
+
 
 import os
 import sys
@@ -11,10 +11,7 @@ import shutil
 import codecs
 import traceback
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from io import StringIO
+from io import StringIO
 from glob import glob
 import atexit
 
@@ -29,8 +26,7 @@ if not PY3:
     print('ERROR: OpsBro require Python 3, sorry')
     sys.exit(2)
 
-if PY3:
-    basestring = str  # no basestring in python 3
+
 
 
 def _disable_warns(*args, **kwargs):
@@ -306,21 +302,21 @@ configuration_files = []
 # Define files
 if 'win' in sys.platform:
     default_paths = {
-        'bin'    : install_scripts or "c:\\opsbro\\bin",
-        'var'    : "c:\\opsbro\\var",
-        'etc'    : "c:\\opsbro\\etc",
-        'log'    : "c:\\opsbro\\var\\log",
-        'run'    : "c:\\opsbro\\var",
+        'bin':     install_scripts or "c:\\opsbro\\bin",
+        'var':     "c:\\opsbro\\var",
+        'etc':     "c:\\opsbro\\etc",
+        'log':     "c:\\opsbro\\var\\log",
+        'run':     "c:\\opsbro\\var",
         'libexec': "c:\\opsbro\\libexec",
     }
     data_files = []
 elif 'linux' in sys.platform or 'sunos5' in sys.platform:
     default_paths = {
-        'bin'    : install_scripts or "/usr/bin",
-        'var'    : "/var/lib/opsbro/",
-        'etc'    : "/etc/opsbro",
-        'run'    : "/var/run/opsbro",
-        'log'    : "/var/log/opsbro",
+        'bin':     install_scripts or "/usr/bin",
+        'var':     "/var/lib/opsbro/",
+        'etc':     "/etc/opsbro",
+        'run':     "/var/run/opsbro",
+        'log':     "/var/log/opsbro",
         'libexec': "/var/lib/opsbro/libexec",
     }
     data_files = [
@@ -331,11 +327,11 @@ elif 'linux' in sys.platform or 'sunos5' in sys.platform:
     ]
 elif 'bsd' in sys.platform or 'dragonfly' in sys.platform:
     default_paths = {
-        'bin'    : install_scripts or "/usr/local/bin",
-        'var'    : "/usr/local/libexec/opsbro",
-        'etc'    : "/usr/local/etc/opsbro",
-        'run'    : "/var/run/opsbro",
-        'log'    : "/var/log/opsbro",
+        'bin':     install_scripts or "/usr/local/bin",
+        'var':     "/usr/local/libexec/opsbro",
+        'etc':     "/usr/local/etc/opsbro",
+        'run':     "/var/run/opsbro",
+        'log':     "/var/log/opsbro",
         'libexec': "/usr/local/libexec/opsbro/plugins",
     }
     data_files = [
@@ -407,7 +403,8 @@ is_managed_system = systepacketmgr.is_managed_system()
 system_distro, system_distroversion, _ = systepacketmgr.get_distro()
 
 # In this list of distro, the dependecies are installed with the internal system compliant
-compliant_system_distros = ['debian', 'raspbian', 'centos', 'rocky-linux', 'almalinux', 'alpine', 'fedora', 'ubuntu', 'amazon-linux2022', 'amazon-linux2', 'amazon-linux', 'opensuse', 'oracle-linux', 'redhat']
+compliant_system_distros = ['debian', 'raspbian', 'centos', 'rocky-linux', 'almalinux', 'alpine', 'fedora', 'ubuntu', 'amazon-linux2022',
+                            'amazon-linux2', 'amazon-linux', 'opensuse', 'oracle-linux', 'redhat']
 
 is_compliant_system_distro = system_distro in compliant_system_distros
 
@@ -446,7 +443,9 @@ if allow_black_magic:
         cprint(CHARACTERS.check, color='green')
         cprint('   - it will be able to use system package manager to install dependencies.', color='grey')
         if is_compliant_system_distro:
-            cprint(' * %s : your system depedencies will be setup thanks to the OpsBro ' % lolcat.get_line('System Compliance', TOPICS_COLORS.get(TOPIC_SYSTEM_COMPLIANCE), spread=None), end='')
+            cprint(' * %s : your system depedencies will be setup thanks to the OpsBro ' % lolcat.get_line('System Compliance',
+                                                                                                           TOPICS_COLORS.get(TOPIC_SYSTEM_COMPLIANCE),
+                                                                                                           spread=None), end='')
             cprint(' system.')
     else:
         cprint(" * ", end='')
@@ -468,7 +467,8 @@ if allow_black_magic and is_compliant_system_distro:
     stdout, stderr = dependency_process.communicate()
     if dependency_process.returncode != 0:
         core_logger.debug('The dependency process did failed: rc=%s  stdput=%s stderr=%s' % (dependency_process.returncode, stdout, stderr))
-        cprint('   - ERROR: cannot install the prerequite from the system (%s - %s). Please reports a bug.' % (system_distro, system_distroversion), color='red')
+        cprint('   - ERROR: cannot install the prerequite from the system (%s - %s). Please reports a bug.' % (system_distro, system_distroversion),
+               color='red')
         sys.exit(2)
 
 # windows black magic: we need pywin32
@@ -489,10 +489,6 @@ if os.name == 'nt':
         python_exe = os.path.abspath(sys.executable)
         
         # We need both pyiwin32 & pywin32 to works
-        # But lastest pywin32 on pypi do not support 3.4, cannot install in automagic
-        if PY3 and sys.version_info.minor == 4:  # == 3.4
-            cprint('ERROR: the python 3.4 is not managed under windows for automatic installaiton, please install pywin32 first (no more available on pypi for this python version).')
-            sys.exit(2)
         for windows_package in ('pypiwin32', 'pywin32'):
             pip_install_command = '%s -m pip install --only-binary %s %s' % (python_exe, windows_package, windows_package)
             try:
@@ -545,14 +541,14 @@ except ImportError:
     try:
         cprint(' * You are missing the python setuptools, trying to install it with system package:', end='')
         sys.stdout.flush()
-        default_setuptools_pkg = 'python-setuptools'
-        if PY3:
-            default_setuptools_pkg = 'python3-setuptools'
+        default_setuptools_pkg = 'python3-setuptools'
         systepacketmgr.install_package(default_setuptools_pkg)
         cprint(' %s' % CHARACTERS.check, color='green')
         from setuptools import setup, find_packages
     except Exception as exp:
-        cprint('Cannot install python setuptools from system (%s). Cannot continue the installation. Please install python-setuptools before re-run the installation.' % exp, color='red')
+        cprint(
+            'Cannot install python setuptools from system (%s). Cannot continue the installation. Please install python-setuptools before re-run the installation.' % exp,
+            color='red')
         sys.exit(2)
 
 print('\n')
@@ -584,34 +580,34 @@ atexit.register(print_fail_setup)
 
 try:
     setup(
-        name="opsbro",
-        version=VERSION,
-        packages=find_packages(),
-        package_data={'': package_data},
-        description="OpsBro is a service discovery tool",
-        long_description=read('README.md'),
-        author="Gabes Jean",
-        author_email="naparuba@gmail.com",
-        license="MIT",
-        url="http://opsbro.io",
-        zip_safe=False,
-        classifiers=[
-            'Development Status :: 5 - Production/Stable',
-            'Environment :: Console',
-            'Intended Audience :: System Administrators',
-            'License :: OSI Approved :: MIT License',
-            'Operating System :: MacOS :: MacOS X',
-            'Operating System :: Microsoft :: Windows',
-            'Operating System :: POSIX',
-            'Programming Language :: Python',
-            'Programming Language :: Python :: 2 :: Only',
-            'Topic :: System :: Monitoring',
-            'Topic :: System :: Networking :: Monitoring',
-            'Topic :: System :: Distributed Computing',
-        ],
-        
-        # Maybe some system need specific packages address on pypi, like add httpS on debian 6 :'(
-        dependency_links=additionnal_pypi_repos,
+            name="opsbro",
+            version=VERSION,
+            packages=find_packages(),
+            package_data={'': package_data},
+            description="OpsBro is a service discovery tool",
+            long_description=read('README.md'),
+            author="Gabes Jean",
+            author_email="naparuba@gmail.com",
+            license="MIT",
+            url="http://opsbro.io",
+            zip_safe=False,
+            classifiers=[
+                'Development Status :: 5 - Production/Stable',
+                'Environment :: Console',
+                'Intended Audience :: System Administrators',
+                'License :: OSI Approved :: MIT License',
+                'Operating System :: MacOS :: MacOS X',
+                'Operating System :: Microsoft :: Windows',
+                'Operating System :: POSIX',
+                'Programming Language :: Python',
+                'Programming Language :: Python :: 2 :: Only',
+                'Topic :: System :: Monitoring',
+                'Topic :: System :: Networking :: Monitoring',
+                'Topic :: System :: Distributed Computing',
+            ],
+            
+            # Maybe some system need specific packages address on pypi, like add httpS on debian 6 :'(
+            dependency_links=additionnal_pypi_repos,
     )
 except Exception as exp:
     print_fail_setup(exp)

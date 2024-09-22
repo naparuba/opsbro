@@ -1,23 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import print_function
+
 import os
+import codecs
 import sys
 import time
 import datetime
 import logging
 import json
-import codecs
 import shutil
 from glob import glob
 from threading import Lock as ThreadLock
 from multiprocessing.sharedctypes import Value
 from ctypes import c_int
-
-PY3 = sys.version_info >= (3,)
-if PY3:
-    unicode = str
-    basestring = str
 
 from .misc.colorama import init as init_colorama
 
@@ -72,7 +67,6 @@ if is_tty():
 # Ok it's a daemon mode, if so, just print
 else:
     # Protect sys.stdout write for utf8 outputs
-    import codecs
     
     stdout_utf8 = codecs.getwriter("utf-8")(sys.stdout)
     
@@ -89,35 +83,27 @@ else:
         if bytes_to_unicode is None:
             from .util import bytes_to_unicode
             bytes_to_unicode = bytes_to_unicode
-        if not isinstance(s, basestring):
+        if not isinstance(s, str):
             s = str(s)
-        # Python 2 and 3: good luck for unicode in a terminal.
         # It's a nightmare to manage all of this, if you have a common code
         # that allow to run WITHOUT a terminal, I take it :)
-        if PY3:
-            s = string_decode(s)
-            raw_bytes, consumed = stdout_utf8.encode(s, 'strict')
-            # We have 2 cases:
-            # * (default) sys.stdout is a real tty we did hook
-            # * (on test case by nose) was changed by a io.Stdout that do not have .buffer
-            end_line = b'\n'
-            if hasattr(sys.stdout, 'buffer'):
-                write_into = sys.stdout.buffer
-            else:
-                write_into = sys.stdout
-                raw_bytes = bytes_to_unicode(raw_bytes)  # ioString do not like bytes
-                end_line = '\n'
-            if end == '':
-                write_into.write(raw_bytes)
-            else:
-                write_into.write(raw_bytes)
-                write_into.write(end_line)
-        else:  # PY2
-            if end == '':
-                stdout_utf8.write(s)
-            else:
-                stdout_utf8.write(s)
-                stdout_utf8.write('\n')
+        s = string_decode(s)
+        raw_bytes, consumed = stdout_utf8.encode(s, 'strict')
+        # We have 2 cases:
+        # * (default) sys.stdout is a real tty we did hook
+        # * (on test case by nose) was changed by a io.Stdout that do not have .buffer
+        end_line = b'\n'
+        if hasattr(sys.stdout, 'buffer'):
+            write_into = sys.stdout.buffer
+        else:
+            write_into = sys.stdout
+            raw_bytes = bytes_to_unicode(raw_bytes)  # ioString do not like bytes
+            end_line = '\n'
+        if end == '':
+            write_into.write(raw_bytes)
+        else:
+            write_into.write(raw_bytes)
+            write_into.write(end_line)
     
     
     def sprintf(s, color='', end=''):
@@ -125,9 +111,7 @@ else:
 
 
 def get_unicode_string(s):
-    if isinstance(s, str) and not PY3:
-        return unicode(s, 'utf8', errors='ignore')
-    return unicode(s)
+    return str(s)
 
 
 loggers = {}
@@ -320,7 +304,8 @@ class Logger(object):
             s_part = '' if not part else '[%s]' % part.upper()
             
             d_display = self.__get_time_display()
-            s = '[%s][%s][%s] %s: %s' % (d_display, kwargs.get('level', 'UNSET  '), self.name, s_part, u' '.join([get_unicode_string(s) for s in args]))
+            s = '[%s][%s][%s] %s: %s' % (
+                d_display, kwargs.get('level', 'UNSET  '), self.name, s_part, u' '.join([get_unicode_string(s) for s in args]))
             
             # Sometime we want a log output, but not in the stdout
             if kwargs.get('do_print', True):

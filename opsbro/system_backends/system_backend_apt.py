@@ -2,7 +2,6 @@ import time
 import os
 import subprocess
 import threading
-import sys
 
 from ..log import LoggerFactory
 from .linux_system_backend import LinuxBackend
@@ -11,8 +10,6 @@ from ..systempacketmanager_errors import InstallationFailedException, UpdateFail
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('system-packages')
-
-PY3 = (sys.version_info[0] == 3)
 
 
 class AptBackend(LinuxBackend):
@@ -44,10 +41,7 @@ class AptBackend(LinuxBackend):
     def _assert_apt(self):
         if self.apt is None:
             try:
-                # NOTE: python2 and 3 do nto have the same system package
-                pkg = 'python-apt'
-                if PY3:
-                    pkg = 'python3-apt'
+                pkg = 'python3-apt'
                 self.install_package(pkg)
                 import apt
                 self.apt = apt
@@ -108,11 +102,13 @@ class AptBackend(LinuxBackend):
         if p.returncode != 0:
             raise Exception('APT: apt-get update did not succeed (%s), exiting from package installation (%s)' % (stdout + stderr, package))
         env = self._get_apt_env()
-        p = subprocess.Popen(['apt-get', '-q', '--yes', '--no-install-recommends', 'install', r'%s' % package], stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+        p = subprocess.Popen(['apt-get', '-q', '--yes', '--no-install-recommends', 'install', r'%s' % package], stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE, env=env)
         stdout, stderr = p.communicate()
         logger.debug('APT (apt-get install) (%s):: stdout/stderr: %s/%s' % (package, stdout, stderr))
         if p.returncode != 0:
-            raise InstallationFailedException('APT: apt-get install did not succeed (%s), exiting from package installation (%s)' % (stdout + stderr, package))
+            raise InstallationFailedException(
+                'APT: apt-get install did not succeed (%s), exiting from package installation (%s)' % (stdout + stderr, package))
         # we did install a package, so our internal cache is wrong
         self.need_reload = True
         return
@@ -125,13 +121,16 @@ class AptBackend(LinuxBackend):
         stdout, stderr = p.communicate()
         logger.debug('APT (apt-get update):: stdout/stderr: %s/%s' % (stdout, stderr))
         if p.returncode != 0:
-            raise UpdateFailedException('APT: apt-get update did not succeed (%s), exiting from package installation (%s)' % (stdout + stderr, package))
+            raise UpdateFailedException(
+                'APT: apt-get update did not succeed (%s), exiting from package installation (%s)' % (stdout + stderr, package))
         env = self._get_apt_env()
-        p = subprocess.Popen(['apt-get', '-q', '--yes', '--no-install-recommends', 'upgrade', r'%s' % package], stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+        p = subprocess.Popen(['apt-get', '-q', '--yes', '--no-install-recommends', 'upgrade', r'%s' % package], stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE, env=env)
         stdout, stderr = p.communicate()
         logger.debug('APT (apt-get update) (%s):: stdout/stderr: %s/%s' % (package, stdout, stderr))
         if p.returncode != 0:
-            raise UpdateFailedException('APT: apt-get update did not succeed (%s), exiting from package installation (%s)' % (stdout + stderr, package))
+            raise UpdateFailedException(
+                'APT: apt-get update did not succeed (%s), exiting from package installation (%s)' % (stdout + stderr, package))
         # we did install a package, so our internal cache is wrong
         self.need_reload = True
         return

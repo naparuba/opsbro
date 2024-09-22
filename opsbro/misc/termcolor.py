@@ -23,66 +23,62 @@
 
 """ANSII Color formatting for output in terminal."""
 
-from __future__ import print_function
-
 import os
 import codecs
 import sys
-PY3 = sys.version_info >= (3,)
 
 # We want to print as UTF8
 # TODO: what about windows? will it works even on old XP?
 stdout_utf8 = codecs.getwriter("utf-8")(sys.stdout)
-
 
 __ALL__ = ['colored', 'cprint']
 
 VERSION = (1, 1, 0)
 
 ATTRIBUTES = dict(
-    list(zip([
-        'bold',
-        'dark',
-        '',
-        'underline',
-        'blink',
-        '',
-        'reverse',
-        'concealed'
-    ],
-        list(range(1, 9))
-    ))
+        list(zip([
+            'bold',
+            'dark',
+            '',
+            'underline',
+            'blink',
+            '',
+            'reverse',
+            'concealed'
+        ],
+                list(range(1, 9))
+        ))
 )
 del ATTRIBUTES['']
 
 HIGHLIGHTS = dict(
-    list(zip([
-        'on_grey',
-        'on_red',
-        'on_green',
-        'on_yellow',
-        'on_blue',
-        'on_magenta',
-        'on_cyan',
-        'on_white'
-    ],
-        list(range(40, 48))
-    ))
+        list(zip([
+            'on_grey',
+            'on_red',
+            'on_green',
+            'on_yellow',
+            'on_blue',
+            'on_magenta',
+            'on_cyan',
+            'on_white'
+        ],
+                list(range(40, 48))
+        ))
 )
 
 COLORS = dict(
-    list(zip([
-        'grey',
-        'red',
-        'green',
-        'yellow',
-        'blue',
-        'magenta',
-        'cyan',
-        'white',
-    ],
-        list(range(90, 98))
-    ))
+        list(zip([
+            'grey',
+            'red',
+            'green',
+            'yellow',
+            'blue',
+            'magenta',
+            'cyan',
+            'white',
+        ],
+                list(range(90, 98))
+        ))
 )
 
 RESET = '\033[0m'
@@ -129,13 +125,10 @@ def cprint(text, color=None, on_color=None, attrs=None, **kwargs):
     # Force writing to a utf8 encoded stdout
     kwargs['file'] = stdout_utf8
     s = colored(text, color, on_color, attrs)
-    if not PY3:
-        print((s), **kwargs)
-    else:  # Python3 have issue with print() so direct writh to buffer instead
-        stdout_utf8.buffer.write(bytes(s, 'utf8'))
-        if kwargs.get('end', '\n') == '\n':
-            stdout_utf8.buffer.write(b'\n')
-        stdout_utf8.flush()
+    stdout_utf8.buffer.write(bytes(s, 'utf8'))
+    if kwargs.get('end', '\n') == '\n':
+        stdout_utf8.buffer.write(b'\n')
+    stdout_utf8.flush()
 
 
 def sprintf(text, color=None, on_color=None, attrs=None, **kwargs):

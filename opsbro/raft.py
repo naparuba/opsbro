@@ -1,13 +1,7 @@
-from __future__ import print_function
 import threading
 import time
 import random
 import math
-
-from .util import PY3
-
-if PY3:
-    xrange = range
 
 # ELECTION_TIMEOUT_LIMITS = (150, 300)
 
@@ -44,12 +38,12 @@ class RAFT_STATES:
     LEAVED = 'leaved'
 
 
-RAFT_STATE_COLORS = {RAFT_STATES.DID_VOTE          : 'blue',
-                     RAFT_STATES.LEADER            : 'magenta',
-                     RAFT_STATES.FOLLOWER          : 'green',
-                     RAFT_STATES.CANDIDATE         : 'candidate',
+RAFT_STATE_COLORS = {RAFT_STATES.DID_VOTE:           'blue',
+                     RAFT_STATES.LEADER:             'magenta',
+                     RAFT_STATES.FOLLOWER:           'green',
+                     RAFT_STATES.CANDIDATE:          'candidate',
                      RAFT_STATES.WAIT_FOR_CANDIDATE: 'wait_for_candidate',
-                     RAFT_STATES.LEAVED            : 'grey'}
+                     RAFT_STATES.LEAVED:             'grey'}
 
 # If set (default False), if we are too old in the election turn, we are set as frozen, and so
 # don't candidate until a frozen period (FROZEN_TIME_RATIO * self.frozen_number)
@@ -215,7 +209,8 @@ class RaftNode(object):
         
         # Hook test for multiprocess values
         if hasattr(self, 'export_state'):
-            states_values = {RAFT_STATES.DID_VOTE: 1, RAFT_STATES.LEADER: 2, RAFT_STATES.FOLLOWER: 3, RAFT_STATES.CANDIDATE: 4, RAFT_STATES.WAIT_FOR_CANDIDATE: 5, RAFT_STATES.LEAVED: 6}
+            states_values = {RAFT_STATES.DID_VOTE:           1, RAFT_STATES.LEADER: 2, RAFT_STATES.FOLLOWER: 3, RAFT_STATES.CANDIDATE: 4,
+                             RAFT_STATES.WAIT_FOR_CANDIDATE: 5, RAFT_STATES.LEAVED: 6}
             self.export_state.value = states_values[state]
     
     
@@ -258,7 +253,7 @@ class RaftNode(object):
         self.do_print('I did vote for %s and I want to let it know to %s neibours' % (self._vote_for_uuid, n))
         
         # try to find n nodes randomly from nodes
-        for i in xrange(n):
+        for i in range(n):
             random_other_uuid = random.choice(nodes_uuids)
             self.raft_layer.send_raft_message(random_other_uuid, msg)
     
@@ -291,7 +286,8 @@ class RaftNode(object):
         quorum_size = math.ceil(float(len(nodes) + 1) / 2)
         # print "I (%d) got a new voter %d" % (n.uuid, self.nb_vote)
         if self._nb_vote_received >= quorum_size:
-            self.do_print("did win the vote! with %d votes for me on a total of %d (quorum size=%d) in %.2fs" % (self._nb_vote_received, len(nodes), quorum_size, time.time() - self.start))
+            self.do_print("did win the vote! with %d votes for me on a total of %d (quorum size=%d) in %.2fs" % (
+            self._nb_vote_received, len(nodes), quorum_size, time.time() - self.start))
             self._set_state(RAFT_STATES.LEADER)
             # warn every one that I am the leader
             m_broad = {'type': RAFT_MESSAGES.LEADER_ELECTED, RAFT_STATES.LEADER: self._uuid, 'from': self._uuid}
@@ -326,7 +322,6 @@ class RaftNode(object):
             self._last_leader_talk_epoch = time.time()
     
     
-
     def _manage_leader_heartbeat(self, msg):
         leader_id = msg['leader']
         if self._leader is None:
@@ -395,7 +390,7 @@ class RaftNode(object):
         # try to find n nodes randomly from nodes
         self.do_print("SEND RANDOMLY dummy passage to %s other nodes" % (n))
         msg = {'type': RAFT_MESSAGES.DUMMY, 'election_turn': self._election_turn, 'from': self._uuid}
-        for i in xrange(n):
+        for i in range(n):
             other_uuid = random.choice(nodes_uuids)
             self.raft_layer.send_raft_message(other_uuid, msg)
     
@@ -492,7 +487,8 @@ class RaftNode(object):
                 # Maybe the message is from a newer turn than ourselve, if so, close ourself, and accept the new message
                 if self._election_turn < election_turn:
                     did_change_election_turn = True
-                    self.do_print('We receive an increasing election turn (%d=>%d) from a message type %s' % (self._election_turn, election_turn, msg['type']))
+                    self.do_print(
+                        'We receive an increasing election turn (%d=>%d) from a message type %s' % (self._election_turn, election_turn, msg['type']))
                     
                     if FEATURE_FLAG_FROZEN:
                         # Ok I was too old, go in frozen mode
@@ -506,7 +502,8 @@ class RaftNode(object):
                         self._election_turn = election_turn
                     else:  # candidate, leader and did-vote
                         # close our election turn only if we did talk to others, like I am a candidate, a vote or
-                        self._fail_to_elect("Our election turn is too old (our=%d other=%d) we close our election turn." % (self._election_turn, election_turn))
+                        self._fail_to_elect(
+                            "Our election turn is too old (our=%d other=%d) we close our election turn." % (self._election_turn, election_turn))
                         self._election_turn = election_turn  # get back to this election turn level
                         if self._state == RAFT_STATES.LEADER or self._state == RAFT_STATES.CANDIDATE:
                             if FEATURE_LATE_NODES_DOES_RELAY_MESSAGE:
@@ -551,7 +548,9 @@ class RaftNode(object):
             if self._state == RAFT_STATES.DID_VOTE:
                 now = time.time()
                 if now > self._vote_date + hearthbeat_timeout:
-                    self._fail_to_elect("my vote is too old and I don't have any elected leader, I switch back to a new election. exchange timeout=%.3f" % (hearthbeat_timeout))
+                    self._fail_to_elect(
+                        "my vote is too old and I don't have any elected leader, I switch back to a new election. exchange timeout=%.3f" % (
+                            hearthbeat_timeout))
             
             # If we are a follower witohout a leader, it means we are in the begining of our job
             # and we need to see when we will start to be a candidate
@@ -563,12 +562,14 @@ class RaftNode(object):
             elif self._state == RAFT_STATES.FOLLOWER and self._leader is not None:
                 now = time.time()
                 if now > self._last_leader_talk_epoch + hearthbeat_timeout:
-                    self._fail_to_elect(" my leader (%s) is too old (was %.3f s ago), I refute it. exchange timeout=%.3f" % (self._leader, now - self._last_leader_talk_epoch, hearthbeat_timeout))
+                    self._fail_to_elect(" my leader (%s) is too old (was %.3f s ago), I refute it. exchange timeout=%.3f" % (
+                    self._leader, now - self._last_leader_talk_epoch, hearthbeat_timeout))
             
             elif self._state == RAFT_STATES.CANDIDATE:
                 now = time.time()
                 if now > self._candidate_date + hearthbeat_timeout:
-                    self._fail_to_elect("my candidate was too old (timeout=%s) an I am not a leader (vote=%s) so I swith to a new election" % (hearthbeat_timeout, self._nb_vote_received))
+                    self._fail_to_elect("my candidate was too old (timeout=%s) an I am not a leader (vote=%s) so I swith to a new election" % (
+                    hearthbeat_timeout, self._nb_vote_received))
             
             elif self._state == RAFT_STATES.WAIT_FOR_CANDIDATE:
                 self._look_for_candidated()

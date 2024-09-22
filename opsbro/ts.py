@@ -3,10 +3,7 @@ import time
 import threading
 import base64
 
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
+import pickle
 import json
 
 from .stats import STATS

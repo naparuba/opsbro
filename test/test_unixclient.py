@@ -28,14 +28,13 @@ from opsbro.cli import post_opsbro_json, put_opsbro_json
 from opsbro.jsonmgr import jsoner
 from opsbro.threadmgr import threader
 from opsbro.unixclient import get_local, get_json
-from opsbro.util import bytes_to_unicode, unicode_to_bytes, PY3
+from opsbro.util import bytes_to_unicode
 from opsbro.log import cprint
 
 # make http_export call directly app.route with all args:
 http_export = app.route
 
-# if not PY3:
-#    bytes = str
+
 
 SOCKET_PATH = '/tmp/test_unix_socket.sock'
 
@@ -74,8 +73,6 @@ def get_from_POST(req, arg_name):
         raise Exception('Cannot find dict in %s' % req.POST.__dict__)
     for (k, v) in req.POST.__dict__['dict'].items():
         print(f'get_from_POST:: comparing: {k}({type(k)}) <=> {arg_name}')
-        if not PY3:
-            k = bytes_to_unicode(k)
         if k != arg_name:
             print(' SKIP: %s' % k)
             continue
@@ -91,21 +88,7 @@ def get_from_GET(req, arg_name):
     v = flask_request.args.get(arg_name, None)
     cprint(u'[SERVER][FLASK] raw get: %s -> %s' % (arg_name, v))
     return v
-    if 'dict' not in req.GET.__dict__:
-        raise Exception('Cannot find dict in %s' % req.GET.__dict__)
-    for (k, v) in req.GET.__dict__['dict'].items():
-        orig_k = k
-        if not PY3:
-            k = bytes_to_unicode(k)
-        cprint('get_from_GET:: comparing: %s(->%s)(force=%s) <=> %s' % (orig_k, k, bytes_to_unicode(k), arg_name))
-        if k != arg_name:
-            print(' SKIP: %s' % k)
-            continue
-        if isinstance(v, list) and len(v) != 0:
-            v = bytes_to_unicode(v[0])
-        cprint(u'_generic_GET:: GET.get :: %s(%s) -> %s(%s)' % (k, type(k), v, type(v)))
-        return v
-    return None
+    
 
 
 class TestUnixClient(OpsBroTest):

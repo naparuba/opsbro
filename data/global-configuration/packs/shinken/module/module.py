@@ -14,7 +14,7 @@ from opsbro.detectormgr import detecter
 from opsbro.gossip import gossiper
 from opsbro.kv import kvmgr
 from opsbro.jsonmgr import jsoner
-from opsbro.util import exec_command, get_sha1_hash, PY3, bytes_to_unicode
+from opsbro.util import exec_command, get_sha1_hash
 
 
 class ShinkenModule(ConnectorModule):
@@ -128,7 +128,7 @@ class ShinkenModule(ConnectorModule):
                 raise
             self.logger.debug('CHECK VALUE %s' % check)
             try:
-                mode = 'w' if PY3 else 'a'  # codecs.open got issue with a in python 3
+                mode = 'w' # codecs.open got issue with a in python 3
                 f = codecs.open(p, mode, encoding="utf-8")
                 cmd = '[%s] PROCESS_SERVICE_CHECK_RESULT;%s;%s;%d;%s\n' % (int(time.time()), nuuid, self.sanatize_check_name(cname), check['state_id'], check['output'])
                 self.logger.debug('SAVING COMMAND %s' % cmd)

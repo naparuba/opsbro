@@ -8,7 +8,7 @@ from .log import LoggerFactory
 from .gossip import gossiper
 from .library import libstore
 from .evaluater import evaluater
-from .util import unified_diff, exec_command, PY3
+from .util import unified_diff, exec_command
 
 # Global logger for this part
 logger = LoggerFactory.create_logger('generator')

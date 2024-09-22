@@ -9,20 +9,16 @@ from opsbro.gossip import gossiper
 from opsbro.threadmgr import threader
 from opsbro.parameters import StringParameter, StringListParameter, IntParameter
 from opsbro.compliancemgr import COMPLIANCE_STATES
-from opsbro.util import PY3
 
-# currently Python3 do not manage discord, as the lib is PY3 only
-if PY3:
-    # Local import, as we have . in sys.path when loading this file
-    # NOTE: do NOT import in python2, as the synctax will be broken!
-    try:
-        from discord_bot import get_a_botclass
-    except SyntaxError:  # old python3 versions
-        def get_a_bot_class(logger):
-            raise Exception('The discord module is only available for python3, sorry.')
-else:
+
+# Local import, as we have . in sys.path when loading this file
+# NOTE: do NOT import in python2, as the synctax will be broken!
+try:
+    from discord_bot import get_a_botclass
+except SyntaxError:  # old python3 versions
     def get_a_bot_class(logger):
         raise Exception('The discord module is only available for python3, sorry.')
+
 
 
 class DiscordHandlerModule(HandlerModule):

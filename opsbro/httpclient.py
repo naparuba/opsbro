@@ -1,21 +1,12 @@
 import ssl
 
-try:
-    from httplib import HTTPException
-except ImportError:
-    from http.client import HTTPException
+from http.client import HTTPException
 from socket import error as SocketError
 
-try:
-    from urllib2 import Request, build_opener, URLError, HTTPError, HTTPHandler, HTTPPasswordMgrWithDefaultRealm, HTTPBasicAuthHandler, HTTPSHandler
-except ImportError:
-    from urllib.request import Request, build_opener, HTTPHandler, HTTPPasswordMgrWithDefaultRealm, HTTPBasicAuthHandler, HTTPSHandler
-    from urllib.error import URLError, HTTPError
+from urllib.request import Request, build_opener, HTTPHandler, HTTPPasswordMgrWithDefaultRealm, HTTPBasicAuthHandler, HTTPSHandler
+from urllib.error import URLError, HTTPError
 
-try:
-    from urllib import urlencode
-except ImportError:
-    from urllib.parse import urlencode
+from urllib.parse import urlencode
 
 _HTTP_EXCEPTIONS = None
 
@@ -34,16 +25,12 @@ def get_http_exceptions():
 
 class Httper(object):
     def __init__(self):
-        # NOTE: ssl.SSLContext is only availabe on last python 2.7 versions
-        if hasattr(ssl, 'SSLContext'):
-            # NOTE: was before, but seems to be not as large as default context
-            ## self.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
-            self.ssl_context = ssl.create_default_context()
-            self.ssl_context.options &= ~ssl.OP_NO_SSLv3  # reenable SSLv3 if need
-            self.ssl_context.check_hostname = False
-            self.ssl_context.verify_mode = ssl.CERT_NONE
-        else:
-            self.ssl_context = None
+        # NOTE: was before, but seems to be not as large as default context
+        ## self.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+        self.ssl_context = ssl.create_default_context()
+        self.ssl_context.options &= ~ssl.OP_NO_SSLv3  # reenable SSLv3 if need
+        self.ssl_context.check_hostname = False
+        self.ssl_context.verify_mode = ssl.CERT_NONE
     
     
     def get(self, uri, params={}, headers={}, with_status_code=False, timeout=10, user=None, password=None):

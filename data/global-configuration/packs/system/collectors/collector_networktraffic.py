@@ -4,9 +4,8 @@ import time
 import traceback
 import os
 
-PY3 = sys.version_info >= (3,)
-if PY3:
-    long = int
+
+
 
 from opsbro.collector import Collector
 from opsbro.now import NOW
@@ -102,7 +101,7 @@ class NetworkTraffic(Collector):
                     was_new_iface = True
                     self.networkTrafficStore[key] = {}
                     for k in list_of_keys:
-                        self.networkTrafficStore[key][k] = long(faces[face][k])
+                        self.networkTrafficStore[key][k] = int(faces[face][k])
             
             if was_new_iface and not recursif_call:  # the very first call after a new interface, call it again
                 # to make a comparision call
@@ -120,22 +119,22 @@ class NetworkTraffic(Collector):
                     if key in self.networkTrafficStore:
                         interfaces[key] = {}
                         for k in list_of_keys:
-                            interfaces[key][k] = long(faces[face][k]) - long(self.networkTrafficStore[key][k])
+                            interfaces[key][k] = int(faces[face][k]) - int(self.networkTrafficStore[key][k])
                             
                             if interfaces[key][k] < 0:
-                                interfaces[key][k] = long(faces[face][k])
+                                interfaces[key][k] = int(faces[face][k])
                             
                             # Only 'recv_bytes', 'trans_bytes' need /s metrics
                             if k in by_sec_keys:
                                 interfaces[key]['%s/s' % k] = interfaces[key][k] / diff
                             
-                            interfaces[key][k] = long(interfaces[key][k])
-                            self.networkTrafficStore[key][k] = long(faces[face][k])
+                            interfaces[key][k] = int(interfaces[key][k])
+                            self.networkTrafficStore[key][k] = int(faces[face][k])
                     
                     else:  # maybe during a recursive call we have a new iface, ok let not have value this turn
                         self.networkTrafficStore[key] = {}
                         for k in list_of_keys:
-                            self.networkTrafficStore[key][k] = long(faces[face][k])
+                            self.networkTrafficStore[key][k] = int(faces[face][k])
                             
                             # Logging
                     logger.debug('getNetworkTraffic: %s = %s' % (key, self.networkTrafficStore[key]['recv_bytes']))
@@ -227,19 +226,19 @@ class NetworkTraffic(Collector):
                     # then the next time we can calculate the difference
                     if key in self.networkTrafficStore:
                         interfaces[key] = {}
-                        interfaces[key]['recv_bytes'] = long(faces[face]['recv_bytes']) - long(
+                        interfaces[key]['recv_bytes'] = int(faces[face]['recv_bytes']) - int(
                             self.networkTrafficStore[key]['recv_bytes'])
-                        interfaces[key]['trans_bytes'] = long(faces[face]['trans_bytes']) - long(
+                        interfaces[key]['trans_bytes'] = int(faces[face]['trans_bytes']) - int(
                             self.networkTrafficStore[key]['trans_bytes'])
                         
                         interfaces[key]['recv_bytes'] = str(interfaces[key]['recv_bytes'])
                         interfaces[key]['trans_bytes'] = str(interfaces[key]['trans_bytes'])
                         
                         if interfaces[key]['recv_bytes'] < 0:
-                            interfaces[key]['recv_bytes'] = long(faces[face]['recv_bytes'])
+                            interfaces[key]['recv_bytes'] = int(faces[face]['recv_bytes'])
                         
                         if interfaces[key]['trans_bytes'] < 0:
-                            interfaces[key]['trans_bytes'] = long(faces[face]['trans_bytes'])
+                            interfaces[key]['trans_bytes'] = int(faces[face]['trans_bytes'])
                         
                         # And update the stored value to subtract next time round
                         self.networkTrafficStore[key]['recv_bytes'] = faces[face]['recv_bytes']

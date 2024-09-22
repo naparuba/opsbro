@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function
 import os
 import importlib.util
 import traceback
@@ -33,10 +32,6 @@ try:
     import fcntl
 except ImportError:
     fcntl = None
-
-PY3 = (sys.version_info[0] == 3)
-if PY3:
-    xrange = range  # note: python 3 do not have xrange
 
 from .configurationmanager import configmgr
 from .packer import packer, PACKS_LEVELS
@@ -188,7 +183,8 @@ class AnyAgent(object):
             # Be sure to kill it
             self.tmp_agent.terminate()
             cprint('%s OK' % CHARACTERS.check, color='grey')
-            cprint('%s | if you want to start the agent: launch it with the "opsbro agent start" command' % CHARACTERS.corner_bottom_left, color='grey')
+            cprint('%s | if you want to start the agent: launch it with the "opsbro agent start" command' % CHARACTERS.corner_bottom_left,
+                   color='grey')
     
     
     @staticmethod
@@ -265,10 +261,13 @@ class AnyAgent(object):
             cprint('%s | Spawning a ' % CHARACTERS.vbar, color='grey', end='')
             cprint('temporary one', color='yellow')
             cprint('%s | - process pid is %s' % (CHARACTERS.vbar, self.tmp_agent.pid), color='grey')
-            cprint('%s | - you can avoid the temporary agent by launching one with "opsbro agent start" or "/etc/init.d/opsbro start" ' % CHARACTERS.corner_bottom_left, color='grey')
+            cprint(
+                '%s | - you can avoid the temporary agent by launching one with "opsbro agent start" or "/etc/init.d/opsbro start" ' % CHARACTERS.corner_bottom_left,
+                color='grey')
             cprint('')
             logger.debug('Giving a process agent: %s' % self.tmp_agent)
-            agent_state = wait_for_agent_started(visual_wait=True, wait_for_spawn=True, timeout=self._timeout, sub_agent_process=self.tmp_agent)  # note: we wait for spawn as it can take some few seconds before the unix socket is available
+            agent_state = wait_for_agent_started(visual_wait=True, wait_for_spawn=True, timeout=self._timeout,
+                                                 sub_agent_process=self.tmp_agent)  # note: we wait for spawn as it can take some few seconds before the unix socket is available
         if agent_state == AGENT_STATES.AGENT_STATE_STOPPED:
             if self.tmp_agent.returncode is None:  # not finish
                 stdout = self.no_block_read(self.tmp_agent.stdout)
@@ -495,8 +494,7 @@ class CLICommander(object):
     # Python3 does nasty decode before give us sys.argv, so must get back to original values
     def _get_argv_as_unicode(self):
         _argv = sys.argv
-        if PY3:
-            _argv = [os.fsencode(arg) for arg in sys.argv]
+        _argv = [os.fsencode(arg) for arg in sys.argv]
         return [bytes_to_unicode(arg) for arg in _argv]
     
     
@@ -668,7 +666,8 @@ class CLICommander(object):
     
     @staticmethod
     def print_fatal_error(err):
-        cprint('%s%s Fatal Error %s%s' % (CHARACTERS.corner_top_left, CHARACTERS.hbar * 40, CHARACTERS.hbar * 40, CHARACTERS.corner_top_right), color='red')
+        cprint('%s%s Fatal Error %s%s' % (CHARACTERS.corner_top_left, CHARACTERS.hbar * 40, CHARACTERS.hbar * 40, CHARACTERS.corner_top_right),
+               color='red')
         cprint('  %s %s' % (CHARACTERS.arrow_left, err), color='red')
         cprint('%s%s%s' % (CHARACTERS.corner_bottom_left, CHARACTERS.hbar * 93, CHARACTERS.corner_bottom_right), color='red')
         logger.error('ERROR: fatal error: %s' % err, do_print=False)
@@ -776,7 +775,8 @@ class CLICommander(object):
         if entry.need_full_configuration:
             # Only print helper if we are inside a tty, if it's a | command, don't need this
             if is_tty():
-                cprint(' * This command need the agent configuration to be loaded to be executed. This can take some few seconds.', color='grey', end='')
+                cprint(' * This command need the agent configuration to be loaded to be executed. This can take some few seconds.', color='grey',
+                       end='')
                 sys.stdout.flush()
             configmgr.finish_to_load_configuration_and_objects()
             if is_tty():
@@ -866,7 +866,7 @@ class CLICommander(object):
     
     @staticmethod
     def __chunker(seq, size):
-        return [seq[pos:pos + size] for pos in xrange(0, len(seq), size)]
+        return [seq[pos:pos + size] for pos in range(0, len(seq), size)]
     
     
     # Ok magic ahead: we will try to look at printing the options with color

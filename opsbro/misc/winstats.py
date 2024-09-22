@@ -6,12 +6,6 @@
     License:
         LGPL, Version 3 (or later)
 '''
-import sys
-
-PY3 = sys.version_info >= (3,)
-if PY3:
-    long = int
-    unicode = str
 
 import ctypes, string
 from ctypes import (Structure, Union, WinError, byref, c_double, c_longlong,
@@ -129,7 +123,7 @@ def get_fs_usage(drive):
     if len(drive) < 3:
         drive = drive + ':\\'
     _, total, free = c_ulonglong(), c_ulonglong(), c_ulonglong()
-    if isinstance(drive, unicode):
+    if isinstance(drive, str):
         fun = kernel32.GetDiskFreeSpaceExW
     else:
         fun = kernel32.GetDiskFreeSpaceExA
@@ -196,7 +190,7 @@ def get_vol_info(drive):
     '''
     if len(drive) < 3:
         drive = drive + ':\\'
-    drive = unicode(drive)
+    drive = str(drive)
     nameBuf = ctypes.create_unicode_buffer(1024)
     fsTypeBuf = ctypes.create_unicode_buffer(1024)
     serialno = LPDWORD()
@@ -204,14 +198,14 @@ def get_vol_info(drive):
     file_system_flags = None
     
     kernel32.GetVolumeInformationW(
-        ctypes.c_wchar_p(drive),
-        nameBuf,
-        sizeof(nameBuf),
-        serialno,
-        max_component_length,
-        file_system_flags,
-        fsTypeBuf,
-        sizeof(fsTypeBuf)
+            ctypes.c_wchar_p(drive),
+            nameBuf,
+            sizeof(nameBuf),
+            serialno,
+            max_component_length,
+            file_system_flags,
+            fsTypeBuf,
+            sizeof(fsTypeBuf)
     )
     try:
         serialno = serialno.contents  # NULL pointer access
@@ -224,15 +218,15 @@ def get_vol_info(drive):
 HQUERY = HCOUNTER = HANDLE
 pdh = ctypes.windll.pdh
 # http://msdn.microsoft.com/en-us/library/windows/desktop/aa372637
-PDH_FMT_RAW = long(16)
-PDH_FMT_ANSI = long(32)
-PDH_FMT_UNICODE = long(64)
-PDH_FMT_LONG = long(256)
-PDH_FMT_DOUBLE = long(512)
-PDH_FMT_LARGE = long(1024)
-PDH_FMT_1000 = long(8192)
-PDH_FMT_NODATA = long(16384)
-PDH_FMT_NOSCALE = long(4096)
+PDH_FMT_RAW = int(16)
+PDH_FMT_ANSI = int(32)
+PDH_FMT_UNICODE = int(64)
+PDH_FMT_LONG = int(256)
+PDH_FMT_DOUBLE = int(512)
+PDH_FMT_LARGE = int(1024)
+PDH_FMT_1000 = int(8192)
+PDH_FMT_NODATA = int(16384)
+PDH_FMT_NOSCALE = int(4096)
 
 # http://msdn.microsoft.com/en-us/library/aa373046
 _pdh_errcodes = {
@@ -301,9 +295,9 @@ def get_perf_data(counters, fmts='long', english=False, delay=0):
                 576631-get-cpu-usage-by-using-ctypes-win32-platform/
     '''
     if type(counters) is list:
-        counters = [unicode(c) for c in counters]
+        counters = [str(c) for c in counters]
     else:
-        counters = [unicode(counters)]
+        counters = [str(counters)]
     if type(fmts) is list:
         ifmts = [getfmt(fmt) for fmt in fmts]
     else:
@@ -352,7 +346,7 @@ def get_perf_data(counters, fmts='long', english=False, delay=0):
         if errs:
             pdh.PdhCloseQuery(hQuery)
             raise WindowsError('PdhGetFormattedCounterValue failed: %s' %
-                                 get_pd_err(errs))
+                               get_pd_err(errs))
         values.append(value)
     
     # Close
@@ -367,7 +361,6 @@ def get_perf_data(counters, fmts='long', english=False, delay=0):
 # ----------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    
     import locale
     
     locale.setlocale(locale.LC_ALL, '')
@@ -382,7 +375,6 @@ if __name__ == '__main__':
     pinfo = get_perf_info()
     print('    Cache: %s p' % fmt(pinfo.SystemCache, ))
     print('    Cache: %s b' % fmt(pinfo.SystemCacheBytes))
-
     
     print('Disk Stats:')
     drives = get_drives()
@@ -395,7 +387,7 @@ if __name__ == '__main__':
     print('        Type:', vinfo.fstype)
     print('        Total:', fmt(fsinfo.total))
     print('        Used: ', fmt(fsinfo.used))
-    print('        Free: ', fmt(fsinfo.free)          )
+    print('        Free: ', fmt(fsinfo.free))
     print('PerfMon queries:')
     # take a second snapshot 100ms after the first:
     usage = get_perf_data(r'\Processor(_Total)\% Processor Time',

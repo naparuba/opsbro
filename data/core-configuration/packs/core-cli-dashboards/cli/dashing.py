@@ -3,7 +3,7 @@
 
 # LGPL, cf dashing-LICENCE
 # From https://github.com/FedericoCeratto/dashing
-from __future__ import print_function
+
 import time
 import sys
 from collections import deque, namedtuple
@@ -20,10 +20,6 @@ from opsbro.info import TITLE_COLOR
 from opsbro.misc.bro_quotes import get_quote
 from opsbro.colorpalette import colorpalette
 from opsbro.characters import CHARACTERS
-from opsbro.util import PY3
-
-if PY3:
-    basestring = str
 
 # "graphic" elements
 
@@ -376,7 +372,7 @@ class HGauge(Tile):
         value = self.vcallback()
         if value is None:
             value = 0
-        if isinstance(value, basestring):
+        if isinstance(value, str):
             try:
                 value = int(value)
             except ValueError:

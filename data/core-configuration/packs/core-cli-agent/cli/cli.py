@@ -4,8 +4,6 @@
 # Copyright (C) 2014:
 #    Gabes Jean, naparuba@gmail.com
 
-from __future__ import print_function
-import sys
 import base64
 import uuid
 import time

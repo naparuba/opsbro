@@ -7,29 +7,12 @@
 
 import os
 import socket
-import sys
 
-PY3 = sys.version_info >= (3,)
-
-try:  # Python 2
-    from urllib2 import AbstractHTTPHandler, Request, build_opener, URLError, HTTPHandler
-except ImportError:  # Python 3
-    from urllib.request import AbstractHTTPHandler, Request, build_opener, HTTPHandler
-    from urllib.error import URLError
-try:  # Python 2
-    from httplib import HTTPConnection, BadStatusLine
-except ImportError:  # Python 3
-    from http.client import HTTPConnection, BadStatusLine
-
-try:  # Python2
-    from urllib import urlencode, quote, quote_plus
-except ImportError:
-    from urllib.parse import urlencode, quote, quote_plus
-
-try:  # Python 2
-    from urlparse import urlsplit, urlunsplit
-except ImportError:
-    from urllib.parse import urlsplit, urlunsplit
+from urllib.request import AbstractHTTPHandler, Request, build_opener, HTTPHandler
+from urllib.error import URLError
+from http.client import HTTPConnection, BadStatusLine
+from urllib.parse import urlencode, quote
+from urllib.parse import urlsplit, urlunsplit
 
 from .log import logger, cprint
 from .jsonmgr import jsoner
@@ -76,31 +59,6 @@ class UnixSocketHandler(AbstractHTTPHandler):
     
     # IMPORTANT: this will transform IRI (url with utf8) into real URL with % encoded values
     def _iri2uri(self, iri):
-        if not PY3:
-            cprint(u'_iri2uri:: start  uri=%s(type=%s)' % (iri, type(iri)))
-            if isinstance(iri, str):
-                iri = iri.decode('utf8')
-            cprint(u'_iri2uri:: postdecode  uri=%s(type=%s)' % (iri, type(iri)))
-            # PY2 version:
-            (scheme, netloc, path, query, fragment) = urlsplit(iri)
-            cprint(u'_iri2uri:: parsed_path=%s(type=%s)' % (path, type(path)))
-            scheme = quote(scheme)
-            netloc = netloc.encode('idna').decode('utf-8')
-            # IMPORTANT: the quote need bytes
-            if not isinstance(path, str):
-                path = path.encode('utf8')
-            # NOP: we cannot print it now it's bytes cprint(u'_iri2uri:: post_decode=%s(type=%s)' % (path, type(path)))
-            try:
-                n_path = quote(path)
-            except KeyError:
-                cprint(u'ARG: %s(%s) and path=(%s)' % (iri, type(iri), type(path)))
-                raise
-            # query = quote(query)  # already quote
-            fragment = quote(fragment)
-            uri = urlunsplit((scheme, netloc, n_path, query, fragment))
-            return uri
-        
-        # PY3 version:
         (scheme, netloc, path, query, fragment) = urlsplit(iri)
         scheme = quote(scheme)
         netloc = netloc.encode('idna').decode('utf-8')
@@ -131,7 +89,7 @@ class UnixSocketHandler(AbstractHTTPHandler):
             new_req.timeout = req.timeout
             new_req.get_method = req.get_method  # Also copy specific method from the original header
             # return self.do_open(UnixHTTPConnection(unix_socket), new_req)
-            #cprint(u'UnixSocketHandler:: unix_open :: url="%s" / req_data="%s"   new_req=%s' % (url, _req_data, new_req.__dict__))
+            # cprint(u'UnixSocketHandler:: unix_open :: url="%s" / req_data="%s"   new_req=%s' % (url, _req_data, new_req.__dict__))
             r = self.do_open(UnixHTTPConnection(unix_socket), new_req)
         except UnicodeEncodeError as exp:
             raise
@@ -144,7 +102,6 @@ class UnixSocketHandler(AbstractHTTPHandler):
 
 
 def to_unicode_recursive_obj(in_obj):
-    
     def encode_list(in_list):
         out_list = []
         for el in in_list:
@@ -159,12 +116,8 @@ def to_unicode_recursive_obj(in_obj):
         return out_dict
     
     
-    if not PY3:
-        if isinstance(in_obj, unicode):
-            return in_obj.encode('utf-8')
-    else:
-        if isinstance(in_obj, bytes):
-            return in_obj.decode('utf-8')
+    if isinstance(in_obj, bytes):
+        return in_obj.decode('utf-8')
     if isinstance(in_obj, list):
         return encode_list(in_obj)
     elif isinstance(in_obj, tuple):
@@ -200,8 +153,8 @@ def get_local(u, local_socket, params={}, method=u'GET', timeout=10):
     else:  # unix
         url_opener = build_opener(UnixSocketHandler())
         uri = u'unix:/%s%s' % (local_socket, u)
-    #cprint(u'CALLING: uri type=%s' % type(uri))
-    #cprint(u'CALLING: %s:%s' % (method, uri))
+    # cprint(u'CALLING: uri type=%s' % type(uri))
+    # cprint(u'CALLING: %s:%s' % (method, uri))
     logger.debug(u"Connecting to local http/unix socket at: %s with method %s" % (uri, method))
     
     req = Request(uri, data)
@@ -225,7 +178,6 @@ def get_request_errors():
 
 # get a json on the local server, and parse the result    
 def get_json(uri, local_socket='', params={}, multi=False, method='GET', timeout=10):
-    
     try:
         (code, r) = get_local(uri, local_socket=local_socket, params=params, method=method, timeout=timeout)
     except get_request_errors() as exp:

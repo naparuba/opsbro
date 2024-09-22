@@ -3,10 +3,9 @@ import string
 import platform
 import os
 import ctypes
-import sys
 from ctypes import c_uint32, c_int, c_size_t, c_void_p, POINTER, CFUNCTYPE
 
-PY3 = sys.version_info >= (3,)
+
 
 from opsbro.collector import Collector
 
@@ -160,7 +159,7 @@ class Hypervisor(Collector):
         hypervisor = struct.pack('IIII', *cpu(HYPERVISOR_INFO_LEAF)).decode('ascii', 'ignore')
         
         # clean the hypervisor string because we can (will) have non printable chars
-        letters = string.ascii_letters if PY3 else string.letters
+        letters = string.ascii_letters
         res['hypervisor'] = ''.join(x for x in hypervisor if x in letters)
         
         return res

@@ -81,11 +81,6 @@ _DEBUG = False
 
 import sys
 
-PY3 = sys.version_info >= (3,)
-if PY3:
-    long = int
-    unicode = str
-
 import datetime
 import re
 import struct
@@ -251,10 +246,10 @@ class x_wmi_uninitialised_thread(x_wmi):
 
 WMI_EXCEPTIONS = {
     signed_to_unsigned(wbemErrInvalidQuery): x_wmi_invalid_query,
-    signed_to_unsigned(wbemErrTimedout)    : x_wmi_timed_out,
-    0x80070005                             : x_access_denied,
-    0x80041003                             : x_access_denied,
-    0x800401E4                             : x_wmi_uninitialised_thread,
+    signed_to_unsigned(wbemErrTimedout):     x_wmi_timed_out,
+    0x80070005:                              x_access_denied,
+    0x80041003:                              x_access_denied,
+    0x800401E4:                              x_wmi_uninitialised_thread,
 }
 
 
@@ -763,8 +758,8 @@ class _wmi_object:
                 params = {'bClassesOnly': True}
             try:
                 associated_classes = dict(
-                    (assoc.Path_.Class, _wmi_class(self._namespace, assoc)) for
-                    assoc in self.ole_object.Associators_(**params)
+                        (assoc.Path_.Class, _wmi_class(self._namespace, assoc)) for
+                        assoc in self.ole_object.Associators_(**params)
                 )
                 _set(self, "_associated_classes", associated_classes)
             except pywintypes.com_error:
@@ -795,8 +790,8 @@ class _wmi_object:
             return [
                 _wmi_object(i) for i in \
                 self.ole_object.Associators_(
-                    strAssocClass=wmi_association_class,
-                    strResultClass=wmi_result_class
+                        strAssocClass=wmi_association_class,
+                        strResultClass=wmi_result_class
                 )
             ]
         except pywintypes.com_error:
@@ -933,11 +928,11 @@ class _wmi_class(_wmi_object):
             raise x_wmi("notification_type must be one of %s" % ", ".join(valid_notification_types))
         
         return self._namespace.watch_for(
-            notification_type=notification_type,
-            wmi_class=self,
-            delay_secs=delay_secs,
-            fields=fields,
-            **where_clause
+                notification_type=notification_type,
+                wmi_class=self,
+                delay_secs=delay_secs,
+                fields=fields,
+                **where_clause
         )
     
     
@@ -1079,9 +1074,9 @@ class _wmi_namespace:
             return set()
         else:
             return set(
-                c.Path_.Class
-                for c in SubclassesOf(root)
-                if re.match(regex, c.Path_.Class)
+                    c.Path_.Class
+                    for c in SubclassesOf(root)
+                    if re.match(regex, c.Path_.Class)
             )
     
     
@@ -1246,9 +1241,9 @@ class _wmi_namespace:
         
         try:
             return _wmi_watcher(
-                self._namespace.ExecNotificationQuery(wql),
-                is_extrinsic=is_extrinsic,
-                fields=fields
+                    self._namespace.ExecNotificationQuery(wql),
+                    is_extrinsic=is_extrinsic,
+                    fields=fields
             )
         except pywintypes.com_error:
             handle_com_error()
@@ -1293,7 +1288,7 @@ class _wmi_watcher:
     """Helper class for WMI.watch_for below (qv)"""
     
     _event_property_map = {
-        "TargetInstance"  : _wmi_object,
+        "TargetInstance":   _wmi_object,
         "PreviousInstance": _wmi_object
     }
     
@@ -1316,9 +1311,9 @@ class _wmi_watcher:
                 return _wmi_event(event, None, self.fields)
             else:
                 return _wmi_event(
-                    event.Properties_("TargetInstance").Value,
-                    _wmi_object(event, property_map=self._event_property_map),
-                    self.fields
+                        event.Properties_("TargetInstance").Value,
+                        _wmi_object(event, property_map=self._event_property_map),
+                        self.fields
                 )
         except pywintypes.com_error:
             handle_com_error()
@@ -1386,24 +1381,24 @@ def connect(
                         raise x_wmi_authentication("You can only specify user/password for a remote connection")
                     else:
                         obj = connect_server(
-                            server=computer,
-                            namespace=namespace,
-                            user=user,
-                            password=password,
-                            authority=authority,
-                            impersonation_level=impersonation_level,
-                            authentication_level=authentication_level
+                                server=computer,
+                                namespace=namespace,
+                                user=user,
+                                password=password,
+                                authority=authority,
+                                impersonation_level=impersonation_level,
+                                authentication_level=authentication_level
                         )
                 
                 else:
                     moniker = construct_moniker(
-                        computer=computer,
-                        impersonation_level=impersonation_level,
-                        authentication_level=authentication_level,
-                        authority=authority,
-                        privileges=privileges,
-                        namespace=namespace,
-                        suffix=suffix
+                            computer=computer,
+                            impersonation_level=impersonation_level,
+                            authentication_level=authentication_level,
+                            authority=authority,
+                            privileges=privileges,
+                            namespace=namespace,
+                            suffix=suffix
                     )
                     obj = GetObject(moniker)
             
@@ -1422,7 +1417,8 @@ def connect(
             handle_com_error()
     
     except x_wmi_uninitialised_thread:
-        raise x_wmi_uninitialised_thread("WMI returned a syntax error: you're probably running inside a thread without first calling pythoncom.CoInitialize[Ex]")
+        raise x_wmi_uninitialised_thread(
+            "WMI returned a syntax error: you're probably running inside a thread without first calling pythoncom.CoInitialize[Ex]")
 
 
 WMI = connect
@@ -1530,14 +1526,14 @@ def connect_server(
     
     server = Dispatch("WbemScripting.SWbemLocator"). \
         ConnectServer(
-        server,
-        namespace,
-        user,
-        password,
-        locale,
-        authority,
-        security_flags,
-        named_value_set
+            server,
+            namespace,
+            user,
+            password,
+            locale,
+            authority,
+            security_flags,
+            named_value_set
     )
     if impersonation:
         server.Security_.ImpersonationLevel = impersonation
@@ -1557,13 +1553,13 @@ def Registry(
     warnings.warn("This function can be implemented using wmi.WMI (namespace='DEFAULT').StdRegProv", DeprecationWarning)
     if not moniker:
         moniker = construct_moniker(
-            computer=computer,
-            impersonation_level=impersonation_level,
-            authentication_level=authentication_level,
-            authority=authority,
-            privileges=privileges,
-            namespace="default",
-            suffix="StdRegProv"
+                computer=computer,
+                impersonation_level=impersonation_level,
+                authentication_level=authentication_level,
+                authority=authority,
+                privileges=privileges,
+                namespace="default",
+                suffix="StdRegProv"
         )
     
     try:
@@ -1675,7 +1671,7 @@ class WMIAccess(object):
         raw = winstats.get_perf_data(q, fmts=unit, delay=delay, english=english)
         # only the first element is need
         r = raw[0]
-        tr = {'long': long, 'double': float}
+        tr = {'long': int, 'double': float}
         r = tr[unit](r)
         return r
 
@@ -1692,7 +1688,7 @@ if __name__ == '__main__':
     system = WMI()
     print("TIME: ", time.time() - t0)
     for my_computer in system.Win32_ComputerSystem():
-        print ("Disks on", my_computer.Name)
+        print("Disks on", my_computer.Name)
         for disk in system.Win32_LogicalDisk():
-            print (disk.Caption, disk.Description, disk.ProviderName or "")
+            print(disk.Caption, disk.Description, disk.ProviderName or "")
     print("TIME2", time.time() - t0)

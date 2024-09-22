@@ -9,7 +9,7 @@ from .characters import CHARACTERS
 import opsbro.misc
 from .library import libstore
 from .log import LoggerFactory
-from .util import bytes_to_unicode, PY3
+from .util import bytes_to_unicode
 
 ruamel_yaml = None
 

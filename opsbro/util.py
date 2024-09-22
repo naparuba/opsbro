@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import sys
+
 import os
 import shutil
 import glob
@@ -11,10 +11,6 @@ import uuid as libuuid
 import base64
 import re
 
-PY3 = sys.version_info >= (3,)
-if PY3:
-    basestring = str
-
 from .log import LoggerFactory, DEFAULT_LOG_PART
 from .type_hint import TYPE_CHECKING
 
@@ -23,10 +19,10 @@ if TYPE_CHECKING:
 
 logger = LoggerFactory.create_logger(DEFAULT_LOG_PART)
 
-
 # FROM : https://stackoverflow.com/questions/14383937/check-printable-for-unicode
 # match characters from ¿ to the end of the JSON-encodable range
 IS_PRINTABLE_EXCLUDE_RANGE = re.compile(r'[\u00bf-\uffff]')
+
 
 def b64_into_unicode(b64_string):
     return bytes_to_unicode(base64.b64decode(b64_string))
@@ -46,11 +42,8 @@ def epoch_to_human_string(t_epoch):
 
 def is_character_printable(c):
     # type: (str) -> bool
-    if PY3:
-        return c.isprintable()
-    # python 2: need to go with a regexp
-    return not bool(IS_PRINTABLE_EXCLUDE_RANGE.search(c))
-        
+    return c.isprintable()
+
 
 # Make a directory with recursive creation if need
 # Can send IOError if a file already exists with the name
@@ -96,19 +89,14 @@ def exec_command(cmd):
 
 def my_sort(lst, cmp_f):
     # type: (List, Any) -> List
-    if not PY3:
-        lst = sorted(lst, cmp=cmp_f)
-    else:
-        from functools import cmp_to_key
-        lst = sorted(lst, key=cmp_to_key(cmp_f))
+    from functools import cmp_to_key
+    lst = sorted(lst, key=cmp_to_key(cmp_f))
     return lst
 
 
 def my_cmp(a, b):
     # type: (Any, Any) -> bool
-    if PY3:
-        return ((a > b) - (a < b))
-    return cmp(a, b)
+    return ((a > b) - (a < b))
 
 
 def copy_dir(source_item, destination_item):
@@ -174,10 +162,7 @@ def get_sha1_hash(s):
 def get_uuid():
     # type: () -> str
     u = libuuid.uuid1()
-    if PY3:
-        return u.hex
-    else:
-        return u.get_hex()
+    return u.hex
 
 
 # Bytes to unicode
@@ -188,9 +173,7 @@ def string_decode(s):
 # Bytes to unicode
 def bytes_to_unicode(s):
     # type: (Optional[bytes, str]) -> str
-    if isinstance(s, str) and not PY3:  # python3 already is unicode in str
-        return s.decode('utf8', 'ignore')
-    if PY3 and (isinstance(s, bytes) or isinstance(s, bytearray)):  # bytearray is bytes that can mutate
+    if isinstance(s, bytes) or isinstance(s, bytearray):  # bytearray is bytes that can mutate
         return s.decode('utf8', 'ignore')
     return s
 
@@ -202,7 +185,7 @@ def string_encode(s):
 
 def unicode_to_bytes(s):
     # type: (Optional[bytes, str]) -> bytes
-    if isinstance(s, str) and PY3:
+    if isinstance(s, str):
         return s.encode('utf8', 'ignore')
     return s
 
@@ -233,8 +216,6 @@ def byteify(input):
         return dict([(byteify(key), byteify(value)) for key, value in input.items()])
     elif isinstance(input, list):
         return [byteify(element) for element in input]
-    elif isinstance(input, str) and not PY3:  # python3 already is unicode in str
-        return input.decode('utf8', 'ignore')
     else:
         return input
 
@@ -289,10 +270,10 @@ def unified_diff(from_lines, to_lines, pth=''):
     import difflib
     from .characters import CHARACTERS
     
-    if isinstance(from_lines, basestring):
+    if isinstance(from_lines, str):
         from_lines = from_lines.splitlines()
     
-    if isinstance(to_lines, basestring):
+    if isinstance(to_lines, str):
         to_lines = to_lines.splitlines()
     
     pat_diff = re.compile(r'@@ (.[0-9]+\,[0-9]+) (.[0-9]+,[0-9]+) @@')
@@ -319,7 +300,8 @@ def unified_diff(from_lines, to_lines, pth=''):
             # We do not want to add a \n on the very first block
             prefix = '' if first_diff else '\n'
             first_diff = False
-            diff_lines.append(u"%s%s%s Change %s (line, change size): %s %s %s" % (prefix, CHARACTERS.corner_top_left, CHARACTERS.hbar * 10, pth, left, CHARACTERS.arrow_left, right))
+            diff_lines.append(u"%s%s%s Change %s (line, change size): %s %s %s" % (
+                prefix, CHARACTERS.corner_top_left, CHARACTERS.hbar * 10, pth, left, CHARACTERS.arrow_left, right))
             to_lnum = int(lstart)
             from_lnum = int(rstart)
             continue

@@ -3,12 +3,8 @@ import datetime
 import os
 import sys
 
-try:  # Python 2
-    from urlparse import urlparse
-except ImportError:  # python3
-    from urllib.parse import urlparse
-    
-    basestring = str
+
+from urllib.parse import urlparse
 from numbers import Number
 
 from opsbro.collector import Collector
@@ -42,7 +38,7 @@ class Mongodb(Collector):
                     for sub_e in v:
                         self._clean_struct(sub_e)
                     continue
-                if not isinstance(v, Number) and not isinstance(v, basestring):
+                if not isinstance(v, Number) and not isinstance(v, str):
                     self.logger.debug('CLEANING bad entry type: %s %s %s' % (k, v, type(v)))
                     to_del.append(k)
                     continue

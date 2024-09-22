@@ -31,14 +31,8 @@ except ImportError:  # like in static python
 import time
 import errno
 import logging
-try:
-    from BaseHTTPServer import BaseHTTPRequestHandler
-except ImportError:
-    from http.server import BaseHTTPRequestHandler
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
+from http.server import BaseHTTPRequestHandler
+from io import StringIO
 from select import select
 
 

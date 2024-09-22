@@ -3,11 +3,7 @@ import codecs
 
 from opsbro.evaluater import export_evaluater_function
 from opsbro.misc.lolcat import lolcat
-from opsbro.util import PY3
 from opsbro.jsonmgr import jsoner
-
-if PY3:
-    basestring = str
 
 FUNCTION_GROUP = 'system'
 
@@ -29,21 +25,6 @@ def system_get_os():
 
 
 @export_evaluater_function(function_group=FUNCTION_GROUP)
-def system_is_python_2():
-    """**system_is_python_2()** -> return True if the agent is running on python2, False otherwise
-
-<code>
-    Example:
-        system_is_python_2()
-
-    Returns:
-        True
-</code>
-    """
-    return not PY3
-
-
-@export_evaluater_function(function_group=FUNCTION_GROUP)
 def system_is_python_3():
     """**system_is_python_3()** -> return True if the agent is running on python3, False otherwise
 
@@ -55,7 +36,7 @@ def system_is_python_3():
         False
 </code>
     """
-    return PY3
+    return True
 
 
 #################### USERS
@@ -248,9 +229,9 @@ def colorize(s, color):
         \x1b[55Dmy string\x1b[0m
 </code>
     """
-    if not isinstance(s, basestring):
+    if not isinstance(s, str):
         try:
-            s = unicode(s)
+            s = str(s)
         except:
             return ''
     return lolcat.get_line(s, color, spread=None)

@@ -4,7 +4,7 @@ import logging
 import os
 
 from ..log import LoggerFactory
-from ..util import bytes_to_unicode, PY3
+from ..util import bytes_to_unicode
 
 from .linux_system_backend import LinuxBackend
 from ..systempacketmanager_errors import InstallationFailedException, UpdateFailedException, AssertKeyFailedException, AssertRepositoryFailedException

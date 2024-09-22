@@ -8,13 +8,6 @@ import inspect
 import types
 import sys
 
-try:  # Python2
-    from itertools import izip as zip
-except ImportError:  # python3 = zip is a buildin
-    pass
-
-PY3 = sys.version_info >= (3,)
-
 from .collectormanager import collectormgr
 from .log import LoggerFactory
 from .util import string_decode
@@ -24,26 +17,26 @@ logger = LoggerFactory.create_logger('evaluater')
 
 # supported operators
 operators = {
-    ast.Add      : op.add,  # A + B
-    ast.Sub      : op.sub,  # A - B
-    ast.Mult     : op.mul,  # A * B
-    ast.Div      : op.truediv,  # A / B
-    ast.Pow      : op.pow,  # ???
-    ast.BitXor   : op.xor,  # ???
-    ast.USub     : op.neg,  # ???
-    ast.Eq       : op.eq,  # A == B
-    ast.NotEq    : op.ne,  # A != B
-    ast.Gt       : op.gt,  # A > B
-    ast.Lt       : op.lt,  # A < B
-    ast.GtE      : op.ge,  # A >= B
-    ast.LtE      : op.le,  # A <= B
-    ast.Mod      : op.mod,  # A % B
-    ast.Or       : op.or_, _ast.Or: op.or_,  # A or B
-    ast.And      : op.and_, _ast.And: op.and_,  # A and B
-    ast.BitOr    : op.or_,  # A | B
-    ast.BitAnd   : op.and_,  # A & B
-    ast.Not      : op.not_, _ast.Not: op.not_,  # not A
-    ast.In       : op.contains,  # A in L
+    ast.Add:       op.add,  # A + B
+    ast.Sub:       op.sub,  # A - B
+    ast.Mult:      op.mul,  # A * B
+    ast.Div:       op.truediv,  # A / B
+    ast.Pow:       op.pow,  # ???
+    ast.BitXor:    op.xor,  # ???
+    ast.USub:      op.neg,  # ???
+    ast.Eq:        op.eq,  # A == B
+    ast.NotEq:     op.ne,  # A != B
+    ast.Gt:        op.gt,  # A > B
+    ast.Lt:        op.lt,  # A < B
+    ast.GtE:       op.ge,  # A >= B
+    ast.LtE:       op.le,  # A <= B
+    ast.Mod:       op.mod,  # A % B
+    ast.Or:        op.or_, _ast.Or: op.or_,  # A or B
+    ast.And:       op.and_, _ast.And: op.and_,  # A and B
+    ast.BitOr:     op.or_,  # A | B
+    ast.BitAnd:    op.and_,  # A & B
+    ast.Not:       op.not_, _ast.Not: op.not_,  # not A
+    ast.In:        op.contains,  # A in L
     ast.Subscript: op.getitem, _ast.Subscript: op.getitem,  # d[k]
     ast.Attribute: op.attrgetter, _ast.Attribute: op.attrgetter,  # d.XXXX()
 }
@@ -227,15 +220,15 @@ class Evaluater(object):
             v = names.get(key, None)
             return v
         # None, True, False are nameconstants in python3, but names in 2
-        elif PY3 and isinstance(node, ast.NameConstant):
+        elif isinstance(node, ast.NameConstant):
             key = node.value
             v = names.get(str(key), None)  # note: valus is alrady the final value, must lookup it to assert only what we want
             return v
         elif isinstance(node, ast.Subscript):  # {}['key'] access
-            # NOTE: the 'key' is node.slice.value.s for PY2, node.slice.value for PY3
+            # NOTE: the 'key' is node.slice.value for PY3
             # and the node.value is a ast.Dict, so must be eval_
             _d = self.eval_(node.value)
-            _key = node.slice.value if PY3 else node.slice.value.s
+            _key = node.slice.value
             v = _d[_key]
             return v
         #        elif isinstance(node, _ast.Attribute):  # o.f() call
@@ -259,11 +252,14 @@ class Evaluater(object):
             elif isinstance(node.func, ast.Attribute):
                 # Attribute is managed only if the base type is a standard one
                 _ref_object_node = node.func.value
-                if isinstance(_ref_object_node, ast.Dict) or isinstance(_ref_object_node, ast.List) or isinstance(_ref_object_node, ast.Str) or isinstance(_ref_object_node, ast.Set) or isinstance(_ref_object_node, ast.Subscript):
+                if isinstance(_ref_object_node, ast.Dict) or isinstance(_ref_object_node, ast.List) or isinstance(_ref_object_node,
+                                                                                                                  ast.Str) or isinstance(
+                        _ref_object_node, ast.Set) or isinstance(_ref_object_node, ast.Subscript):
                     _ref_object = self.eval_(_ref_object_node)
                     f = getattr(_ref_object, node.func.attr)
                 else:
-                    logger.error('Eval UNMANAGED (ast.attribute) CALL: %s %s %s is refused' % (node.func, node.func.__dict__, node.func.value.__dict__))
+                    logger.error(
+                            'Eval UNMANAGED (ast.attribute) CALL: %s %s %s is refused' % (node.func, node.func.__dict__, node.func.value.__dict__))
                     raise TypeError(node)
             else:
                 logger.error('Eval UNMANAGED (othercall) CALL: %s %s %s is refused' % (node.func, node.func.__dict__, node.func.value.__dict__))

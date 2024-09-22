@@ -1,10 +1,3 @@
-import sys
-
-PY3 = (sys.version_info[0] == 3)
-if PY3:
-    basestring = str  # python 3 do not have basestring
-
-
 # A ParameterBasedType will have access to the pack parameters
 class ParameterBasedType(object):
     # pack name & level will be fill when we will load the klass
@@ -91,7 +84,8 @@ class ParameterBasedType(object):
                 is_default = (value == property.default)
             else:
                 is_missing = True
-            entry = {'is_missing': is_missing, 'is_valid': is_valid, 'is_default': is_default, 'have_default': have_default, 'default_value': default_value, 'value': value}
+            entry = {'is_missing':    is_missing, 'is_valid': is_valid, 'is_default': is_default, 'have_default': have_default,
+                     'default_value': default_value, 'value': value}
             r['parameters'][prop] = entry
         return r
 
@@ -141,7 +135,7 @@ class StringParameter(Parameter):
     
     
     def is_valid(self, v):
-        return isinstance(v, basestring)
+        return isinstance(v, str)
 
 
 class BoolParameter(Parameter):

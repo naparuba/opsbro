@@ -70,10 +70,7 @@ class LibraryStore(object):
     def get_StringIO(self):
         if self.__StringIO is not None:
             return self.__StringIO
-        try:
-            from cStringIO import StringIO
-        except ImportError:  # Python3
-            from io import StringIO
+        from io import StringIO
         self.__StringIO = StringIO
         return self.__StringIO
     
@@ -81,10 +78,7 @@ class LibraryStore(object):
     def get_StringIO_unicode_compatible(self):
         if self.__StringIO_unicode is not None:
             return self.__StringIO_unicode
-        try:
-            from StringIO import StringIO
-        except ImportError:  # Python3
-            from io import StringIO
+        from io import StringIO
         self.__StringIO_unicode = StringIO
         return self.__StringIO_unicode
 
