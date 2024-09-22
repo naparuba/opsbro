@@ -74,7 +74,7 @@ jobs:
                - ALPINE
                - AMAZONLINUX
                - DEBIAN
-               #- OPENSUSE  # no currently test, need to find if still alive
+               - OPENSUSE
                - ORACLELINUX
                - REDHAT
                - UBUNTU

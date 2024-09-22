@@ -485,10 +485,9 @@ compliance:
          # / /_/ / /_/ /  __/ / / (__  ) /_/ (__  )  __/
          # \____/ .___/\___/_/ /_/____/\__,_/____/\___/
          #     /_/
-
-         # Open suse 15.4 have specific packages names
-         -  name      : opensuse_15_04
-            if        : "({{variables.is_opensuse}} and {{collector.system.os.linux.major_version}} == 15) and ({{collector.system.os.linux.minor_version}} == 4)"
+         # Open suse 15.+
+         -  name      : opensuse_15_plus
+            if        : "({{variables.is_opensuse}} and {{collector.system.os.linux.major_version}} == 15) and ({{collector.system.os.linux.minor_version}} >= 4)"
             parameters:
                packages:
                   - python3-rpm
@@ -501,40 +500,6 @@ compliance:
                   - python3-psutil
                   - python3-setproctitle
                   - python3-pyaml
-
-
-         # Open suse 15 have specific packages names
-         -  name      : opensuse_15
-            if        : "{{variables.is_opensuse}} and {{collector.system.os.linux.major_version}} == 15"
-            parameters:
-               packages:
-                  - python2-rpm
-                  - python2-Jinja2
-                  - python2-pycrypto
-                  - python2-simplejson
-                  - python2-setuptools
-                  - python2-leveldb
-                  - bash-completion  # Bash completion to enable the CLI completion
-                  - python2-psutil
-                  - python2-setproctitle
-                  - python2-pyaml
-         
-         
-         # Older open source (42.x)
-         -  name      : opensuse
-            if        : "{{variables.is_opensuse}}"
-            parameters:
-               packages:
-                  - rpm-python
-                  - python-Jinja2
-                  - python-pycrypto
-                  - python-simplejson
-                  - python-setuptools
-                  - python-leveldb
-                  - python-psutil
-                  - python-setproctitle
-                  - python-yaml
-                  - bash-completion  # Bash completion to enable the CLI completion
 
          
          ### Amazon

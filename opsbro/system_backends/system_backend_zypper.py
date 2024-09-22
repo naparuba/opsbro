@@ -1,5 +1,6 @@
 import subprocess
 import threading
+import traceback
 
 from .linux_system_backend import LinuxBackend
 from opsbro.log import LoggerFactory
@@ -13,18 +14,18 @@ class ZypperBackend(LinuxBackend):
         self.lock = threading.RLock()
     
     
-    # rpm -q -a --queryformat "%{NAME}\n"
+    # zypper search --installed-only --match-exact XXXXXXX
     def has_package(self, package):
         with self.lock:
             logger.debug('ZYPPER :: has package: %s' % package)
-            p = subprocess.Popen(['rpm', '-q', '-a', '--queryformat', r'%{NAME}\n'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = p.communicate()
-            # Return code is enouth to know that
-            if p.returncode != 0:
-                raise Exception('ZYPPER: Cannot list package %s' % (stdout + stderr))
-            packages = stdout.splitlines()
-            logger.debug('Zypper packages:', packages)
-            r = package in packages
+            try:
+                p = subprocess.Popen(['zypper', 'search', '--installed-only', '--match-exact', package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                _, _ = p.communicate()
+            except Exception:
+                err = f'ZYPPER: cannot check for package {package}: {traceback.format_exc()}'
+                logger.error(err)
+                raise Exception(err)
+            r = p.returncode == 0
             logger.debug('Zypper have package %s => %s' % (package, r))
             return r
     
