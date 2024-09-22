@@ -28,9 +28,9 @@ compliance:
            - name: ubuntu
              if: "{{variables.is_ubuntu}}"
              parameters:
-               name:       mongodb-org-5.0
-               url:        "[ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/5.0 multiverse"
-               key:        f5679a222c647c87527c2f8cb00a0bd1e2c63c11
+               name:       mongodb-org-8.0
+               url:        "[ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/8.0 multiverse"
+               key:        41DE058A4E7DCA05
                key-server: hkp://keyserver.ubuntu.com:80
 
 
